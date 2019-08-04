@@ -183,7 +183,7 @@ int main() {
     std::cout << c_sg.size() << " " << n_sg.size() << "\n";
 
     std::mt19937 gen;
-    std::uniform_int_distribution<Vertex> dist(0, G.n_vertices() - 2);
+    std::uniform_int_distribution<Vertex> dist(0, G.size() - 2);
     for (int i = 0; i < 100; ++i) {
         Vertex u = dist(gen), v = dist(gen);
         v = (u != v) ? v : u + 1;

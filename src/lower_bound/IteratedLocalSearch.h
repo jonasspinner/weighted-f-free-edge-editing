@@ -25,7 +25,7 @@ private:
 public:
     explicit IteratedLocalSearch(const Graph &graph, const VertexPairMap<Cost> &costs,
                                  const VertexPairMap<bool> &forbidden, std::shared_ptr<FinderI> finder) : LowerBoundI(
-            std::move(finder)), bound_graph(graph.n_vertices()), costs(costs), forbidden(forbidden) {}
+            std::move(finder)), bound_graph(graph.size()), costs(costs), forbidden(forbidden) {}
 
     Cost result(StateI *state, Cost k) override {
         auto s = dynamic_cast<State*>(state);
@@ -123,7 +123,8 @@ private:
     }
 
     void optimize_bound(State &state, Cost k) {
-        /*
+        std::mt19937 gen;
+
         bool improvement_found;
         bool bound_changed;
         size_t rounds_no_improvement = 0;
@@ -132,15 +133,15 @@ private:
             bound_changed = false;
 
             for (size_t sg_i = 0; sg_i < state.bound.size(); ++sg_i) {
-                bool early_exit = find_partner(state, sg_i, k, improvement_found, bound_changed);
+                bool early_exit = find_partner(state, sg_i, k, gen, improvement_found, bound_changed);
                 if (early_exit) return;
             }
 
             rounds_no_improvement = improvement_found ? 0 : rounds_no_improvement + 1;
-        } while (improvement_found || (rounds_no_improvement < 5 && bound_changed)); */
+        } while (improvement_found || (rounds_no_improvement < 5 && bound_changed));
     }
-    /*
-    bool find_partner(State &state, size_t sg_i, Cost k, bool &improvement_found, bool &bound_changed) {
+
+    bool find_partner(State &state, size_t sg_i, Cost k, std::mt19937 &gen, bool &improvement_found, bool &bound_changed) {
         auto fs = state.bound[sg_i].second;
 
         // See how many candidates we have
@@ -259,19 +260,69 @@ private:
         }
     }
 
+    static void insert_into_graph(const Subgraph &subgraph, const VertexPairMap<bool>& forbidden, Graph& graph) {
+        subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
+            assert(!graph.has_edge(uv));
+            graph.set_edge(uv);
+            return false;
+        });
+    }
+
+    static void remove_from_graph(const Subgraph &subgraph, const VertexPairMap<bool> &forbidden, Graph& graph) {
+        subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
+            assert(graph.has_edge(uv));
+            graph.clear_edge(uv);
+            return false;
+        });
+    }
+
+    static bool try_insert_into_graph(const Subgraph& subgraph, const VertexPairMap<bool>& forbidden, Graph& graph) {
+        int pairs_inserted = 0;
+        bool failed = subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
+            if (graph.has_edge(uv)) return true;
+            graph.set_edge(uv);
+            pairs_inserted++;
+            return false;
+        });
+        if (failed) {
+            subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
+                assert(graph.has_edge(uv));
+                graph.clear_edge(uv);
+                pairs_inserted--;
+                return pairs_inserted == 0;
+            });
+        }
+        return failed;
+    }
+
+    static std::vector<Subgraph> neighbors(FinderI* finder, const Subgraph &subgraph, const VertexPairMap<bool> &forbidden, Graph& bound_graph) {
+        // Find neighboring subgraphs
+        std::vector<Subgraph> result;
+        std::vector<bool> pairs_in_bound;
+        subgraph.for_all_vertex_pairs([&](VertexPair uv) {
+            finder->find_near(uv, bound_graph, [&](Subgraph&& neighbor) {
+                return false;
+            });
+            pairs_in_bound.push_back(bound_graph.has_edge(uv));
+            bound_graph.set_edge(uv);
+        });
+
+        subgraph.for_all_vertex_pairs([&](Ver))
+    }
+
     static std::vector<Subgraph> get_candidates(FinderI* finder, const Subgraph& sg, const VertexPairMap<bool> &forbidden, Graph &bound_graph) {
         std::vector<Subgraph> candidates;
         sg.for_all_vertex_pairs([&](VertexPair uv) {
             if (!forbidden[uv]) {
                 finder->find_near(uv, bound_graph, [&](const Subgraph& neighbor) {
-                    candidates.push_back(neighbor);<
+                    candidates.push_back(neighbor);
                     return false;
                 });
             }
             return false;
         });
         return candidates;
-    }*/
+    }
 };
 
 

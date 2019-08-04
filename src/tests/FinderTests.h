@@ -14,14 +14,15 @@
 #include "../finder/NaiveC4P4.h"
 #include "../finder/NaiveP3.h"
 #include "../finder/CenterC4P4.h"
+#include "../finder/Center.h"
 
 
 std::unique_ptr<FinderI> create_finder(const Graph& graph, Configuration::ForbiddenSubgraphs forbidden) {
     switch (forbidden) {
         case Configuration::ForbiddenSubgraphs::P3:
-            return std::make_unique<Finder::NaiveP3>(graph);
+            return std::make_unique<Finder::CenterP3>(graph);
         case Configuration::ForbiddenSubgraphs::P4C4:
-            return std::make_unique<Finder::NaiveC4P4>(graph);
+            return std::make_unique<Finder::CenterC4P4>(graph);
         default:
             abort();
     }
@@ -59,22 +60,58 @@ class FinderTests {
 public:
     explicit FinderTests(int seed=0) : gen(seed) {}
 
-    void FinderFindsP4() {
+    void NaiveC4P4_finds_P4() {
         Graph G(4);
         G.set_edges({{0, 1}, {1, 2},{2, 3}});
 
         std::vector<Subgraph> expected{{0, 1, 2, 3}};
-        auto actual = find_all_subgraphs(G, Configuration::ForbiddenSubgraphs::P4C4);
-        expect("Finder recognizes P4", normalize(expected), normalize(actual));
+        auto actual = find_all_subgraphs(G, new Finder::NaiveC4P4(G));
+        expect("NaiveC4P4 recognizes P4", normalize(expected), normalize(actual));
     }
 
-    void FinderFindsC4() {
+    void CenterC4P4_finds_P4() {
+        Graph G(4);
+        G.set_edges({{0, 1}, {1, 2},{2, 3}});
+
+        std::vector<Subgraph> expected{{0, 1, 2, 3}};
+        auto actual = find_all_subgraphs(G, new Finder::CenterC4P4(G));
+        expect("CenterC4P4 recognizes P4", normalize(expected), normalize(actual));
+    }
+
+    void CenterRecC4P4_finds_P4() {
+        Graph G(4);
+        G.set_edges({{0, 1}, {1, 2},{2, 3}});
+
+        std::vector<Subgraph> expected{{0, 1, 2, 3}};
+        auto actual = find_all_subgraphs(G, new CenterRecC4P4(G));
+        expect("CenterRecC4P4 recognizes P4", normalize(expected), normalize(actual));
+    }
+
+    void NaiveC4P4_finds_C4() {
         Graph G(4);
         G.set_edges({{0, 1}, {1, 2},{2, 3}, {3, 0}});
 
         std::vector<Subgraph> expected{{0, 1, 2, 3}};
-        auto actual = find_all_subgraphs(G, Configuration::ForbiddenSubgraphs::P4C4);
-        expect("Finder recognizes C4", normalize(expected), normalize(actual));
+        auto actual = find_all_subgraphs(G, new Finder::NaiveC4P4(G));
+        expect("NaiveC4P4 recognizes C4", normalize(expected), normalize(actual));
+    }
+
+    void CenterC4P4_finds_C4() {
+        Graph G(4);
+        G.set_edges({{0, 1}, {1, 2},{2, 3}, {3, 0}});
+
+        std::vector<Subgraph> expected{{0, 1, 2, 3}};
+        auto actual = find_all_subgraphs(G, new Finder::CenterC4P4(G));
+        expect("CenterC4P4 recognizes C4", normalize(expected), normalize(actual));
+    }
+
+    void CenterRecC4P4_finds_C4() {
+        Graph G(4);
+        G.set_edges({{0, 1}, {1, 2},{2, 3}, {3, 0}});
+
+        std::vector<Subgraph> expected{{0, 1, 2, 3}};
+        auto actual = find_all_subgraphs(G, new CenterRecC4P4(G));
+        expect("CenterRecC4P4 recognizes C4", normalize(expected), normalize(actual));
     }
 
     void FinderFindsP3() {
@@ -108,24 +145,28 @@ public:
     void NaiveP3_and_CenterC4P4_have_same_find_result() {
         Graph G = random_graph(10, 40, gen);
 
-        auto F1 = std::make_unique<Finder::NaiveP3>(G);
-        auto F2 = std::make_unique<Finder::CenterP3>(G);
+        auto naive_subgraphs = find_all_subgraphs(G, new Finder::NaiveP3(G));
+        auto center_subgraphs = find_all_subgraphs(G, new Finder::CenterP3(G));
 
-        expect("Naive and Center P3 Finder are consistent", normalize(find_all_subgraphs(G, F1.get())), normalize(find_all_subgraphs(G, F2.get())));
+        expect("Naive and Center P3 Finder are consistent", normalize(naive_subgraphs), normalize(center_subgraphs));
     }
 
     void NaiveC4P4_and_CenterC4P4_have_same_find_result() {
         Graph G = random_graph(10, 40, gen);
 
-        auto F1 = std::make_unique<Finder::NaiveC4P4>(G);
-        auto F2 = std::make_unique<Finder::CenterC4P4>(G);
+        auto naive_subgraphs = find_all_subgraphs(G, new Finder::NaiveC4P4(G));
+        auto center_subgraphs = find_all_subgraphs(G, new Finder::CenterC4P4(G));
 
-        expect("Naive and Center C4P4 Finder are consistent", normalize(find_all_subgraphs(G, F1.get())), normalize(find_all_subgraphs(G, F2.get())));
+        expect("Naive and Center C4P4 Finder are consistent", normalize(naive_subgraphs), normalize(center_subgraphs));
     }
 
     void run() {
-        FinderFindsC4();
-        FinderFindsP4();
+        NaiveC4P4_finds_C4();
+        CenterC4P4_finds_C4();
+        CenterRecC4P4_finds_C4();
+        NaiveC4P4_finds_P4();
+        CenterC4P4_finds_P4();
+        CenterRecC4P4_finds_P4();
         FinderFindsP3();
         EditsSolveKarate();
         NaiveP3_and_CenterC4P4_have_same_find_result();

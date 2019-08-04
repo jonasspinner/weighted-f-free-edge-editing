@@ -16,7 +16,7 @@ void expect(const std::string &name, T expected, T actual) {
     if (expected == actual) {
         std::cout << "Test [" << name << "] succeeded\n";
     } else {
-        std::cerr << "Test [" << name << "] failed. Expected " << expected << " got " << actual << "\n";
+        std::cerr << "Test [" << name << "] failed\n\tExpected " << expected << "\n\tGot      " << actual << "\n";
     }
 }
 
@@ -25,9 +25,9 @@ void expect(const std::string &name, std::vector<T> expected, std::vector<T> act
     if (expected == actual) {
         std::cout << "Test [" << name << "] succeeded\n";
     } else {
-        std::cerr << "Test [" << name << "] failed. Expected {";
+        std::cerr << "Test [" << name << "] failed\n\tExpected [" << expected.size() << "] {";
         for (const T &t: expected) std::cerr << " " << t;
-        std::cerr <<" } got {";
+        std::cerr <<" }\n\tGot      [" << actual.size() << "] {";
         for (const T &t: actual) std::cerr << " " << t;
         std::cerr << " }\n";
     }

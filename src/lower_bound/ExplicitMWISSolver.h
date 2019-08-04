@@ -46,7 +46,7 @@ namespace LowerBound {
 
             std::vector<Vertex> bound;
             VertexMap<bool> marked(instance.graph);
-            for (Vertex i = 0; i < instance.graph.n_vertices(); ++i) {
+            for (Vertex i = 0; i < instance.graph.size(); ++i) {
                 if (!marked[i]) {
                     bound.push_back(i);
                     instance.graph.for_neighbors_of(i, [&](auto j) {
