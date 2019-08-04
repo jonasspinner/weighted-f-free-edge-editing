@@ -123,7 +123,7 @@ private:
     }
 
     void optimize_bound(State &state, Cost k) {
-        std::mt19937 gen;
+        std::mt19937 gen(state.cost + state.bound.size());
 
         bool improvement_found;
         bool bound_changed;
@@ -142,122 +142,96 @@ private:
     }
 
     bool find_partner(State &state, size_t sg_i, Cost k, std::mt19937 &gen, bool &improvement_found, bool &bound_changed) {
-        auto fs = state.bound[sg_i].second;
+        constexpr Cost invalid_max_cost = std::numeric_limits<Cost>::min();
 
-        // See how many candidates we have
-        // size_t num_pairs = 0, num_neighbors = 0;
-        // const auto [num_pairs, num_neighbors] = count_neighbors(subgraph_stats, g, e, fs);
-        const auto pairs = get_vertex_pairs(fs, forbidden);
-        // const auto [num_pairs, num_neighbors, pairs] = get_pairs(subgraph_stats, g, e, fs);
+        auto subgraph = state.bound[sg_i].second;
 
-        // Skip if this forbidden subgraph if it is the only one we can add.
-        // if (num_pairs > 1) {
-            // Remove fs from lower bound
-            remove_from_bound_uses(pairs, bound_uses);
-            add_to_candidate_pairs_used(pairs, candidate_pairs_used);
+        // remove subgraph from lower bound
+        Cost subgraph_cost = cost(subgraph, forbidden, costs);
+        state.cost -= subgraph_cost;
+        remove_from_graph(subgraph, forbidden, bound_graph);
 
-            // Collect candidates
-            const auto candidates_per_pair = get_candidates(finder, g, e, candidate_pairs_used, pairs, bound_uses);
+        // TODO: Group neighbors by vertex pairs. Subgraphs sharing a vertex pair can never be inserted together.
+        // candidates are subgraphs which are only adjacent to subgraph but no other subgraph in the lower bound.
+        const auto candidates = get_candidates(finder.get(), subgraph, forbidden, bound_graph);
 
-            // Remove fs again from lower bound
-            remove_from_bound_uses(pairs, bound_uses);
-            remove_from_candidate_pairs_used(pairs, candidate_pairs_used);
+        Cost max_subgraphs_cost = subgraph_cost;
+        std::vector<size_t> max_subgraphs;
 
-            const bool random_switch = prob(gen) < 0.3;
-            size_t min_candidate_neighbors = num_neighbors;
-            size_t num_candidates_considered = 0;
+        // for each candidate check if
+        //   1. the candidate has a larger cost than the current maximum cost or
+        //   2. a pair of two candidates can both be inserted and their cost is larger than the current maximum cost.
+        for (size_t a_i = 0; a_i < candidates.size(); ++a_i) {
+            const auto &subgraph_a = candidates[a_i];
 
-            auto min_candidate = fs;
-            size_t min_pairs = num_pairs;
+            insert_into_graph(subgraph_a, forbidden, bound_graph);
 
-            bool found_partner = false;
+            Cost max_cost_b = invalid_max_cost;
+            size_t max_b = -1;
+            // for each candidate pair (a, b)
+            for (size_t b_i = a_i + 1; b_i < candidates.size(); ++b_i) {
+                const auto &subgraph_b = candidates[b_i];
+                bool inserted = try_insert_into_graph(subgraph_b, forbidden, bound_graph);
 
-            for (size_t pi = 0; pi < pairs.size(); ++pi) {
-                for (auto cand_fs : candidates_per_pair[pi]) {
-                    assert(!found_partner);
-
-                    add_to_bound_uses(g, e, cand_fs, bound_uses);
-                    const auto [cand_pairs, cand_neighbors] = count_neighbors(subgraph_stats, g, e, cand_fs);
-
-                    ++num_candidates_considered;
-
-                    if (cand_pairs == 1 || (min_pairs > 1 && (
-                            (!random_switch && cand_neighbors < min_candidate_neighbors) ||
-                            (random_switch && prob(gen) < 1.0 / num_candidates_considered)))) {
-                        min_pairs = cand_pairs;
-                        min_candidate = cand_fs;
-                        min_candidate_neighbors = cand_neighbors;
+                if (inserted) {
+                    Cost cost_b = cost(subgraph_b, forbidden, costs);
+                    if (cost_b > max_cost_b) {
+                        max_cost_b = cost_b;
+                        max_b = b_i;
                     }
-
-                    // Look only for later pairs - combinations with subgraphs listed for earlier pairs have already been considered!
-                    for (size_t ppi = pi + 1; ppi < pairs.size(); ++ppi) {
-                        const auto partner_pair = pairs[ppi];
-
-                        if (bound_uses.has_edge(partner_pair.first, partner_pair.second)) continue;
-
-                        for (auto partner_fs : candidates_per_pair[ppi]) {
-                            bool touches_bound = is_subgraph_touching_bound(g, e, partner_fs, bound_uses);
-
-                            if (!touches_bound) {
-                                // Success!
-                                found_partner = true;
-                                improvement_found = true;
-
-                                // Directly add the partner to the lower bound, continue search to see if there is more than one partner
-                                lb.push_back(partner_fs);
-
-                                add_to_bound_uses(g, e, partner_fs, bound_uses);
-                            }
-                        }
-
-                    }
-
-                    if (found_partner) {
-                        lb[fsi] = cand_fs;
-
-                        state.lb.assert_valid(g, e);
-                        break;
-                    } else {
-                        remove_from_bound_uses(g, e, cand_fs, bound_uses);
-                    }
+                    remove_from_graph(subgraph_b, forbidden, bound_graph);
                 }
-
-                if (found_partner) break;
             }
 
-            if (!found_partner) {
-                if (min_candidate != fs) {
-                    add_to_bound_uses(g, e, min_candidate, bound_uses);
-
-                    lb[fsi] = min_candidate;
-                    state.lb.assert_valid(g, e);
-
+            Cost cost_a = cost(subgraph_a, forbidden, costs);
+            if (max_b == -1) {
+                // no partner found
+                if (cost_a > max_subgraphs_cost) {
+                    max_subgraphs_cost = cost_a;
+                    max_subgraphs = {a_i};
+                    improvement_found = true;
                     bound_changed = true;
-                } else {
-                    // Add fs back to lower bound
-                    add_to_bound_uses(pairs, bound_uses);
+                } else if (cost_a == max_subgraphs_cost) {
+                    // TODO: plateau search
                 }
-            } else if (k < state.cost) {
-                return true; //exit early
+            } else {
+                // partner found
+                if (cost_a + max_cost_b > max_subgraphs_cost) {
+                    max_subgraphs_cost = cost_a + max_cost_b;
+                    max_subgraphs = {a_i, max_b};
+                    improvement_found = true;
+                    bound_changed = true;
+                }
             }
-        //}
+            remove_from_graph(subgraph_a, forbidden, bound_graph);
+        }
+
+        if (!max_subgraphs.empty()) {
+            // better candidates found
+            const Cost cost_0 = cost(candidates[max_subgraphs[0]], forbidden, costs);
+            state.bound[sg_i] = {cost_0, candidates[max_subgraphs[0]]};
+            for (size_t i = 1; i < max_subgraphs.size(); ++i) {
+                const Cost cost_i = cost(candidates[max_subgraphs[i]], forbidden, costs);
+                state.bound.emplace_back(cost_i, candidates[max_subgraphs[i]]);
+            }
+            state.cost += max_subgraphs_cost;
+            if (k < state.cost) return true; // lower bound is already large enough
+        } else {
+            // subgraph is the best
+            insert_into_graph(subgraph, forbidden, bound_graph);
+            state.cost += subgraph_cost; // k stays the same
+        }
 
         return false; // normal exit
     }
 
-    static std::vector<VertexPair> get_vertex_pairs(const Subgraph &sg, const VertexPairMap<bool> &forbidden) {
-        std::vector<VertexPair> pairs;
-        sg.for_all_vertex_pairs([&](VertexPair uv) {
-            if (!forbidden[uv]) pairs.push_back(uv);
-            return false;
+    static Cost cost(const Subgraph &subgraph, const VertexPairMap<bool> &forbidden, const VertexPairMap<Cost> &costs) {
+        Cost min_vertex_pair_cost = std::numeric_limits<Cost>::max();
+        subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
+            min_vertex_pair_cost = std::min(min_vertex_pair_cost, costs[uv]);
         });
-        return pairs;
-    }
-
-    static void remove_from_bound_graph(const std::vector<VertexPair>& pairs, Graph &bound_graph) {
-        for (auto uv : pairs) {
-            bound_graph.clear_edge(uv);
-        }
+        assert(min_vertex_pair_cost != std::numeric_limits<Cost>::max());
+        return min_vertex_pair_cost;
     }
 
     static void insert_into_graph(const Subgraph &subgraph, const VertexPairMap<bool>& forbidden, Graph& graph) {
@@ -295,33 +269,28 @@ private:
         return failed;
     }
 
-    static std::vector<Subgraph> neighbors(FinderI* finder, const Subgraph &subgraph, const VertexPairMap<bool> &forbidden, Graph& bound_graph) {
+    static std::vector<Subgraph> get_candidates(FinderI* finder, const Subgraph &subgraph, const VertexPairMap<bool> &forbidden, Graph& bound_graph) {
         // Find neighboring subgraphs
+        // Precondition: subgraph is removed from bound_graph.
         std::vector<Subgraph> result;
-        std::vector<bool> pairs_in_bound;
-        subgraph.for_all_vertex_pairs([&](VertexPair uv) {
+
+        subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
+            assert(!bound_graph.has_edge(uv));
             finder->find_near(uv, bound_graph, [&](Subgraph&& neighbor) {
+                result.push_back(std::move(neighbor));
                 return false;
             });
-            pairs_in_bound.push_back(bound_graph.has_edge(uv));
+
+            // prevent subgraphs including uv to be counted twice
             bound_graph.set_edge(uv);
         });
 
-        subgraph.for_all_vertex_pairs([&](Ver))
-    }
-
-    static std::vector<Subgraph> get_candidates(FinderI* finder, const Subgraph& sg, const VertexPairMap<bool> &forbidden, Graph &bound_graph) {
-        std::vector<Subgraph> candidates;
-        sg.for_all_vertex_pairs([&](VertexPair uv) {
-            if (!forbidden[uv]) {
-                finder->find_near(uv, bound_graph, [&](const Subgraph& neighbor) {
-                    candidates.push_back(neighbor);
-                    return false;
-                });
-            }
-            return false;
+        // reset bound_graph
+        subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
+            bound_graph.clear_edge(uv);
         });
-        return candidates;
+
+        return result;
     }
 };
 
