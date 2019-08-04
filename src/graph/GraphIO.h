@@ -42,10 +42,10 @@ public:
 
 
         Graph G(n);
-        VertexPairMap<Cost> edit_costs(G);
+        VertexPairMap<Cost> edit_costs(G.size());
 
         if (fmt == 0) {
-            edit_costs = VertexPairMap<Cost>(G, 1);
+            edit_costs = VertexPairMap<Cost>(G.size(), 1);
             for (Vertex u = 1; u <= n; ++u) {
                 std::getline(file, line);
                 std::stringstream ss(line);
@@ -92,7 +92,7 @@ public:
 
         if (!file) throw std::runtime_error("could not open file");
 
-        Vertex n = graph.n_vertices();
+        Vertex n = graph.size();
 
         file << n << " " << n * (n - 1) / 2 << " " << 1 << "\n";
         graph.for_all_vertices([&](auto u) {

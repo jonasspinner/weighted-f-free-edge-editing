@@ -15,13 +15,15 @@ namespace Finder {
         Graph::AdjRow x_candidate;
 
     public:
-        explicit CenterC4P4(const Graph& graph) : FinderI(graph), w_candidate(graph.n_vertices()), x_candidate(graph.n_vertices()) {}
+        explicit CenterC4P4(const Graph& graph) : FinderI(graph), w_candidate(graph.size()), x_candidate(
+                graph.size()) {}
 
         bool find(SubgraphCallback callback) override {
             /* w?x
              * | |
              * u-v
              */
+            /*
             return graph.for_all_edges([&](VertexPair uv) {
                 Vertex u = uv.u;
                 Vertex v = uv.v;
@@ -35,16 +37,35 @@ namespace Finder {
                 w_candidate = graph.adj[u] & ~graph.adj[v];
                 w_candidate[v] = false;
 
-                return Graph::iterate(w_candidate, [&](Vertex w) {
-                    x_candidate = graph.adj[v] & ~graph.adj[u];
-                    x_candidate[u] = false;
+                x_candidate = graph.adj[v] & ~graph.adj[u];
+                x_candidate[u] = false;
 
+                return Graph::iterate(w_candidate, [&](Vertex w) {
                     return Graph::iterate(x_candidate, [&](Vertex x) {
+                        if (w == x) return false;
+                        if (u > v || w > x) return false;
                         // if (graph.has_edge({w, x}) && (u > v || u > w || u > x)) return false;
                         return callback(Subgraph{u, v, w, x});
                     });
                 });
+            });*/
+            return graph.for_all_vertices([&](Vertex p_1) {
+                return graph.for_neighbors_of(p_1, [&](Vertex p_2) {
+                    if (p_1 >= p_2) return false; // TODO: not specified in paper
+                    auto A = graph.adj[p_1] & ~graph.adj[p_2];
+                    //A[p_2] = false;
+                    auto B = graph.adj[p_2] & ~graph.adj[p_1];
+                    //B[p_1] = false;
+                    return Graph::iterate(A, [&](Vertex a) {
+                        return Graph::iterate(B, [&](Vertex b){
+                            if (!graph.has_edge({a, b})) return callback(Subgraph{a, p_1, p_2, b});
+                            if (graph.has_edge({a, b}) && (p_1 < p_2) && (p_1 < a) && (p_1 < b) && (p_2 < a)) return callback(Subgraph{p_1, p_2, b, a});
+                            return false;
+                        });
+                    });
+                });
             });
+
         }
 
         bool find(const Graph &forbidden, SubgraphCallback callback) override {

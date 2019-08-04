@@ -14,7 +14,7 @@ class Edits {
     Graph m_graph;
 
 public:
-    explicit Edits(const Graph &graph) : m_graph(graph.n_vertices()) {}
+    explicit Edits(const Graph &graph) : m_graph(graph.size()) {}
 
     [[nodiscard]] bool is_marked(VertexPair uv) const {
         return m_graph.has_edge(uv);

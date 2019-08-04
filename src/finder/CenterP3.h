@@ -14,29 +14,19 @@ namespace Finder {
         Graph::AdjRow w_candidates;
 
     public:
-        explicit CenterP3(const Graph &graph) : FinderI(graph), w_candidates(graph.n_vertices()) {}
+        explicit CenterP3(const Graph &graph) : FinderI(graph), w_candidates(graph.size()) {}
 
         bool find(SubgraphCallback callback) override {
-
-            return graph.for_all_edges([&](VertexPair uv) {
-                Vertex u = uv.u;
-                Vertex v = uv.v;
-
-                w_candidates = graph.adj[u] & ~graph.adj[v];
-                w_candidates[v] = false;
-
-                bool exited = Graph::iterate(w_candidates, [&](Vertex w) {
-                    return callback(Subgraph{u, v, w});
+            return graph.for_all_vertices([&](Vertex u) {
+                auto v_candidates = ~graph.adj[u];
+                v_candidates[u] = false;
+                return Graph::iterate(v_candidates, [&](Vertex v) {
+                    return graph.for_neighbors_of(v, [&](Vertex w) {
+                        if (graph.has_edge({u, w}) && v < u) {
+                            return callback(Subgraph{u, v, w});
+                        } else { return false; }
+                    });
                 });
-
-                w_candidates = ~graph.adj[u] & graph.adj[v];
-                w_candidates[u] = false;
-
-                exited |= Graph::iterate(w_candidates, [&](Vertex w) {
-                    return callback(Subgraph{v, u, w});
-                });
-
-                return exited;
             });
         }
 

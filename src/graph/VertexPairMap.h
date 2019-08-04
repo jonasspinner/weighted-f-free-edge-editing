@@ -18,8 +18,8 @@ class VertexPairMap {
     Vertex n;
     std::vector<T> values;
 public:
-    explicit VertexPairMap(const Graph &graph, T initial = T()) : n(graph.n_vertices()),
-                                                                  values(idx({n - 2, n - 1}) + 1, initial) {}
+    // explicit VertexPairMap(const Graph &graph, T initial = T()) : n(graph.size()),
+    //                                                               values(idx({n - 2, n - 1}) + 1, initial) {}
 
     explicit VertexPairMap(Vertex n, T initial = T()) : n(n), values(idx({n - 2, n - 1}) + 1, initial) {}
 
@@ -79,7 +79,7 @@ public:
     };
 
 
-    explicit VertexPairMap(const Graph &graph, bool initial = false) : VertexPairMap<bool>(graph.n_vertices()) {}
+    explicit VertexPairMap(const Graph &graph, bool initial = false) : VertexPairMap<bool>(graph.size()) {}
 
     explicit VertexPairMap(Vertex n, bool initial = false) : n(n),
                                                         adj(n, AdjRow(n)) {

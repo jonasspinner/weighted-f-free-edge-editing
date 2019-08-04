@@ -17,6 +17,10 @@ namespace Finder {
     class CenterP3;
     class NaiveP3;
 }
+// template <int length> class Center;
+namespace detail {
+    template <int length, bool with_cycles> class CenterFinderImpl;
+}
 
 
 class VertexPair {
@@ -78,7 +82,7 @@ public:
      *
      * @return
      */
-    [[nodiscard]] Vertex n_vertices() const { return n; }
+    [[nodiscard]] Vertex size() const { return n; }
 
 
     void clear_edges() {
@@ -215,8 +219,8 @@ public:
     }
 
     friend std::ostream &operator<<(std::ostream &os, const Graph &graph) {
-        for (Vertex u = 0; u < graph.n_vertices(); ++u) {
-            for (Vertex v = 0; v < graph.n_vertices(); ++v) {
+        for (Vertex u = 0; u < graph.size(); ++u) {
+            for (Vertex v = 0; v < graph.size(); ++v) {
                 os << graph.adj[u][v] << " ";
             }
             os << "\n";
@@ -225,6 +229,10 @@ public:
     }
 
 private:
+
+    [[nodiscard]] AdjRow all_vertices() const {
+        return AdjRow(n, 1);
+    }
 
     /**
      * Iterate over the vertex set indicated by row.
@@ -244,11 +252,22 @@ private:
         return false;
     }
 
+    template <typename VertexCallback>
+    static bool iterate(const AdjRow &A, const AdjRow &B, VertexCallback callback) {
+        return iterate(A, [&](Vertex a) {
+            return iterate(B, [&](Vertex b) {
+                return callback(a, b);
+            });
+        });
+    }
+
     friend class FinderI;
     friend class Finder::NaiveP3;
     friend class Finder::CenterP3;
     friend class Finder::NaiveC4P4;
     friend class Finder::CenterC4P4;
+    template <int length, bool with_cycles> friend class detail::CenterFinderImpl;
+    // template <int length> friend class Center;
 };
 
 

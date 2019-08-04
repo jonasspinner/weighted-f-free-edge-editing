@@ -38,15 +38,21 @@ namespace Finder {
              * u-v */
             return graph.for_all_vertices([&](Vertex u) {
                 return graph.for_neighbors_of(u, [&](Vertex v) {
-                    // if (u >= v) return false;
+                    if (u >= v) return false; // TODO: not specified in algorithm
                     return graph.for_neighbors_of(v, [&](Vertex w) {
                         if (u == w || graph.has_edge({u, w})) return false;
                         return graph.for_neighbors_of(w, [&](Vertex x) {
                             if (v == x || graph.has_edge({v, x})) return false;
-                            if (u > x) return false;
-                            if (graph.has_edge({w, x}) && (u > w || w > x)) return false;
-                            // if (graph.has_edge({w, x}) && (u >= v || u >= w || u >= x)) return false;
-                            return callback(Subgraph({u, v, w, x}));
+                            if (!graph.has_edge({u, x})) {
+                                return callback(Subgraph{u, v, w, x});
+                            } else if (graph.has_edge({u, x}) && u < v && u < w && u < x && v < x) {
+                                return callback(Subgraph{u, v, w, x});
+                            }
+                            //if (u > x) return false;
+                            //if (graph.has_edge({w, x}) && (u > w || w > x)) return false;
+
+                            // if (graph.has_edge({w, x}) && (u > v || v > w || v > x)) return false;
+                            return false;
                         });
                     });
                 });
