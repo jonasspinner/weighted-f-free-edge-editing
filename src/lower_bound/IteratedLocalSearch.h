@@ -13,6 +13,7 @@ class IteratedLocalSearch : public LowerBoundI {
     public:
         std::vector<std::pair<Cost, Subgraph>> bound;
         Cost cost = 0;
+
         std::unique_ptr<StateI> copy() override {
             return std::make_unique<State>(*this);
         }
@@ -27,14 +28,14 @@ public:
                                  const VertexPairMap<bool> &forbidden, std::shared_ptr<FinderI> finder) : LowerBoundI(
             std::move(finder)), bound_graph(graph.size()), costs(costs), forbidden(forbidden) {}
 
-    Cost result(StateI *state, Cost k) override {
-        auto s = dynamic_cast<State*>(state);
-        auto &bound = s->bound;
-        if (s->cost <= k) {
-            initialize_bound_graph(*s);
-            optimize_bound(*s, k);
+    Cost result(StateI &_state, Cost k) override {
+        auto state = dynamic_cast<State &>(_state);
+        auto &bound = state.bound;
+        if (state.cost <= k) {
+            initialize_bound_graph(state);
+            optimize_bound(state, k);
         }
-        return s->cost;
+        return state.cost;
     }
 
     std::unique_ptr<StateI> initialize(Cost k) override {
@@ -58,9 +59,9 @@ public:
         return state;
     }
 
-    void before_mark_and_edit(StateI *state, VertexPair uv) override {
-        auto s = dynamic_cast<State *>(state);
-        auto &bound = s->bound;
+    void before_mark_and_edit(StateI &_state, VertexPair uv) override {
+        auto state = dynamic_cast<State &>(_state);
+        auto &bound = state.bound;
 
         for (size_t i = 0; i < bound.size();) {
             bool has_uv = bound[i].second.for_all_vertex_pairs([&](auto xy) {
@@ -68,7 +69,7 @@ public:
             });
 
             if (has_uv) {
-                s->cost -= bound[i].first;
+                state.cost -= bound[i].first;
                 bound[i] = bound.back();
                 bound.pop_back();
             } else {
@@ -77,11 +78,11 @@ public:
         }
     }
 
-    void after_mark_and_edit(StateI *state, VertexPair uv) override {
-        auto s = dynamic_cast<State *>(state);
-        auto &bound = s->bound;
+    void after_mark_and_edit(StateI &_state, VertexPair uv) override {
+        auto state = dynamic_cast<State &>(_state);
+        auto &bound = state.bound;
 
-        initialize_bound_graph(*s);
+        initialize_bound_graph(state);
 
         finder->find_near(uv, bound_graph, [&](const Subgraph &subgraph) {
             Cost min_cost = std::numeric_limits<Cost>::max();
@@ -91,7 +92,7 @@ public:
             });
             if (!touches_bound) {
                 bound.emplace_back(min_cost, subgraph);
-                s->cost += min_cost;
+                state.cost += min_cost;
                 subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
                     bound_graph.set_edge(uv);
                     return false;
@@ -101,21 +102,21 @@ public:
         });
     }
 
-    void before_mark(StateI *state, VertexPair uv) override { /* no op */ }
+    void before_mark(StateI &state, VertexPair uv) override { /* no op */ }
 
-    void after_mark(StateI *state, VertexPair uv) override { after_mark_and_edit(state, uv); }
+    void after_mark(StateI &state, VertexPair uv) override { after_mark_and_edit(state, uv); }
 
-    void before_edit(StateI *state, VertexPair uv) override { /* no op */ }
+    void before_edit(StateI &state, VertexPair uv) override { /* no op */ }
 
-    void after_edit(StateI *state, VertexPair uv) override { /* no op */ }
+    void after_edit(StateI &state, VertexPair uv) override { /* no op */ }
 
-    void after_unmark(StateI *state, VertexPair uv) override { /* no op */ }
+    void after_unmark(StateI &state, VertexPair uv) override { /* no op */ }
 
 private:
     void initialize_bound_graph(const State &state) {
         bound_graph.clear_edges();
         for (const auto &p : state.bound) {
-            p.second.for_all_unmarked_vertex_pairs(forbidden,[&](VertexPair uv) {
+            p.second.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
                 bound_graph.set_edge(uv);
                 return false;
             });
@@ -141,7 +142,8 @@ private:
         } while (improvement_found || (rounds_no_improvement < 5 && bound_changed));
     }
 
-    bool find_partner(State &state, size_t sg_i, Cost k, std::mt19937 &gen, bool &improvement_found, bool &bound_changed) {
+    bool
+    find_partner(State &state, size_t sg_i, Cost k, std::mt19937 &gen, bool &improvement_found, bool &bound_changed) {
         constexpr Cost invalid_max_cost = std::numeric_limits<Cost>::min();
 
         auto subgraph = state.bound[sg_i].second;
@@ -229,12 +231,13 @@ private:
         Cost min_vertex_pair_cost = std::numeric_limits<Cost>::max();
         subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
             min_vertex_pair_cost = std::min(min_vertex_pair_cost, costs[uv]);
+            return false;
         });
         assert(min_vertex_pair_cost != std::numeric_limits<Cost>::max());
         return min_vertex_pair_cost;
     }
 
-    static void insert_into_graph(const Subgraph &subgraph, const VertexPairMap<bool>& forbidden, Graph& graph) {
+    static void insert_into_graph(const Subgraph &subgraph, const VertexPairMap<bool> &forbidden, Graph &graph) {
         subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
             assert(!graph.has_edge(uv));
             graph.set_edge(uv);
@@ -242,7 +245,7 @@ private:
         });
     }
 
-    static void remove_from_graph(const Subgraph &subgraph, const VertexPairMap<bool> &forbidden, Graph& graph) {
+    static void remove_from_graph(const Subgraph &subgraph, const VertexPairMap<bool> &forbidden, Graph &graph) {
         subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
             assert(graph.has_edge(uv));
             graph.clear_edge(uv);
@@ -250,7 +253,7 @@ private:
         });
     }
 
-    static bool try_insert_into_graph(const Subgraph& subgraph, const VertexPairMap<bool>& forbidden, Graph& graph) {
+    static bool try_insert_into_graph(const Subgraph &subgraph, const VertexPairMap<bool> &forbidden, Graph &graph) {
         int pairs_inserted = 0;
         bool failed = subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
             if (graph.has_edge(uv)) return true;
@@ -269,25 +272,29 @@ private:
         return failed;
     }
 
-    static std::vector<Subgraph> get_candidates(FinderI* finder, const Subgraph &subgraph, const VertexPairMap<bool> &forbidden, Graph& bound_graph) {
+    static std::vector<Subgraph>
+    get_candidates(FinderI *finder, const Subgraph &subgraph, const VertexPairMap<bool> &forbidden,
+                   Graph &bound_graph) {
         // Find neighboring subgraphs
         // Precondition: subgraph is removed from bound_graph.
         std::vector<Subgraph> result;
 
         subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
             assert(!bound_graph.has_edge(uv));
-            finder->find_near(uv, bound_graph, [&](Subgraph&& neighbor) {
+            finder->find_near(uv, bound_graph, [&](Subgraph &&neighbor) {
                 result.push_back(std::move(neighbor));
                 return false;
             });
 
             // prevent subgraphs including uv to be counted twice
             bound_graph.set_edge(uv);
+            return false;
         });
 
         // reset bound_graph
         subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
             bound_graph.clear_edge(uv);
+            return false;
         });
 
         return result;

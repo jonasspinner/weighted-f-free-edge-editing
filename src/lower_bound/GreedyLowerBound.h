@@ -36,7 +36,7 @@ namespace LowerBound {
          * @param k Not used
          * @return A lower bound on the costs required to solve the current instance.
          */
-        Cost result(StateI *state, Cost k) override {
+        Cost result(StateI &state, Cost k) override {
 
             // Find all forbidden subgraphs with editable vertex pairs
             // The cost for a single forbidden subgraph is the minimum edit cost for an editable vertex pair
@@ -81,19 +81,19 @@ namespace LowerBound {
 
         std::unique_ptr<StateI> initialize(Cost k) override { return std::make_unique<State>(); }
 
-        void before_mark_and_edit(StateI *state, VertexPair uv) override {}
+        void before_mark_and_edit(StateI &state, VertexPair uv) override {}
 
-        void after_mark_and_edit(StateI *state, VertexPair uv) override {}
+        void after_mark_and_edit(StateI &state, VertexPair uv) override {}
 
-        void before_mark(StateI *state, VertexPair uv) override {}
+        void before_mark(StateI &state, VertexPair uv) override {}
 
-        void after_mark(StateI *state, VertexPair uv) override {}
+        void after_mark(StateI &state, VertexPair uv) override {}
 
-        void before_edit(StateI *state, VertexPair uv) override {}
+        void before_edit(StateI &state, VertexPair uv) override {}
 
-        void after_edit(StateI *state, VertexPair uv) override {}
+        void after_edit(StateI &state, VertexPair uv) override {}
 
-        void after_unmark(StateI *state, VertexPair uv) override {}
+        void after_unmark(StateI &state, VertexPair uv) override {}
     };
 }
 

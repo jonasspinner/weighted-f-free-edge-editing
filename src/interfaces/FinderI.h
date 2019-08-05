@@ -61,19 +61,19 @@ public:
     virtual bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) = 0;
 
 
-    static const Graph::AdjRow& neighbors(Vertex u, const Graph& graph) {
+    static const Graph::AdjRow &neighbors(Vertex u, const Graph &graph) {
         return graph.adj[u];
     }
 
-    static Graph::AdjRow neighbors(Vertex u, const Graph& graph, const Graph& forbidden) {
+    static Graph::AdjRow neighbors(Vertex u, const Graph &graph, const Graph &forbidden) {
         return graph.adj[u] & ~forbidden.adj[u];
     }
 
-    static Graph::AdjRow non_neighbors(Vertex u, const Graph& graph) {
+    static Graph::AdjRow non_neighbors(Vertex u, const Graph &graph) {
         return ~graph.adj[u];
     }
 
-    static Graph::AdjRow non_neighbors(Vertex u, const Graph& graph, const Graph& forbidden) {
+    static Graph::AdjRow non_neighbors(Vertex u, const Graph &graph, const Graph &forbidden) {
         return ~(graph.adj[u] | forbidden.adj[u]);
     }
 

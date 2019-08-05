@@ -13,7 +13,7 @@ class LowerBoundI : public ConsumerI {
 public:
     explicit LowerBoundI(std::shared_ptr<FinderI> finder) : ConsumerI(std::move(finder)) {}
 
-    virtual Cost result(StateI *state, Cost k) = 0;
+    virtual Cost result(StateI &state, Cost k) = 0;
 };
 
 #endif //CONCEPT_LOWERBOUNDI_H

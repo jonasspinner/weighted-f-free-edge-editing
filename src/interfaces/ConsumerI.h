@@ -28,25 +28,25 @@ public:
     virtual std::unique_ptr<StateI> initialize(Cost k) = 0;
 
     // all
-    virtual void before_mark_and_edit(StateI *state, VertexPair uv) = 0;
+    virtual void before_mark_and_edit(StateI &state, VertexPair uv) = 0;
 
     // all
-    virtual void after_mark_and_edit(StateI *state, VertexPair uv) = 0;
+    virtual void after_mark_and_edit(StateI &state, VertexPair uv) = 0;
 
     // all
-    virtual void before_mark(StateI *state, VertexPair uv) = 0;
+    virtual void before_mark(StateI &state, VertexPair uv) = 0;
 
     // subgraph_stats
-    virtual void after_mark(StateI *state, VertexPair uv) = 0;
+    virtual void after_mark(StateI &state, VertexPair uv) = 0;
 
     // subgraph_stats
-    virtual void before_edit(StateI *state, VertexPair uv) = 0;
+    virtual void before_edit(StateI &state, VertexPair uv) = 0;
 
     // subgraph_stats
-    virtual void after_edit(StateI *state, VertexPair uv) = 0;
+    virtual void after_edit(StateI &state, VertexPair uv) = 0;
 
     // subgraph_stats
-    virtual void after_unmark(StateI *state, VertexPair uv) = 0;
+    virtual void after_unmark(StateI &state, VertexPair uv) = 0;
 
 };
 

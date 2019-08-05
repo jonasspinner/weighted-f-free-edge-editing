@@ -97,14 +97,14 @@ private:
     bool edit_r(Cost k, States states, ResultCallback result, PrunedCallback pruned) {
         const VertexPairMap<Cost> &costs = m_instance.costs;
         std::cout << "edit(" << k << ")\n";
-        auto lb = m_lower_bound->result(states[0].get(), k);
+        auto lb = m_lower_bound->result(*states[0], k);
         if (k < lb) {
             std::cout << "pruned\tlb(" << k << ") = " << lb << ", eps = " << lb - k << "\n";
             pruned(k, lb);
             return false; /* unsolvable, too few edits remaining */
         }
 
-        auto problem = m_selector->result(k);
+        auto problem = m_selector->result(*states[1], k);
         if (problem.solved) {
             // output graph
             result(edits);
@@ -147,11 +147,11 @@ private:
         Graph &G = m_instance.graph;
         // before_mark_and_edit         all
         for (int i = 0; i < m_consumers.size(); ++i) {
-            m_consumers[i]->before_mark_and_edit(states[i].get(), uv);
+            m_consumers[i]->before_mark_and_edit(*states[i], uv);
         }
         // before_mark                  all
         for (int i = 0; i < m_consumers.size(); ++i) {
-            m_consumers[i]->before_mark(states[i].get(), uv);
+            m_consumers[i]->before_mark(*states[i], uv);
         }
 
         m_forbidden[uv] = true;
@@ -165,7 +165,7 @@ private:
         // after_edit                   subgraph_stats
         // after_mark_and_edit          all
         for (int i = 0; i < m_consumers.size(); ++i) {
-            m_consumers[i]->after_mark_and_edit(states[i].get(), uv);
+            m_consumers[i]->after_mark_and_edit(*states[i], uv);
         }
     }
 

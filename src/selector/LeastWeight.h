@@ -24,7 +24,7 @@ namespace Selector {
                              const VertexPairMap<bool> &forbidden) : SelectorI(finder), weights(weights),
                                                                      forbidden(forbidden) {}
 
-        Problem result(Cost k) override {
+        Problem result(StateI &, Cost k) override {
             Subgraph min_subgraph{};
             Cost min_subgraph_cost = std::numeric_limits<Cost>::max();
 
@@ -56,13 +56,20 @@ namespace Selector {
         }
 
         std::unique_ptr<StateI> initialize(Cost k) override { return std::make_unique<State>(); }
-        void before_mark_and_edit(StateI *state, VertexPair uv) override {}
-        void after_mark_and_edit(StateI *state, VertexPair uv) override {}
-        void before_mark(StateI *state, VertexPair uv) override {}
-        void after_mark(StateI *state, VertexPair uv) override {}
-        void before_edit(StateI *state, VertexPair uv) override {}
-        void after_edit(StateI *state, VertexPair uv) override {}
-        void after_unmark(StateI *state, VertexPair uv) override {}
+
+        void before_mark_and_edit(StateI &state, VertexPair uv) override {}
+
+        void after_mark_and_edit(StateI &state, VertexPair uv) override {}
+
+        void before_mark(StateI &state, VertexPair uv) override {}
+
+        void after_mark(StateI &state, VertexPair uv) override {}
+
+        void before_edit(StateI &state, VertexPair uv) override {}
+
+        void after_edit(StateI &state, VertexPair uv) override {}
+
+        void after_unmark(StateI &state, VertexPair uv) override {}
     };
 }
 
