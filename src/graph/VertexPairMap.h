@@ -45,6 +45,8 @@ public:
         return os;
     }
 
+    [[nodiscard]] Vertex size() const { return n; }
+
 private:
     static inline size_t idx(const VertexPair &uv) {
         return uv.v * (uv.v - 1) / 2 + uv.u;
@@ -99,6 +101,8 @@ public:
         assert(uv.u < n && uv.v < n);
         return reference(*this, uv);
     }
+
+    [[nodiscard]] Vertex size() const { return n; }
 };
 
 #endif //CONCEPT_VERTEXPAIRMAP_H

@@ -116,27 +116,30 @@ void search(const Instance &instance, const Configuration &config) {
 
 int main() {
 
-
-    // "../../data/cost_matrix_component_nr_3_size_16_cutoff_10.0.metis"
-    // "../../data/cost_matrix_component_nr_4_size_39_cutoff_10.0.metis"
-    // "../../data/cost_matrix_component_nr_11_size_22_cutoff_10.0.metis"
-    // "../data/karate.graph"
-    auto instance = GraphIO::read_graph("../data/karate.graph");
+    const int multiplier = 100;
+    const std::vector<std::string> paths {
+        "../../data/cost_matrix_component_nr_3_size_16_cutoff_10.0.metis",
+        "../../data/cost_matrix_component_nr_4_size_39_cutoff_10.0.metis",
+        "../../data/cost_matrix_component_nr_11_size_22_cutoff_10.0.metis",
+        "../data/karate.graph"};
+    auto instance = GraphIO::read_graph(paths[0], multiplier);
 
     auto selector = Configuration::SelectorOption::FirstEditable;
     auto forbidden = Configuration::ForbiddenSubgraphs::P4C4;
-    auto lower_bound = Configuration::LowerBound::No;
+    auto lower_bound = Configuration::LowerBound::IteratedLocalSearch;
 
 
     std::vector<Solution> solutions;
 
     Editor editor(instance, selector, forbidden, lower_bound);
-
-    bool solved = editor.edit(179, [&](const std::vector<VertexPair> &edits) {
+    auto solution_cb = [&](const std::vector<VertexPair> &edits) {
         Solution solution(instance, edits);
         std::cout << solution << "\n";
         solutions.push_back(solution);
-    }, [](Cost k, Cost lb) { std::cout << "pruned: k=" << k << ", lb=" << lb << "\n"; });
+    };
+    auto pruning_cb = [](Cost k, Cost lb) { std::cout << "pruned: k=" << k << ", lb=" << lb << ", eps=" << lb - k << "\n"; };
+
+    bool solved = editor.edit(60 * multiplier +  39 + 16, solution_cb, pruning_cb);
 
     std::cout << (solved ? "instance solved" : "instance not solved") << "\n";
 

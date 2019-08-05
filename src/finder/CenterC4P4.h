@@ -77,7 +77,53 @@ namespace Finder {
             });
         }
 
-        bool find_near(VertexPair uv, SubgraphCallback callback) override { assert(false); return false; };
+        bool find_near(VertexPair uv, SubgraphCallback callback) override {
+            assert(false); // TODO: check correctness
+            Vertex u = uv.u, v = uv.v;
+            if (!graph.has_edge(uv)) {
+                // case P_4
+                auto A = graph.adj[u]; A[v] = false;
+                auto B = graph.adj[v]; B[u] = false;
+                return Graph::iterate(A, B, [&](Vertex a, Vertex b) {
+                    if (a == b) return false;
+                    if (graph.has_edge({a, b})) {
+                        return callback(Subgraph{u, a, b, v});
+                    }
+                    return false;
+                });
+            } else {
+                // case P_4 uv is in the middle
+                auto A = graph.adj[u]; A[v] = false;
+                auto B = graph.adj[v]; B[u] = false;
+                bool exit_early = Graph::iterate(A, B, [&](Vertex a, Vertex b) {
+                    if (a == b) return false;
+                    if (!graph.has_edge({a, b})) { // found P_4
+                        return callback(Subgraph{a, u, v, b});
+                    } else { // found C_4
+                        return callback(Subgraph{a, u, v, b});
+                    }
+                });
+                if (exit_early) return true;
+                // case P_4 uv is on the left
+                w_candidate = graph.adj[v]; w_candidate[u] = false;
+                exit_early = Graph::iterate(w_candidate, [&](Vertex w) {
+                    x_candidate = graph.adj[w] & ~graph.adj[u]; x_candidate[v] = false;
+                    return Graph::iterate(x_candidate, [&](Vertex x) {
+                        return callback(Subgraph{u, v, w, x});
+                    });
+                });
+                if (exit_early) return true;
+                // case P_4 uv is on the right
+                x_candidate = graph.adj[u]; x_candidate[v] = false;
+                exit_early = Graph::iterate(x_candidate, [&](Vertex x) {
+                   w_candidate = graph.adj[x] & ~graph.adj[v]; w_candidate[u] = false;
+                   return Graph::iterate(w_candidate, [&](Vertex w) {
+                       return callback(Subgraph{w, x, u, v});
+                   });
+                });
+                return exit_early;
+            }
+        };
 
         bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override { assert(false); return false; }
 

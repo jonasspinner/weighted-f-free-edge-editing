@@ -8,6 +8,18 @@
 
 #include <string>
 
+namespace Options {
+    enum Selector {
+        FirstEditable, LeastWeight
+    };
+    enum FSG {
+        P3, P4C4
+    };
+    enum LB {
+        No, IteratedLocalSearch
+    };
+}
+
 class Configuration {
 public:
     int k_max{100};
@@ -18,7 +30,7 @@ public:
         P3, P4C4
     } forbidden;
     enum LowerBound {
-        No, IteratedLocalSearch
+        No, IteratedLocalSearch, Greedy
     } lower_bound;
     std::string input_path;
     std::string output_path;
