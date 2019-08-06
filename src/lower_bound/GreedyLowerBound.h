@@ -42,13 +42,9 @@ namespace LowerBound {
             // The cost for a single forbidden subgraph is the minimum edit cost for an editable vertex pair
             std::vector<std::pair<Cost, Subgraph>> subgraphs;
             finder->find([&](const Subgraph &subgraph) {
-                Cost min_cost = std::numeric_limits<Cost>::max();
-                subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
-                    min_cost = std::min(min_cost, costs[uv]);
-                    return false;
-                });
+                Cost min_cost = cost(subgraph, forbidden, costs);
                 // Only insert if subgraph is editable
-                if (min_cost < std::numeric_limits<Cost>::max())
+                if (min_cost != invalid_cost)
                     subgraphs.emplace_back(min_cost, subgraph);
                 return false;
             });

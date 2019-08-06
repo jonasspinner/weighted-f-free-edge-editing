@@ -6,15 +6,22 @@
 #define CONCEPT_SUBGRAPH_H
 
 
-#include <array>
-
 #include "Graph.h"
 
 
 class Subgraph : public std::vector<Vertex> {
 public:
 
-    Subgraph(std::initializer_list<Vertex> list) : std::vector<Vertex>(list) {}
+    Subgraph(std::initializer_list<Vertex> list) : std::vector<Vertex>(list) {
+#ifndef NDEBUG
+        int n = 0;
+        for (auto x : list)
+            for (auto y : list)
+                n += (x == y);
+        if (n != list.size()) std::cout << *this << "\n";
+        assert(n == list.size() && "vertices are not unique");
+#endif
+    }
 
     template <typename VertexPairCallback>
     bool for_all_vertex_pairs(VertexPairCallback callback) const {
@@ -39,6 +46,17 @@ public:
         return os << " }";
     }
 };
+
+constexpr Cost invalid_cost = std::numeric_limits<Cost>::max();
+
+Cost cost(const Subgraph& subgraph, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs) {
+    Cost min_cost = invalid_cost;
+    subgraph.for_all_unmarked_vertex_pairs(marked, [&](VertexPair uv) {
+        min_cost = std::min(min_cost, costs[uv]);
+        return false;
+    });
+    return min_cost;
+}
 
 
 #endif //CONCEPT_SUBGRAPH_H

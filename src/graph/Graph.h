@@ -9,7 +9,7 @@
 #include <vector>
 #include <boost/dynamic_bitset.hpp>
 
-#include "../Definitions.h"
+#include "../definitions.h"
 
 namespace Finder {
     class NaiveC4P4;

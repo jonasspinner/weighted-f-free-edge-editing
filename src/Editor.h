@@ -30,14 +30,14 @@
 #include "consumer/SubgraphStats.h"
 
 
+#define call_for_each(c, m, s, e) \
+do { for (size_t i = 0; i < c.size(); ++i) {\
+    c[i]->m(*s[i], e); \
+}} while(0)
+
+
 class Editor {
 private:
-    using LBI = LowerBoundI;
-    using LB = LowerBound::NoLowerBound;
-    using SelI = SelectorI;
-    using Sel = Selector::LeastWeight;
-    using CI = ConsumerI;
-
     using States = std::vector<std::unique_ptr<StateI>>;
 
     Instance m_instance;
@@ -79,7 +79,6 @@ public:
                 m_lower_bound = std::make_unique<LowerBound::GreedyLowerBound>(m_instance, m_forbidden, m_finder);
                 break;
         }
-        m_lower_bound = std::make_unique<LowerBound::GreedyLowerBound>(m_instance, m_forbidden, m_finder);
         m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_forbidden);
 
         m_consumers.emplace_back(m_lower_bound.get());
@@ -104,18 +103,16 @@ private:
     template<typename ResultCallback, typename PrunedCallback>
     bool edit_r(Cost k, States states, ResultCallback result, PrunedCallback pruned) {
         const VertexPairMap<Cost> &costs = m_instance.costs;
-        // std::cout << "edit(" << k << ")\n";
+
         auto lb = m_lower_bound->result(*states[0], k);
         if (k < lb) {
-            // std::cout << "pruned\tlb(" << k << ") = " << lb << ", eps = " << lb - k << "\n";
             pruned(k, lb);
             return false; /* unsolvable, too few edits remaining */
         }
 
         auto problem = m_selector->result(*states[1], k);
         if (problem.solved) {
-            // output graph
-            result(edits);
+            result(edits); // output graph
             return true; /* solved */
         } else if (k == 0) { pruned(0, 0); return false; } /* unsolved, no edits remaining */
 
@@ -129,10 +126,10 @@ private:
         for (auto uv : problem.pairs) {
             if (m_forbidden[uv]) continue;
 
-            auto next_states = copy(states);
-
             // std::cout << "edit " << uv << "\n";
             mark_and_edit_edge(states, uv);
+
+            auto next_states = copy(states);
 
             // std::cout << "edited " << uv << "\n";
             if (edit_r(k - costs[uv], std::move(next_states), result, pruned)) solved = true;
@@ -153,69 +150,45 @@ private:
     void mark_and_edit_edge(States &states, const VertexPair &uv) {
         assert(!m_forbidden[uv]);
         Graph &G = m_instance.graph;
-        // before_mark_and_edit         all
-        for (size_t i = 0; i < m_consumers.size(); ++i) {
-            m_consumers[i]->before_mark_and_edit(*states[i], uv);
-        }
-        // before_mark                  all
-        for (size_t i = 0; i < m_consumers.size(); ++i) {
-            m_consumers[i]->before_mark(*states[i], uv);
-        }
+
+        call_for_each(m_consumers, before_mark_and_edit, states, uv);   // all
+        call_for_each(m_consumers, before_mark, states, uv);            // all
 
         m_forbidden[uv] = true;
 
-        // after_mark                   subgraph_stats
-        for (size_t i = 0; i < m_consumers.size(); ++i) {
-            m_consumers[i]->after_mark(*states[i], uv);
-        }
-        // before_edit                  subgraph_stats
-        for (size_t i = 0; i < m_consumers.size(); ++i) {
-            m_consumers[i]->before_edit(*states[i], uv);
-        }
+        call_for_each(m_consumers, after_mark, states, uv);             // subgraph_stats
+        call_for_each(m_consumers, before_edit, states, uv);            // subgraph_stats
 
         G.toggle_edge(uv);
         edits.push_back(uv);
 
-        // after_edit                   subgraph_stats
-        for (size_t i = 0; i < m_consumers.size(); ++i) {
-            m_consumers[i]->after_edit(*states[i], uv);
-        }
-        // after_mark_and_edit          all
-        for (size_t i = 0; i < m_consumers.size(); ++i) {
-            m_consumers[i]->after_mark_and_edit(*states[i], uv);
-        }
+        call_for_each(m_consumers, after_edit, states, uv);             // subgraph_stats
+        call_for_each(m_consumers, after_mark_and_edit, states, uv);    // all
+
     }
 
     void unedit_edge(States &states, const VertexPair &uv) {
         assert(m_forbidden[uv]);
         Graph &G = m_instance.graph;
 
-        // before_edit                  subgraph_stats
-        for (size_t i = 0; i < m_consumers.size(); ++i) {
-            m_consumers[i]->before_edit(*states[i], uv);
-        }
+        call_for_each(m_consumers, before_edit, states, uv);            // subgraph_stats
 
         G.toggle_edge(uv);
         edits.pop_back();
 
-        // after_edit                   subgraph_stats
-        for (size_t i = 0; i < m_consumers.size(); ++i) {
-            m_consumers[i]->after_edit(*states[i], uv);
-        }
+        call_for_each(m_consumers, after_edit, states, uv);             // subgraph_stats
+
     }
 
     void unmark_edge(States &states, const VertexPair &uv) {
         assert(m_forbidden[uv]);
         m_forbidden[uv] = false;
 
-        // after_unmark                 subgraph_stats
-        for (size_t i = 0; i < m_consumers.size(); ++i) {
-            m_consumers[i]->after_unmark(*states[i], uv);
-        }
+        call_for_each(m_consumers, after_unmark, states, uv);           // subgraph_stats
     }
 
-    std::vector<std::unique_ptr<StateI>> make_states(Cost k) {
-        std::vector<std::unique_ptr<StateI>> states;
+    States make_states(Cost k) {
+        States states;
         for (auto consumer : m_consumers) {
             states.push_back(consumer->initialize(k));
         }
@@ -231,5 +204,6 @@ private:
     }
 };
 
+#undef call_for_each
 
 #endif //CONCEPT_EDITOR_H

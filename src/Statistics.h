@@ -10,7 +10,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "Definitions.h"
+#include "definitions.h"
 
 class Statistics {
     using Depth = int;
