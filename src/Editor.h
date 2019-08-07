@@ -103,6 +103,12 @@ private:
     template<typename ResultCallback, typename PrunedCallback>
     bool edit_r(Cost k, States states, ResultCallback result, PrunedCallback pruned) {
         const VertexPairMap<Cost> &costs = m_instance.costs;
+        std::cout << "marked:";
+        m_instance.graph.for_all_vertex_pairs([&](VertexPair uv) {
+            if (m_forbidden[uv]) std::cout << " " << uv;
+            return false;
+        });
+        std::cout << "\n";
 
         auto lb = m_lower_bound->result(*states[0], k);
         if (k < lb) {
