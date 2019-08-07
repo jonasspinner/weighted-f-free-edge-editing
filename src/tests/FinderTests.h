@@ -124,7 +124,7 @@ public:
     }
 
     void EditsSolveKarate()         {
-        Graph G = GraphIO::read_graph("../data/karate.graph").graph;
+        Graph G = GraphIO::read_graph("./data/karate.graph").graph;
 
         std::vector<VertexPair> edits {
             {0, 8}, {0, 16}, {0, 31}, /*{0, 33},*/

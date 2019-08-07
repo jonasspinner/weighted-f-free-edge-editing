@@ -147,6 +147,7 @@ namespace detail {
             /** P_2: <u, v> **/
             return graph.for_all_vertices([&](Vertex u) {
                 return graph.for_all_vertices([&](Vertex v) {
+                    if (u >= v) return false;
                     return callback(Subgraph{u, v});
                 });
             });
@@ -167,13 +168,13 @@ namespace detail {
 
     template <int length>
     class Center : public FinderI {
-        static_assert(length >= 1);
+        static_assert(length > 1);
 
     public:
         explicit Center(const Graph &graph) : FinderI(graph) {}
 
         bool find(SubgraphCallback callback) override {
-            return detail::CenterFinderImpl<length, true>::find(graph, callback);
+            return detail::CenterFinderImpl<length, (length > 3)>::find(graph, callback);
         }
 
         bool find(const Graph& forbidden, SubgraphCallback callback) override { assert(false); return false; }

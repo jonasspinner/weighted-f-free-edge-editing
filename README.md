@@ -1,8 +1,14 @@
 # Weighted Edge Editing
 
+## How to run
 
+```
+$ cmake CMakeLists.txt
+$ make
+$ ./graphedit
+```
 
-**Main Algorithm**
+## Main Algorithm
 ```
 Input: remaining editing cost k
 

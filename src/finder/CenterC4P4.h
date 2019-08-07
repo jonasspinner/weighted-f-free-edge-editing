@@ -56,12 +56,10 @@ namespace Finder {
                     //A[p_2] = false;
                     auto B = graph.adj[p_2] & ~graph.adj[p_1];
                     //B[p_1] = false;
-                    return Graph::iterate(A, [&](Vertex a) {
-                        return Graph::iterate(B, [&](Vertex b){
-                            if (!graph.has_edge({a, b})) return callback(Subgraph{a, p_1, p_2, b});
-                            if (graph.has_edge({a, b}) && (p_1 < p_2) && (p_1 < a) && (p_1 < b) && (p_2 < a)) return callback(Subgraph{p_1, p_2, b, a});
-                            return false;
-                        });
+                    return Graph::iterate(A, B, [&](Vertex a, Vertex b) {
+                        if (!graph.has_edge({a, b})) return callback(Subgraph{a, p_1, p_2, b});
+                        if (graph.has_edge({a, b}) && (p_1 < p_2) && (p_1 < a) && (p_1 < b) && (p_2 < a)) return callback(Subgraph{p_1, p_2, b, a});
+                        return false;
                     });
                 });
             });
