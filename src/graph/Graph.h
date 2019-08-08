@@ -19,6 +19,7 @@ namespace Finder {
 }
 // template <int length> class Center;
 namespace detail {
+    template <int length> class Center;
     template <int length, bool with_cycles> class CenterFinderImpl;
 }
 
@@ -51,31 +52,8 @@ private:
     AdjMatrix adj;
 
 public:
-    /*
-    using const_reference = boost::dynamic_bitset<Block>::const_reference;
-    class reference {
-        Graph& graph; VertexPair uv;
-    public:
-        reference(Graph& graph, VertexPair uv) : graph(graph), uv(uv) {}
-        reference& operator=(bool value) {
-            if (value) graph.set_edge(uv); else graph.clear_edge(uv);
-            return *this;
-        }
-        explicit operator bool() const {
-            return graph.adj[uv.u][uv.v];
-        }
-    };*/
 
     explicit Graph(unsigned int n) : n(n), adj(n, boost::dynamic_bitset<Block>(n)) {}
-
-    /*
-    const_reference operator[](VertexPair uv) const {
-        return adj[uv.u][uv.v];
-    }
-
-    reference operator[](VertexPair uv) {
-        return reference(*this, uv);
-    } */
 
     /**
      * Returns the number of vertices.
@@ -266,8 +244,8 @@ private:
     friend class Finder::CenterP3;
     friend class Finder::NaiveC4P4;
     friend class Finder::CenterC4P4;
+    template <int length> friend class detail::Center;
     template <int length, bool with_cycles> friend class detail::CenterFinderImpl;
-    // template <int length> friend class Center;
 };
 
 
