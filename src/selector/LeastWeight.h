@@ -50,7 +50,7 @@ namespace Selector {
             });
 
             std::sort(pairs.begin(), pairs.end(),
-                      [&](const VertexPair &uv, const VertexPair &xy) { return weights[uv] > weights[xy]; });
+                      [&](VertexPair uv, VertexPair xy) { return weights[uv] > weights[xy]; });
 
             return {pairs, !found};
         }

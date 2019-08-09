@@ -13,7 +13,7 @@
 #include "../finder/CenterC4P4.h"
 
 namespace LowerBound {
-    template <class Finder>
+    template<class Finder>
     class ExplicitMWISSolver : public LowerBoundI {
     private:
         struct MWISInstance {
@@ -29,10 +29,11 @@ namespace LowerBound {
         const VertexPairMap<float> &weights;
 
     public:
-        ExplicitMWISSolver(const Graph &graph, const VertexPairMap<float> &weights, std::shared_ptr<FinderI> finder) : finder(std::move(finder)), graph(graph),
-                                                                                        weights(weights) {};
+        ExplicitMWISSolver(const Graph &graph, const VertexPairMap<float> &weights, std::shared_ptr<FinderI> finder)
+                : finder(std::move(finder)), graph(graph),
+                  weights(weights) {};
 
-        size_t update(const VertexPair &pair) {
+        size_t update(VertexPair pair) {
             std::vector<Subgraph> subgraphs;
             finder->find([&](const auto &subgraph) {
                 subgraphs.push_back(subgraph);
@@ -67,12 +68,11 @@ namespace LowerBound {
     private:
         static MWISInstance construct(const Graph &graph, const VertexPairMap<float> &vertex_pair_weights,
                                       const std::vector<Subgraph> &subgraphs) {
-            VertexPairMap<std::vector<Vertex>> edges_to_sg(graph);
+            VertexPairMap<std::vector<Vertex>> edges_to_sg(graph.size());
             for (size_t i = 0; i < subgraphs.size(); ++i) {
-                subgraphs[i].for_all_vertex_pairs([&](const auto &uv) {
+                for (VertexPair uv : subgraphs[i].vertexPairs()) {
                     edges_to_sg[uv].push_back(i);
-                    return false;
-                });
+                }
             }
 
             Graph MWISGraph(subgraphs.size());
@@ -99,11 +99,10 @@ namespace LowerBound {
         static float
         min_vertex_pair_weight(const VertexPairMap<float> &vertex_pair_weights, const Subgraph &subgraph) {
             float min_value = std::numeric_limits<float>::max();
-            subgraph.for_all_vertex_pairs([&](const auto &uv) {
+            for (VertexPair uv : subgraph.vertexPairs()) {
                 auto value = vertex_pair_weights[uv];
                 if (value < min_value) min_value = value;
-                return false;
-            });
+            }
             return min_value;
         }
     };

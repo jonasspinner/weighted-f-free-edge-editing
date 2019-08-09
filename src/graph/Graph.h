@@ -13,14 +13,20 @@
 
 namespace Finder {
     class NaiveC4P4;
+
     class CenterC4P4;
+
     class CenterP3;
+
     class NaiveP3;
 }
 // template <int length> class Center;
 namespace detail {
-    template <int length> class Center;
-    template <int length, bool with_cycles> class CenterFinderImpl;
+    template<int length>
+    class Center;
+
+    template<int length, bool with_cycles>
+    class CenterFinderImpl;
 }
 
 
@@ -31,11 +37,11 @@ public:
 
     VertexPair(Vertex x, Vertex y) : u(x < y ? x : y), v(x < y ? y : x) { assert(x != y); }
 
-    friend std::ostream &operator<<(std::ostream &os, const VertexPair &uv) {
+    friend std::ostream &operator<<(std::ostream &os, VertexPair uv) {
         return os << "{" << uv.u << ", " << uv.v << "}";
     }
 
-    friend bool operator==(const VertexPair& uv, const VertexPair &xy) {
+    friend bool operator==(VertexPair uv, VertexPair xy) {
         return (uv.u == xy.u) && (uv.v == xy.v);
     }
 };
@@ -64,7 +70,7 @@ public:
 
 
     void clear_edges() {
-        for (auto& row: adj) { row.reset(); }
+        for (auto &row: adj) { row.reset(); }
     }
 
     /**
@@ -72,7 +78,7 @@ public:
      *
      * @param edge
      */
-    void toggle_edge(const VertexPair &edge) {
+    void toggle_edge(VertexPair edge) {
         const auto&[u, v] = edge;
         adj[u].flip(v);
         adj[v].flip(u);
@@ -92,14 +98,14 @@ public:
      * @param edge
      * @return
      */
-    [[nodiscard]] bool has_edge(const VertexPair &edge) const { return adj[edge.u][edge.v]; }
+    [[nodiscard]] bool has_edge(VertexPair edge) const { return adj[edge.u][edge.v]; }
 
     /**
      * Sets the edge.
      *
      * @param edge
      */
-    void set_edge(const VertexPair &edge) {
+    void set_edge(VertexPair edge) {
         const auto&[u, v] = edge;
         adj[u][v] = true;
         adj[v][u] = true;
@@ -117,7 +123,7 @@ public:
      *
      * @param edge
      */
-    void clear_edge(const VertexPair &edge) {
+    void clear_edge(VertexPair edge) {
         const auto&[u, v] = edge;
         adj[u][v] = false;
         adj[v][u] = false;
@@ -129,20 +135,28 @@ public:
             Vertex v;
         public:
             explicit Iterator(Vertex start) : v(start) {}
+
             Vertex operator*() const { return v; }
+
             Iterator &operator++() {
                 ++v;
                 return *this;
             }
-            bool operator==(const Iterator& other) { return v == other.v; }
-            bool operator!=(const Iterator& other) { return !(*this == other); }
+
+            bool operator==(const Iterator &other) { return v == other.v; }
+
+            bool operator!=(const Iterator &other) { return !(*this == other); }
         };
+
         Vertex n;
     public:
         explicit Vertices(Vertex n) : n(n) {}
+
         [[nodiscard]] Iterator begin() const { return Iterator(0); }
+
         [[nodiscard]] Iterator end() const { return Iterator(n); }
     };
+
     [[nodiscard]] Vertices vertices() const {
         return Vertices(n);
     }
@@ -156,21 +170,30 @@ public:
             explicit Iterator(const AdjRow &row) : row(row) {
                 u = row.find_first();
             }
+
             Iterator(const AdjRow &row, Vertex start) : row(row), u(start) {}
+
             Vertex operator*() const { return u; }
+
             Iterator &operator++() {
                 u = row.find_next(u);
                 return *this;
             }
-            bool operator==(const Iterator& other) { return u == other.u; }
-            bool operator!=(const Iterator& other) { return !(*this == other); }
+
+            bool operator==(const Iterator &other) { return u == other.u; }
+
+            bool operator!=(const Iterator &other) { return !(*this == other); }
         };
+
         const AdjRow &row;
     public:
         explicit RowVertices(const AdjRow &row) : row(row) {}
+
         [[nodiscard]] Iterator begin() const { return Iterator(row); }
+
         [[nodiscard]] Iterator end() const { return Iterator(row, static_cast<Vertex>(AdjRow::npos)); }
     };
+
     static RowVertices vertices(const AdjRow &row) {
         return RowVertices(row);
     }
@@ -185,22 +208,33 @@ public:
             VertexPair uv;
             Vertex n;
         public:
-            Iterator(VertexPair start, Vertex n) : uv(start), n(n) { }
+            Iterator(VertexPair start, Vertex n) : uv(start), n(n) {}
+
             VertexPair operator*() const { return uv; }
+
             Iterator &operator++() {
                 ++uv.v;
-                if (uv.v == n) { ++uv.u; uv.v = uv.u + 1; }
+                if (uv.v == n) {
+                    ++uv.u;
+                    uv.v = uv.u + 1;
+                }
                 return *this;
             }
-            bool operator==(const Iterator& other) { return uv == other.uv; }
-            bool operator!=(const Iterator& other) { return !(*this == other); }
+
+            bool operator==(const Iterator &other) { return uv == other.uv; }
+
+            bool operator!=(const Iterator &other) { return !(*this == other); }
         };
+
         Vertex n;
     public:
         explicit VertexPairs(Vertex n) : n(n) {}
+
         [[nodiscard]] Iterator begin() const { return Iterator({0, 1}, n); }
+
         [[nodiscard]] Iterator end() const { return Iterator({n - 1, n}, n); }
     };
+
     [[nodiscard]] VertexPairs vertexPairs() const {
         return VertexPairs(n);
     }
@@ -212,11 +246,14 @@ public:
             VertexPair uv;
         public:
             Iterator(const AdjMatrix &adj, VertexPair start) : adj(adj), uv(start) {}
+
             explicit Iterator(const AdjMatrix &adj) : adj(adj), uv({0, 1}) {
                 while (adj[uv.u].count() == 0) uv.u++;
                 uv.v = adj[uv.u].find_first();
             }
+
             VertexPair operator*() const { return uv; }
+
             Iterator &operator++() {
                 uv.v = adj[uv.u].find_next(uv.v);
                 while (uv.v >= adj.size() && uv.u < adj.size()) {
@@ -226,16 +263,24 @@ public:
                 }
                 return *this;
             }
-            bool operator==(const Iterator& other) { return uv == other.uv; }
-            bool operator!=(const Iterator& other) { return !(*this == other); }
+
+            bool operator==(const Iterator &other) { return uv == other.uv; }
+
+            bool operator!=(const Iterator &other) { return !(*this == other); }
 
         };
-        const AdjMatrix& adj;
+
+        const AdjMatrix &adj;
     public:
-        explicit Edges(const AdjMatrix& adj) : adj(adj) {}
+        explicit Edges(const AdjMatrix &adj) : adj(adj) {}
+
         [[nodiscard]] Iterator begin() const { return Iterator(adj); }
-        [[nodiscard]] Iterator end() const { return Iterator(adj, {static_cast<Vertex>(adj.size()), static_cast<Vertex>(AdjRow::npos)}); }
+
+        [[nodiscard]] Iterator end() const {
+            return Iterator(adj, {static_cast<Vertex>(adj.size()), static_cast<Vertex>(AdjRow::npos)});
+        }
     };
+
     [[nodiscard]] Edges edges() const {
         return Edges(adj);
     }
@@ -348,7 +393,7 @@ private:
         return false;
     }
 
-    template <typename VertexCallback>
+    template<typename VertexCallback>
     static bool iterate(const AdjRow &A, const AdjRow &B, VertexCallback callback) {
         return iterate(A, [&](Vertex a) {
             return iterate(B, [&](Vertex b) {
@@ -358,12 +403,20 @@ private:
     }
 
     friend class FinderI;
+
     friend class Finder::NaiveP3;
+
     friend class Finder::CenterP3;
+
     friend class Finder::NaiveC4P4;
+
     friend class Finder::CenterC4P4;
-    template <int length> friend class detail::Center;
-    template <int length, bool with_cycles> friend class detail::CenterFinderImpl;
+
+    template<int length> friend
+    class detail::Center;
+
+    template<int length, bool with_cycles> friend
+    class detail::CenterFinderImpl;
 };
 
 

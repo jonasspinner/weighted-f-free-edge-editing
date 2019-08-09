@@ -85,24 +85,25 @@ public:
 private:
     void register_subgraph(const Subgraph &subgraph) {
         subgraph_count++;
-        subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
-            subgraph_count_per_vertex_pair[uv]++;
-            subgraph_count_per_vertex_pair_sum++;
-            return false;
-        });
+        for (VertexPair uv : subgraph.vertexPairs()) {
+            if (!forbidden[uv]) {
+                subgraph_count_per_vertex_pair[uv]++;
+                subgraph_count_per_vertex_pair_sum++;
+            }
+        }
     }
 
     void remove_subgraph(const Subgraph &subgraph) {
         subgraph_count--;
-        subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
-            subgraph_count_per_vertex_pair[uv]--;
-            subgraph_count_per_vertex_pair_sum--;
-            return false;
-        });
+        for (VertexPair uv : subgraph.vertexPairs()) {
+            if (!forbidden[uv]) {
+                subgraph_count_per_vertex_pair[uv]--;
+                subgraph_count_per_vertex_pair_sum--;
+            }
+        }
     }
 
     void verify() {
-        return;
 #ifndef NDEBUG
         VertexPairMap<size_t> debug_sg_per_vertex_pair(graph.size());
         size_t debug_sg_count = 0;
@@ -110,20 +111,20 @@ private:
         finder->find([&](Subgraph &&subgraph) {
             debug_sg_count++;
 
-            subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
-                debug_sg_per_vertex_pair[uv]++;
-                return false;
-            });
+            for (VertexPair uv : subgraph.vertexPairs()) {
+                if (!forbidden[uv]) {
+                    debug_sg_per_vertex_pair[uv]++;
+                }
+            }
             return false;
         });
 
         assert(debug_sg_count == subgraph_count);
 
-        graph.for_all_vertex_pairs([&](VertexPair uv) {
+        for (VertexPair uv : graph.vertexPairs()) {
             assert(debug_sg_per_vertex_pair[uv] == subgraph_count_per_vertex_pair[uv]);
             assert(!forbidden[uv] || debug_sg_per_vertex_pair[uv]);
-            return false;
-        });
+        }
 #endif
     }
 };

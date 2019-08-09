@@ -10,7 +10,7 @@
 
 #include "Graph.h"
 
-template <typename T>
+template<typename T>
 class VertexMap {
     using reference = typename std::vector<T>::reference;
     using const_reference = typename std::vector<T>::const_reference;
@@ -18,7 +18,8 @@ class VertexMap {
     Vertex n;
     std::vector<T> values;
 public:
-    explicit VertexMap(const Graph& graph) : n(graph.size()), values(n) {};
+    explicit VertexMap(const Graph &graph) : n(graph.size()), values(n) {};
+
     explicit VertexMap(Vertex n) : n(n), values(n) {}
 
     const_reference operator[](Vertex vertex) const {
@@ -31,7 +32,7 @@ public:
         return values[vertex];
     }
 
-    friend std::ostream&operator<<(std::ostream& os, const VertexMap& map) {
+    friend std::ostream &operator<<(std::ostream &os, const VertexMap &map) {
         os << "[";
         for (Vertex u = 0; u < map.n; ++u) {
             os << std::fixed << std::setw(8) << std::setprecision(4) << std::setfill(' ') << map[u] << " ";

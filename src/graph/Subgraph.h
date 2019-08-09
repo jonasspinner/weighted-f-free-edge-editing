@@ -27,9 +27,12 @@ public:
         const std::vector<Vertex> &vertices;
     public:
         explicit Vertices(const std::vector<Vertex> &vertices) : vertices(vertices) {}
+
         [[nodiscard]] auto begin() const { return vertices.begin(); }
+
         [[nodiscard]] auto end() const { return vertices.end(); }
     };
+
     [[nodiscard]] Vertices vertices() const {
         return Vertices(*this);
     }
@@ -40,24 +43,33 @@ public:
             const std::vector<Vertex> &vertices;
         public:
             Iterator(const std::vector<Vertex> &vertices, size_t i, size_t j) : vertices(vertices), i(i), j(j) {}
+
             VertexPair operator*() const { return {vertices[i], vertices[j]}; }
-            Iterator& operator++() {
+
+            Iterator &operator++() {
                 j++;
                 if (j == vertices.size()) {
-                    i++; j = i + 1;
+                    i++;
+                    j = i + 1;
                 }
                 return *this;
             }
+
             bool operator==(const Iterator &other) { return std::tie(i, j) == std::tie(other.i, other.j); }
+
             bool operator!=(const Iterator &other) { return !(*this == other); }
         };
+
         const std::vector<Vertex> &vertices;
     public:
         explicit VertexPairs(const std::vector<Vertex> &vertices) : vertices(vertices) {}
+
         [[nodiscard]] Iterator begin() const { return Iterator(vertices, 0, 1); }
+
         [[nodiscard]] Iterator end() const { return Iterator(vertices, vertices.size() - 1, vertices.size()); }
     };
-    [[nodiscard]] VertexPairs vertexPairs() {
+
+    [[nodiscard]] VertexPairs vertexPairs() const {
         return VertexPairs(*this);
     }
 
@@ -67,33 +79,44 @@ public:
             const std::vector<Vertex> &vertices;
             const VertexPairMap<bool> &marked;
         public:
-            Iterator(const std::vector<Vertex> &vertices, const VertexPairMap<bool> &marked, size_t i, size_t j) : vertices(vertices), marked(marked), i(i), j(j) {
+            Iterator(const std::vector<Vertex> &vertices, const VertexPairMap<bool> &marked, size_t i, size_t j)
+                    : vertices(vertices), marked(marked), i(i), j(j) {
                 const auto n = vertices.size();
                 if (i < n - 1 && marked[{vertices[i], vertices[j]}]) ++(*this);
             }
+
             VertexPair operator*() const { return {vertices[i], vertices[j]}; }
-            Iterator& operator++() {
+
+            Iterator &operator++() {
                 const auto n = vertices.size();
                 do {
                     j++;
                     if (j == n) {
-                        i++; j = i + 1;
+                        i++;
+                        j = i + 1;
                     }
                 } while (((i < n - 1) && marked[{vertices[i], vertices[j]}]));
                 if (i == n - 1) { j = n; }
                 return *this;
             }
+
             bool operator==(const Iterator &other) { return std::tie(i, j) == std::tie(other.i, other.j); }
+
             bool operator!=(const Iterator &other) { return !(*this == other); }
         };
+
         const std::vector<Vertex> &vertices;
         const VertexPairMap<bool> &marked;
     public:
-        UnmarkedVertexPairs(const std::vector<Vertex> &vertices, const VertexPairMap<bool> &marked) : vertices(vertices), marked(marked) {}
+        UnmarkedVertexPairs(const std::vector<Vertex> &vertices, const VertexPairMap<bool> &marked) : vertices(
+                vertices), marked(marked) {}
+
         [[nodiscard]] auto begin() const { return Iterator(vertices, marked, 0, 1); }
+
         [[nodiscard]] auto end() const { return Iterator(vertices, marked, vertices.size() - 1, vertices.size()); }
     };
-    [[nodiscard]] UnmarkedVertexPairs unmarkedVertexPairs(const VertexPairMap<bool> &marked) {
+
+    [[nodiscard]] UnmarkedVertexPairs unmarkedVertexPairs(const VertexPairMap<bool> &marked) const {
         return UnmarkedVertexPairs(*this, marked);
     }
 
@@ -140,7 +163,12 @@ void verify(const Subgraph &subgraph, const Graph &graph) {
 
     const Subgraph &S = subgraph;
 
-    assert(S[0] != S[1]); assert(S[0] != S[2]); assert(S[0] != S[3]); assert(S[1] != S[2]); assert(S[1] != S[3]); assert(S[2] != S[3]);
+    assert(S[0] != S[1]);
+    assert(S[0] != S[2]);
+    assert(S[0] != S[3]);
+    assert(S[1] != S[2]);
+    assert(S[1] != S[3]);
+    assert(S[2] != S[3]);
 
     bool is_one = false;
     std::vector<size_t> map = {0, 1, 2, 3};
@@ -154,21 +182,20 @@ void verify(const Subgraph &subgraph, const Graph &graph) {
                 !graph.has_edge({S[j], S[l]}) &&
                  graph.has_edge({S[k], S[l]});
         bool is_cycle =
-                graph.has_edge({S[i], S[j]}) &&
+                 graph.has_edge({S[i], S[j]}) &&
                 !graph.has_edge({S[i], S[k]}) &&
-                graph.has_edge({S[i], S[l]}) &&
-                graph.has_edge({S[j], S[k]}) &&
+                 graph.has_edge({S[i], S[l]}) &&
+                 graph.has_edge({S[j], S[k]}) &&
                 !graph.has_edge({S[j], S[l]}) &&
-                graph.has_edge({S[k], S[l]});
+                 graph.has_edge({S[k], S[l]});
         is_one |= is_path || is_cycle;
     } while (std::next_permutation(map.begin(), map.end()));
 
     if (!is_one) {
         std::cout << subgraph << " E = {";
-        subgraph.for_all_vertex_pairs([&](VertexPair uv) {
+        for (VertexPair uv : subgraph.vertexPairs()) {
             if (graph.has_edge(uv)) std::cout << " " << uv;
-            return false;
-        });
+        }
         std::cout << " }\n";
     }
     assert(is_one);

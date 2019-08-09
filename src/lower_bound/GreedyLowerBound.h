@@ -52,21 +52,21 @@ namespace LowerBound {
                       [](const auto &lhs, const auto &rhs) { return lhs.first > rhs.first; });
 
             Cost bound_size = 0;
-            VertexPairMap<bool> is_in_bound(graph, false);
+            VertexPairMap<bool> is_in_bound(graph.size(), false);
 
             // Insert forbidden subgraphs with decreasing minimum edit cost into the bound
             // Only insert a subgraph if it does not share an editable vertex pair with a subgraph already in the bound
             for (const auto&[cost, subgraph] : subgraphs) {
-                bool touches_bound = subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
-                    return is_in_bound[uv];
-                });
+                bool touches_bound = false;
+                for (VertexPair uv : subgraph.vertexPairs()) {
+                    if (!forbidden[uv] && is_in_bound[uv]) touches_bound = true;
+                }
 
                 if (!touches_bound) {
                     bound_size += cost;
-                    subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
-                        is_in_bound[uv] = true;
-                        return false;
-                    });
+                    for (VertexPair uv : subgraph.vertexPairs()) {
+                        if (!forbidden[uv]) is_in_bound[uv] = true;
+                    }
                 }
             }
 

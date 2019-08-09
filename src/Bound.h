@@ -17,23 +17,22 @@ class Bound {
     Graph graph;
 
 
-    [[nodiscard]] const Graph& bound() const {
+    [[nodiscard]] const Graph &bound() const {
         return graph;
     }
 
     void assert_valid() const {
         size_t n_edges = 0;
-        for (const auto& subgraph : subgraphs) {
-            subgraph.for_all_vertex_pairs([&](VertexPair uv) {
+        for (const auto &subgraph : subgraphs) {
+            for (VertexPair uv : subgraph.vertexPairs()) {
                 assert(graph.has_edge(uv));
                 n_edges++;
-                return false;
-            });
+            }
         }
         size_t n_edges_graph = 0;
-        graph.for_all_vertices([&](Vertex u) {
+        for (Vertex u : graph.vertices()) {
             n_edges_graph += graph.degree(u);
-        });
+        }
         n_edges_graph /= 2;
         assert(n_edges == n_edges_graph);
     }

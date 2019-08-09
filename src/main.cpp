@@ -155,9 +155,11 @@ int main() {
     }
 
 
-    FinderTests().run();
-    GraphTests().run();
-    SubgraphTests().run();
+    for (int seed = 0; seed < 1; ++seed) {
+        FinderTests(seed).run();
+        GraphTests(seed).run();
+        SubgraphTests(seed).run();
+    }
 
 
     const Graph& G = instance.graph;
