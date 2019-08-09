@@ -22,7 +22,9 @@ namespace Finder {
                     return graph.for_all_vertices([&](Vertex w) {
                         if (v >= w) return false;
                         size_t n_edges = graph.has_edge({u, v}) + graph.has_edge({v, w}) + graph.has_edge({w, u});
-                        if (n_edges == 2) return callback(Subgraph{u, v, w});
+                        if (n_edges == 2) {
+                            return callback(Subgraph{u, v, w});
+                        }
                         return false;
                     });
                 });

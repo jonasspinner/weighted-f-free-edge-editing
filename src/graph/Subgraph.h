@@ -23,6 +23,32 @@ public:
 #endif
     }
 
+    class VertexPairs {
+        class Iterator {
+            size_t i, j;
+            const std::vector<Vertex> &vertices;
+        public:
+            Iterator(const std::vector<Vertex> &vertices, size_t i, size_t j) : vertices(vertices), i(i), j(j) {}
+            VertexPair operator*() const { return {vertices[i], vertices[j]}; }
+            Iterator& operator++() {
+                j++;
+                if (j == vertices.size()) {
+                    i++; j = i + 1;
+                }
+                return *this;
+            }
+        };
+        const std::vector<Vertex> &vertices;
+    public:
+        explicit VertexPairs(const std::vector<Vertex> &vertices) : vertices(vertices) {}
+        [[nodiscard]] Iterator begin() const { return Iterator(vertices, 0, 1); }
+        [[nodiscard]] Iterator end() const { return Iterator(vertices, vertices.size(), vertices.size() + 1); }
+    };
+    VertexPairs vertexPairs() {
+        return VertexPairs(*this);
+    }
+
+
     template<typename VertexPairCallback>
     bool for_all_vertex_pairs(VertexPairCallback callback) const {
         for (size_t i = 0; i < size(); ++i) {
@@ -37,6 +63,8 @@ public:
     bool for_all_unmarked_vertex_pairs(const VertexPairMap<bool> &marked, VertexPairCallback callback) const {
         return for_all_vertex_pairs([&](VertexPair uv) {
             return !marked[uv] && callback(uv);
+            // if (!marked[uv]) return callback(uv);
+            //return false;
         });
     }
 

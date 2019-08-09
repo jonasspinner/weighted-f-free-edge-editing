@@ -13,64 +13,77 @@ namespace Finder {
     public:
         explicit NaiveC4P4(const Graph& graph) : FinderI(graph) {}
 
-        bool find(SubgraphCallback callback) override {
-            /* w?x
-             * | |
-             * u-v
-             */
-            /*
-            return graph.for_all_vertices([&](Vertex u) {
-                return graph.for_all_vertices([&](Vertex v) {
-                    if ((u == v) || !graph.has_edge({u, v})) return false;
-                    return graph.for_all_vertices([&](Vertex w) {
-                        if ((u == w) || (v == w) || !graph.has_edge({u, w}) || graph.has_edge({v, w})) return false;
-                        return graph.for_all_vertices([&](Vertex x) {
-                            if ((u == x) || (v == x) || (w == x) || graph.has_edge({u, x}) || !graph.has_edge({v, x})) return false;
-                            if (graph.has_edge({w, x}) && (u >= v || u >= w || u >= x)) return false;
-                            return callback(Subgraph({u, v, w, x}));
-                        });
-                    });
-                });
-            });*/
+        template <typename H, typename I>
+        bool find(const SubgraphCallback& callback, H valid_edge, I valid_non_edge) {
 
-            /* x-w
-             * ? |
-             * u-v */
-            return graph.for_all_vertices([&](Vertex u) {
-                return graph.for_neighbors_of(u, [&](Vertex v) {
-                    if (u >= v) return false; // TODO: not specified in algorithm
-                    return graph.for_neighbors_of(v, [&](Vertex w) {
-                        if (u == w || graph.has_edge({u, w})) return false;
-                        return graph.for_neighbors_of(w, [&](Vertex x) {
-                            if (v == x || graph.has_edge({v, x})) return false;
-                            if (!graph.has_edge({u, x})) {
-                                return callback(Subgraph{u, v, w, x});
-                            } else if (graph.has_edge({u, x}) && u < v && u < w && u < x && v < x) {
-                                return callback(Subgraph{u, v, w, x});
+            for (Vertex u : graph.vertices()) {
+                for (Vertex v : graph.vertices()) {
+                    for (Vertex w : graph.vertices()) {
+                        for (Vertex x : graph.vertices()) {
+                            if (u != v && u != w && u != x && v != w && v != x && w != x) {
+                                /* u-v-w-x */
+                                if (valid_edge({u, v}) && valid_non_edge({u, w}) && valid_edge({v, w}) && valid_non_edge({v, x}) && valid_edge({w, x})) {
+                                    if (valid_non_edge({u, x})) {
+                                        // P_4
+                                        if (u < x) // p_1 < p_k
+                                            if (callback(Subgraph({u, v, w, x}))) return true;
+                                    } else if (valid_edge({u, x})) {
+                                        // C_4
+                                        if (u < v && u < w && u < x) // p_1 is smallest
+                                            if (v < x) // p_2 < p_k
+                                                if (callback(Subgraph({u, v, w, x}))) return true;
+                                    }
+                                }
                             }
-                            //if (u > x) return false;
-                            //if (graph.has_edge({w, x}) && (u > w || w > x)) return false;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
 
-                            // if (graph.has_edge({w, x}) && (u > v || v > w || v > x)) return false;
-                            return false;
-                        });
-                    });
-                });
-            });
+        bool find(SubgraphCallback callback) override {
+            auto valid_edge = [&](VertexPair uv) { return graph.has_edge(uv); };
+            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv); };
+
+            return find(callback, valid_edge, valid_non_edge);
         }
 
         bool find(const Graph &forbidden, SubgraphCallback callback) override {
-            return find([&](Subgraph&& subgraph) {
-                bool touched = subgraph.for_all_vertex_pairs([&](VertexPair uv) {
-                    return forbidden.has_edge(uv);
-                });
-                return !touched && callback(std::move(subgraph));
-            });
+            auto valid_edge = [&](VertexPair uv) { return graph.has_edge(uv) && !forbidden.has_edge(uv); };
+            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv) && !forbidden.has_edge(uv); };
+
+            return find(callback, valid_edge, valid_non_edge);
         }
 
-        bool find_near(VertexPair uv, SubgraphCallback callback) override { assert(false); return false; };
+        template <typename H, typename I>
+        bool find_near(VertexPair uv, const SubgraphCallback& callback, H valid_edge, I valid_non_edge) {
 
-        bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override { assert(false); return false; }
+            return find([&](Subgraph &&subgraph) {
+                const auto& S = subgraph;
+                Vertex u = S[0], v = S[1], w = S[2], x = S[3];
+
+                if ((uv.u == u || uv.u == v || uv.u == w || uv.u == x) && (uv.v == u || uv.v == v || uv.v == w || uv.v == x)) {
+                    return callback(std::move(subgraph));
+                } else {
+                    return false;
+                }
+            }, valid_edge, valid_non_edge);
+        }
+
+        bool find_near(VertexPair uv, SubgraphCallback callback) override {
+            auto valid_edge = [&](VertexPair uv) { return graph.has_edge(uv); };
+            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv); };
+
+            return find_near(uv, callback, valid_edge, valid_non_edge);
+        };
+
+        bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override {
+            auto valid_edge = [&](VertexPair uv) { return graph.has_edge(uv) && !forbidden.has_edge(uv); };
+            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv) && !forbidden.has_edge(uv); };
+
+            return find_near(uv, callback, valid_edge, valid_non_edge);
+        }
 
     };
 }

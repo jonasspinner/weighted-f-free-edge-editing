@@ -31,7 +31,6 @@ namespace detail {
         static_assert(k >= 4);
 
         // TODO: not 100% sure on implementation details
-        // static_assert(!with_cycles);
 
         template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
         static bool find(const Graph& graph, SubgraphCallback callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
@@ -48,7 +47,19 @@ namespace detail {
                     for (int i = 0; i < k - 5; ++i) { B &= non_neighbors(P[i]); }
                     auto C = graph.all_vertices(); // non adjacent to P
                     for (int i = 0; i < k - 4; ++i) { C &= non_neighbors(P[i]); }
-
+#ifndef NDEBUG
+                    for (Vertex a : Graph::vertices(A)) {
+                        assert(valid_edge({a, P[0]}));
+                        for (int i = 1; i < k-4; ++i) assert(valid_non_edge({a, P[i]}));
+                    }
+                    for (Vertex b : Graph::vertices(B)) {
+                        assert(valid_edge({b, P[k-5]}));
+                        for (int i = 0; i < k-5; ++i) assert(valid_non_edge({b, P[i]}));
+                    }
+                    for (Vertex c : Graph::vertices(C)) {
+                        for (Vertex p : P) assert(valid_non_edge({c, p}));
+                    }
+#endif
                     // for each (a, b) \in AxB
                     return Graph::iterate(A, B, [&](Vertex a, Vertex b) {
                         assert(a != b);
@@ -111,10 +122,19 @@ namespace detail {
                     assert(P.size() == k - 2);
 
                     auto A = neighbors(P[0]); // adjacent to p_1 and non adjacent to P - {p_1}
-                    for (int i = 1; i < k - 2; ++i) { A &= non_neighbors(P[i]); A[P[i]] = false; }
+                    for (int i = 1; i < k - 2; ++i) { A &= non_neighbors(P[i]); }
                     auto B = neighbors(P[k - 3]); // adjacent to p_{k-2} and non adjacent to P - {p_{k-2}}
-                    for (int i = 0; i < k - 3; ++i) { B &= non_neighbors(P[i]); B[P[i]] = false; }
-
+                    for (int i = 0; i < k - 3; ++i) { B &= non_neighbors(P[i]); }
+#ifndef NDEBUG
+                    for (Vertex a : Graph::vertices(A)) {
+                        assert(valid_edge({a, P[0]}));
+                        for (int i = 1; i < k-2; ++i) assert(valid_non_edge({a, P[i]}));
+                    }
+                    for (Vertex b : Graph::vertices(B)) {
+                        assert(valid_edge({b, P[k-3]}));
+                        for (int i = 0; i < k-3; ++i) assert(valid_non_edge({b, P[i]}));
+                    }
+#endif
                     // for each (a, b) \in AxB
                     return Graph::iterate(A, B, [&](Vertex a, Vertex b) {
                         assert(a != b);
@@ -170,22 +190,22 @@ namespace detail {
         static bool find(const Graph& graph, SubgraphCallback callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
 
             /** P_3: <x, y, z> **/
-            return graph.for_all_vertices([&](Vertex x) {
+            for (Vertex x : graph.vertices()) {
                 // V - N(x) - {x}
-                auto y_candidates = non_neighbors(x); y_candidates[x] = false;
+                auto y_candidates = non_neighbors(x);
 
-                return Graph::iterate(y_candidates, [&](Vertex y) {
-                    return graph.for_neighbors_of(y, [&](Vertex z) {
+                for (Vertex y : Graph::vertices(y_candidates)) {
+                    for (Vertex z : graph.neighbors(y)) {
                         assert(y != z); assert(y != x); assert(z != x);
 
                         if (graph.has_edge({x, z}) && y < x) {
                             assert(valid_edge({y, z})); assert(valid_non_edge({y, x})); assert(valid_edge({z, x}));
-                            return callback(Subgraph{y, z, x});
+                            if (callback(Subgraph{y, z, x})) return true;
                         }
-                        return false;
-                    });
-                });
-            });
+                    }
+                }
+            }
+            return false;
         }
     };
 
@@ -195,17 +215,17 @@ namespace detail {
         template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
         static bool find(const Graph& graph, SubgraphCallback callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
             /** P_2: <u, v> **/
-            return graph.for_all_vertices([&](Vertex u) {
-                return graph.for_all_vertices([&](Vertex v) {
-                    if (u >= v) return false;
+            for (Vertex u : graph.vertices()) {
+                for (Vertex v : graph.neighbors(u)) {
+                    if (u >= v) continue;
                     assert(u != v);
 
                     if (valid_edge({u, v})) {
-                        return callback(Subgraph{u, v});
+                        if (callback(Subgraph{u, v})) return true;
                     }
-                    return false;
-                });
-            });
+                }
+            }
+            return false;
         }
     };
 
@@ -215,9 +235,10 @@ namespace detail {
         template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
         static bool find(const Graph& graph, SubgraphCallback callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
             /** P_1: <u> **/
-            return graph.for_all_vertices([&](Vertex u) {
-                return callback(Subgraph{u});
-            });
+            for (Vertex u : graph.vertices()) {
+                if (callback(Subgraph{u})) return true;
+            }
+            return false;
         }
     };
 
@@ -229,18 +250,22 @@ namespace detail {
         explicit Center(const Graph &graph) : FinderI(graph) {}
 
         bool find(SubgraphCallback callback) override {
-            auto neighbors = [&](Vertex u) { return graph.adj[u]; };
-            auto non_neighbors = [&](Vertex u) { return ~graph.adj[u]; };
-            auto valid_edge = [&](VertexPair uv) { return graph.has_edge(uv); };
+
+            auto neighbors =      [&](Vertex u)      { return  graph.adj[u]; };
+            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.adj[u]; result[u] = false; return result; };
+            auto valid_edge =     [&](VertexPair uv) { return  graph.has_edge(uv); };
             auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv); };
+
             return detail::CenterFinderImpl<length, (length > 3)>::find(graph, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
         }
 
         bool find(const Graph& forbidden, SubgraphCallback callback) override {
-            auto neighbors = [&](Vertex u) { return graph.adj[u] & ~forbidden.adj[u]; };
-            auto non_neighbors = [&](Vertex u) { return ~graph.adj[u] & ~forbidden.adj[u]; };
-            auto valid_edge = [&](VertexPair uv) { return graph.has_edge(uv) && !forbidden.has_edge(uv); };
+
+            auto neighbors =      [&](Vertex u)      { return  graph.adj[u] & ~forbidden.adj[u]; };
+            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.adj[u] & ~forbidden.adj[u]; result[u] = false; return result; };
+            auto valid_edge =     [&](VertexPair uv) { return  graph.has_edge(uv) && !forbidden.has_edge(uv); };
             auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv) && !forbidden.has_edge(uv); };
+
             return detail::CenterFinderImpl<length, (length > 3)>::find(graph, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
         }
 

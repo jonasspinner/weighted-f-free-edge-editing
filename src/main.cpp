@@ -16,6 +16,7 @@
 #include "selector/FirstEditable.h"
 #include "selector/LeastWeight.h"
 #include "tests/FinderTests.h"
+#include "tests/GraphTests.h"
 
 
 class Solution {
@@ -155,7 +156,30 @@ int main() {
 
     FinderTests().run();
 
+    GraphTests().run();
 
+
+    const Graph& G = instance.graph;
+
+    std::cout << "vertices:";
+    for (Vertex u : G.vertices())
+        std::cout << " " << u;
+    std::cout << "\n";
+
+    std::cout << "vertex pairs:";
+    for (VertexPair uv : G.vertexPairs())
+        std::cout << " " << uv;
+    std::cout << "\n";
+
+    std::cout << "edges:";
+    for (VertexPair uv : G.edges())
+        std::cout << " " << uv;
+    std::cout << "\n";
+
+    std::cout << "neighbors(1):";
+    for (Vertex u : G.neighbors(1))
+        std::cout << " " << u;
+    std::cout << "\n";
 
     /*
     auto c = std::make_unique<Finder::CenterP3>(G);
