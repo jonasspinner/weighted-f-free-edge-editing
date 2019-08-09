@@ -123,6 +123,124 @@ public:
         adj[v][u] = false;
     }
 
+
+    class Vertices {
+        class Iterator {
+            Vertex v;
+        public:
+            explicit Iterator(Vertex start) : v(start) {}
+            Vertex operator*() const { return v; }
+            Iterator &operator++() {
+                ++v;
+                return *this;
+            }
+            bool operator==(const Iterator& other) { return v == other.v; }
+            bool operator!=(const Iterator& other) { return !(*this == other); }
+        };
+        Vertex n;
+    public:
+        explicit Vertices(Vertex n) : n(n) {}
+        [[nodiscard]] Iterator begin() const { return Iterator(0); }
+        [[nodiscard]] Iterator end() const { return Iterator(n); }
+    };
+    [[nodiscard]] Vertices vertices() const {
+        return Vertices(n);
+    }
+
+
+    class RowVertices {
+        class Iterator {
+            Vertex u;
+            const AdjRow &row;
+        public:
+            explicit Iterator(const AdjRow &row) : row(row) {
+                u = row.find_first();
+            }
+            Iterator(const AdjRow &row, Vertex start) : row(row), u(start) {}
+            Vertex operator*() const { return u; }
+            Iterator &operator++() {
+                u = row.find_next(u);
+                return *this;
+            }
+            bool operator==(const Iterator& other) { return u == other.u; }
+            bool operator!=(const Iterator& other) { return !(*this == other); }
+        };
+        const AdjRow &row;
+    public:
+        explicit RowVertices(const AdjRow &row) : row(row) {}
+        [[nodiscard]] Iterator begin() const { return Iterator(row); }
+        [[nodiscard]] Iterator end() const { return Iterator(row, static_cast<Vertex>(AdjRow::npos)); }
+    };
+    static RowVertices vertices(const AdjRow &row) {
+        return RowVertices(row);
+    }
+
+    [[nodiscard]] RowVertices neighbors(Vertex u) const {
+        return RowVertices(adj[u]);
+    }
+
+
+    class VertexPairs {
+        class Iterator {
+            VertexPair uv;
+            Vertex n;
+        public:
+            Iterator(VertexPair start, Vertex n) : uv(start), n(n) { }
+            VertexPair operator*() const { return uv; }
+            Iterator &operator++() {
+                ++uv.v;
+                if (uv.v == n) { ++uv.u; uv.v = uv.u + 1; }
+                return *this;
+            }
+            bool operator==(const Iterator& other) { return uv == other.uv; }
+            bool operator!=(const Iterator& other) { return !(*this == other); }
+        };
+        Vertex n;
+    public:
+        explicit VertexPairs(Vertex n) : n(n) {}
+        [[nodiscard]] Iterator begin() const { return Iterator({0, 1}, n); }
+        [[nodiscard]] Iterator end() const { return Iterator({n - 1, n}, n); }
+    };
+    [[nodiscard]] VertexPairs vertexPairs() const {
+        return VertexPairs(n);
+    }
+
+
+    class Edges {
+        class Iterator {
+            const AdjMatrix &adj;
+            VertexPair uv;
+        public:
+            Iterator(const AdjMatrix &adj, VertexPair start) : adj(adj), uv(start) {}
+            explicit Iterator(const AdjMatrix &adj) : adj(adj), uv({0, 1}) {
+                while (adj[uv.u].count() == 0) uv.u++;
+                uv.v = adj[uv.u].find_first();
+            }
+            VertexPair operator*() const { return uv; }
+            Iterator &operator++() {
+                uv.v = adj[uv.u].find_next(uv.v);
+                while (uv.v >= adj.size() && uv.u < adj.size()) {
+                    ++uv.u;
+                    if (uv.u < adj.size())
+                        uv.v = adj[uv.u].find_next(uv.u);
+                }
+                return *this;
+            }
+            bool operator==(const Iterator& other) { return uv == other.uv; }
+            bool operator!=(const Iterator& other) { return !(*this == other); }
+
+        };
+        const AdjMatrix& adj;
+    public:
+        explicit Edges(const AdjMatrix& adj) : adj(adj) {}
+        [[nodiscard]] Iterator begin() const { return Iterator(adj); }
+        [[nodiscard]] Iterator end() const { return Iterator(adj, {static_cast<Vertex>(adj.size()), static_cast<Vertex>(AdjRow::npos)}); }
+    };
+    [[nodiscard]] Edges edges() const {
+        return Edges(adj);
+    }
+
+
     /**
      * Iterate over all neighbors of u.
      * If the callback returns true, the iteration is stopped early.

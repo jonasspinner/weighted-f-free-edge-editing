@@ -23,15 +23,33 @@ void expect(const std::string &name, T expected, T actual) {
 template <typename T>
 void expect(const std::string &name, std::vector<T> expected, std::vector<T> actual) {
     if (expected == actual) {
-        std::cout << "Test [" << name << "] succeeded\n";
+        std::cout << "Test [" << name << "] succeeded [" << expected.size() << "]" << std::endl;
     } else {
         std::cerr << "Test [" << name << "] failed\n\tExpected [" << expected.size() << "] {";
         for (const T &t: expected) std::cerr << " " << t;
         std::cerr <<" }\n\tGot      [" << actual.size() << "] {";
         for (const T &t: actual) std::cerr << " " << t;
-        std::cerr << " }\n";
+        std::cerr << " }" << std::endl;
     }
 }
+
+template <typename T>
+void expect(const std::string &name, std::vector<std::vector<T>> expected, std::vector<std::vector<T>> actual) {
+    if (expected == actual) {
+        std::cout << "Test [" << name << "] succeeded [" << expected.size() << "]" << std::endl;
+    } else {
+        std::cerr << "Test [" << name << "] failed\n\tExpected [" << expected.size() << "] {";
+        for (auto l : expected)
+            for (auto t : l)
+                std::cerr << " " << t;
+        std::cerr <<" }\n\tGot      [" << actual.size() << "] {";
+        for (auto l : actual)
+            for (auto t : l)
+                std::cerr << " " << t;
+        std::cerr << " }" << std::endl;
+    }
+}
+
 
 template <typename T>
 std::vector<Subgraph> normalize(std::vector<std::vector<T>> list) {
