@@ -18,8 +18,7 @@ public:
     void vertices_and_for_all_vertices_are_consistent() {
         Graph G = random_graph(10, 40, gen);
 
-        std::vector<Vertex> a;
-        std::vector<Vertex> b;
+        std::vector<Vertex> a, b;
 
         for (Vertex u : G.vertices()) a.push_back(u);
 
@@ -34,8 +33,7 @@ public:
     void edges_and_for_all_edges_are_consistent() {
         Graph G = random_graph(10, 40, gen);
 
-        std::vector<VertexPair> a;
-        std::vector<VertexPair> b;
+        std::vector<VertexPair> a, b;
 
         for (VertexPair uv : G.edges()) a.push_back(uv);
 
@@ -47,11 +45,10 @@ public:
         expect("edges() and for_all_edges() produce the same output", a, b);
     }
 
-    void vertex_pairs_and_for_all_vertex_pairs_are_consistent() {
+    void vertexPairs_and_for_all_vertex_pairs_are_consistent() {
         Graph G = random_graph(10, 40, gen);
 
-        std::vector<VertexPair> a;
-        std::vector<VertexPair> b;
+        std::vector<VertexPair> a, b;
 
         for (VertexPair uv : G.vertexPairs()) a.push_back(uv);
 
@@ -66,8 +63,7 @@ public:
     void neighbors_and_for_all_neighbors_are_consistent() {
         Graph G = random_graph(10, 40, gen);
 
-        std::vector<std::vector<Vertex>> a(10);
-        std::vector<std::vector<Vertex>> b(10);
+        std::vector<std::vector<Vertex>> a(10), b(10);
 
         for (Vertex u : G.vertices())
             for (Vertex v : G.neighbors(u))
@@ -85,9 +81,11 @@ public:
     }
 
     void run() {
+        std::cout << "\nGraphTests"
+                     "\n----------" << std::endl;
         vertices_and_for_all_vertices_are_consistent();
         edges_and_for_all_edges_are_consistent();
-        vertex_pairs_and_for_all_vertex_pairs_are_consistent();
+        vertexPairs_and_for_all_vertex_pairs_are_consistent();
         neighbors_and_for_all_neighbors_are_consistent();
     }
 };

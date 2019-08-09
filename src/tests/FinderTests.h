@@ -167,6 +167,9 @@ public:
     }
 
     void run() {
+        std::cout << "\nFinderTests"
+                     "\n-----------" << std::endl;
+
         Finder_finds_C4<Finder::NaiveC4P4>("NaiveC4P4");
         Finder_finds_C4<Finder::CenterC4P4>("CenterC4P4");
         Finder_finds_C4<CenterRecC4P4>("CenterRecC4P4");

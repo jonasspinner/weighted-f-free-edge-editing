@@ -17,6 +17,7 @@
 #include "selector/LeastWeight.h"
 #include "tests/FinderTests.h"
 #include "tests/GraphTests.h"
+#include "tests/SubgraphTests.h"
 
 
 class Solution {
@@ -155,8 +156,8 @@ int main() {
 
 
     FinderTests().run();
-
     GraphTests().run();
+    SubgraphTests().run();
 
 
     const Graph& G = instance.graph;

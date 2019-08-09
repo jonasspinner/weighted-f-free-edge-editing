@@ -87,5 +87,19 @@ Graph random_graph(int size, int n_edges, std::mt19937 &gen) {
     return G;
 }
 
+Subgraph random_subgraph(int size, int graph_size, std::mt19937 &gen) {
+    std::uniform_int_distribution<Vertex> dist(0, graph_size - 1);
+    std::vector<bool> marked(graph_size);
+
+    Subgraph subgraph{};
+    while (subgraph.size() < size) {
+        Vertex u = dist(gen);
+        while (marked[u]) u = u + 1 % graph_size;
+        subgraph.push_back(u);
+        marked[u] = true;
+    }
+    return subgraph;
+}
+
 
 #endif //WEIGHTED_F_FREE_EDGE_EDITING_TESTS_H
