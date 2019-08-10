@@ -19,7 +19,9 @@ protected:
     const Graph &graph;
 
 public:
-    explicit FinderI(const Graph &graph) : graph(graph) {}
+    explicit FinderI(const Graph &graph_ref) : graph(graph_ref) {}
+
+    virtual ~FinderI() = default;
 
     /**
      * Find all forbidden subgraphs. When a subgraph is found, callback(subgraph) is called.

@@ -14,7 +14,7 @@ public:
 
     Subgraph(std::initializer_list<Vertex> list) : std::vector<Vertex>(list) {
 #ifndef NDEBUG
-        int n = 0;
+        unsigned n = 0;
         for (auto x : list)
             for (auto y : list)
                 n += (x == y);
@@ -24,13 +24,13 @@ public:
     }
 
     class Vertices {
-        const std::vector<Vertex> &vertices;
+        const std::vector<Vertex> &m_vertices;
     public:
-        explicit Vertices(const std::vector<Vertex> &vertices) : vertices(vertices) {}
+        explicit Vertices(const std::vector<Vertex> &vertices) : m_vertices(vertices) {}
 
-        [[nodiscard]] auto begin() const { return vertices.begin(); }
+        [[nodiscard]] auto begin() const { return m_vertices.begin(); }
 
-        [[nodiscard]] auto end() const { return vertices.end(); }
+        [[nodiscard]] auto end() const { return m_vertices.end(); }
     };
 
     [[nodiscard]] Vertices vertices() const {
@@ -39,34 +39,41 @@ public:
 
     class VertexPairs {
         class Iterator {
+            const std::vector<Vertex> &m_vertices;
             size_t i, j;
-            const std::vector<Vertex> &vertices;
         public:
-            Iterator(const std::vector<Vertex> &vertices, size_t i, size_t j) : vertices(vertices), i(i), j(j) {}
+            Iterator(const std::vector<Vertex> &vertices, size_t i_start, size_t j_start) : m_vertices(vertices),
+                                                                                            i(i_start), j(j_start) {}
 
-            VertexPair operator*() const { return {vertices[i], vertices[j]}; }
+            VertexPair operator*() const { return {m_vertices[i], m_vertices[j]}; }
 
             Iterator &operator++() {
                 j++;
-                if (j == vertices.size()) {
+                if (j == m_vertices.size()) {
                     i++;
                     j = i + 1;
                 }
                 return *this;
             }
 
-            bool operator==(const Iterator &other) { return std::tie(i, j) == std::tie(other.i, other.j); }
+            bool operator==(const Iterator &other) const { return std::tie(i, j) == std::tie(other.i, other.j); }
 
-            bool operator!=(const Iterator &other) { return !(*this == other); }
+            bool operator!=(const Iterator &other) const { return !(*this == other); }
         };
 
-        const std::vector<Vertex> &vertices;
+        const std::vector<Vertex> &m_vertices;
     public:
-        explicit VertexPairs(const std::vector<Vertex> &vertices) : vertices(vertices) {}
+        explicit VertexPairs(const std::vector<Vertex> &vertices) : m_vertices(vertices) {}
 
-        [[nodiscard]] Iterator begin() const { return Iterator(vertices, 0, 1); }
+        [[nodiscard]] Iterator begin() const { return Iterator(m_vertices, 0, 1); }
 
-        [[nodiscard]] Iterator end() const { return Iterator(vertices, vertices.size() - 1, vertices.size()); }
+        [[nodiscard]] Iterator end() const {
+            if (!m_vertices.empty()) {
+                return Iterator(m_vertices, m_vertices.size() - 1, m_vertices.size());
+            } else {
+                return Iterator(m_vertices, 0, 1);
+            }
+        }
     };
 
     [[nodiscard]] VertexPairs vertexPairs() const {
@@ -75,45 +82,45 @@ public:
 
     class UnmarkedVertexPairs {
         class Iterator {
+            const std::vector<Vertex> &m_vertices;
+            const VertexPairMap<bool> &m_marked;
             size_t i, j;
-            const std::vector<Vertex> &vertices;
-            const VertexPairMap<bool> &marked;
         public:
-            Iterator(const std::vector<Vertex> &vertices, const VertexPairMap<bool> &marked, size_t i, size_t j)
-                    : vertices(vertices), marked(marked), i(i), j(j) {
-                const auto n = vertices.size();
-                if (i < n - 1 && marked[{vertices[i], vertices[j]}]) ++(*this);
+            Iterator(const std::vector<Vertex> &vertices, const VertexPairMap<bool> &marked, size_t i_start, size_t j_start)
+                    : m_vertices(vertices), m_marked(marked), i(i_start), j(j_start) {
+                const auto n = m_vertices.size();
+                if (i < n - 1 && marked[{m_vertices[i], m_vertices[j]}]) ++(*this);
             }
 
-            VertexPair operator*() const { return {vertices[i], vertices[j]}; }
+            VertexPair operator*() const { return {m_vertices[i], m_vertices[j]}; }
 
             Iterator &operator++() {
-                const auto n = vertices.size();
+                const auto n = m_vertices.size();
                 do {
                     j++;
                     if (j == n) {
                         i++;
                         j = i + 1;
                     }
-                } while (((i < n - 1) && marked[{vertices[i], vertices[j]}]));
+                } while (((i < n - 1) && m_marked[{m_vertices[i], m_vertices[j]}]));
                 if (i == n - 1) { j = n; }
                 return *this;
             }
 
-            bool operator==(const Iterator &other) { return std::tie(i, j) == std::tie(other.i, other.j); }
+            bool operator==(const Iterator &other) const { return std::tie(i, j) == std::tie(other.i, other.j); }
 
-            bool operator!=(const Iterator &other) { return !(*this == other); }
+            bool operator!=(const Iterator &other) const { return !(*this == other); }
         };
 
-        const std::vector<Vertex> &vertices;
-        const VertexPairMap<bool> &marked;
+        const std::vector<Vertex> &m_vertices;
+        const VertexPairMap<bool> &m_marked;
     public:
-        UnmarkedVertexPairs(const std::vector<Vertex> &vertices, const VertexPairMap<bool> &marked) : vertices(
-                vertices), marked(marked) {}
+        UnmarkedVertexPairs(const std::vector<Vertex> &vertices, const VertexPairMap<bool> &marked) :
+        m_vertices(vertices), m_marked(marked) {}
 
-        [[nodiscard]] auto begin() const { return Iterator(vertices, marked, 0, 1); }
+        [[nodiscard]] auto begin() const { return Iterator(m_vertices, m_marked, 0, 1); }
 
-        [[nodiscard]] auto end() const { return Iterator(vertices, marked, vertices.size() - 1, vertices.size()); }
+        [[nodiscard]] auto end() const { return Iterator(m_vertices, m_marked, m_vertices.size() - 1, m_vertices.size()); }
     };
 
     [[nodiscard]] UnmarkedVertexPairs unmarkedVertexPairs(const VertexPairMap<bool> &marked) const {

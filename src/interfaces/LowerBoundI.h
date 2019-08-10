@@ -11,7 +11,7 @@
 
 class LowerBoundI : public ConsumerI {
 public:
-    explicit LowerBoundI(std::shared_ptr<FinderI> finder) : ConsumerI(std::move(finder)) {}
+    explicit LowerBoundI(std::shared_ptr<FinderI> finder_ptr) : ConsumerI(std::move(finder_ptr)) {}
 
     virtual Cost result(StateI &state, Cost k) = 0;
 };

@@ -11,7 +11,7 @@
 namespace Finder {
     class NaiveC4P4 : public FinderI {
     public:
-        explicit NaiveC4P4(const Graph& graph) : FinderI(graph) {}
+        explicit NaiveC4P4(const Graph& graph_ref) : FinderI(graph_ref) {}
 
         template <typename H, typename I>
         bool find(const SubgraphCallback& callback, H valid_edge, I valid_non_edge) {
@@ -72,15 +72,15 @@ namespace Finder {
         }
 
         bool find_near(VertexPair uv, SubgraphCallback callback) override {
-            auto valid_edge = [&](VertexPair uv) { return graph.has_edge(uv); };
-            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv); };
+            auto valid_edge = [&](VertexPair xy) { return graph.has_edge(xy); };
+            auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy); };
 
             return find_near(uv, callback, valid_edge, valid_non_edge);
         };
 
         bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override {
-            auto valid_edge = [&](VertexPair uv) { return graph.has_edge(uv) && !forbidden.has_edge(uv); };
-            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv) && !forbidden.has_edge(uv); };
+            auto valid_edge = [&](VertexPair xy) { return graph.has_edge(xy) && !forbidden.has_edge(xy); };
+            auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy) && !forbidden.has_edge(xy); };
 
             return find_near(uv, callback, valid_edge, valid_non_edge);
         }

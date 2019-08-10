@@ -61,7 +61,7 @@ public:
                 std::getline(file, line);
                 std::stringstream ss(line);
                 Vertex v;
-                float weight;
+                Real weight;
                 while (ss >> v >> weight) {
                     if (u <= v) {
                         VertexPair edge(u - 1, v - 1);

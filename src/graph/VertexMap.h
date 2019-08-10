@@ -18,9 +18,7 @@ class VertexMap {
     Vertex n;
     std::vector<T> values;
 public:
-    explicit VertexMap(const Graph &graph) : n(graph.size()), values(n) {};
-
-    explicit VertexMap(Vertex n) : n(n), values(n) {}
+    explicit VertexMap(Vertex size) : n(size), values(size) {}
 
     const_reference operator[](Vertex vertex) const {
         assert(vertex < n);

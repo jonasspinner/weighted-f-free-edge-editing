@@ -13,7 +13,7 @@
 
 class StateI {
 public:
-//    virtual ~StateI() = 0;
+    virtual ~StateI() = default;
     virtual std::unique_ptr<StateI> copy() = 0;
 };
 
@@ -23,7 +23,9 @@ protected:
     std::shared_ptr<FinderI> finder;
 
 public:
-    explicit ConsumerI(std::shared_ptr<FinderI> finder) : finder(std::move(finder)) {}
+    explicit ConsumerI(std::shared_ptr<FinderI> finder_ptr) : finder(std::move(finder_ptr)) {}
+
+    virtual ~ConsumerI() = default;
 
     virtual std::unique_ptr<StateI> initialize(Cost k) = 0;
 

@@ -42,19 +42,19 @@ namespace detail {
                     assert(P.size() == k - 4);
 
                     auto A = neighbors(P[0]); // adjacent to p_1 and non adjacent to P - {p_1}
-                    for (int i = 1; i < k - 4; ++i) { A &= non_neighbors(P[i]); }
+                    for (unsigned i = 1; i < k - 4; ++i) { A &= non_neighbors(P[i]); }
                     auto B = neighbors(P[k - 5]); // adjacent to p_{k-4} and non adjacent to P - {p_{k-4}}
-                    for (int i = 0; i < k - 5; ++i) { B &= non_neighbors(P[i]); }
+                    for (unsigned i = 0; i < k - 5; ++i) { B &= non_neighbors(P[i]); }
                     auto C = graph.all_vertices(); // non adjacent to P
-                    for (int i = 0; i < k - 4; ++i) { C &= non_neighbors(P[i]); }
+                    for (unsigned i = 0; i < k - 4; ++i) { C &= non_neighbors(P[i]); }
 #ifndef NDEBUG
                     for (Vertex a : Graph::vertices(A)) {
                         assert(valid_edge({a, P[0]}));
-                        for (int i = 1; i < k-4; ++i) assert(valid_non_edge({a, P[i]}));
+                        for (unsigned i = 1; i < k-4; ++i) assert(valid_non_edge({a, P[i]}));
                     }
                     for (Vertex b : Graph::vertices(B)) {
                         assert(valid_edge({b, P[k-5]}));
-                        for (int i = 0; i < k-5; ++i) assert(valid_non_edge({b, P[i]}));
+                        for (unsigned i = 0; i < k-5; ++i) assert(valid_non_edge({b, P[i]}));
                     }
                     for (Vertex c : Graph::vertices(C)) {
                         for (Vertex p : P) assert(valid_non_edge({c, p}));
@@ -82,8 +82,8 @@ namespace detail {
                                     P_p.push_back(b); P_p.push_back(v);
 #ifndef NDEBUG
                                     assert(P_p.size() == k);
-                                    for (int i = 0; i < k; ++i)
-                                        for (int j = i + 1; j < k; ++j)
+                                    for (unsigned i = 0; i < k; ++i)
+                                        for (unsigned j = i + 1; j < k; ++j)
                                             if (j - i == 1) assert(valid_edge({P_p[i], P_p[j]}));
                                             else assert(valid_non_edge({P_p[i], P_p[j]}));
 #endif
@@ -95,13 +95,13 @@ namespace detail {
                                     P_p.push_back(b); P_p.push_back(v); P_p.push_back(u); P_p.push_back(a);
 
                                     Vertex min_vertex = P_p[0];
-                                    for (int i = 1; i < k; ++i) { min_vertex = std::min(min_vertex, P_p[i]); }
+                                    for (unsigned i = 1; i < k; ++i) { min_vertex = std::min(min_vertex, P_p[i]); }
 
                                     if (P_p[0] == min_vertex && P_p[1] < P_p[k-1]) {
 #ifndef NDEBUG
                                         assert(P_p.size() == k);
-                                        for (int i = 0; i < k; ++i)
-                                            for (int j = i + 1; j < k; ++j)
+                                        for (unsigned i = 0; i < k; ++i)
+                                            for (unsigned j = i + 1; j < k; ++j)
                                                 if (j - i == 1 || j - i == k-1) assert(valid_edge({P_p[i], P_p[j]}));
                                                 else assert(valid_non_edge({P_p[i], P_p[j]}));
 #endif
@@ -122,17 +122,17 @@ namespace detail {
                     assert(P.size() == k - 2);
 
                     auto A = neighbors(P[0]); // adjacent to p_1 and non adjacent to P - {p_1}
-                    for (int i = 1; i < k - 2; ++i) { A &= non_neighbors(P[i]); }
+                    for (unsigned i = 1; i < k - 2; ++i) { A &= non_neighbors(P[i]); }
                     auto B = neighbors(P[k - 3]); // adjacent to p_{k-2} and non adjacent to P - {p_{k-2}}
-                    for (int i = 0; i < k - 3; ++i) { B &= non_neighbors(P[i]); }
+                    for (unsigned i = 0; i < k - 3; ++i) { B &= non_neighbors(P[i]); }
 #ifndef NDEBUG
                     for (Vertex a : Graph::vertices(A)) {
                         assert(valid_edge({a, P[0]}));
-                        for (int i = 1; i < k-2; ++i) assert(valid_non_edge({a, P[i]}));
+                        for (unsigned i = 1; i < k-2; ++i) assert(valid_non_edge({a, P[i]}));
                     }
                     for (Vertex b : Graph::vertices(B)) {
                         assert(valid_edge({b, P[k-3]}));
-                        for (int i = 0; i < k-3; ++i) assert(valid_non_edge({b, P[i]}));
+                        for (unsigned i = 0; i < k-3; ++i) assert(valid_non_edge({b, P[i]}));
                     }
 #endif
                     // for each (a, b) \in AxB
@@ -147,8 +147,8 @@ namespace detail {
                             P_p.push_back(b);
 #ifndef NDEBUG
                             assert(P_p.size() == k);
-                            for (int i = 0; i < k; ++i)
-                                for (int j = i + 1; j < k; ++j)
+                            for (unsigned i = 0; i < k; ++i)
+                                for (unsigned j = i + 1; j < k; ++j)
                                     if (j - i == 1) assert(valid_edge({P_p[i], P_p[j]}));
                                     else assert(valid_non_edge({P_p[i], P_p[j]}));
 #endif
@@ -160,13 +160,13 @@ namespace detail {
                             P_p.push_back(b); P_p.push_back(a);
 
                             Vertex min_vertex = P_p[0];
-                            for (int i = 1; i < k; ++i) { min_vertex = std::min(min_vertex, P_p[i]); }
+                            for (unsigned i = 1; i < k; ++i) { min_vertex = std::min(min_vertex, P_p[i]); }
 
                             if (P_p[0] == min_vertex && P_p[1] < P_p[k-1]) {
 #ifndef NDEBUG
                                 assert(P_p.size() == k);
-                                for (int i = 0; i < k; ++i)
-                                    for (int j = i + 1; j < k; ++j)
+                                for (unsigned i = 0; i < k; ++i)
+                                    for (unsigned j = i + 1; j < k; ++j)
                                         if (j - i == 1 || (i == 0 && j == k-1)) assert(valid_edge({P_p[i], P_p[j]}));
                                         else assert(valid_non_edge({P_p[i], P_p[j]}));
 #endif
@@ -187,7 +187,7 @@ namespace detail {
     class CenterFinderImpl<3, false> {
     public:
         template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
-        static bool find(const Graph& graph, SubgraphCallback callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+        static bool find(const Graph& graph, SubgraphCallback callback, F /*neighbors*/, G non_neighbors, H valid_edge, I valid_non_edge) {
 
             /** P_3: <x, y, z> **/
             for (Vertex x : graph.vertices()) {
@@ -213,7 +213,7 @@ namespace detail {
     class CenterFinderImpl<2, false> {
     public:
         template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
-        static bool find(const Graph& graph, SubgraphCallback callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+        static bool find(const Graph& graph, SubgraphCallback callback, F /*neighbors*/, G /*non_neighbors*/, H valid_edge, I /*valid_non_edge*/) {
             /** P_2: <u, v> **/
             for (Vertex u : graph.vertices()) {
                 for (Vertex v : graph.neighbors(u)) {
@@ -233,7 +233,7 @@ namespace detail {
     class CenterFinderImpl<1, false> {
     public:
         template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
-        static bool find(const Graph& graph, SubgraphCallback callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+        static bool find(const Graph& graph, SubgraphCallback callback, F /*neighbors*/, G /*non_neighbors*/, H /*valid_edge*/, I /*valid_non_edge*/) {
             /** P_1: <u> **/
             for (Vertex u : graph.vertices()) {
                 if (callback(Subgraph{u})) return true;
@@ -247,7 +247,7 @@ namespace detail {
         static_assert(length > 1);
 
     public:
-        explicit Center(const Graph &graph) : FinderI(graph) {}
+        explicit Center(const Graph &graph_ref) : FinderI(graph_ref) {}
 
         bool find(SubgraphCallback callback) override {
 
@@ -269,9 +269,9 @@ namespace detail {
             return detail::CenterFinderImpl<length, (length > 3)>::find(graph, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
         }
 
-        bool find_near(VertexPair uv, SubgraphCallback callback) override { assert(false); return false; }
+        bool find_near(VertexPair /*uv*/, SubgraphCallback /*callback*/) override { assert(false); return false; }
 
-        bool find_near(VertexPair uv, const Graph& forbidden, SubgraphCallback callback) override  { assert(false); return false; }
+        bool find_near(VertexPair /*uv*/, const Graph& /*forbidden*/, SubgraphCallback /*callback*/) override  { assert(false); return false; }
 
     };
 }

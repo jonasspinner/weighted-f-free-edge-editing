@@ -16,7 +16,7 @@ namespace Options {
         P3, P4C4
     };
     enum LB {
-        No, IteratedLocalSearch
+        No, LocalSearch
     };
 }
 
@@ -30,14 +30,15 @@ public:
         P3, P4C4
     } forbidden;
     enum LowerBound {
-        No, IteratedLocalSearch, Greedy
+        No, LocalSearch, Greedy
     } lower_bound;
     std::string input_path;
     std::string output_path;
 
-    Configuration(int k_max, SelectorOption selector, ForbiddenSubgraphs forbidden, LowerBound lower_bound, std::string input_path,
-                  std::string output_path) : k_max(k_max), selector(selector), forbidden(forbidden), lower_bound(lower_bound),
-                                             input_path(std::move(input_path)), output_path(std::move(output_path)) {}
+    Configuration(int k_max_, SelectorOption selector_, ForbiddenSubgraphs forbidden_, LowerBound lower_bound_,
+                  std::string input_path_, std::string output_path_) :
+            k_max(k_max_), selector(selector_), forbidden(forbidden_), lower_bound(lower_bound_),
+            input_path(std::move(input_path_)), output_path(std::move(output_path_)) {}
 
     Configuration(int argc, char *argv[]);
 };

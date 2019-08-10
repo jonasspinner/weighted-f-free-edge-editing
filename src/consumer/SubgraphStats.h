@@ -18,7 +18,7 @@ private:
     std::vector<size_t> before_mark_subgraph_count;
 
     const Graph &graph;
-    const VertexPairMap<bool> &forbidden;
+    const VertexPairMap<bool> &m_forbidden;
 
     class State : public StateI {
         std::unique_ptr<StateI> copy() override {
@@ -27,11 +27,11 @@ private:
     };
 
 public:
-    SubgraphStats(std::shared_ptr<FinderI> finder, const Instance &instance, const VertexPairMap<bool> &forbidden)
-            : ConsumerI(std::move(finder)), subgraph_count_per_vertex_pair(instance.graph.size()),
-              subgraph_count_per_vertex_pair_sum(0), subgraph_count(0), graph(instance.graph), forbidden(forbidden) {}
+    SubgraphStats(std::shared_ptr<FinderI> finder_ptr, const Instance &instance, const VertexPairMap<bool> &forbidden)
+            : ConsumerI(std::move(finder_ptr)), subgraph_count_per_vertex_pair(instance.graph.size()),
+              subgraph_count_per_vertex_pair_sum(0), subgraph_count(0), graph(instance.graph), m_forbidden(forbidden) {}
 
-    std::unique_ptr<StateI> initialize(Cost k) override {
+    std::unique_ptr<StateI> initialize(Cost /*k*/) override {
         subgraph_count_per_vertex_pair = VertexPairMap<size_t>(graph.size());
         subgraph_count_per_vertex_pair_sum = 0;
         subgraph_count = 0;
@@ -44,13 +44,13 @@ public:
         return std::make_unique<State>();
     }
 
-    void before_mark_and_edit(StateI &state, VertexPair uv) override {}
+    void before_mark_and_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-    void after_mark_and_edit(StateI &state, VertexPair uv) override {}
+    void after_mark_and_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-    void before_mark(StateI &state, VertexPair uv) override {}
+    void before_mark(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-    void after_mark(StateI &state, VertexPair uv) override {
+    void after_mark(StateI &/*state*/, VertexPair uv) override {
         subgraph_count_per_vertex_pair_sum -= subgraph_count_per_vertex_pair[uv];
         before_mark_subgraph_count.push_back(subgraph_count_per_vertex_pair[uv]);
         subgraph_count_per_vertex_pair[uv] = 0;
@@ -58,8 +58,8 @@ public:
         verify();
     }
 
-    void before_edit(StateI &state, VertexPair uv) override {
-        assert(forbidden[uv]);
+    void before_edit(StateI &/*state*/, VertexPair uv) override {
+        assert(m_forbidden[uv]);
         finder->find_near(uv, [&](Subgraph &&subgraph) {
             remove_subgraph(subgraph);
             return false;
@@ -67,7 +67,7 @@ public:
         assert(subgraph_count_per_vertex_pair[uv] == 0);
     }
 
-    void after_edit(StateI &state, VertexPair uv) override {
+    void after_edit(StateI &/*state*/, VertexPair uv) override {
         finder->find_near(uv, [&](Subgraph &&subgraph) {
             register_subgraph(subgraph);
             return false;
@@ -75,7 +75,7 @@ public:
         assert(subgraph_count_per_vertex_pair[uv] == 0);
     }
 
-    void after_unmark(StateI &state, VertexPair uv) override {
+    void after_unmark(StateI &/*state*/, VertexPair uv) override {
         subgraph_count_per_vertex_pair[uv] = before_mark_subgraph_count.back();
         subgraph_count_per_vertex_pair_sum += before_mark_subgraph_count.back();
         before_mark_subgraph_count.pop_back();
@@ -86,7 +86,7 @@ private:
     void register_subgraph(const Subgraph &subgraph) {
         subgraph_count++;
         for (VertexPair uv : subgraph.vertexPairs()) {
-            if (!forbidden[uv]) {
+            if (!m_forbidden[uv]) {
                 subgraph_count_per_vertex_pair[uv]++;
                 subgraph_count_per_vertex_pair_sum++;
             }
@@ -96,7 +96,7 @@ private:
     void remove_subgraph(const Subgraph &subgraph) {
         subgraph_count--;
         for (VertexPair uv : subgraph.vertexPairs()) {
-            if (!forbidden[uv]) {
+            if (!m_forbidden[uv]) {
                 subgraph_count_per_vertex_pair[uv]--;
                 subgraph_count_per_vertex_pair_sum--;
             }
@@ -112,7 +112,7 @@ private:
             debug_sg_count++;
 
             for (VertexPair uv : subgraph.vertexPairs()) {
-                if (!forbidden[uv]) {
+                if (!m_forbidden[uv]) {
                     debug_sg_per_vertex_pair[uv]++;
                 }
             }
@@ -123,7 +123,7 @@ private:
 
         for (VertexPair uv : graph.vertexPairs()) {
             assert(debug_sg_per_vertex_pair[uv] == subgraph_count_per_vertex_pair[uv]);
-            assert(!forbidden[uv] || debug_sg_per_vertex_pair[uv]);
+            assert(!m_forbidden[uv] || debug_sg_per_vertex_pair[uv]);
         }
 #endif
     }

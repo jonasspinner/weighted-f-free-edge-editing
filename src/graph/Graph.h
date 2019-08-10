@@ -59,7 +59,7 @@ private:
 
 public:
 
-    explicit Graph(unsigned int n) : n(n), adj(n, boost::dynamic_bitset<Block>(n)) {}
+    explicit Graph(unsigned int size) : n(size), adj(n, boost::dynamic_bitset<Block>(n)) {}
 
     /**
      * Returns the number of vertices.
@@ -107,8 +107,8 @@ public:
      */
     void set_edge(VertexPair edge) {
         const auto&[u, v] = edge;
-        adj[u][v] = true;
-        adj[v][u] = true;
+        adj[u].set(v);
+        adj[v].set(u);
     }
 
     void set_edges(const std::vector<VertexPair> &edges) {
@@ -125,8 +125,8 @@ public:
      */
     void clear_edge(VertexPair edge) {
         const auto&[u, v] = edge;
-        adj[u][v] = false;
-        adj[v][u] = false;
+        adj[u].reset(v);
+        adj[v].reset(u);
     }
 
 
@@ -143,14 +143,14 @@ public:
                 return *this;
             }
 
-            bool operator==(const Iterator &other) { return v == other.v; }
+            bool operator==(const Iterator &other) const { return v == other.v; }
 
-            bool operator!=(const Iterator &other) { return !(*this == other); }
+            bool operator!=(const Iterator &other) const { return !(*this == other); }
         };
 
         Vertex n;
     public:
-        explicit Vertices(Vertex n) : n(n) {}
+        explicit Vertices(Vertex size) : n(size) {}
 
         [[nodiscard]] Iterator begin() const { return Iterator(0); }
 
@@ -164,34 +164,34 @@ public:
 
     class RowVertices {
         class Iterator {
+            const AdjRow &m_row;
             Vertex u;
-            const AdjRow &row;
         public:
-            explicit Iterator(const AdjRow &row) : row(row) {
+            explicit Iterator(const AdjRow &row) : m_row(row) {
                 u = row.find_first();
             }
 
-            Iterator(const AdjRow &row, Vertex start) : row(row), u(start) {}
+            Iterator(const AdjRow &row, Vertex start) : m_row(row), u(start) {}
 
             Vertex operator*() const { return u; }
 
             Iterator &operator++() {
-                u = row.find_next(u);
+                u = m_row.find_next(u);
                 return *this;
             }
 
-            bool operator==(const Iterator &other) { return u == other.u; }
+            bool operator==(const Iterator &other) const { return u == other.u; }
 
-            bool operator!=(const Iterator &other) { return !(*this == other); }
+            bool operator!=(const Iterator &other) const { return !(*this == other); }
         };
 
-        const AdjRow &row;
+        const AdjRow &m_row;
     public:
-        explicit RowVertices(const AdjRow &row) : row(row) {}
+        explicit RowVertices(const AdjRow &row) : m_row(row) {}
 
-        [[nodiscard]] Iterator begin() const { return Iterator(row); }
+        [[nodiscard]] Iterator begin() const { return Iterator(m_row); }
 
-        [[nodiscard]] Iterator end() const { return Iterator(row, static_cast<Vertex>(AdjRow::npos)); }
+        [[nodiscard]] Iterator end() const { return Iterator(m_row, static_cast<Vertex>(AdjRow::npos)); }
     };
 
     static RowVertices vertices(const AdjRow &row) {
@@ -205,30 +205,30 @@ public:
 
     class VertexPairs {
         class Iterator {
-            VertexPair uv;
+            VertexPair m_uv;
             Vertex n;
         public:
-            Iterator(VertexPair start, Vertex n) : uv(start), n(n) {}
+            Iterator(VertexPair start, Vertex size) : m_uv(start), n(size) {}
 
-            VertexPair operator*() const { return uv; }
+            VertexPair operator*() const { return m_uv; }
 
             Iterator &operator++() {
-                ++uv.v;
-                if (uv.v == n) {
-                    ++uv.u;
-                    uv.v = uv.u + 1;
+                ++m_uv.v;
+                if (m_uv.v == n) {
+                    ++m_uv.u;
+                    m_uv.v = m_uv.u + 1;
                 }
                 return *this;
             }
 
-            bool operator==(const Iterator &other) { return uv == other.uv; }
+            bool operator==(const Iterator &other) const { return m_uv == other.m_uv; }
 
-            bool operator!=(const Iterator &other) { return !(*this == other); }
+            bool operator!=(const Iterator &other) const { return !(*this == other); }
         };
 
         Vertex n;
     public:
-        explicit VertexPairs(Vertex n) : n(n) {}
+        explicit VertexPairs(Vertex size) : n(size) {}
 
         [[nodiscard]] Iterator begin() const { return Iterator({0, 1}, n); }
 
@@ -242,42 +242,43 @@ public:
 
     class Edges {
         class Iterator {
-            const AdjMatrix &adj;
-            VertexPair uv;
+            const AdjMatrix &m_adj;
+            VertexPair m_uv;
         public:
-            Iterator(const AdjMatrix &adj, VertexPair start) : adj(adj), uv(start) {}
+            Iterator(const AdjMatrix &adj, VertexPair start) : m_adj(adj), m_uv(start) {}
 
-            explicit Iterator(const AdjMatrix &adj) : adj(adj), uv({0, 1}) {
-                while (adj[uv.u].count() == 0) uv.u++;
-                uv.v = adj[uv.u].find_first();
+            explicit Iterator(const AdjMatrix &adj) : m_adj(adj), m_uv({0, 1}) {
+                while (m_uv.u < adj.size() && m_adj[m_uv.u].none()) m_uv.u++;
+                if (m_uv.u < adj.size())
+                    m_uv.v = m_adj[m_uv.u].find_first();
             }
 
-            VertexPair operator*() const { return uv; }
+            VertexPair operator*() const { return m_uv; }
 
             Iterator &operator++() {
-                uv.v = adj[uv.u].find_next(uv.v);
-                while (uv.v >= adj.size() && uv.u < adj.size()) {
-                    ++uv.u;
-                    if (uv.u < adj.size())
-                        uv.v = adj[uv.u].find_next(uv.u);
+                m_uv.v = m_adj[m_uv.u].find_next(m_uv.v);
+                while (m_uv.v >= m_adj.size() && m_uv.u < m_adj.size()) {
+                    ++m_uv.u;
+                    if (m_uv.u < m_adj.size())
+                        m_uv.v = m_adj[m_uv.u].find_next(m_uv.u);
                 }
                 return *this;
             }
 
-            bool operator==(const Iterator &other) { return uv == other.uv; }
+            bool operator==(const Iterator &other) const { return m_uv == other.m_uv; }
 
-            bool operator!=(const Iterator &other) { return !(*this == other); }
+            bool operator!=(const Iterator &other) const { return !(*this == other); }
 
         };
 
-        const AdjMatrix &adj;
+        const AdjMatrix &m_adj;
     public:
-        explicit Edges(const AdjMatrix &adj) : adj(adj) {}
+        explicit Edges(const AdjMatrix &adj) : m_adj(adj) {}
 
-        [[nodiscard]] Iterator begin() const { return Iterator(adj); }
+        [[nodiscard]] Iterator begin() const { return Iterator(m_adj); }
 
         [[nodiscard]] Iterator end() const {
-            return Iterator(adj, {static_cast<Vertex>(adj.size()), static_cast<Vertex>(AdjRow::npos)});
+            return Iterator(m_adj, {static_cast<Vertex>(m_adj.size()), static_cast<Vertex>(AdjRow::npos)});
         }
     };
 
@@ -331,7 +332,7 @@ public:
      */
     template<typename VertexPairCallback>
     bool for_all_edges(VertexPairCallback callback) const {
-        return for_all_vertices([&](auto u) {
+        return for_all_vertices([&](Vertex u) {
             Vertex v = adj[u].find_next(u);
             while (v < n) {
                 if (callback(VertexPair(u, v))) return true;

@@ -12,40 +12,33 @@ namespace LowerBound {
     private:
         class State : public StateI {
         public:
-            std::string name = "NoLowerBound state";
-            int i = 0;
-
             std::unique_ptr<StateI> copy() override {
                 return std::make_unique<State>(*this);
             }
         };
 
     public:
-        explicit NoLowerBound(std::shared_ptr<FinderI> finder) : LowerBoundI(std::move(finder)) {};
+        explicit NoLowerBound(std::shared_ptr<FinderI> finder_ptr) : LowerBoundI(std::move(finder_ptr)) {};
 
-        Cost result(StateI &state, Cost k) override {
+        Cost result(StateI &/*state*/, Cost /*k*/) override {
             return 0;
         }
 
-        std::unique_ptr<StateI> initialize(Cost k) override { return std::make_unique<State>(); }
+        std::unique_ptr<StateI> initialize(Cost /*k*/) override { return std::make_unique<State>(); }
 
-        void before_mark_and_edit(StateI &_state, VertexPair uv) override {
-            auto state = dynamic_cast<State &>(_state);
-            // std::cout << state.i << "\n";
-            state.i++;
-        }
+        void before_mark_and_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void after_mark_and_edit(StateI &state, VertexPair uv) override {}
+        void after_mark_and_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void before_mark(StateI &state, VertexPair uv) override {}
+        void before_mark(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void after_mark(StateI &state, VertexPair uv) override {}
+        void after_mark(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void before_edit(StateI &state, VertexPair uv) override {}
+        void before_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void after_edit(StateI &state, VertexPair uv) override {}
+        void after_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void after_unmark(StateI &state, VertexPair uv) override {}
+        void after_unmark(StateI &/*state*/, VertexPair /*uv*/) override {}
     };
 }
 

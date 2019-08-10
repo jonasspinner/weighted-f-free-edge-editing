@@ -15,7 +15,7 @@ struct Problem {
 
 class SelectorI : public ConsumerI {
 public:
-    explicit SelectorI(std::shared_ptr<FinderI> finder) : ConsumerI(std::move(finder)) {}
+    explicit SelectorI(std::shared_ptr<FinderI> finder_ptr) : ConsumerI(std::move(finder_ptr)) {}
 
     virtual Problem result(StateI &state, Cost k) = 0;
 };

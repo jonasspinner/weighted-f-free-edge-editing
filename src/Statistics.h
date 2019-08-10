@@ -21,14 +21,14 @@ class Statistics {
     std::vector<int> calls_depth;
 
 public:
-    Statistics(Cost min, Cost max, size_t n_buckets) : min(min), max(max), n_buckets(n_buckets), calls_cost(n_buckets + 2), calls_depth(max) {}
+    Statistics(Cost min_, Cost max_, size_t n_buckets_) : min(min_), max(max_), n_buckets(n_buckets_), calls_cost(n_buckets + 2), calls_depth(max) {}
 
     void calls(Depth depth, Cost cost) {
         calls_depth[depth]++;
         calls_cost[bucket(cost)]++;
     }
 
-    std::string yaml() const {
+    [[nodiscard]] std::string yaml() const {
          std::stringstream ss;
          ss << "buckets: [" << min << " " << max << "] " << n_buckets;
          ss << "\ncalls_cost:\n\t";
@@ -43,7 +43,7 @@ public:
     }
 
 private:
-    size_t bucket(Cost cost) const {
+    [[nodiscard]] size_t bucket(Cost cost) const {
         if (cost < min) {
             return 0;
         } else if (cost > max) {

@@ -6,6 +6,7 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_ITERATEDLOCALSEARCH_H
 
 
+#include <random>
 #include "../interfaces/LowerBoundI.h"
 #include "../interfaces/FinderI.h"
 
@@ -21,14 +22,13 @@ class IteratedLocalSearch : public LowerBoundI {
     };
 
 private:
-    const Graph &m_graph;
     Graph m_bound_graph;
     const VertexPairMap<Cost> &m_costs;
     const VertexPairMap<bool> &m_marked;
 public:
     explicit IteratedLocalSearch(const Instance &instance,
-                                 const VertexPairMap<bool> &forbidden, std::shared_ptr<FinderI> finder) :
-            LowerBoundI(std::move(finder)), m_graph(instance.graph), m_bound_graph(instance.graph.size()),
+                                 const VertexPairMap<bool> &forbidden, std::shared_ptr<FinderI> finder_ref) :
+            LowerBoundI(std::move(finder_ref)), m_bound_graph(instance.graph.size()),
             m_costs(instance.costs), m_marked(forbidden) {}
 
     /**
@@ -65,7 +65,7 @@ public:
      * @param k
      * @return
      */
-    std::unique_ptr<StateI> initialize(Cost k) override {
+    std::unique_ptr<StateI> initialize(Cost /*k*/) override {
         auto ptr = std::make_unique<State>();
         State &state = *ptr;
 
@@ -162,15 +162,15 @@ public:
         }
     }
 
-    void before_mark(StateI &state, VertexPair uv) override { /* no op */ }
+    void before_mark(StateI &/*state*/, VertexPair /*uv*/) override { /* no op */ }
 
-    void after_mark(StateI &state, VertexPair uv) override { /* no op */ }
+    void after_mark(StateI &/*state*/, VertexPair /*uv*/) override { /* no op */ }
 
-    void before_edit(StateI &state, VertexPair uv) override { /* no op */ }
+    void before_edit(StateI &/*state*/, VertexPair /*uv*/) override { /* no op */ }
 
-    void after_edit(StateI &state, VertexPair uv) override { /* no op */ }
+    void after_edit(StateI &/*state*/, VertexPair /*uv*/) override { /* no op */ }
 
-    void after_unmark(StateI &state, VertexPair uv) override { /* no op */ }
+    void after_unmark(StateI &/*state*/, VertexPair /*uv*/) override { /* no op */ }
 
 private:
     void initialize_bound_graph(const State &state) {
@@ -184,8 +184,9 @@ private:
     }
 
     void optimize_bound(State &state, Cost k) {
-        std::mt19937 gen(state.cost + state.bound.size());
+        std::mt19937 gen(static_cast<unsigned long>(state.cost) + state.bound.size());
 
+        /*
         auto end = [&]() {
             std::cout << "exited optimize_bound [" << state.cost << "]:\n";
             for (const auto &[c, sg] : state.bound) {
@@ -197,6 +198,9 @@ private:
                 std::cout << " }\n";
             }
         };
+        */
+        
+        std::shuffle(state.bound.begin(), state.bound.end(), gen);
 
         bool improvement_found;
         bool bound_changed;
@@ -206,9 +210,9 @@ private:
             bound_changed = false;
 
             for (size_t sg_i = 0; sg_i < state.bound.size(); ++sg_i) {
-                find_2_improvement(state, sg_i, k, gen, improvement_found, bound_changed);
+                find_2_improvement(state, sg_i, improvement_found, bound_changed);
                 if (state.cost > k) {
-                    end();
+                    // end();
                     return;
                 }
             }
@@ -216,7 +220,7 @@ private:
             rounds_no_improvement = improvement_found ? 0 : rounds_no_improvement + 1;
         } while (improvement_found || (rounds_no_improvement < 5 && bound_changed));
 
-        end();
+        // end();
     }
 
     /**
@@ -230,7 +234,7 @@ private:
      * @param bound_changed
      * @return
      */
-    void find_2_improvement(State &state, size_t index, Cost k, std::mt19937 &gen, bool &improvement_found,
+    void find_2_improvement(State &state, size_t index, bool &improvement_found,
                             bool &bound_changed) {
         constexpr Cost invalid_max_cost = std::numeric_limits<Cost>::min();
         constexpr size_t invalid_index = std::numeric_limits<size_t>::max();
@@ -323,17 +327,14 @@ private:
             bound_changed = true;
 
             // better candidates found
-            std::cout << "replaced " << subgraph << " with " << candidates[a_i];
             insert_into_graph(candidates[a_i], m_marked, m_bound_graph);
             state.bound[index] = {candidate_costs[a_i], std::move(candidates[a_i])};
 
             if (b_i != invalid_index) {
-                std::cout << " and " << candidates[b_i];
                 insert_into_graph(candidates[b_i], m_marked, m_bound_graph);
                 state.bound.emplace_back(candidate_costs[b_i], std::move(candidates[b_i]));
             }
 
-            std::cout << "\n";
             state.cost += max_subgraphs_cost;
         } else {
             // subgraph is the best
@@ -439,8 +440,8 @@ private:
 
             finder.find_near(uv, bound_graph, [&](Subgraph &&neighbor) {
                 bool touches = false;
-                for (VertexPair uv : neighbor.vertexPairs())
-                    if (bound_graph.has_edge(uv)) touches = true;
+                for (VertexPair xy : neighbor.vertexPairs())
+                    if (bound_graph.has_edge(xy)) touches = true;
 
                 // TODO: The condition should always be true.
                 if (!touches)

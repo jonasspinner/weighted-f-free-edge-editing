@@ -10,8 +10,8 @@
 namespace Selector {
     class LeastWeight : public SelectorI {
     private:
-        const VertexPairMap<Cost> &weights;
-        const VertexPairMap<bool> &forbidden;
+        const VertexPairMap<Cost> &m_costs;
+        const VertexPairMap<bool> &m_forbidden;
 
         class State : public StateI {
             std::unique_ptr<StateI> copy() override {
@@ -20,56 +20,53 @@ namespace Selector {
         };
 
     public:
-        explicit LeastWeight(const VertexPairMap<Cost> &weights, const std::shared_ptr<FinderI> &finder,
-                             const VertexPairMap<bool> &forbidden) : SelectorI(finder), weights(weights),
-                                                                     forbidden(forbidden) {}
+        explicit LeastWeight(const VertexPairMap<Cost> &costs, std::shared_ptr<FinderI> finder_ptr,
+                             const VertexPairMap<bool> &forbidden) : SelectorI(std::move(finder_ptr)), m_costs(costs),
+                                                                     m_forbidden(forbidden) {}
 
-        Problem result(StateI &, Cost k) override {
+        Problem result(StateI &, Cost /*k*/) override {
             Subgraph min_subgraph{};
-            Cost min_subgraph_cost = std::numeric_limits<Cost>::max();
+            Cost min_subgraph_cost = invalid_cost;
 
-            bool found = false;
-            this->finder->find([&](auto subgraph) {
-                found |= true;
-                Cost subgraph_cost = std::numeric_limits<Cost>::max();
-                subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
-                    subgraph_cost = std::min(subgraph_cost, weights[uv]);
-                    return false;
-                });
+            bool no_subgraphs = true;
+            this->finder->find([&](Subgraph &&subgraph) {
+                no_subgraphs = false;
+                Cost subgraph_cost = cost(subgraph, m_forbidden, m_costs);
                 if (subgraph_cost < min_subgraph_cost) {
                     min_subgraph_cost = subgraph_cost;
-                    min_subgraph = subgraph;
+                    min_subgraph = std::move(subgraph);
                 }
                 return false;
             });
 
             std::vector<VertexPair> pairs;
-            min_subgraph.for_all_unmarked_vertex_pairs(forbidden, [&](VertexPair uv) {
-                pairs.push_back(uv);
-                return false;
-            });
+
+            for (VertexPair uv : min_subgraph.vertexPairs()) {
+                if (!m_forbidden[uv])
+                    pairs.push_back(uv);
+            }
 
             std::sort(pairs.begin(), pairs.end(),
-                      [&](VertexPair uv, VertexPair xy) { return weights[uv] > weights[xy]; });
+                      [&](VertexPair uv, VertexPair xy) { return m_costs[uv] > m_costs[xy]; });
 
-            return {pairs, !found};
+            return {pairs, no_subgraphs};
         }
 
-        std::unique_ptr<StateI> initialize(Cost k) override { return std::make_unique<State>(); }
+        std::unique_ptr<StateI> initialize(Cost /*k*/) override { return std::make_unique<State>(); }
 
-        void before_mark_and_edit(StateI &state, VertexPair uv) override {}
+        void before_mark_and_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void after_mark_and_edit(StateI &state, VertexPair uv) override {}
+        void after_mark_and_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void before_mark(StateI &state, VertexPair uv) override {}
+        void before_mark(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void after_mark(StateI &state, VertexPair uv) override {}
+        void after_mark(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void before_edit(StateI &state, VertexPair uv) override {}
+        void before_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void after_edit(StateI &state, VertexPair uv) override {}
+        void after_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void after_unmark(StateI &state, VertexPair uv) override {}
+        void after_unmark(StateI &/*state*/, VertexPair /*uv*/) override {}
     };
 }
 

@@ -20,8 +20,8 @@ namespace LowerBound {
             Graph graph;
             VertexMap<float> weights;
 
-            MWISInstance(Graph &&graph, VertexMap<float> &&weights) : graph(std::move(graph)),
-                                                                      weights(std::move(weights)) {}
+            MWISInstance(Graph &&graph_, VertexMap<float> &&weights_) : graph(std::move(graph_)),
+                                                                      weights(std::move(weights_)) {}
         };
 
         std::shared_ptr<FinderI> finder;
@@ -29,11 +29,10 @@ namespace LowerBound {
         const VertexPairMap<float> &weights;
 
     public:
-        ExplicitMWISSolver(const Graph &graph, const VertexPairMap<float> &weights, std::shared_ptr<FinderI> finder)
-                : finder(std::move(finder)), graph(graph),
-                  weights(weights) {};
+        ExplicitMWISSolver(const Graph &graph_ref, const VertexPairMap<float> &weights_ref, std::shared_ptr<FinderI> finder_ptr)
+                : finder(std::move(finder_ptr)), graph(graph_ref), weights(weights_ref) {};
 
-        size_t update(VertexPair pair) {
+        size_t update(VertexPair /* pair */) {
             std::vector<Subgraph> subgraphs;
             finder->find([&](const auto &subgraph) {
                 subgraphs.push_back(subgraph);

@@ -19,7 +19,7 @@ class VertexPairMap {
     std::vector<T> values;
 public:
 
-    explicit VertexPairMap(Vertex n, T initial = T()) : n(n), values(idx({n - 2, n - 1}) + 1, initial) {}
+    explicit VertexPairMap(Vertex size, T initial = T()) : n(size), values(idx({n - 2, n - 1}) + 1, initial) {}
 
     const_reference operator[](VertexPair edge) const {
         assert(edge.u < n && edge.v < n);
@@ -65,24 +65,24 @@ public:
     using const_reference = AdjRow::const_reference;
 
     class reference {
-        VertexPairMap<bool> &map;
-        VertexPair uv;
+        VertexPairMap<bool> &m_map;
+        VertexPair m_uv;
     public:
-        reference(VertexPairMap<bool> &map, VertexPair uv) : map(map), uv(uv) {}
+        reference(VertexPairMap<bool> &map, VertexPair uv) : m_map(map), m_uv(uv) {}
 
         reference &operator=(bool value) {
-            map.adj[uv.u][uv.v] = true;
-            map.adj[uv.v][uv.u] = true;
+            m_map.adj[m_uv.u][m_uv.v] = value;
+            m_map.adj[m_uv.v][m_uv.u] = value;
             return *this;
         }
 
         explicit operator bool() const {
-            return map.adj[uv.u][uv.v];
+            return m_map.adj[m_uv.u][m_uv.v];
         }
     };
 
 
-    explicit VertexPairMap(Vertex n, bool initial = false) : n(n),
+    explicit VertexPairMap(Vertex size, bool initial = false) : n(size),
                                                              adj(n, AdjRow(n)) {
         if (initial) {
             for (auto &row : adj) {

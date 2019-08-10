@@ -14,7 +14,7 @@ namespace LowerBound {
     class GreedyLowerBound : public LowerBoundI {
         const Graph &graph;
         const VertexPairMap<Cost> &costs;
-        const VertexPairMap<bool> &forbidden;
+        const VertexPairMap<bool> &m_forbidden;
     public:
         class State : public StateI {
             std::unique_ptr<StateI> copy() override {
@@ -23,8 +23,8 @@ namespace LowerBound {
         };
 
         GreedyLowerBound(const Instance &instance, const VertexPairMap<bool> &forbidden,
-                         std::shared_ptr<FinderI> finder) : LowerBoundI(std::move(finder)), graph(instance.graph),
-                                                            costs(instance.costs), forbidden(forbidden) {}
+                         std::shared_ptr<FinderI> finder_ref) : LowerBoundI(std::move(finder_ref)), graph(instance.graph),
+                                                            costs(instance.costs), m_forbidden(forbidden) {}
 
         /**
          * Calculates a lower bound on the costs required to solve the current instance.
@@ -36,13 +36,13 @@ namespace LowerBound {
          * @param k Not used
          * @return A lower bound on the costs required to solve the current instance.
          */
-        Cost result(StateI &state, Cost k) override {
+        Cost result(StateI &/*state*/, Cost /*k*/) override {
 
             // Find all forbidden subgraphs with editable vertex pairs
             // The cost for a single forbidden subgraph is the minimum edit cost for an editable vertex pair
             std::vector<std::pair<Cost, Subgraph>> subgraphs;
             finder->find([&](Subgraph &&subgraph) {
-                Cost min_cost = cost(subgraph, forbidden, costs);
+                Cost min_cost = cost(subgraph, m_forbidden, costs);
                 subgraphs.emplace_back(min_cost, std::move(subgraph));
                 return false;
             });
@@ -59,13 +59,13 @@ namespace LowerBound {
             for (const auto&[cost, subgraph] : subgraphs) {
                 bool touches_bound = false;
                 for (VertexPair uv : subgraph.vertexPairs()) {
-                    if (!forbidden[uv] && is_in_bound[uv]) touches_bound = true;
+                    if (!m_forbidden[uv] && is_in_bound[uv]) touches_bound = true;
                 }
 
                 if (!touches_bound) {
                     bound_size += cost;
                     for (VertexPair uv : subgraph.vertexPairs()) {
-                        if (!forbidden[uv]) is_in_bound[uv] = true;
+                        if (!m_forbidden[uv]) is_in_bound[uv] = true;
                     }
                 }
             }
@@ -73,21 +73,21 @@ namespace LowerBound {
             return bound_size;
         }
 
-        std::unique_ptr<StateI> initialize(Cost k) override { return std::make_unique<State>(); }
+        std::unique_ptr<StateI> initialize(Cost /*k*/) override { return std::make_unique<State>(); }
 
-        void before_mark_and_edit(StateI &state, VertexPair uv) override {}
+        void before_mark_and_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void after_mark_and_edit(StateI &state, VertexPair uv) override {}
+        void after_mark_and_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void before_mark(StateI &state, VertexPair uv) override {}
+        void before_mark(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void after_mark(StateI &state, VertexPair uv) override {}
+        void after_mark(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void before_edit(StateI &state, VertexPair uv) override {}
+        void before_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void after_edit(StateI &state, VertexPair uv) override {}
+        void after_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
 
-        void after_unmark(StateI &state, VertexPair uv) override {}
+        void after_unmark(StateI &/*state*/, VertexPair /*uv*/) override {}
     };
 }
 

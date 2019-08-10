@@ -67,15 +67,14 @@ public:
                 m_selector = std::make_unique<Selector::LeastWeight>(m_instance.costs, m_finder, m_forbidden);
                 break;
             case Configuration::SelectorOption::FirstEditable:
-                m_selector = std::make_unique<Selector::FirstEditable>(m_instance.graph, m_instance.costs, m_finder,
-                                                                       m_forbidden);
+                m_selector = std::make_unique<Selector::FirstEditable>(m_finder, m_forbidden);
                 break;
         }
         switch (lower_bound) {
             case Configuration::LowerBound::No:
                 m_lower_bound = std::make_unique<LowerBound::NoLowerBound>(m_finder);
                 break;
-            case Configuration::LowerBound::IteratedLocalSearch:
+            case Configuration::LowerBound::LocalSearch:
                 m_lower_bound = std::make_unique<IteratedLocalSearch>(m_instance, m_forbidden, m_finder);
                 break;
             case Configuration::LowerBound::Greedy:
@@ -106,12 +105,11 @@ private:
     template<typename ResultCallback, typename PrunedCallback>
     bool edit_r(Cost k, States states, ResultCallback result, PrunedCallback pruned) {
         const VertexPairMap<Cost> &costs = m_instance.costs;
-        std::cout << "marked:";
 
+        /*std::cout << "marked:";
         for (VertexPair uv : m_instance.graph.vertexPairs())
             if (m_forbidden[uv]) std::cout << " " << uv;
-
-        std::cout << "\n";
+        std::cout << "\n";*/
 
         auto lb = m_lower_bound->result(*states[0], k);
         if (k < lb) {

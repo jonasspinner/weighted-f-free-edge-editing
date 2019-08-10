@@ -13,44 +13,52 @@ namespace Finder {
     class NaiveP3 : public FinderI {
 
     public:
-        explicit NaiveP3(const Graph &graph) : FinderI(graph) {}
+        explicit NaiveP3(const Graph &graph_ref) : FinderI(graph_ref) {}
 
         bool find(SubgraphCallback callback) override {
-            return graph.for_all_vertices([&](Vertex u) {
-                return graph.for_all_vertices([&](Vertex v) {
-                    if (u >= v) return false;
-                    return graph.for_all_vertices([&](Vertex w) {
-                        if (v >= w) return false;
-                        size_t n_edges = graph.has_edge({u, v}) + graph.has_edge({v, w}) + graph.has_edge({w, u});
+            for (Vertex u : graph.vertices()) {
+                for (Vertex v : graph.vertices()) {
+                    if (u >= v) continue;
+                    for (Vertex w : graph.vertices()) {
+                        if (v >= w) continue;
+                        int n_edges = graph.has_edge({u, v}) + graph.has_edge({v, w}) + graph.has_edge({w, u});
                         if (n_edges == 2) {
-                            return callback(Subgraph{u, v, w});
+                            if (callback(Subgraph{u, v, w})) return true;
                         }
-                        return false;
-                    });
-                });
-            });
+                    }
+                }
+            }
+            return false;
         }
 
         bool find(const Graph &forbidden, SubgraphCallback callback) override {
-            assert(false);
-            return false;
+            return find([&](Subgraph &&subgraph) {
+                Vertex u = subgraph[0], v = subgraph[1], w = subgraph[2];
+                if (forbidden.has_edge({u, v}) || forbidden.has_edge({u, w}) || forbidden.has_edge({v, w})) return false;
+                return callback(std::move(subgraph));
+            });
         }
 
         bool find_near(VertexPair uv, SubgraphCallback callback) override {
             Vertex u = uv.u;
             Vertex v = uv.v;
 
-            return graph.for_all_vertices([&](Vertex w) {
-                if (w == u || w == v) return false;
-                size_t n_edges = graph.has_edge({u, v}) + graph.has_edge({v, w}) + graph.has_edge({w, u});
-                if (n_edges == 2) return callback(Subgraph{u, v, w});
-                return false;
-            });
+            for (Vertex w : graph.vertices()) {
+                if (w == u || w == v) continue;
+                int n_edges = graph.has_edge({u, v}) + graph.has_edge({v, w}) + graph.has_edge({w, u});
+                if (n_edges == 2) {
+                    if (callback(Subgraph{u, v, w})) return true;
+                }
+            }
+            return false;
         }
 
         bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override {
-            assert(false);
-            return false;
+            return find_near(uv, [&](Subgraph &&subgraph) {
+                Vertex u = subgraph[0], v = subgraph[1], w = subgraph[2];
+                if (forbidden.has_edge({u, v}) || forbidden.has_edge({u, w}) || forbidden.has_edge({v, w})) return false;
+                return callback(std::move(subgraph));
+            });
         }
 
     };

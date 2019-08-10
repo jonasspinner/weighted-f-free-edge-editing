@@ -13,8 +13,8 @@ public:
     Graph graph;
     VertexPairMap<Cost> costs;
 
-    Instance(Graph graph, VertexPairMap<Cost> costs) : graph(std::move(graph)), costs(std::move(costs)) {}
-    Instance(Graph&& graph, VertexPairMap<Cost>&& costs) : graph(graph), costs(costs) {}
+    Instance(Graph graph_, VertexPairMap<Cost> costs_) : graph(std::move(graph_)), costs(std::move(costs_)) {}
+    Instance(Graph&& graph_, VertexPairMap<Cost>&& costs_) : graph(graph_), costs(costs_) {}
 };
 
 

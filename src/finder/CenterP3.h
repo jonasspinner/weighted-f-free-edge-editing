@@ -14,122 +14,107 @@ namespace Finder {
         Graph::AdjRow w_candidates;
 
     public:
-        explicit CenterP3(const Graph &graph) : FinderI(graph), w_candidates(graph.size()) {}
+        explicit CenterP3(const Graph &graph_ref) : FinderI(graph_ref), w_candidates(graph.size()) {}
 
         bool find(SubgraphCallback callback) override {
-            auto valid_edge = [&](VertexPair uv) { return graph.has_edge(uv); };
-            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv); };
+            auto non_neighbors =  [&](Vertex u) {      auto result = ~graph.adj[u]; result[u] = false; return result; };
+            auto valid_edge =     [&](VertexPair xy) { return graph.has_edge(xy); };
+            auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy); };
 
-            return graph.for_all_vertices([&](Vertex u) {
-                auto v_candidates = ~graph.adj[u]; v_candidates[u] = false;
-
-                return Graph::iterate(v_candidates, [&](Vertex v) {
-                    return graph.for_neighbors_of(v, [&](Vertex w) {
-                        if (graph.has_edge({u, w}) && v < u) {
+            for (Vertex u : graph.vertices()) {
+                for (Vertex v : Graph::vertices(non_neighbors(u))) {
+                    for (Vertex w : graph.neighbors(v)) {
+                        if (valid_edge({u, w}) && v < u) {
 
                             assert(valid_edge({u, w})); assert(valid_edge({v, w})); assert(valid_non_edge({u, v}));
-                            return callback(Subgraph{u, v, w});
-                        } else { return false; }
-                    });
-                });
-            });
+                            if (callback(Subgraph{u, v, w})) return true;
+                        }
+                    }
+                }
+            }
+            return false;
         }
 
         bool find(const Graph &forbidden, SubgraphCallback callback) override {
-            auto neighbors = [&](Vertex u) { return graph.adj[u] & ~forbidden.adj[u]; };
-            auto non_neighbors = [&](Vertex u) { return ~graph.adj[u] & ~forbidden.adj[u]; };
-            auto valid_edge = [&](VertexPair uv) { return graph.has_edge(uv) && !forbidden.has_edge(uv); };
-            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv) && !forbidden.has_edge(uv); };
+            auto neighbors =      [&](Vertex u) {      return  graph.adj[u] & ~forbidden.adj[u]; };
+            auto non_neighbors =  [&](Vertex u) {      auto result = ~graph.adj[u] & ~forbidden.adj[u]; result[u] = false; return result; };
+            auto valid_edge =     [&](VertexPair xy) { return  graph.has_edge(xy) && !forbidden.has_edge(xy); };
+            auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy) && !forbidden.has_edge(xy); };
 
-            return graph.for_all_edges([&](VertexPair uv) {
-                if (forbidden.has_edge(uv)) return false;
+            for (VertexPair uv : graph.edges()) {
+                if (forbidden.has_edge(uv)) continue;
                 Vertex u = uv.u;
                 Vertex v = uv.v;
 
                 w_candidates = neighbors(u) & non_neighbors(v);
-                w_candidates[v] = false;
 
-                bool exited = Graph::iterate(w_candidates, [&](Vertex w) {
+                for (Vertex w : Graph::vertices(w_candidates)) {
                     assert(valid_edge({u, v})); assert(valid_edge({u, w})); assert(valid_non_edge({v, w}));
-                    return callback(Subgraph{u, v, w});
-                });
-                if (exited) return true;
+                    if (callback(Subgraph{u, v, w})) return true;
+                }
 
                 w_candidates = neighbors(v) & non_neighbors(u);
-                w_candidates[u] = false;
 
-                exited = Graph::iterate(w_candidates, [&](Vertex w) {
+                for (Vertex w : Graph::vertices(w_candidates)) {
                     assert(valid_edge({u, v})); assert(valid_non_edge({u, w})); assert(valid_edge({v, w}));
-                    return callback(Subgraph{v, u, w});
-                });
-
-                return exited;
-            });
+                    if (callback(Subgraph{v, u, w})) return true;
+                }
+            }
+            return false;
         }
 
         bool find_near(VertexPair uv, SubgraphCallback callback) override {
-            Vertex u = uv.u;
-            Vertex v = uv.v;
+            auto neighbors = [&](Vertex u) { return graph.adj[u]; };
+            auto non_neighbors = [&](Vertex u) {
+                auto result = ~graph.adj[u];
+                result[u] = false;
+                return result;
+            };
+            auto valid_edge = [&](VertexPair xy) { return graph.has_edge(xy); };
+            auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy); };
 
-            if (graph.has_edge(uv)) {
-                w_candidates = graph.adj[u] & ~graph.adj[v];
-                w_candidates[v] = false;
-
-                bool exited = Graph::iterate(w_candidates, [&](Vertex w) {
-                    return callback(Subgraph{u, v, w});
-                });
-                if (exited) return true;
-
-                w_candidates = ~graph.adj[u] & graph.adj[v];
-                w_candidates[u] = false;
-
-                exited = Graph::iterate(w_candidates, [&](Vertex w) {
-                    return callback(Subgraph{v, u, w});
-                });
-
-                return exited;
-            } else {
-                bool exited = Graph::iterate(graph.adj[u] & graph.adj[v], [&](Vertex w) {
-                    return callback(Subgraph{w, u, v});
-                });
-
-                return exited;
-            }
+            return find_near(uv, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
         }
 
         bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override {
             auto neighbors = [&](Vertex u) { return graph.adj[u] & ~forbidden.adj[u]; };
-            auto non_neighbors = [&](Vertex u) { return ~graph.adj[u] & ~forbidden.adj[u]; };
-            auto valid_edge = [&](VertexPair uv) { return graph.has_edge(uv); };
-            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv); };
+            auto non_neighbors = [&](Vertex u) {
+                auto result = ~graph.adj[u] & ~forbidden.adj[u];
+                result[u] = false;
+                return result;
+            };
+            auto valid_edge = [&](VertexPair xy) { return graph.has_edge(xy) && !forbidden.has_edge(xy); };
+            auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy) && !forbidden.has_edge(xy); };
+
+            return find_near(uv, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+        }
+
+    private:
+        template<typename F, typename G, typename H, typename I>
+        bool find_near(VertexPair uv, const SubgraphCallback& callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+
             Vertex u = uv.u;
             Vertex v = uv.v;
 
             if (valid_edge(uv)) {
                 w_candidates = neighbors(u) & non_neighbors(v);
-                w_candidates[v] = false;
 
-                bool exited = Graph::iterate(w_candidates, [&](Vertex w) {
-                    return callback(Subgraph{u, v, w});
-                });
-                if (exited) return true;
+                for (Vertex w : Graph::vertices(w_candidates)) {
+                    if (callback(Subgraph{u, v, w})) return true;
+                }
 
                 w_candidates = neighbors(v) & non_neighbors(u);
-                w_candidates[u] = false;
 
-                exited = Graph::iterate(w_candidates, [&](Vertex w) {
-                    return callback(Subgraph{v, u, w});
-                });
+                for (Vertex w : Graph::vertices(w_candidates)) {
+                    if (callback(Subgraph{v, u, w})) return true;
+                }
 
-                return exited;
             } else if (valid_non_edge(uv)) {
 
                 w_candidates = neighbors(u) & neighbors(v);
-                bool exited = Graph::iterate(w_candidates, [&](Vertex w) {
-                    return callback(Subgraph{w, u, v});
-                });
-
-                return exited;
+                for (Vertex w : Graph::vertices(w_candidates)) {
+                    if (callback(Subgraph{w, u, v})) return true;
+                }
             }
             return false;
         }
