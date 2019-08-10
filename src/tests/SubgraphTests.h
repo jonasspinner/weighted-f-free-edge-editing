@@ -14,7 +14,7 @@
 class SubgraphTests {
     std::mt19937 gen;
 public:
-    SubgraphTests(int seed = 0) : gen(seed) {}
+    explicit SubgraphTests(int seed = 0) : gen(seed) {}
 
     void vertexPairs_and_for_all_vertex_pairs_are_consistent() {
         Subgraph subgraph = random_subgraph(10, 20, gen);
@@ -43,10 +43,10 @@ public:
         expect("vertices() and iterator produce the same output", a, b);
     }
 
-    void unmarkedVertexPairs_and_for_all_unmarked_vertex_pairs_are_consistent(int n = 10, int N = 20) {
+    void unmarkedVertexPairs_and_for_all_unmarked_vertex_pairs_are_consistent(unsigned n = 10, unsigned N = 20) {
         Subgraph subgraph = random_subgraph(n, N, gen);
         VertexPairMap<bool> marked(N);
-        for (int i = 0; i < N; ++i) {
+        for (unsigned i = 0; i < N; ++i) {
             marked[random_vertex_pair(N, gen)] = true;
         }
 
@@ -62,12 +62,34 @@ public:
         expect("unmarkedVertexPairs() and for_all_unmarked_vertex_pairs() produce the same output", a, b);
     }
 
+    static void iterators_on_empty_Subgraph_work() {
+        Subgraph subgraph{};
+
+        auto vertices = subgraph.vertices();
+        expect("empty Subgraph has no vertices", true, vertices.begin() == vertices.end());
+
+        auto vertexPairs = subgraph.vertexPairs();
+        expect("empty Subgraph has no vertex pairs", true, vertexPairs.begin() == vertexPairs.end());
+    }
+
+    static void iterators_on_singleton_Subgraph_work() {
+        Subgraph subgraph{0};
+
+        auto vertices = subgraph.vertices();
+        expect("singleton Subgraph has one vertex", true, ++vertices.begin() == vertices.end());
+
+        auto vertexPairs = subgraph.vertexPairs();
+        expect("singleton Subgraph has no vertex pairs", true, vertexPairs.begin() == vertexPairs.end());
+    }
+
     void run() {
         std::cout << "\nSubgraphTests"
                      "\n-------------" << std::endl;
         vertices_and_iterator_are_consistent();
         vertexPairs_and_for_all_vertex_pairs_are_consistent();
         unmarkedVertexPairs_and_for_all_unmarked_vertex_pairs_are_consistent();
+        iterators_on_empty_Subgraph_work();
+        iterators_on_singleton_Subgraph_work();
     }
 };
 

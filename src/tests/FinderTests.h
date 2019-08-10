@@ -35,7 +35,7 @@ bool is_solution_valid(Graph &graph, const std::vector<VertexPair> &edits, Confi
     for (VertexPair uv : edits)
         graph.toggle_edge(uv);
 
-    bool found_forbidden_subgraph = finder->find([&](const Subgraph &subgraph) { return true; });
+    bool found_forbidden_subgraph = finder->find([&](const Subgraph & /* subgraph */) { return true; });
 
     for (VertexPair uv : edits)
         graph.toggle_edge(uv);
@@ -80,15 +80,15 @@ bool all_c4p4(const Graph &graph, const std::vector<Subgraph> &subgraphs) {
 }
 
 
-std::vector<Subgraph> find_all_subgraphs(const Graph &graph, FinderI *finder) {
+std::vector<Subgraph> find_all_subgraphs(FinderI &finder) {
     std::vector<Subgraph> subgraphs;
-    finder->find([&](Subgraph&& subgraph) { subgraphs.push_back(subgraph); return false; });
+    finder.find([&](Subgraph&& subgraph) { subgraphs.push_back(subgraph); return false; });
     return subgraphs;
 }
 
 std::vector<Subgraph> find_all_subgraphs(const Graph &graph, Configuration::ForbiddenSubgraphs forbidden) {
     auto finder = create_finder(graph, forbidden);
-    return find_all_subgraphs(graph, finder.get());
+    return find_all_subgraphs(*finder);
 }
 
 
@@ -102,8 +102,9 @@ public:
         G.set_edges({{0, 1}, {1, 2}});
 
         std::vector<Subgraph> expected{{0, 1, 2}};
-        auto actual = find_all_subgraphs(G, Configuration::ForbiddenSubgraphs::P3);
-        expect("Finder recognizes P3", normalize(expected), normalize(actual));
+        Finder::CenterP3 finder(G);
+        auto actual = find_all_subgraphs(finder);
+        expect("CenterP3 recognizes P3", normalize(expected), normalize(actual));
     }
 
     void EditsSolveKarate()         {
@@ -126,12 +127,12 @@ public:
     }
 
     template <typename A, typename B>
-    void Finders_are_consistent(const std::string& a_name, const std::string& b_name, int seed=0) {
-        std::mt19937 gen(seed);
+    void C4P4_Finders_are_consistent(const std::string& a_name, const std::string& b_name) {
         Graph G = random_graph(10, 40, gen);
 
-        auto a_subgraphs = find_all_subgraphs(G, new A(G));
-        auto b_subgraphs = find_all_subgraphs(G, new B(G));
+        A a_finder(G); B b_finder(G);
+        auto a_subgraphs = find_all_subgraphs(a_finder);
+        auto b_subgraphs = find_all_subgraphs(b_finder);
 
         expect(a_name + " only produces C4P4", true, all_c4p4(G, a_subgraphs));
         expect(b_name + " only produces C4P4", true, all_c4p4(G, b_subgraphs));
@@ -152,7 +153,8 @@ public:
         G.set_edges({{0, 1}, {1, 2},{2, 3}, {3, 0}});
 
         std::vector<Subgraph> expected{{0, 1, 2, 3}};
-        auto actual = find_all_subgraphs(G, new Finder(G));
+        Finder finder(G);
+        auto actual = find_all_subgraphs(finder);
         expect(name + " recognizes C4", normalize(expected), normalize(actual));
     }
 
@@ -162,7 +164,8 @@ public:
         G.set_edges({{0, 1}, {1, 2},{2, 3}});
 
         std::vector<Subgraph> expected{{0, 1, 2, 3}};
-        auto actual = find_all_subgraphs(G, new Finder(G));
+        Finder finder(G);
+        auto actual = find_all_subgraphs(finder);
         expect(name + " recognizes P4", normalize(expected), normalize(actual));
     }
 
@@ -178,9 +181,9 @@ public:
         Finder_finds_P4<Finder::CenterC4P4>("CenterC4P4");
         Finder_finds_P4<CenterRecC4P4>("CenterRecC4P4");
 
-        Finders_are_consistent<Finder::NaiveC4P4, Finder::CenterC4P4>("NaiveC4P4", "CenterC4P4");
-        Finders_are_consistent<Finder::NaiveC4P4, CenterRecC4P4>("NaiveC4P4", "CenterRecC4P4");
-        Finders_are_consistent<Finder::CenterC4P4, CenterRecC4P4>("CenterC4P4", "CenterRecC4P4");
+        C4P4_Finders_are_consistent<Finder::NaiveC4P4, Finder::CenterC4P4>("NaiveC4P4", "CenterC4P4");
+        C4P4_Finders_are_consistent<Finder::NaiveC4P4, CenterRecC4P4>("NaiveC4P4", "CenterRecC4P4");
+        C4P4_Finders_are_consistent<Finder::CenterC4P4, CenterRecC4P4>("CenterC4P4", "CenterRecC4P4");
 
         FinderFindsP3();
         EditsSolveKarate();

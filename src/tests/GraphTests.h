@@ -80,13 +80,42 @@ public:
         expect("neighbors() and for_all_neighbors() produce the same output", a, b);
     }
 
+    static void iterators_on_empty_Graph_work() {
+        Graph graph(0);
+
+        auto vertices = graph.vertices();
+        expect("empty Graph has no vertices", true, vertices.begin() == vertices.end());
+
+        auto edges = graph.edges();
+        expect("empty Graph has no edges", true, edges.begin() == edges.end());
+
+        auto vertexPairs = graph.vertexPairs();
+        expect("empty Graph has no vertex pairs", true, vertexPairs.begin() == vertexPairs.end());
+    }
+
+    static void iterators_on_singleton_Graph_work() {
+        Graph graph(1);
+
+        auto vertices = graph.vertices();
+        expect("singleton Graph has one vertex", true, ++vertices.begin() == vertices.end());
+
+        auto edges = graph.edges();
+        expect("singleton Graph has no edges", true, edges.begin() == edges.end());
+
+        auto vertexPairs = graph.vertexPairs();
+        expect("singleton Graph has no vertex pairs", true, vertexPairs.begin() == vertexPairs.end());
+    }
+
     void run() {
         std::cout << "\nGraphTests"
                      "\n----------" << std::endl;
+
         vertices_and_for_all_vertices_are_consistent();
         edges_and_for_all_edges_are_consistent();
         vertexPairs_and_for_all_vertex_pairs_are_consistent();
         neighbors_and_for_all_neighbors_are_consistent();
+        iterators_on_empty_Graph_work();
+        iterators_on_singleton_Graph_work();
     }
 };
 
