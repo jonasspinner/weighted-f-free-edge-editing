@@ -13,6 +13,7 @@
 #include "tests/FinderTests.h"
 #include "tests/GraphTests.h"
 #include "tests/SubgraphTests.h"
+#include "tests/EditorTests.h"
 
 
 class Solution {
@@ -33,14 +34,14 @@ public:
     }
 };
 
-[[nodiscard]] bool is_solution_valid(const Graph &graph, const Solution &solution, Configuration::ForbiddenSubgraphs forbidden) {
+[[nodiscard]] bool is_solution_valid(const Graph &graph, const Solution &solution, Options::FSG forbidden) {
     Graph graph_(graph);
     std::unique_ptr<FinderI> finder;
     switch (forbidden) {
-        case Configuration::ForbiddenSubgraphs::P3:
+        case Options::FSG::P3:
             finder = std::make_unique<Finder::NaiveP3>(graph_);
             break;
-        case Configuration::ForbiddenSubgraphs::P4C4:
+        case Options::FSG::P4C4:
             finder = std::make_unique<Finder::CenterC4P4>(graph_);
             break;
     }
@@ -52,42 +53,6 @@ public:
 
     return !found_forbidden_subgraph;
 }
-
-// s_b(s, n_b) * n_b >= s
-// (s_b(s, n_b) + 1) * n_b < s
-
-
-// (s - 1) // n_b
-
-// 0                   s_b(1, 4) = 1
-// 0 1                 s_b(2, 4) = 1
-// 0 1 2               s_b(3, 4) = 1
-// 0 1 2 3             s_b(4, 4) = 1
-// 0 0 1 1 2           s_b(5, 4) = 2
-// 0 0 1 1 2 2         s_b(6, 4) = 2
-// 0 0 1 1 2 2 3       s_b(7, 4) = 2
-// 0 0 1 1 2 2 3 3     s_b(8, 4) = 2
-// 0 0 0 1 1 1 2 2 2   s_b(9, 4) = 3
-
-// 0                   s_b(1, 3) = 1
-// 0 1                 s_b(2, 3) = 1
-// 0 1 2               s_b(3, 3) = 1
-// 0 0 1 1             s_b(4, 3) = 2
-// 0 0 1 1 2           s_b(5, 3) = 2
-// 0 0 1 1 2 2         s_b(6, 3) = 2
-// 0 0 0 1 1 1 2       s_b(7, 3) = 3
-// 0 0 0 1 1 1 2 2     s_b(8, 3) = 3
-// 0 0 0 1 1 1 2 2 2   s_b(9, 3) = 3
-
-// 0                   s_b(1, 2) = 1
-// 0 1                 s_b(1, 2) = 1
-// 0 0 1               s_b(3, 2) = 2
-// 0 0 1 1             s_b(4, 2) = 2
-// 0 0 0 1 1           s_b(5, 2) = 3
-// 0 0 0 1 1 1         s_b(6, 2) = 3
-// 0 0 0 0 1 1 1       s_b(7, 2) = 4
-// 0 0 0 0 1 1 1 1     s_b(8, 2) = 4
-// 0 0 0 0 0 1 1 1 1   s_b(9, 2) = 5
 
 
 void search(const Instance &instance, const Configuration &config) {
@@ -121,14 +86,14 @@ int main() {
         "./data/karate.graph"};
     auto instance = GraphIO::read_graph(paths[0], multiplier);
 
-    auto selector = Configuration::SelectorOption::LeastWeight;
-    auto forbidden = Configuration::ForbiddenSubgraphs::P4C4;
-    auto lower_bound = Configuration::LowerBound::LocalSearch;
+    auto selector = Options::Selector::LeastWeight;
+    auto forbidden_type = Options::FSG::P4C4;
+    auto lower_bound = Options::LB::No;
 
 
     std::vector<Solution> solutions;
 
-    Editor editor(instance, selector, forbidden, lower_bound);
+    Editor editor(instance, selector, forbidden_type, lower_bound);
     auto solution_cb = [&](const std::vector<VertexPair> &edits) {
         Solution solution(instance, edits);
         std::cout << solution << "\n";
@@ -138,7 +103,25 @@ int main() {
     auto pruning_cb_2 = [](Cost, Cost) {};
     auto pruning_cb_3 = [](Cost k, Cost lb) { if (k != 0 || lb != 0) std::cout << "pruned: k=" << k << ", lb=" << lb << ", eps=" << lb - k << "\n"; };
 
-    bool solved = editor.edit(15 * multiplier, solution_cb, pruning_cb);
+
+
+    // 781 { {2, 6} {6, 8} {1, 4} {3, 8} {7, 8} {4, 11} {0, 3} }
+    // 777 { {2, 6} {6, 8} {3, 8} {5, 8} {7, 8} {1, 8} {4, 11} {0, 3} }
+    // 767 { {0, 3} {6, 8} {3, 8} {5, 8} {7, 8} {8, 9} {4, 10} }
+    // 753 { {0, 3} {6, 8} {3, 8} {1, 8} {0, 7} {4, 11} }
+    // 748 { {0, 3} {6, 8} {3, 8} {5, 8} {7, 8} {8, 9} {1, 8} {4, 11} }
+    // 728 { {0, 2} {6, 8} {3, 8} {1, 8} {0, 7} {4, 11} }
+    // 681 { {0, 3} {6, 8} {3, 8} {1, 4} {7, 8} {4, 11} }
+    // 677 { {3, 6} {6, 8} {3, 8} {1, 8} {7, 8} {4, 11} }
+    // 677 { {0, 3} {6, 8} {3, 8} {5, 8} {7, 8} {1, 8} {4, 11} }
+    // 597 { {3, 6} {6, 8} {1, 8} {7, 8} {4, 11} }
+    // 526 { {2, 6} {6, 8} {3, 8} {1, 8} {7, 8} {4, 11} {0, 3} }
+    // 426 { {0, 3} {6, 8} {3, 8} {1, 8} {7, 8} {4, 11} }
+
+
+    bool solved = editor.edit(6 * multiplier, solution_cb, pruning_cb);
+
+
 
     std::cout << (solved ? "instance solved" : "instance not solved") << "\n";
 
@@ -147,7 +130,7 @@ int main() {
 
 
     for (const auto& solution : solutions) {
-        assert(is_solution_valid(instance.graph, solution, forbidden));
+        assert(is_solution_valid(instance.graph, solution, forbidden_type));
         std::cout << solution << "\n";
     }
 
@@ -156,30 +139,8 @@ int main() {
         FinderTests(seed).run();
         GraphTests(seed).run();
         SubgraphTests(seed).run();
+        EditorTests(seed).run();
     }
-
-
-    const Graph& G = instance.graph;
-
-    std::cout << "vertices:";
-    for (Vertex u : G.vertices())
-        std::cout << " " << u;
-    std::cout << "\n";
-
-    std::cout << "vertex pairs:";
-    for (VertexPair uv : G.vertexPairs())
-        std::cout << " " << uv;
-    std::cout << "\n";
-
-    std::cout << "edges:";
-    for (VertexPair uv : G.edges())
-        std::cout << " " << uv;
-    std::cout << "\n";
-
-    std::cout << "neighbors(1):";
-    for (Vertex u : G.neighbors(1))
-        std::cout << " " << u;
-    std::cout << "\n";
 
 
 

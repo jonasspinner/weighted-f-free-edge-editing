@@ -43,7 +43,7 @@ public:
         expect("vertices() and iterator produce the same output", a, b);
     }
 
-    void unmarkedVertexPairs_and_for_all_unmarked_vertex_pairs_are_consistent(unsigned n = 10, unsigned N = 20) {
+    void vertexPairs_and_for_all_unmarked_vertex_pairs_are_consistent(unsigned n = 10, unsigned N = 20) {
         Subgraph subgraph = random_subgraph(n, N, gen);
         VertexPairMap<bool> marked(N);
         for (unsigned i = 0; i < N; ++i) {
@@ -52,14 +52,18 @@ public:
 
         std::vector<VertexPair> a, b;
 
-        for (VertexPair uv : subgraph.unmarkedVertexPairs(marked)) a.push_back(uv);
+        for (VertexPair uv : subgraph.vertexPairs()) {
+            if (!marked[uv]) {
+                a.push_back(uv);
+            }
+        }
 
         subgraph.for_all_unmarked_vertex_pairs(marked, [&](VertexPair uv) {
             b.push_back(uv);
             return false;
         });
 
-        expect("unmarkedVertexPairs() and for_all_unmarked_vertex_pairs() produce the same output", a, b);
+        expect("vertexPairs() and for_all_unmarked_vertex_pairs() produce the same output", a, b);
     }
 
     static void iterators_on_empty_Subgraph_work() {
@@ -87,7 +91,7 @@ public:
                      "\n-------------" << std::endl;
         vertices_and_iterator_are_consistent();
         vertexPairs_and_for_all_vertex_pairs_are_consistent();
-        unmarkedVertexPairs_and_for_all_unmarked_vertex_pairs_are_consistent();
+        vertexPairs_and_for_all_unmarked_vertex_pairs_are_consistent();
         iterators_on_empty_Subgraph_work();
         iterators_on_singleton_Subgraph_work();
     }

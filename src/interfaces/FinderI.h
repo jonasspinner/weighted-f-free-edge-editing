@@ -64,19 +64,19 @@ public:
 
 
     static const Graph::AdjRow &neighbors(Vertex u, const Graph &graph) {
-        return graph.adj[u];
+        return graph.m_adj[u];
     }
 
     static Graph::AdjRow neighbors(Vertex u, const Graph &graph, const Graph &forbidden) {
-        return graph.adj[u] & ~forbidden.adj[u];
+        return graph.m_adj[u] & ~forbidden.m_adj[u];
     }
 
     static Graph::AdjRow non_neighbors(Vertex u, const Graph &graph) {
-        return ~graph.adj[u];
+        return ~graph.m_adj[u];
     }
 
     static Graph::AdjRow non_neighbors(Vertex u, const Graph &graph, const Graph &forbidden) {
-        return ~(graph.adj[u] | forbidden.adj[u]);
+        return ~(graph.m_adj[u] | forbidden.m_adj[u]);
     }
 
 };

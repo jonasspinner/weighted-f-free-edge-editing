@@ -40,20 +40,26 @@ void expect(const std::string &name, std::vector<std::vector<T>> expected, std::
         std::cout << "Test [" << name << "] succeeded [" << expected.size() << "]" << std::endl;
     } else {
         std::cerr << "Test [" << name << "] failed\n\tExpected [" << expected.size() << "] {";
-        for (auto l : expected)
+        for (auto l : expected) {
+            std::cerr << " {";
             for (auto t : l)
                 std::cerr << " " << t;
-        std::cerr <<" }\n\tGot      [" << actual.size() << "] {";
-        for (auto l : actual)
+            std::cerr << " }";
+        }
+        std::cerr << " }\n\tGot      [" << actual.size() << "] {";
+        for (auto l : actual) {
+            std::cerr << " {";
             for (auto t : l)
                 std::cerr << " " << t;
+            std::cerr << " }";
+        }
         std::cerr << " }" << std::endl;
     }
 }
 
 
 template <typename T>
-std::vector<Subgraph> normalize(std::vector<std::vector<T>> list) {
+std::vector<std::vector<T>> normalize(std::vector<std::vector<T>> list) {
     for (auto& set : list) {
         std::sort(set.begin(), set.end());
     }

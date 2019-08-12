@@ -17,11 +17,11 @@
 #include "../finder/Center.h"
 
 
-std::unique_ptr<FinderI> create_finder(const Graph& graph, Configuration::ForbiddenSubgraphs forbidden) {
+std::unique_ptr<FinderI> create_finder(const Graph& graph, Options::FSG forbidden) {
     switch (forbidden) {
-        case Configuration::ForbiddenSubgraphs::P3:
+        case Options::FSG::P3:
             return std::make_unique<Finder::CenterP3>(graph);
-        case Configuration::ForbiddenSubgraphs::P4C4:
+        case Options::FSG::P4C4:
             return std::make_unique<Finder::CenterC4P4>(graph);
         default:
             abort();
@@ -29,7 +29,7 @@ std::unique_ptr<FinderI> create_finder(const Graph& graph, Configuration::Forbid
 }
 
 
-bool is_solution_valid(Graph &graph, const std::vector<VertexPair> &edits, Configuration::ForbiddenSubgraphs forbidden) {
+bool is_solution_valid(Graph &graph, const std::vector<VertexPair> &edits, Options::FSG forbidden) {
     auto finder = create_finder(graph, forbidden);
 
     for (VertexPair uv : edits)
@@ -86,9 +86,10 @@ std::vector<Subgraph> find_all_subgraphs(FinderI &finder) {
     return subgraphs;
 }
 
-std::vector<Subgraph> find_all_subgraphs(const Graph &graph, Configuration::ForbiddenSubgraphs forbidden) {
-    auto finder = create_finder(graph, forbidden);
-    return find_all_subgraphs(*finder);
+std::vector<Subgraph> find_all_non_marked_subgraphs(FinderI &finder, const Graph& marked) {
+    std::vector<Subgraph> subgraphs;
+    finder.find(marked, [&](Subgraph&& subgraph) { subgraphs.push_back(subgraph); return false; });
+    return subgraphs;
 }
 
 
@@ -96,16 +97,6 @@ class FinderTests {
     std::mt19937 gen;
 public:
     explicit FinderTests(int seed=0) : gen(seed) {}
-
-    void FinderFindsP3() {
-        Graph G(3);
-        G.set_edges({{0, 1}, {1, 2}});
-
-        std::vector<Subgraph> expected{{0, 1, 2}};
-        Finder::CenterP3 finder(G);
-        auto actual = find_all_subgraphs(finder);
-        expect("CenterP3 recognizes P3", normalize(expected), normalize(actual));
-    }
 
     void EditsSolveKarate()         {
         Graph G = GraphIO::read_graph("./data/karate.graph").graph;
@@ -123,7 +114,7 @@ public:
             {28, 31},
             {31, 32}, {31, 33}
         };
-        expect("Edits solve karate", true, is_solution_valid(G, edits, Configuration::ForbiddenSubgraphs::P4C4));
+        expect("Edits solve karate", true, is_solution_valid(G, edits, Options::FSG::P4C4));
     }
 
     template <typename A, typename B>
@@ -149,13 +140,70 @@ public:
 
     template <typename Finder>
     void Finder_finds_C4(const std::string& name) {
-        Graph G(4);
-        G.set_edges({{0, 1}, {1, 2},{2, 3}, {3, 0}});
+        Graph C4(4);
+        C4.set_edges({{0, 1}, {1, 2},{2, 3}, {3, 0}});
 
-        std::vector<Subgraph> expected{{0, 1, 2, 3}};
-        Finder finder(G);
-        auto actual = find_all_subgraphs(finder);
-        expect(name + " recognizes C4", normalize(expected), normalize(actual));
+        {
+            std::vector<Subgraph> expected{{0, 1, 2, 3}};
+
+            Finder finder(C4);
+            auto actual = find_all_subgraphs(finder);
+            expect(name + " recognizes C4", normalize(expected), normalize(actual));
+        }
+
+        // 3-0-4
+        // | |
+        // 2-1-5
+        Graph G(6);
+        G.set_edges({{0, 1}, {1 , 2}, {2 , 3}, {3 , 0}, {0 , 4}, {1 , 5}});
+
+        {
+            std::vector<Subgraph> expected({{0, 1, 2, 3}, {0, 1, 2, 4}, {0, 1, 3, 5}, {0, 1, 4, 5}, {0, 2, 3, 4}, {1, 2, 3, 5}});
+            Finder finder(G);
+            auto actual = find_all_subgraphs(finder);
+            expect(name + " recognizes C4P4 in small graph", normalize(expected), normalize(actual));
+        }
+
+        {
+            Graph marked(6);
+            marked.set_edge({1, 2});
+            std::vector<Subgraph> expected({{0, 1, 3, 5}, {0, 1, 4, 5}, {0, 2, 3, 4}});
+            Finder finder(G);
+            auto actual = find_all_non_marked_subgraphs(finder, marked);
+            expect(name + " recognizes C4P4 in small graph with marked edges", normalize(expected), normalize(actual));
+        }
+
+        /*    4
+              |
+            3-0-5
+             /|
+          b-2-1-6
+           /| |\
+          a 9 8 7  */
+        Graph G2(12);
+        G2.set_edges({{0, 1}, {1, 2}, {2, 0}, {0, 3}, {0, 4}, {0, 5}, {1, 6}, {1, 7}, {1, 8}, {2, 9}, {2, 10}, {2, 11}});
+
+        {
+            Finder finder(G2);
+            std::vector<Subgraph> expected({{3, 0, 1, 6}, {3, 0, 1, 7}, {3, 0, 1, 8}, {3, 0, 2, 9}, {3, 0, 2, 10}, {3, 0, 2, 11},
+                                            {4, 0, 1, 6}, {4, 0, 1, 7}, {4, 0, 1, 8}, {4, 0, 2, 9}, {4, 0, 2, 10}, {4, 0, 2, 11},
+                                            {5, 0, 1, 6}, {5, 0, 1, 7}, {5, 0, 1, 8}, {5, 0, 2, 9}, {5, 0, 2, 10}, {5, 0, 2, 11},
+                                            {6, 1, 2, 9}, {6, 1, 2, 10}, {6, 1, 2, 11}, {7, 1, 2, 9}, {7, 1, 2, 10}, {7, 1, 2, 11}, {8, 1, 2, 9}, {8, 1, 2, 10}, {8, 1, 2, 11}});
+            auto actual = find_all_subgraphs(finder);
+            expect(name + " recognizes many P4 in small graph", normalize(expected), normalize(actual));
+        }
+
+        {
+            Graph marked(12);
+            marked.set_edge({0, 1});
+            Finder finder(G2);
+            std::vector<Subgraph> expected({{3, 0, 2, 9}, {3, 0, 2, 10}, {3, 0, 2, 11},
+                                            {4, 0, 2, 9}, {4, 0, 2, 10}, {4, 0, 2, 11},
+                                            {5, 0, 2, 9}, {5, 0, 2, 10}, {5, 0, 2, 11},
+                                            {6, 1, 2, 9}, {6, 1, 2, 10}, {6, 1, 2, 11}, {7, 1, 2, 9}, {7, 1, 2, 10}, {7, 1, 2, 11}, {8, 1, 2, 9}, {8, 1, 2, 10}, {8, 1, 2, 11}});
+            auto actual = find_all_non_marked_subgraphs(finder, marked);
+            expect(name + " recognizes many P4 in small graph with marked edges", normalize(expected), normalize(actual));
+        }
     }
 
     template <typename Finder>
@@ -167,6 +215,39 @@ public:
         Finder finder(G);
         auto actual = find_all_subgraphs(finder);
         expect(name + " recognizes P4", normalize(expected), normalize(actual));
+    }
+
+
+    template <typename A, typename B>
+    void P3_Finders_are_consistent(const std::string& a_name, const std::string& b_name) {
+        Graph G = random_graph(10, 40, gen);
+
+        A a_finder(G); B b_finder(G);
+        auto a_subgraphs = find_all_subgraphs(a_finder);
+        auto b_subgraphs = find_all_subgraphs(b_finder);
+
+        // expect(a_name + " only produces P3", true, all_p3(G, a_subgraphs));
+        // expect(b_name + " only produces P3", true, all_p3(G, b_subgraphs));
+
+        auto a_normalized = normalize(a_subgraphs);
+        auto b_normalized = normalize(b_subgraphs);
+
+        expect(a_name + " and " + b_name + " P3 Finder have same output", a_normalized, b_normalized);
+
+        a_normalized.erase(std::unique(a_normalized.begin(), a_normalized.end()), a_normalized.end());
+        b_normalized.erase(std::unique(b_normalized.begin(), b_normalized.end()), b_normalized.end());
+        expect(a_name + " and " + b_name + " P3 Finder have same output ignoring duplicates", a_normalized, b_normalized);
+    }
+
+    template <typename Finder>
+    void Finder_finds_P3(const std::string& name) {
+        Graph G(3);
+        G.set_edges({{0, 1}, {1, 2}});
+
+        std::vector<Subgraph> expected{{0, 1, 2}};
+        Finder finder(G);
+        auto actual = find_all_subgraphs(finder);
+        expect(name + " recognizes P3", normalize(expected), normalize(actual));
     }
 
     void run() {
@@ -185,7 +266,11 @@ public:
         C4P4_Finders_are_consistent<Finder::NaiveC4P4, CenterRecC4P4>("NaiveC4P4", "CenterRecC4P4");
         C4P4_Finders_are_consistent<Finder::CenterC4P4, CenterRecC4P4>("CenterC4P4", "CenterRecC4P4");
 
-        FinderFindsP3();
+        Finder_finds_P3<Finder::CenterP3>("CenterP3");
+        Finder_finds_P3<Finder::NaiveP3>("NaiveP3");
+
+        P3_Finders_are_consistent<Finder::CenterP3, Finder::NaiveP3>("CenterP3", "NaiveP3");
+
         EditsSolveKarate();
     }
 };

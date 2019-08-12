@@ -2,8 +2,8 @@
 // Created by jonas on 27.06.19.
 //
 
-#ifndef CONCEPT_GRAPH_H
-#define CONCEPT_GRAPH_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_GRAPH_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_GRAPH_H
 
 #include <iostream>
 #include <vector>
@@ -41,8 +41,12 @@ public:
         return os << "{" << uv.u << ", " << uv.v << "}";
     }
 
-    friend bool operator==(VertexPair uv, VertexPair xy) {
+    friend bool operator==(const VertexPair &uv, const VertexPair &xy) {
         return (uv.u == xy.u) && (uv.v == xy.v);
+    }
+
+    friend bool operator<(const VertexPair &uv, const VertexPair &xy) {
+        return uv.u < xy.u || (uv.u == xy.u && uv.v < xy.v);
     }
 };
 
@@ -54,23 +58,23 @@ public:
     using AdjMatrix = std::vector<AdjRow>;
 
 private:
-    unsigned int n;
-    AdjMatrix adj;
+    unsigned int m_size;
+    AdjMatrix m_adj;
 
 public:
 
-    explicit Graph(unsigned int size) : n(size), adj(n, boost::dynamic_bitset<Block>(n)) {}
+    explicit Graph(unsigned int size) : m_size(size), m_adj(m_size, boost::dynamic_bitset<Block>(m_size)) {}
 
     /**
      * Returns the number of vertices.
      *
      * @return
      */
-    [[nodiscard]] Vertex size() const { return n; }
+    [[nodiscard]] Vertex size() const { return m_size; }
 
 
     void clear_edges() {
-        for (auto &row: adj) { row.reset(); }
+        for (auto &row: m_adj) { row.reset(); }
     }
 
     /**
@@ -79,9 +83,9 @@ public:
      * @param edge
      */
     void toggle_edge(VertexPair edge) {
-        const auto&[u, v] = edge;
-        adj[u].flip(v);
-        adj[v].flip(u);
+        const auto[u, v] = edge;
+        m_adj[u].flip(v);
+        m_adj[v].flip(u);
     }
 
     /**
@@ -90,7 +94,7 @@ public:
      * @param u
      * @return
      */
-    [[nodiscard]] size_t degree(Vertex u) const { return adj[u].count(); };
+    [[nodiscard]] size_t degree(Vertex u) const { return m_adj[u].count(); };
 
     /**
      * Checks whether the edge is in the graph.
@@ -98,19 +102,24 @@ public:
      * @param edge
      * @return
      */
-    [[nodiscard]] bool has_edge(VertexPair edge) const { return adj[edge.u][edge.v]; }
+    [[nodiscard]] bool has_edge(VertexPair edge) const { return m_adj[edge.u][edge.v]; }
 
     /**
-     * Sets the edge.
+     * Inserts the edge into the Graph.
      *
      * @param edge
      */
     void set_edge(VertexPair edge) {
-        const auto&[u, v] = edge;
-        adj[u].set(v);
-        adj[v].set(u);
+        const auto[u, v] = edge;
+        m_adj[u].set(v);
+        m_adj[v].set(u);
     }
 
+    /**
+     * Inserts the edges into the Graph.
+     *
+     * @param edges
+     */
     void set_edges(const std::vector<VertexPair> &edges) {
         for (VertexPair uv : edges) {
             assert(!has_edge(uv));
@@ -119,14 +128,14 @@ public:
     }
 
     /**
-     * Clears the edge.
+     * Removes the edge from the Graph.
      *
      * @param edge
      */
     void clear_edge(VertexPair edge) {
-        const auto&[u, v] = edge;
-        adj[u].reset(v);
-        adj[v].reset(u);
+        const auto[u, v] = edge;
+        m_adj[u].reset(v);
+        m_adj[v].reset(u);
     }
 
 
@@ -134,6 +143,9 @@ public:
         class Iterator {
             Vertex v;
         public:
+            using value_type = Vertex;
+            using iterator_category = std::forward_iterator_tag;
+
             explicit Iterator(Vertex start) : v(start) {}
 
             Vertex operator*() const { return v; }
@@ -158,7 +170,7 @@ public:
     };
 
     [[nodiscard]] Vertices vertices() const {
-        return Vertices(n);
+        return Vertices(m_size);
     }
 
 
@@ -168,6 +180,12 @@ public:
             Vertex u;
         public:
             static const Vertex end_vertex = static_cast<Vertex>(AdjRow::npos);
+
+            using value_type = Vertex;
+            using difference_type = std::ptrdiff_t;
+            using pointer = const Vertex*;
+            using reference = const Vertex&;
+            using iterator_category = std::forward_iterator_tag;
 
             explicit Iterator(const AdjRow &row) : m_row(row) {
                 u = row.find_first();
@@ -190,7 +208,7 @@ public:
                 return *this;
             }
 
-            bool operator==(const Iterator &other) const { return u == other.u; }
+            bool operator==(const Iterator &other) const { return &m_row == &other.m_row && u == other.u; }
 
             bool operator!=(const Iterator &other) const { return !(*this == other); }
         };
@@ -209,7 +227,7 @@ public:
     }
 
     [[nodiscard]] RowVertices neighbors(Vertex u) const {
-        return RowVertices(adj[u]);
+        return RowVertices(m_adj[u]);
     }
 
 
@@ -218,6 +236,12 @@ public:
             VertexPair m_uv;
             Vertex n;
         public:
+            using value_type = VertexPair;
+            using difference_type = std::ptrdiff_t;
+            using pointer = const VertexPair*;
+            using reference = const VertexPair&;
+            using iterator_category = std::forward_iterator_tag;
+
             Iterator(VertexPair start, Vertex size) : m_uv(start), n(size) {}
 
             VertexPair operator*() const { return m_uv; }
@@ -231,7 +255,7 @@ public:
                 return *this;
             }
 
-            bool operator==(const Iterator &other) const { return m_uv == other.m_uv; }
+            bool operator==(const Iterator &other) const { return m_uv == other.m_uv && n == other.n; }
 
             bool operator!=(const Iterator &other) const { return !(*this == other); }
         };
@@ -246,7 +270,7 @@ public:
     };
 
     [[nodiscard]] VertexPairs vertexPairs() const {
-        return VertexPairs(n);
+        return VertexPairs(m_size);
     }
 
 
@@ -255,6 +279,12 @@ public:
             const AdjMatrix &m_adj;
             VertexPair m_uv;
         public:
+            using value_type = VertexPair;
+            using difference_type = std::ptrdiff_t;
+            using pointer = const VertexPair*;
+            using reference = const VertexPair&;
+            using iterator_category = std::forward_iterator_tag;
+
             Iterator(const AdjMatrix &adj, VertexPair start) : m_adj(adj), m_uv(start) {}
 
             explicit Iterator(const AdjMatrix &adj) : m_adj(adj), m_uv({0, 1}) {
@@ -290,7 +320,7 @@ public:
                 return *this;
             }
 
-            bool operator==(const Iterator &other) const { return m_uv == other.m_uv; }
+            bool operator==(const Iterator &other) const { return &m_adj == &other.m_adj && m_uv == other.m_uv; }
 
             bool operator!=(const Iterator &other) const { return !(*this == other); }
 
@@ -309,7 +339,7 @@ public:
     };
 
     [[nodiscard]] Edges edges() const {
-        return Edges(adj);
+        return Edges(m_adj);
     }
 
 
@@ -324,10 +354,10 @@ public:
      */
     template<typename VertexCallback>
     bool for_neighbors_of(Vertex u, VertexCallback callback) const {
-        Vertex v = adj[u].find_first();
-        while (v < n) {
+        Vertex v = m_adj[u].find_first();
+        while (v < m_size) {
             if (callback(v)) return true;
-            v = adj[u].find_next(v);
+            v = m_adj[u].find_next(v);
         }
         return false;
     }
@@ -342,7 +372,7 @@ public:
      */
     template<typename VertexCallback>
     bool for_all_vertices(VertexCallback callback) const {
-        for (Vertex u = 0; u < n; ++u) {
+        for (Vertex u = 0; u < m_size; ++u) {
             if (callback(u)) return true;
         }
         return false;
@@ -359,10 +389,10 @@ public:
     template<typename VertexPairCallback>
     bool for_all_edges(VertexPairCallback callback) const {
         return for_all_vertices([&](Vertex u) {
-            Vertex v = adj[u].find_next(u);
-            while (v < n) {
+            Vertex v = m_adj[u].find_next(u);
+            while (v < m_size) {
                 if (callback(VertexPair(u, v))) return true;
-                v = adj[u].find_next(v);
+                v = m_adj[u].find_next(v);
             }
             return false;
         });
@@ -378,8 +408,8 @@ public:
      */
     template<typename VertexPairCallback>
     bool for_all_vertex_pairs(VertexPairCallback callback) const {
-        for (Vertex u = 0; u < n; ++u) {
-            for (Vertex v = u + 1; v < n; ++v) {
+        for (Vertex u = 0; u < m_size; ++u) {
+            for (Vertex v = u + 1; v < m_size; ++v) {
                 if (callback(VertexPair(u, v))) return true;
             }
         }
@@ -389,7 +419,7 @@ public:
     friend std::ostream &operator<<(std::ostream &os, const Graph &graph) {
         for (Vertex u = 0; u < graph.size(); ++u) {
             for (Vertex v = 0; v < graph.size(); ++v) {
-                os << graph.adj[u][v] << " ";
+                os << graph.m_adj[u][v] << " ";
             }
             os << "\n";
         }
@@ -399,7 +429,7 @@ public:
 private:
 
     [[nodiscard]] AdjRow all_vertices() const {
-        return AdjRow(n, 1);
+        return AdjRow(m_size, 1);
     }
 
     /**
@@ -447,4 +477,4 @@ private:
 };
 
 
-#endif //CONCEPT_GRAPH_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_GRAPH_H

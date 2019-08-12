@@ -41,7 +41,7 @@ private:
     using States = std::vector<std::unique_ptr<StateI>>;
 
     Instance m_instance;
-    VertexPairMap<bool> m_forbidden;
+    VertexPairMap<bool> m_marked;
     std::unique_ptr<LowerBoundI> m_lower_bound;
     std::unique_ptr<SelectorI> m_selector;
     std::vector<ConsumerI *> m_consumers;
@@ -51,37 +51,37 @@ private:
     std::vector<VertexPair> edits;
 
 public:
-    explicit Editor(Instance instance, Configuration::SelectorOption selector,
-                    Configuration::ForbiddenSubgraphs forbidden, Configuration::LowerBound lower_bound) :
-            m_instance(std::move(instance)), m_forbidden(m_instance.graph.size()) {
+    explicit Editor(Instance instance, Options::Selector selector,
+                    Options::FSG forbidden, Options::LB lower_bound) :
+            m_instance(std::move(instance)), m_marked(m_instance.graph.size()) {
         switch (forbidden) {
-            case Configuration::ForbiddenSubgraphs::P3:
+            case Options::FSG::P3:
                 m_finder = std::make_shared<Finder::CenterP3>(m_instance.graph);
                 break;
-            case Configuration::ForbiddenSubgraphs::P4C4:
+            case Options::FSG::P4C4:
                 m_finder = std::make_shared<Finder::CenterC4P4>(m_instance.graph);
                 break;
         }
         switch (selector) {
-            case Configuration::SelectorOption::LeastWeight:
-                m_selector = std::make_unique<Selector::LeastWeight>(m_instance.costs, m_finder, m_forbidden);
+            case Options::Selector::LeastWeight:
+                m_selector = std::make_unique<Selector::LeastWeight>(m_instance.costs, m_finder, m_marked);
                 break;
-            case Configuration::SelectorOption::FirstEditable:
-                m_selector = std::make_unique<Selector::FirstEditable>(m_finder, m_forbidden);
+            case Options::Selector::FirstEditable:
+                m_selector = std::make_unique<Selector::FirstEditable>(m_finder, m_marked);
                 break;
         }
         switch (lower_bound) {
-            case Configuration::LowerBound::No:
+            case Options::LB::No:
                 m_lower_bound = std::make_unique<LowerBound::NoLowerBound>(m_finder);
                 break;
-            case Configuration::LowerBound::LocalSearch:
-                m_lower_bound = std::make_unique<IteratedLocalSearch>(m_instance, m_forbidden, m_finder);
+            case Options::LB::LocalSearch:
+                m_lower_bound = std::make_unique<IteratedLocalSearch>(m_instance, m_marked, m_finder);
                 break;
-            case Configuration::LowerBound::Greedy:
-                m_lower_bound = std::make_unique<LowerBound::GreedyLowerBound>(m_instance, m_forbidden, m_finder);
+            case Options::LB::Greedy:
+                m_lower_bound = std::make_unique<LowerBound::GreedyLowerBound>(m_instance, m_marked, m_finder);
                 break;
         }
-        m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_forbidden);
+        m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_marked);
 
         m_consumers.emplace_back(m_lower_bound.get());
         m_consumers.emplace_back(m_selector.get());
@@ -108,11 +108,18 @@ private:
 
         /*std::cout << "marked:";
         for (VertexPair uv : m_instance.graph.vertexPairs())
-            if (m_forbidden[uv]) std::cout << " " << uv;
+            if (m_marked[uv]) std::cout << " " << uv;
         std::cout << "\n";*/
+
+
+        //Cost sum = 0;
+        //for (unsigned i = 0; i < edits.size(); ++i) std::cout << "  ";
+        //for (VertexPair uv : edits) { std::cout << uv << " "; sum += costs[uv]; }
+        //std::cout << sum << std::endl;
 
         auto lb = m_lower_bound->result(*states[0], k);
         if (k < lb) {
+            //for (unsigned i = 0; i < edits.size(); ++i) std::cout << "  ";
             pruned(k, lb);
             return false; /* unsolvable, too few edits remaining */
         }
@@ -133,8 +140,8 @@ private:
 
 
         bool solved = false;
-        for (auto uv : problem.pairs) {
-            if (m_forbidden[uv]) continue;
+        for (VertexPair uv : problem.pairs) {
+            if (m_marked[uv]) continue;
 
             // std::cout << "edit " << uv << "\n";
             mark_and_edit_edge(states, uv);
@@ -150,21 +157,21 @@ private:
             // if (solved) break;
         }
 
-        for (const auto &uv : problem.pairs) {
-            if (m_forbidden[uv]) unmark_edge(states, uv);
+        for (VertexPair uv : problem.pairs) {
+            if (m_marked[uv]) unmark_edge(states, uv);
         }
 
         return solved;
     }
 
     void mark_and_edit_edge(States &states, VertexPair uv) {
-        assert(!m_forbidden[uv]);
+        assert(!m_marked[uv]);
         Graph &G = m_instance.graph;
 
         call_for_each(m_consumers, before_mark_and_edit, states, uv);   // all
         call_for_each(m_consumers, before_mark, states, uv);            // all
 
-        m_forbidden[uv] = true;
+        m_marked[uv] = true;
 
         call_for_each(m_consumers, after_mark, states, uv);             // subgraph_stats
         call_for_each(m_consumers, before_edit, states, uv);            // subgraph_stats
@@ -178,7 +185,7 @@ private:
     }
 
     void unedit_edge(States &states, VertexPair uv) {
-        assert(m_forbidden[uv]);
+        assert(m_marked[uv]);
         Graph &G = m_instance.graph;
 
         call_for_each(m_consumers, before_edit, states, uv);            // subgraph_stats
@@ -191,8 +198,8 @@ private:
     }
 
     void unmark_edge(States &states, VertexPair uv) {
-        assert(m_forbidden[uv]);
-        m_forbidden[uv] = false;
+        assert(m_marked[uv]);
+        m_marked[uv] = false;
 
         call_for_each(m_consumers, after_unmark, states, uv);           // subgraph_stats
     }

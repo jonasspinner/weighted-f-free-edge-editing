@@ -251,8 +251,8 @@ namespace detail {
 
         bool find(SubgraphCallback callback) override {
 
-            auto neighbors =      [&](Vertex u)      { return  graph.adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.adj[u]; result[u] = false; return result; };
+            auto neighbors =      [&](Vertex u)      { return  graph.m_adj[u]; };
+            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u]; result[u] = false; return result; };
             auto valid_edge =     [&](VertexPair uv) { return  graph.has_edge(uv); };
             auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv); };
 
@@ -261,8 +261,8 @@ namespace detail {
 
         bool find(const Graph& forbidden, SubgraphCallback callback) override {
 
-            auto neighbors =      [&](Vertex u)      { return  graph.adj[u] & ~forbidden.adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.adj[u] & ~forbidden.adj[u]; result[u] = false; return result; };
+            auto neighbors =      [&](Vertex u)      { return graph.m_adj[u] & ~forbidden.m_adj[u]; };
+            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u] & ~forbidden.m_adj[u]; result[u] = false; return result; };
             auto valid_edge =     [&](VertexPair uv) { return  graph.has_edge(uv) && !forbidden.has_edge(uv); };
             auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv) && !forbidden.has_edge(uv); };
 

@@ -43,6 +43,7 @@ namespace Finder {
 
             for (Vertex u : graph.vertices()) {
                 for (Vertex v : graph.neighbors(u)) {
+                    if (!valid_edge({u, v})) continue;
 
                     auto A = neighbors(u) & non_neighbors(v);
                     auto B = neighbors(v) & non_neighbors(u);
@@ -79,8 +80,8 @@ namespace Finder {
 
         bool find(SubgraphCallback callback) override {
 
-            auto neighbors =      [&](Vertex u)      { return  graph.adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.adj[u]; result[u] = false; return result; };
+            auto neighbors =      [&](Vertex u)      { return  graph.m_adj[u]; };
+            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u]; result[u] = false; return result; };
             auto valid_edge =     [&](VertexPair uv) { return  graph.has_edge(uv); };
             auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv); };
 
@@ -89,8 +90,8 @@ namespace Finder {
 
         bool find(const Graph &forbidden, SubgraphCallback callback) override {
 
-            auto neighbors =      [&](Vertex u)      { return  graph.adj[u] & ~forbidden.adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.adj[u] & ~forbidden.adj[u]; result[u] = false; return result; };
+            auto neighbors =      [&](Vertex u)      { return graph.m_adj[u] & ~forbidden.m_adj[u]; };
+            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u] & ~forbidden.m_adj[u]; result[u] = false; return result; };
             auto valid_edge =     [&](VertexPair uv) { return  graph.has_edge(uv) && !forbidden.has_edge(uv); };
             auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv) && !forbidden.has_edge(uv); };
 
@@ -172,8 +173,8 @@ namespace Finder {
 
         bool find_near(VertexPair uv, SubgraphCallback callback) override {
 
-            auto neighbors =      [&](Vertex u)      { return  graph.adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.adj[u]; result[u] = false; return result; };
+            auto neighbors =      [&](Vertex u)      { return  graph.m_adj[u]; };
+            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u]; result[u] = false; return result; };
             auto valid_edge =     [&](VertexPair xy) { return  graph.has_edge(xy); };
             auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy); };
 
@@ -185,8 +186,8 @@ namespace Finder {
 
         bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override {
 
-            auto neighbors =      [&](Vertex u)      { return  graph.adj[u] & ~forbidden.adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.adj[u] & ~forbidden.adj[u]; result[u] = false; return result; };
+            auto neighbors =      [&](Vertex u)      { return graph.m_adj[u] & ~forbidden.m_adj[u]; };
+            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u] & ~forbidden.m_adj[u]; result[u] = false; return result; };
             auto valid_edge =     [&](VertexPair xy) { return  graph.has_edge(xy) && !forbidden.has_edge(xy); };
             auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy) && !forbidden.has_edge(xy); };
 

@@ -9,38 +9,32 @@
 #include <string>
 
 namespace Options {
-    enum Selector {
+    enum class Selector {
         FirstEditable, LeastWeight
     };
-    enum FSG {
+    enum class FSG {
         P3, P4C4
     };
-    enum LB {
-        No, LocalSearch
+    enum class LB {
+        No, Greedy, LocalSearch
     };
 }
 
 class Configuration {
 public:
-    int k_max{100};
-    enum SelectorOption {
-        FirstEditable, LeastWeight
-    } selector;
-    enum ForbiddenSubgraphs {
-        P3, P4C4
-    } forbidden;
-    enum LowerBound {
-        No, LocalSearch, Greedy
-    } lower_bound;
+    int k_max;
+    Options::Selector selector;
+    Options::FSG forbidden;
+    Options::LB lower_bound;
     std::string input_path;
     std::string output_path;
 
-    Configuration(int k_max_, SelectorOption selector_, ForbiddenSubgraphs forbidden_, LowerBound lower_bound_,
+    Configuration(int k_max_, Options::Selector selector_, Options::FSG forbidden_, Options::LB lower_bound_,
                   std::string input_path_, std::string output_path_) :
             k_max(k_max_), selector(selector_), forbidden(forbidden_), lower_bound(lower_bound_),
             input_path(std::move(input_path_)), output_path(std::move(output_path_)) {}
 
-    Configuration(int argc, char *argv[]);
+    void read_input(int argc, char *argv[]);
 };
 
 

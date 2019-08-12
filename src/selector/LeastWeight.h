@@ -47,7 +47,7 @@ namespace Selector {
             }
 
             std::sort(pairs.begin(), pairs.end(),
-                      [&](VertexPair uv, VertexPair xy) { return m_costs[uv] > m_costs[xy]; });
+                      [&](VertexPair uv, VertexPair xy) { return m_costs[uv] < m_costs[xy]; });
 
             return {pairs, no_subgraphs};
         }

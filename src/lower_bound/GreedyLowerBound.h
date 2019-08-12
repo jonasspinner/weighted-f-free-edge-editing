@@ -51,6 +51,8 @@ namespace LowerBound {
             std::sort(subgraphs.begin(), subgraphs.end(),
                       [](const auto &lhs, const auto &rhs) { return lhs.first > rhs.first; });
 
+            if (!subgraphs.empty() && subgraphs[0].first == invalid_cost) return 0;
+
             Cost bound_size = 0;
             VertexPairMap<bool> is_in_bound(graph.size(), false);
 
