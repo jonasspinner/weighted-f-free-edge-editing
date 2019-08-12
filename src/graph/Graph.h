@@ -167,16 +167,26 @@ public:
             const AdjRow &m_row;
             Vertex u;
         public:
+            static const Vertex end_vertex = static_cast<Vertex>(AdjRow::npos);
+
             explicit Iterator(const AdjRow &row) : m_row(row) {
                 u = row.find_first();
+                if (u >= m_row.size()) u = m_row.size();
             }
 
             Iterator(const AdjRow &row, Vertex start) : m_row(row), u(start) {}
 
-            Vertex operator*() const { return u; }
+            Vertex operator*() const {
+                assert(u != end_vertex);
+                assert(u < m_row.size());
+                return u;
+            }
 
             Iterator &operator++() {
+                assert(u != end_vertex);
+                assert(u < m_row.size());
                 u = m_row.find_next(u);
+                if (u >= m_row.size()) u = m_row.size();
                 return *this;
             }
 
@@ -191,7 +201,7 @@ public:
 
         [[nodiscard]] Iterator begin() const { return Iterator(m_row); }
 
-        [[nodiscard]] Iterator end() const { return Iterator(m_row, static_cast<Vertex>(AdjRow::npos)); }
+        [[nodiscard]] Iterator end() const { return Iterator(m_row, m_row.size()); }
     };
 
     static RowVertices vertices(const AdjRow &row) {
@@ -248,19 +258,34 @@ public:
             Iterator(const AdjMatrix &adj, VertexPair start) : m_adj(adj), m_uv(start) {}
 
             explicit Iterator(const AdjMatrix &adj) : m_adj(adj), m_uv({0, 1}) {
-                while (m_uv.u < adj.size() && m_adj[m_uv.u].none()) m_uv.u++;
-                if (m_uv.u < adj.size())
+                const Vertex size = m_adj.size();
+                while (m_uv.u < size && m_adj[m_uv.u].none()) m_uv.u++;
+                if (m_uv.u < size) {
                     m_uv.v = m_adj[m_uv.u].find_first();
+                    assert(m_uv.u < size - 1);
+                    assert(m_uv.v < size);
+                } else {
+                    m_uv = {size - 1, size};
+                }
             }
 
-            VertexPair operator*() const { return m_uv; }
+            VertexPair operator*() const {
+                assert(m_uv.u < m_adj.size() - 1);
+                assert(m_uv.v < m_adj.size());
+                return m_uv;
+            }
 
             Iterator &operator++() {
+                const Vertex size = m_adj.size();
+                assert(m_uv.u < size - 1);
+                assert(m_uv.v < size);
                 m_uv.v = m_adj[m_uv.u].find_next(m_uv.v);
-                while (m_uv.v >= m_adj.size() && m_uv.u < m_adj.size()) {
+                while (m_uv.u < size - 1 && m_uv.v >= size) {
                     ++m_uv.u;
-                    if (m_uv.u < m_adj.size())
-                        m_uv.v = m_adj[m_uv.u].find_next(m_uv.u);
+                    m_uv.v = m_adj[m_uv.u].find_next(m_uv.u);
+                }
+                if (m_uv.u >= size - 1 || m_uv.v >= size){
+                    m_uv = {size - 1, size};
                 }
                 return *this;
             }
@@ -278,7 +303,8 @@ public:
         [[nodiscard]] Iterator begin() const { return Iterator(m_adj); }
 
         [[nodiscard]] Iterator end() const {
-            return Iterator(m_adj, {static_cast<Vertex>(m_adj.size()), static_cast<Vertex>(AdjRow::npos)});
+            Vertex size = m_adj.size();
+            return Iterator(m_adj, {size - 1, size});
         }
     };
 
