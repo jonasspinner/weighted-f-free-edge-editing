@@ -26,7 +26,7 @@ namespace Finder {
                 for (Vertex v : graph.neighbors(u)) {
                     if (!valid_edge({u, v})) continue;
                     auto W = neighbors(v) & non_neighbors(u);
-                    for (Vertex w : Graph::vertices(W)) {
+                    for (Vertex w : Graph::iterate(W)) {
                         assert(valid_edge({u, v})); assert(valid_non_edge({u, w})); assert(valid_edge({v, w}));
                         if (u < w) {
                             if (callback(Subgraph{u, v, w})) return true;
@@ -38,8 +38,8 @@ namespace Finder {
         }
 
         bool find(const Graph &forbidden, SubgraphCallback callback) override {
-            auto neighbors =      [&](Vertex u)      { return graph.m_adj[u] & ~forbidden.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u] & ~forbidden.m_adj[u]; result[u] = false; return result; };
+            auto neighbors =      [&](Vertex u)      { return graph.m_adj[u] - forbidden.m_adj[u]; };
+            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u] - forbidden.m_adj[u]; result[u] = false; return result; };
             auto valid_edge =     [&](VertexPair xy) { return  graph.has_edge(xy) && !forbidden.has_edge(xy); };
             auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy) && !forbidden.has_edge(xy); };
 
@@ -50,14 +50,14 @@ namespace Finder {
 
                 w_candidates = neighbors(u) & non_neighbors(v);
 
-                for (Vertex w : Graph::vertices(w_candidates)) {
+                for (Vertex w : Graph::iterate(w_candidates)) {
                     assert(valid_edge({u, v})); assert(valid_edge({u, w})); assert(valid_non_edge({v, w}));
                     if (callback(Subgraph{u, v, w})) return true;
                 }
 
                 w_candidates = neighbors(v) & non_neighbors(u);
 
-                for (Vertex w : Graph::vertices(w_candidates)) {
+                for (Vertex w : Graph::iterate(w_candidates)) {
                     assert(valid_edge({u, v})); assert(valid_non_edge({u, w})); assert(valid_edge({v, w}));
                     if (callback(Subgraph{v, u, w})) return true;
                 }
@@ -66,26 +66,18 @@ namespace Finder {
         }
 
         bool find_near(VertexPair uv, SubgraphCallback callback) override {
-            auto neighbors = [&](Vertex u) { return graph.m_adj[u]; };
-            auto non_neighbors = [&](Vertex u) {
-                auto result = ~graph.m_adj[u];
-                result[u] = false;
-                return result;
-            };
-            auto valid_edge = [&](VertexPair xy) { return graph.has_edge(xy); };
+            auto neighbors =      [&](Vertex u)      { return  graph.m_adj[u]; };
+            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u]; result[u] = false; return result; };
+            auto valid_edge =     [&](VertexPair xy) { return  graph.has_edge(xy); };
             auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy); };
 
             return find_near(uv, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
         }
 
         bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override {
-            auto neighbors = [&](Vertex u) { return graph.m_adj[u] & ~forbidden.m_adj[u]; };
-            auto non_neighbors = [&](Vertex u) {
-                auto result = ~graph.m_adj[u] & ~forbidden.m_adj[u];
-                result[u] = false;
-                return result;
-            };
-            auto valid_edge = [&](VertexPair xy) { return graph.has_edge(xy) && !forbidden.has_edge(xy); };
+            auto neighbors =      [&](Vertex u)      { return  graph.m_adj[u] - forbidden.m_adj[u]; };
+            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u] - forbidden.m_adj[u]; result[u] = false; return result; };
+            auto valid_edge =     [&](VertexPair xy) { return  graph.has_edge(xy) && !forbidden.has_edge(xy); };
             auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy) && !forbidden.has_edge(xy); };
 
             return find_near(uv, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
@@ -101,21 +93,24 @@ namespace Finder {
             if (valid_edge(uv)) {
                 w_candidates = neighbors(u) & non_neighbors(v);
 
-                for (Vertex w : Graph::vertices(w_candidates)) {
-                    if (callback(Subgraph{u, v, w})) return true;
+                for (Vertex w : Graph::iterate(w_candidates)) {
+                    assert(valid_edge({w, u})); assert(valid_non_edge({w, v})); assert(valid_edge({u, v}));
+                    if (callback(Subgraph{w, u, v})) return true;
                 }
 
                 w_candidates = neighbors(v) & non_neighbors(u);
 
-                for (Vertex w : Graph::vertices(w_candidates)) {
-                    if (callback(Subgraph{v, u, w})) return true;
+                for (Vertex w : Graph::iterate(w_candidates)) {
+                    assert(valid_edge({u, v})); assert(valid_non_edge({u, w})); assert(valid_edge({v, w}));
+                    if (callback(Subgraph{u, v, w})) return true;
                 }
 
             } else if (valid_non_edge(uv)) {
 
                 w_candidates = neighbors(u) & neighbors(v);
-                for (Vertex w : Graph::vertices(w_candidates)) {
-                    if (callback(Subgraph{w, u, v})) return true;
+                for (Vertex w : Graph::iterate(w_candidates)) {
+                    assert(valid_edge({u, w})); assert(valid_non_edge({u, v})); assert(valid_edge({w, v}));
+                    if (callback(Subgraph{u, w, v})) return true;
                 }
             }
             return false;

@@ -448,9 +448,9 @@ private:
 
 
         if (!touches) {
-            for (VertexPair uv : subgraph.vertexPairs()) {
-                if (!forbidden[uv]) graph.set_edge(uv);
-            }
+            for (VertexPair uv : subgraph.vertexPairs())
+                if (!forbidden[uv])
+                    graph.set_edge(uv);
 
             return true;
         } else {

@@ -95,16 +95,14 @@ public:
         Vertex n = graph.size();
 
         file << n << " " << n * (n - 1) / 2 << " " << 1 << "\n";
-        graph.for_all_vertices([&](auto u) {
-            graph.for_all_vertices([&](auto v) {
-                if (u >= v) return false;
+        for (Vertex u : graph.vertices()) {
+            for (Vertex v : graph.vertices()) {
+                if (u >= v) continue;
                 file << (v + 1) << " " << (graph.has_edge({u, v}) ? 1 : -1) * weights[{u, v}]
                      << " ";
-                return false;
-            });
+            }
             file << "\n";
-            return false;
-        });
+        }
     }
 };
 

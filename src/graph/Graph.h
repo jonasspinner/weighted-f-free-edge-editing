@@ -222,7 +222,7 @@ public:
         [[nodiscard]] Iterator end() const { return Iterator(m_row, m_row.size()); }
     };
 
-    static RowVertices vertices(const AdjRow &row) {
+    static RowVertices iterate(const AdjRow &row) {
         return RowVertices(row);
     }
 

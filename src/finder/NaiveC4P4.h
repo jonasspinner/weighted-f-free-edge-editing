@@ -29,7 +29,7 @@ namespace Finder {
                                             if (callback(Subgraph({u, v, w, x}))) return true;
                                     } else if (valid_edge({u, x})) {
                                         // C_4
-                                        if (u < v && u < w && u < x) // p_1 is smallest
+                                        if (u < std::min({v, w, x})) // p_1 is smallest
                                             if (v < x) // p_2 < p_k
                                                 if (callback(Subgraph({u, v, w, x}))) return true;
                                     }
@@ -43,14 +43,14 @@ namespace Finder {
         }
 
         bool find(SubgraphCallback callback) override {
-            auto valid_edge = [&](VertexPair uv) { return graph.has_edge(uv); };
+            auto valid_edge =     [&](VertexPair uv) { return graph.has_edge(uv); };
             auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv); };
 
             return find(callback, valid_edge, valid_non_edge);
         }
 
         bool find(const Graph &forbidden, SubgraphCallback callback) override {
-            auto valid_edge = [&](VertexPair uv) { return graph.has_edge(uv) && !forbidden.has_edge(uv); };
+            auto valid_edge =     [&](VertexPair uv) { return graph.has_edge(uv) && !forbidden.has_edge(uv); };
             auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv) && !forbidden.has_edge(uv); };
 
             return find(callback, valid_edge, valid_non_edge);
@@ -60,10 +60,12 @@ namespace Finder {
         bool find_near(VertexPair uv, const SubgraphCallback& callback, H valid_edge, I valid_non_edge) {
 
             return find([&](Subgraph &&subgraph) {
-                const auto& S = subgraph;
-                Vertex u = S[0], v = S[1], w = S[2], x = S[3];
+                auto vertices = subgraph.vertices();
 
-                if ((uv.u == u || uv.u == v || uv.u == w || uv.u == x) && (uv.v == u || uv.v == v || uv.v == w || uv.v == x)) {
+                bool has_u = std::any_of(vertices.begin(), vertices.end(), [&](Vertex x) { return x == uv.u; });
+                bool has_v = std::any_of(vertices.begin(), vertices.end(), [&](Vertex x) { return x == uv.v; });
+
+                if (has_u && has_v) {
                     return callback(std::move(subgraph));
                 } else {
                     return false;

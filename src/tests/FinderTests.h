@@ -131,11 +131,41 @@ public:
         auto a_normalized = normalize(a_subgraphs);
         auto b_normalized = normalize(b_subgraphs);
 
-        expect(a_name + " and " + b_name + " C4P4 Finder have same output", a_normalized, b_normalized);
+        expect(a_name + " and " + b_name + " C4P4 Finder have same find output", a_normalized, b_normalized);
 
         a_normalized.erase(std::unique(a_normalized.begin(), a_normalized.end()), a_normalized.end());
         b_normalized.erase(std::unique(b_normalized.begin(), b_normalized.end()), b_normalized.end());
-        expect(a_name + " and " + b_name + " C4P4 Finder have same output ignoring duplicates", a_normalized, b_normalized);
+        expect(a_name + " and " + b_name + " C4P4 Finder have same find output ignoring duplicates", a_normalized, b_normalized);
+
+
+        std::vector<std::vector<Subgraph>> a_near_subgraphs, b_near_subgraphs;
+        for (VertexPair uv : G.vertexPairs()) {
+            std::vector<Subgraph> a, b;
+
+            a_finder.find_near(uv, [&](Subgraph &&subgraph){
+                a.emplace_back(std::move(subgraph));
+                return false;
+            });
+            a_near_subgraphs.emplace_back(normalize(a));
+
+            b_finder.find_near(uv, [&](Subgraph &&subgraph){
+                b.emplace_back(std::move(subgraph));
+                return false;
+            });
+            b_near_subgraphs.emplace_back(normalize(b));
+        }
+
+        expect(a_name + " and " + b_name + " C4P4 Finder have same find_near output", a_near_subgraphs, b_near_subgraphs);
+
+        for (auto &subgraphs : a_near_subgraphs) {
+            subgraphs.erase(std::unique(subgraphs.begin(), subgraphs.end()), subgraphs.end());
+        }
+        for (auto &subgraphs : b_near_subgraphs) {
+            subgraphs.erase(std::unique(subgraphs.begin(), subgraphs.end()), subgraphs.end());
+        }
+
+        expect(a_name + " and " + b_name + " C4P4 Finder have same find_near output ignoring duplicates", a_near_subgraphs, b_near_subgraphs);
+
     }
 
     template <typename Finder>

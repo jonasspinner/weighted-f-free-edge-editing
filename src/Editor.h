@@ -18,15 +18,17 @@
 #include "interfaces/FinderI.h"
 
 #include "finder/NaiveP3.h"
+#include "finder/NaiveC4P4.h"
 #include "finder/CenterC4P4.h"
 #include "finder/CenterP3.h"
 
 #include "lower_bound/NoLowerBound.h"
+#include "lower_bound/IteratedLocalSearch.h"
+#include "lower_bound/GreedyLowerBound.h"
 
 #include "selector/FirstEditable.h"
 #include "selector/LeastWeight.h"
-#include "lower_bound/IteratedLocalSearch.h"
-#include "lower_bound/GreedyLowerBound.h"
+
 #include "consumer/SubgraphStats.h"
 
 
@@ -51,40 +53,18 @@ private:
     std::vector<VertexPair> edits;
 
 public:
-    explicit Editor(Instance instance, Options::Selector selector,
-                    Options::FSG forbidden, Options::LB lower_bound) :
+    explicit Editor(Instance instance, Options::Selector selector, Options::FSG forbidden, Options::LB lower_bound) :
             m_instance(std::move(instance)), m_marked(m_instance.graph.size()) {
-        switch (forbidden) {
-            case Options::FSG::P3:
-                m_finder = std::make_shared<Finder::CenterP3>(m_instance.graph);
-                break;
-            case Options::FSG::P4C4:
-                m_finder = std::make_shared<Finder::CenterC4P4>(m_instance.graph);
-                break;
-        }
-        switch (selector) {
-            case Options::Selector::LeastWeight:
-                m_selector = std::make_unique<Selector::LeastWeight>(m_instance.costs, m_finder, m_marked);
-                break;
-            case Options::Selector::FirstEditable:
-                m_selector = std::make_unique<Selector::FirstEditable>(m_finder, m_marked);
-                break;
-        }
-        switch (lower_bound) {
-            case Options::LB::No:
-                m_lower_bound = std::make_unique<LowerBound::NoLowerBound>(m_finder);
-                break;
-            case Options::LB::LocalSearch:
-                m_lower_bound = std::make_unique<IteratedLocalSearch>(m_instance, m_marked, m_finder);
-                break;
-            case Options::LB::Greedy:
-                m_lower_bound = std::make_unique<LowerBound::GreedyLowerBound>(m_instance, m_marked, m_finder);
-                break;
-        }
+
+        m_finder = make_finder(forbidden, m_instance);
+        m_selector = make_selector(selector, m_finder, m_instance, m_marked);
+        m_lower_bound = make_lower_bound(lower_bound, m_finder, m_instance, m_marked);
+
         m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_marked);
 
         m_consumers.emplace_back(m_lower_bound.get());
         m_consumers.emplace_back(m_selector.get());
+
         // m_consumers.emplace_back(m_subgraph_stats.get());
     }
 
@@ -218,6 +198,42 @@ private:
             new_states.push_back(state->copy());
         }
         return new_states;
+    }
+
+    static std::shared_ptr<FinderI> make_finder(Options::FSG forbidden, const Instance &instance) {
+        switch (forbidden) {
+            case Options::FSG::P3:
+                return std::make_shared<Finder::CenterP3>(instance.graph);
+            case Options::FSG::P4C4:
+                return std::make_shared<Finder::CenterC4P4>(instance.graph);
+        }
+        assert(false);
+    }
+
+    static std::unique_ptr<SelectorI>
+    make_selector(Options::Selector selector, const std::shared_ptr<FinderI> &finder, const Instance &instance,
+                  const VertexPairMap<bool> &marked) {
+        switch (selector) {
+            case Options::Selector::LeastWeight:
+                return std::make_unique<Selector::LeastWeight>(instance.costs, finder, marked);
+            case Options::Selector::FirstEditable:
+                return std::make_unique<Selector::FirstEditable>(finder, marked);
+        }
+        assert(false);
+    }
+
+    static std::unique_ptr<LowerBoundI>
+    make_lower_bound(Options::LB lower_bound, const std::shared_ptr<FinderI> &finder, const Instance &instance,
+                     const VertexPairMap<bool> &marked) {
+        switch (lower_bound) {
+            case Options::LB::No:
+                return std::make_unique<LowerBound::NoLowerBound>(finder);
+            case Options::LB::LocalSearch:
+                return std::make_unique<IteratedLocalSearch>(instance, marked, finder);
+            case Options::LB::Greedy:
+                return std::make_unique<LowerBound::GreedyLowerBound>(instance, marked, finder);
+        }
+        assert(false);
     }
 };
 
