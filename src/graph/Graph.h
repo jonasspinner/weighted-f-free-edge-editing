@@ -53,8 +53,7 @@ public:
 
 class Graph {
 public:
-    using Block = uint_fast32_t;
-    using AdjRow = boost::dynamic_bitset<Block>;
+    using AdjRow = boost::dynamic_bitset<>;
     using AdjMatrix = std::vector<AdjRow>;
 
 private:
@@ -63,7 +62,7 @@ private:
 
 public:
 
-    explicit Graph(unsigned int size) : m_size(size), m_adj(m_size, boost::dynamic_bitset<Block>(m_size)) {}
+    explicit Graph(unsigned int size) : m_size(size), m_adj(m_size, AdjRow(m_size)) {}
 
     /**
      * Returns the number of vertices.
@@ -266,7 +265,13 @@ public:
 
         [[nodiscard]] Iterator begin() const { return Iterator({0, 1}, n); }
 
-        [[nodiscard]] Iterator end() const { return Iterator({n - 1, n}, n); }
+        [[nodiscard]] Iterator end() const {
+            if (n > 0) {
+                return Iterator({n - 1, n}, n);
+            } else {
+                return begin();
+            }
+        }
     };
 
     [[nodiscard]] VertexPairs vertexPairs() const {

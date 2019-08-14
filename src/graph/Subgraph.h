@@ -55,7 +55,10 @@ public:
             using reference = const VertexPair&;
             using iterator_category = std::forward_iterator_tag;
 
-            Iterator(VertexIt begin, VertexIt end_) : uit(begin), vit(begin), end(end_) { if (vit != end) ++vit; }
+            Iterator(VertexIt begin, VertexIt end_) : uit(begin), vit(begin), end(end_) {
+                if (vit != end) ++vit;
+                if (vit == end) uit = end;
+            }
 
             VertexPair operator*() const {
                 assert(uit != end);
