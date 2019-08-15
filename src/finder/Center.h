@@ -232,6 +232,66 @@ namespace detail {
             }
             return false;
         }
+
+        template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
+        static bool find_near(const Graph& graph, VertexPair uv, SubgraphCallback callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+            assert(false);
+            Graph::AdjRow Z(graph.size());
+            auto [u, v] = uv;
+
+            if (valid_edge(uv)) {
+                Z = neighbors(v) & non_neighbors(u);
+                for (Vertex z : Graph::iterate(Z)) {
+                    assert(valid_edge({u, v})); assert(valid_non_edge({u, z})); assert(valid_edge({v, z}));
+                    if (callback(Subgraph{u, v, z})) return true;
+                }
+
+                Z = neighbors(u) & non_neighbors(v);
+                for (Vertex z : Graph::iterate(Z)) {
+                    assert(valid_edge({z, u})); assert(valid_non_edge({z, v})); assert(valid_edge({u, v}));
+                    if (callback(Subgraph{z, u, v})) return true;
+                }
+            } else if (valid_non_edge(uv)) {
+                Z = neighbors(uv.u) & neighbors(uv.v);
+                for (Vertex z : Graph::iterate(Z)) {
+                    assert(valid_edge({u, z})); assert(valid_non_edge({u, v})); assert(valid_edge({z, v}));
+                    if (callback(Subgraph{u, z, v})) return true;
+                }
+            }
+            return false;
+        }
+
+        template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
+        static bool find_near(const Graph& graph, Vertex u, SubgraphCallback callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+            assert(false);
+            Graph::AdjRow B(graph.size());
+
+            auto A = neighbors(u);
+            for (Vertex a : Graph::iterate(A)) {
+
+                B = neighbors(a) & non_neighbors(u);
+                for (Vertex b : Graph::iterate(B)) {
+                    if (u < b) {
+                        assert(valid_edge({u, a})); assert(valid_non_edge({u, b})); assert(valid_edge({a, b}));
+                        if (callback(Subgraph{u, a, b})) return true;
+                    } else {
+                        assert(valid_edge({b, a})); assert(valid_non_edge({b, u})); assert(valid_edge({a, u}));
+                        if (callback(Subgraph{b, a, u})) return true;
+                    }
+                }
+
+                B = neighbors(u);
+                for (Vertex b : Graph::iterate(B)) {
+                    if (a == b) {
+                        continue;
+                    } else if (a < b) {
+                        assert(valid_edge({a, u})); assert(valid_non_edge({a, b})); assert(valid_edge({u, b}));
+                        if (callback(Subgraph{a, u, b})) return true;
+                    }
+                }
+            }
+            return false;
+        }
     };
 
     template <>
@@ -253,6 +313,33 @@ namespace detail {
             }
             return false;
         }
+
+        template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
+        static bool find_near(const Graph& /*graph*/, VertexPair uv, SubgraphCallback callback, F /*neighbors*/, G /*non_neighbors*/, H valid_edge, I /*valid_non_edge*/) {
+            assert(false);
+            auto [u, v] = uv;
+
+            if (valid_edge(uv)) {
+                if (callback(Subgraph{u, v})) return true;
+            }
+            return false;
+        }
+
+        template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
+        static bool find_near(const Graph& /*graph*/, Vertex u, SubgraphCallback callback, F neighbors, G /*non_neighbors*/, H valid_edge, I /*valid_non_edge*/) {
+            assert(false);
+            auto Z = neighbors(u);
+            for (Vertex z : Graph::iterate(Z)) {
+                if (u < z) {
+                    assert(valid_edge({u, z}));
+                    if (callback(Subgraph{u, z})) return true;
+                } else {
+                    assert(valid_edge({u, z}));
+                    if (callback(Subgraph{z, u})) return true;
+                }
+            }
+            return false;
+        }
     };
 
     template <>
@@ -265,6 +352,12 @@ namespace detail {
                 if (callback(Subgraph{u})) return true;
             }
             return false;
+        }
+
+        template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
+        static bool find_near(const Graph& /*graph*/, Vertex u, SubgraphCallback callback, F /*neighbors*/, G /*non_neighbors*/, H /*valid_edge*/, I /*valid_non_edge*/) {
+            assert(false);
+            return callback(Subgraph{u});
         }
     };
 
