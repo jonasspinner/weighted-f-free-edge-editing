@@ -143,11 +143,8 @@ namespace Consumer
 
         static constexpr bool needs_subgraph_stats = true;
 
-        struct State : public StateI {
+        struct State {
             Lower_Bound_Storage_type lb;
-            std::unique_ptr<StateI> copy() override {
-                return std::make_unique<State>(*this);
-            }
         };
     private:
 
@@ -160,7 +157,7 @@ namespace Consumer
     public:
         ARW(std::shared_ptr<FinderI> finder_ptr, const Instance &instance, const VertexPairMap<bool> &marked) : LowerBoundI(std::move(finder_ptr)), m_graph(instance.graph), m_edited(marked), candidate_pairs_used(instance.graph.size()), bound_uses(instance.graph.size()), subgraph_stats(finder_ptr, instance, marked) {}
 
-        std::unique_ptr<StateI> initialize(Cost k) override
+        std::unique_ptr<State> initialize(Cost k)
         {
             auto ptr = std::make_unique<State>();
             State& state = *ptr;
@@ -192,9 +189,9 @@ namespace Consumer
             return ptr;
         }
 
-        void before_mark_and_edit(StateI& state_, VertexPair uv) override
+        void before_mark_and_edit(VertexPair uv) override
         {
-            auto state = dynamic_cast<State &>(state_);
+            auto &state = current_state();
 
             std::vector<Subgraph>& lb = state.lb.get_bound();
 
@@ -219,9 +216,9 @@ namespace Consumer
             }
         }
 
-        void after_mark_and_edit(StateI& state_, VertexPair uv) override
+        void after_mark_and_edit(VertexPair uv) override
         {
-            auto state = dynamic_cast<State &>(state_);
+            auto &state = dynamic_cast<State &>(state_);
             initialize_bound_uses(state, m_graph, m_edited);
 
             finder->find_near(uv, bound_uses, [&](const Subgraph& path)
@@ -250,18 +247,18 @@ namespace Consumer
             });
         }
 
-        void before_mark(StateI&, VertexPair) override
+        void before_mark(VertexPair) override
         {
         }
 
-        void after_mark(StateI& state_, VertexPair uv) override
+        void after_mark(VertexPair uv) override
         {
-            after_mark_and_edit(state_, uv);
+            after_mark_and_edit(uv);
         }
 
-        Cost result(StateI& state_, Cost k) override
+        Cost result(Cost k) override
         {
-            auto state = dynamic_cast<State &>(state_);
+            auto &state = current_state();
             if (state.lb.size() <= k)
             {
                 initialize_bound_uses(state, m_graph, m_edited);

@@ -12,7 +12,7 @@
 
 class IteratedLocalSearch : public LowerBoundI {
 public:
-    class State : public StateI {
+    class State {
     public:
         struct Element {
             Cost cost;
@@ -145,10 +145,6 @@ public:
 
         }
 
-        std::unique_ptr<StateI> copy() override {
-            return std::make_unique<State>(*this);
-        }
-
         friend std::ostream &operator<<(std::ostream &os, const State &state) {
             if (!state.solvable()) return os << "unsolvable";
             std::cout << state.cost() << ":";
@@ -162,6 +158,8 @@ private:
     Graph m_bound_graph;
     const VertexPairMap<Cost> &m_costs;
     const VertexPairMap<bool> &m_marked;
+    std::vector<std::unique_ptr<State>> states;
+
 public:
     explicit IteratedLocalSearch(const Instance &instance,
                                  const VertexPairMap<bool> &forbidden, std::shared_ptr<FinderI> finder_ref) :
@@ -174,8 +172,9 @@ public:
      * @param k
      * @return A lower bound on the costs required to solve the current instance.
      */
-    Cost result(StateI &_state, Cost k) override {
-        auto &state = dynamic_cast<State &>(_state);
+    Cost result(Cost k) override {
+        // auto &state = dynamic_cast<State &>(_state);
+        auto &state = current_state();
         if (!state.solvable()) return state.cost();
 
         // std::cout << "result start: " << state << "\n";
@@ -195,15 +194,21 @@ public:
     }
 
     /**
-     * Initializes the state by greedily constructing a maximal lower bound.
+     * Initializes the state by greedily constructing a maximal lower bound or copy it from previous level.
      *
      * @param k
      * @return
      */
-    std::unique_ptr<StateI> initialize(Cost /*k*/) override {
+    void push(Cost k) override {
+        if (!states.empty()) {
+            states.push_back(std::make_unique<State>(*states.back()));
+            return;
+        }
+
+
         using Element = State::Element;
-        auto ptr = std::make_unique<State>();
-        State &state = *ptr;
+        states.push_back(std::make_unique<State>());
+        State &state = *states.back();
 
         m_bound_graph.clear_edges();
 
@@ -220,7 +225,7 @@ public:
 
         if (!subgraphs.empty() && subgraphs[0].cost == invalid_cost) {
             state.set_unsolvable();
-            return ptr;
+            return;
         }
 
         for (auto& [cost, subgraph] : subgraphs) {
@@ -233,8 +238,16 @@ public:
         }
 
         std::cout << "initial lower bound " << state << "\n";
+    }
 
-        return ptr;
+    void pop() override {
+        assert(!states.empty());
+        states.pop_back();
+    }
+
+    State &current_state() {
+        assert(!states.empty());
+        return *states.back();
     }
 
     /**
@@ -243,8 +256,8 @@ public:
      * @param _state
      * @param uv
      */
-    void before_mark_and_edit(StateI &_state, VertexPair uv) override {
-        auto &state = dynamic_cast<State &>(_state);
+    void before_mark_and_edit(VertexPair uv) override {
+        auto &state = current_state();
         assert(state.solvable());
         // state.assert_valid(m_marked, m_bound_graph, m_costs);
 
@@ -265,8 +278,8 @@ public:
         }
     }
 
-    void after_mark_and_edit(StateI &_state, VertexPair uv) override {
-        auto &state = dynamic_cast<State &>(_state);
+    void after_mark_and_edit(VertexPair uv) override {
+        auto &state = current_state();
         assert(state.solvable());
 
         // TODO: Check if needed
@@ -305,15 +318,15 @@ public:
         }
     }
 
-    void before_mark(StateI &/*state*/, VertexPair /*uv*/) override { /* no op */ }
+    void before_mark(VertexPair) override { /* no op */ }
 
-    void after_mark(StateI &/*state*/, VertexPair /*uv*/) override { /* no op */ }
+    void after_mark(VertexPair) override { /* no op */ }
 
-    void before_edit(StateI &/*state*/, VertexPair /*uv*/) override { /* no op */ }
+    void before_edit(VertexPair) override { /* no op */ }
 
-    void after_edit(StateI &/*state*/, VertexPair /*uv*/) override { /* no op */ }
+    void after_edit(VertexPair) override { /* no op */ }
 
-    void after_unmark(StateI &/*state*/, VertexPair /*uv*/) override { /* no op */ }
+    void after_unmark(VertexPair) override { /* no op */ }
 
 private:
     void optimize_bound(State &state, Cost k) {

@@ -88,7 +88,7 @@ int main() {
 
     auto selector = Options::Selector::LeastWeight;
     auto forbidden_type = Options::FSG::P4C4;
-    auto lower_bound = Options::LB::No;
+    auto lower_bound = Options::LB::LocalSearch;
 
 
     std::vector<Solution> solutions;

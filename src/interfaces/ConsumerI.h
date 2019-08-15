@@ -11,13 +11,6 @@
 #include "../interfaces/FinderI.h"
 
 
-class StateI {
-public:
-    virtual ~StateI() = default;
-    virtual std::unique_ptr<StateI> copy() = 0;
-};
-
-
 class ConsumerI {
 protected:
     std::shared_ptr<FinderI> finder;
@@ -27,28 +20,32 @@ public:
 
     virtual ~ConsumerI() = default;
 
-    virtual std::unique_ptr<StateI> initialize(Cost k) = 0;
+    // virtual std::unique_ptr<StateI> initialize(Cost k) = 0;
+
+    virtual void push(Cost k) = 0;
+
+    virtual void pop() = 0;
 
     // all
-    virtual void before_mark_and_edit(StateI &state, VertexPair uv) = 0;
+    virtual void before_mark_and_edit(VertexPair uv) = 0;
 
     // all
-    virtual void after_mark_and_edit(StateI &state, VertexPair uv) = 0;
+    virtual void after_mark_and_edit(VertexPair uv) = 0;
 
     // all
-    virtual void before_mark(StateI &state, VertexPair uv) = 0;
+    virtual void before_mark(VertexPair uv) = 0;
 
     // subgraph_stats
-    virtual void after_mark(StateI &state, VertexPair uv) = 0;
+    virtual void after_mark(VertexPair uv) = 0;
 
     // subgraph_stats
-    virtual void before_edit(StateI &state, VertexPair uv) = 0;
+    virtual void before_edit(VertexPair uv) = 0;
 
     // subgraph_stats
-    virtual void after_edit(StateI &state, VertexPair uv) = 0;
+    virtual void after_edit(VertexPair uv) = 0;
 
     // subgraph_stats
-    virtual void after_unmark(StateI &state, VertexPair uv) = 0;
+    virtual void after_unmark(VertexPair uv) = 0;
 
 };
 

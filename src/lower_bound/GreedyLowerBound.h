@@ -16,11 +16,6 @@ namespace LowerBound {
         const VertexPairMap<Cost> &costs;
         const VertexPairMap<bool> &m_forbidden;
     public:
-        class State : public StateI {
-            std::unique_ptr<StateI> copy() override {
-                return std::make_unique<State>(*this);
-            }
-        };
 
         GreedyLowerBound(const Instance &instance, const VertexPairMap<bool> &forbidden,
                          std::shared_ptr<FinderI> finder_ref) : LowerBoundI(std::move(finder_ref)), graph(instance.graph),
@@ -36,7 +31,7 @@ namespace LowerBound {
          * @param k Not used
          * @return A lower bound on the costs required to solve the current instance.
          */
-        Cost result(StateI &/*state*/, Cost /*k*/) override {
+        Cost result(Cost /*k*/) override {
 
             // Find all forbidden subgraphs with editable vertex pairs
             // The cost for a single forbidden subgraph is the minimum edit cost for an editable vertex pair
@@ -75,21 +70,23 @@ namespace LowerBound {
             return bound_size;
         }
 
-        std::unique_ptr<StateI> initialize(Cost /*k*/) override { return std::make_unique<State>(); }
+        void push(Cost k) override {}
 
-        void before_mark_and_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
+        void pop() override {}
 
-        void after_mark_and_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
+        void before_mark_and_edit(VertexPair) override {}
 
-        void before_mark(StateI &/*state*/, VertexPair /*uv*/) override {}
+        void after_mark_and_edit(VertexPair) override {}
 
-        void after_mark(StateI &/*state*/, VertexPair /*uv*/) override {}
+        void before_mark(VertexPair) override {}
 
-        void before_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
+        void after_mark(VertexPair) override {}
 
-        void after_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
+        void before_edit(VertexPair) override {}
 
-        void after_unmark(StateI &/*state*/, VertexPair /*uv*/) override {}
+        void after_edit(VertexPair) override {}
+
+        void after_unmark(VertexPair) override {}
     };
 }
 

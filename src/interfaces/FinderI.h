@@ -68,15 +68,19 @@ public:
     }
 
     static Graph::AdjRow neighbors(Vertex u, const Graph &graph, const Graph &forbidden) {
-        return graph.m_adj[u] & ~forbidden.m_adj[u];
+        return graph.m_adj[u] - forbidden.m_adj[u];
     }
 
     static Graph::AdjRow non_neighbors(Vertex u, const Graph &graph) {
-        return ~graph.m_adj[u];
+        auto result = ~graph.m_adj[u];
+        result[u] = false;
+        return result;
     }
 
     static Graph::AdjRow non_neighbors(Vertex u, const Graph &graph, const Graph &forbidden) {
-        return ~(graph.m_adj[u] | forbidden.m_adj[u]);
+        auto result = ~graph.m_adj[u] - forbidden.m_adj[u];
+        result[u] = false;
+        return result;
     }
 
 };

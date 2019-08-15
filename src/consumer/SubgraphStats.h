@@ -20,37 +20,33 @@ private:
     const Graph &graph;
     const VertexPairMap<bool> &m_forbidden;
 
-    class State : public StateI {
-        std::unique_ptr<StateI> copy() override {
-            return std::make_unique<State>(*this);
-        }
-    };
-
 public:
     SubgraphStats(std::shared_ptr<FinderI> finder_ptr, const Instance &instance, const VertexPairMap<bool> &forbidden)
             : ConsumerI(std::move(finder_ptr)), subgraph_count_per_vertex_pair(instance.graph.size()),
               subgraph_count_per_vertex_pair_sum(0), subgraph_count(0), graph(instance.graph), m_forbidden(forbidden) {}
 
-    std::unique_ptr<StateI> initialize(Cost /*k*/) override {
-        subgraph_count_per_vertex_pair = VertexPairMap<size_t>(graph.size());
-        subgraph_count_per_vertex_pair_sum = 0;
-        subgraph_count = 0;
+    void push(Cost k) override {
+        if (subgraph_count == 0) {
+            subgraph_count_per_vertex_pair = VertexPairMap<size_t>(graph.size());
+            subgraph_count_per_vertex_pair_sum = 0;
+            subgraph_count = 0;
 
-        finder->find([&](Subgraph &&subgraph) {
-            register_subgraph(subgraph);
-            return false;
-        });
-
-        return std::make_unique<State>();
+            finder->find([&](Subgraph &&subgraph) {
+                register_subgraph(subgraph);
+                return false;
+            });
+        }
     }
 
-    void before_mark_and_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
+    void pop() override {}
 
-    void after_mark_and_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
+    void before_mark_and_edit(VertexPair) override {}
 
-    void before_mark(StateI &/*state*/, VertexPair /*uv*/) override {}
+    void after_mark_and_edit(VertexPair) override {}
 
-    void after_mark(StateI &/*state*/, VertexPair uv) override {
+    void before_mark(VertexPair) override {}
+
+    void after_mark(VertexPair uv) override {
         subgraph_count_per_vertex_pair_sum -= subgraph_count_per_vertex_pair[uv];
         before_mark_subgraph_count.push_back(subgraph_count_per_vertex_pair[uv]);
         subgraph_count_per_vertex_pair[uv] = 0;
@@ -58,7 +54,7 @@ public:
         verify();
     }
 
-    void before_edit(StateI &/*state*/, VertexPair uv) override {
+    void before_edit(VertexPair uv) override {
         assert(m_forbidden[uv]);
         finder->find_near(uv, [&](Subgraph &&subgraph) {
             remove_subgraph(subgraph);
@@ -67,7 +63,7 @@ public:
         assert(subgraph_count_per_vertex_pair[uv] == 0);
     }
 
-    void after_edit(StateI &/*state*/, VertexPair uv) override {
+    void after_edit(VertexPair uv) override {
         finder->find_near(uv, [&](Subgraph &&subgraph) {
             register_subgraph(subgraph);
             return false;
@@ -75,7 +71,7 @@ public:
         assert(subgraph_count_per_vertex_pair[uv] == 0);
     }
 
-    void after_unmark(StateI &/*state*/, VertexPair uv) override {
+    void after_unmark(VertexPair uv) override {
         subgraph_count_per_vertex_pair[uv] = before_mark_subgraph_count.back();
         subgraph_count_per_vertex_pair_sum += before_mark_subgraph_count.back();
         before_mark_subgraph_count.pop_back();

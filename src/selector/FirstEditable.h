@@ -16,18 +16,12 @@ namespace Selector {
     private:
         const VertexPairMap<bool> &m_forbidden;
 
-        class State : public StateI {
-            std::unique_ptr<StateI> copy() override {
-                return std::make_unique<State>(*this);
-            }
-        };
-
     public:
         explicit FirstEditable(std::shared_ptr<FinderI> finder_ptr,
-                               const VertexPairMap<bool> &forbidden) : SelectorI(finder_ptr),
+                               const VertexPairMap<bool> &forbidden) : SelectorI(std::move(finder_ptr)),
                                                                        m_forbidden(forbidden) {}
 
-        Problem result(StateI &, Cost /*k*/) override {
+        Problem result(Cost /*k*/) override {
             std::vector<VertexPair> pairs;
 
             bool found = false;
@@ -44,21 +38,23 @@ namespace Selector {
             return {pairs, !found};
         }
 
-        std::unique_ptr<StateI> initialize(Cost /*k*/) override { return std::make_unique<State>(); }
+        void push(Cost k) override {}
 
-        void before_mark_and_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
+        void pop() override {}
 
-        void after_mark_and_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
+        void before_mark_and_edit(VertexPair) override {}
 
-        void before_mark(StateI &/*state*/, VertexPair /*uv*/) override {}
+        void after_mark_and_edit(VertexPair) override {}
 
-        void after_mark(StateI &/*state*/, VertexPair /*uv*/) override {}
+        void before_mark(VertexPair) override {}
 
-        void before_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
+        void after_mark(VertexPair) override {}
 
-        void after_edit(StateI &/*state*/, VertexPair /*uv*/) override {}
+        void before_edit(VertexPair) override {}
 
-        void after_unmark(StateI &/*state*/, VertexPair /*uv*/) override {}
+        void after_edit(VertexPair) override {}
+
+        void after_unmark(VertexPair) override {}
     };
 }
 

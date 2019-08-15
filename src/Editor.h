@@ -32,16 +32,8 @@
 #include "consumer/SubgraphStats.h"
 
 
-#define call_for_each(c, m, s, e) \
-do { for (size_t i = 0; i < c.size(); ++i) {\
-    c[i]->m(*s[i], e); \
-}} while(0)
-
-
 class Editor {
 private:
-    using States = std::vector<std::unique_ptr<StateI>>;
-
     Instance m_instance;
     VertexPairMap<bool> m_marked;
     std::unique_ptr<LowerBoundI> m_lower_bound;
@@ -51,6 +43,22 @@ private:
     std::unique_ptr<SubgraphStats> m_subgraph_stats;
 
     std::vector<VertexPair> edits;
+
+    /**
+     * ConsumerI::push and ConsumerI::pop operations bound on lifetime of Level object.
+     */
+    class Level {
+        const std::vector<ConsumerI *> &consumers;
+    public:
+        Level(const std::vector<ConsumerI *> &consumers_, Cost k) : consumers(consumers_) {
+            for (auto &consumer : consumers)
+                consumer->push(k);
+        }
+        ~Level() {
+            for (auto &consumer : consumers)
+                consumer->pop();
+        }
+    };
 
 public:
     explicit Editor(Instance instance, Options::Selector selector, Options::FSG forbidden, Options::LB lower_bound) :
@@ -71,8 +79,7 @@ public:
     template<typename ResultCallback, typename PrunedCallback>
     bool edit(Cost k, ResultCallback result, PrunedCallback pruned) {
         // init stats
-        auto states = make_states(k);
-        return edit_r(k, std::move(states), result, pruned);
+        return edit_r(k, result, pruned);
     }
 
 private:
@@ -83,8 +90,10 @@ private:
      * @return
      */
     template<typename ResultCallback, typename PrunedCallback>
-    bool edit_r(Cost k, States states, ResultCallback result, PrunedCallback pruned) {
+    bool edit_r(Cost k, ResultCallback result, PrunedCallback pruned) {
         const VertexPairMap<Cost> &costs = m_instance.costs;
+
+        Level L(m_consumers, k);
 
         /*std::cout << "marked:";
         for (VertexPair uv : m_instance.graph.vertexPairs())
@@ -97,14 +106,14 @@ private:
         //for (VertexPair uv : edits) { std::cout << uv << " "; sum += costs[uv]; }
         //std::cout << sum << std::endl;
 
-        auto lb = m_lower_bound->result(*states[0], k);
+        auto lb = m_lower_bound->result(k);
         if (k < lb) {
             //for (unsigned i = 0; i < edits.size(); ++i) std::cout << "  ";
             pruned(k, lb);
             return false; /* unsolvable, too few edits remaining */
         }
 
-        auto problem = m_selector->result(*states[1], k);
+        auto problem = m_selector->result(k);
         if (problem.solved) {
             result(edits); // output graph
             return true; /* solved */
@@ -124,81 +133,62 @@ private:
             if (m_marked[uv]) continue;
 
             // std::cout << "edit " << uv << "\n";
-            mark_and_edit_edge(states, uv);
-
-            auto next_states = copy(states);
+            mark_and_edit_edge(uv);
 
             // std::cout << "edited " << uv << "\n";
-            if (edit_r(k - costs[uv], std::move(next_states), result, pruned)) solved = true;
+            if (edit_r(k - costs[uv], result, pruned)) solved = true;
 
-            unedit_edge(states, uv);
+            unedit_edge(uv);
             // std::cout << "unedit " << uv << "\n";
 
             // if (solved) break;
         }
 
         for (VertexPair uv : problem.pairs) {
-            if (m_marked[uv]) unmark_edge(states, uv);
+            if (m_marked[uv]) unmark_edge(uv);
         }
 
         return solved;
     }
 
-    void mark_and_edit_edge(States &states, VertexPair uv) {
+    void mark_and_edit_edge(VertexPair uv) {
         assert(!m_marked[uv]);
         Graph &G = m_instance.graph;
 
-        call_for_each(m_consumers, before_mark_and_edit, states, uv);   // all
-        call_for_each(m_consumers, before_mark, states, uv);            // all
+        for (auto &c : m_consumers) c->before_mark_and_edit(uv);  // all
+        for (auto &c : m_consumers) c->before_mark(uv);           // all
 
         m_marked[uv] = true;
 
-        call_for_each(m_consumers, after_mark, states, uv);             // subgraph_stats
-        call_for_each(m_consumers, before_edit, states, uv);            // subgraph_stats
+        for (auto &c : m_consumers) c->after_mark(uv);            // subgraph_stats
+        for (auto &c : m_consumers) c->before_edit(uv);           // subgraph_stats
 
         G.toggle_edge(uv);
         edits.push_back(uv);
 
-        call_for_each(m_consumers, after_edit, states, uv);             // subgraph_stats
-        call_for_each(m_consumers, after_mark_and_edit, states, uv);    // all
-
+        for (auto &c : m_consumers) c->after_edit(uv);            // subgraph_stats
+        for (auto &c : m_consumers) c->after_mark_and_edit(uv);   // all
     }
 
-    void unedit_edge(States &states, VertexPair uv) {
+    void unedit_edge(VertexPair uv) {
         assert(m_marked[uv]);
         Graph &G = m_instance.graph;
 
-        call_for_each(m_consumers, before_edit, states, uv);            // subgraph_stats
+        for (auto &c : m_consumers) c->before_edit(uv);           // subgraph_stats
 
         G.toggle_edge(uv);
         edits.pop_back();
 
-        call_for_each(m_consumers, after_edit, states, uv);             // subgraph_stats
-
+        for (auto &c : m_consumers) c->after_edit(uv);            // subgraph_stats
     }
 
-    void unmark_edge(States &states, VertexPair uv) {
+    void unmark_edge(VertexPair uv) {
         assert(m_marked[uv]);
         m_marked[uv] = false;
 
-        call_for_each(m_consumers, after_unmark, states, uv);           // subgraph_stats
+        for (auto &c : m_consumers) c->after_unmark(uv);          // subgraph_stats
     }
 
-    States make_states(Cost k) {
-        States states;
-        for (auto consumer : m_consumers) {
-            states.push_back(consumer->initialize(k));
-        }
-        return states;
-    }
-
-    static States copy(const States &states) {
-        States new_states;
-        for (const auto &state : states) {
-            new_states.push_back(state->copy());
-        }
-        return new_states;
-    }
 
     static std::shared_ptr<FinderI> make_finder(Options::FSG forbidden, const Instance &instance) {
         switch (forbidden) {
@@ -236,7 +226,5 @@ private:
         assert(false);
     }
 };
-
-#undef call_for_each
 
 #endif //CONCEPT_EDITOR_H
