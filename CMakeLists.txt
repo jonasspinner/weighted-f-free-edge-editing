@@ -9,13 +9,6 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wshadow -Wnon-virtual-dt
 
 find_package(Boost REQUIRED)
 
-if(Boost_FOUND)
-    message("Boost Found")
-else()
-    error("Boost Not Found")
-endif()
-
-
 add_executable(graphedit src/main.cpp src/lower_bound/LB_ARW.h)
 
 target_link_libraries(graphedit PRIVATE Boost::boost)

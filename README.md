@@ -3,9 +3,9 @@
 ## How to run
 
 ```
-$ cmake CMakeLists.txt
-$ make
-$ ./graphedit
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make
 ```
 
 ## Main Algorithm
