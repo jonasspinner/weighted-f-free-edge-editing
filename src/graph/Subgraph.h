@@ -9,10 +9,12 @@
 #include "Graph.h"
 
 
-class Subgraph : public std::vector<Vertex> {
+class Subgraph {
+    std::vector<Vertex> m_vertices;
+    std::string m_tag;
 public:
 
-    Subgraph(std::initializer_list<Vertex> list) : std::vector<Vertex>(list) {
+    Subgraph(std::initializer_list<Vertex> list) : m_vertices(list) {
 #ifndef NDEBUG
         unsigned n = 0;
         for (auto x : list)
@@ -22,6 +24,8 @@ public:
         assert(n == list.size() && "vertices are not unique");
 #endif
     }
+
+    Subgraph(std::vector<Vertex> &&vertices, std::string &&tag) : m_vertices(std::move(vertices)), m_tag(std::move(tag)) {}
 
     class Vertices {
         const std::vector<Vertex> &m_vertices;
@@ -39,7 +43,7 @@ public:
      * @return
      */
     [[nodiscard]] Vertices vertices() const {
-        return Vertices(*this);
+        return Vertices(m_vertices);
     }
 
     class VertexPairs {
@@ -99,15 +103,18 @@ public:
      * @return
      */
     [[nodiscard]] VertexPairs vertexPairs() const {
-        return VertexPairs(*this);
+        return VertexPairs(m_vertices);
     }
+
+    [[nodiscard]] size_t size() const { return m_vertices.size(); }
+    const Vertex &operator[](size_t index) const { return m_vertices[index]; }
 
 
     template<typename VertexPairCallback>
     bool for_all_vertex_pairs(VertexPairCallback callback) const {
-        for (size_t i = 0; i < size(); ++i) {
-            for (size_t j = i + 1; j < size(); ++j) {
-                if (callback(VertexPair((*this)[i], (*this)[j]))) return true;
+        for (size_t i = 0; i < m_vertices.size(); ++i) {
+            for (size_t j = i + 1; j < m_vertices.size(); ++j) {
+                if (callback(VertexPair(m_vertices[i], m_vertices[j]))) return true;
             }
         }
         return false;
@@ -124,9 +131,33 @@ public:
 
     friend std::ostream &operator<<(std::ostream &os, const Subgraph &subgraph) {
         os << "{";
-        for (Vertex u : subgraph) os << " " << u;
-        return os << " }";
+        for (Vertex u : subgraph.m_vertices) os << " " << u;
+        os << " }";
+        if (!subgraph.m_tag.empty()) os << "#" << subgraph.m_tag;
+        return os;
     }
+
+    void sort_vertices() {
+        std::sort(m_vertices.begin(), m_vertices.end());
+    }
+
+    void push_back(Vertex u) {
+        m_vertices.push_back(u);
+    }
+
+    void append(const Subgraph &other) {
+        m_vertices.insert(m_vertices.end(), other.m_vertices.begin(), other.m_vertices.end());
+    }
+
+    bool operator==(const Subgraph &other) const {
+        return m_vertices == other.m_vertices;
+    }
+
+    bool operator<(const Subgraph &other) const {
+        return std::lexicographical_compare(m_vertices.begin(), m_vertices.end(), other.m_vertices.begin(), other.m_vertices.end());
+    }
+
+    friend void verify(const Subgraph &, const Graph&);
 };
 
 constexpr Cost invalid_cost = std::numeric_limits<Cost>::max();
@@ -141,7 +172,7 @@ Cost cost(const Subgraph &subgraph, const VertexPairMap<bool> &marked, const Ver
 }
 
 void verify(const Subgraph &subgraph, const Graph &graph) {
-    assert(subgraph.size() == 4);
+    assert(subgraph.m_vertices.size() == 4);
 
     const Subgraph &S = subgraph;
 
