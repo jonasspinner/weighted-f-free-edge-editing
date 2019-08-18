@@ -119,7 +119,7 @@ public:
 
     template <typename A, typename B>
     void C4P4_Finders_are_consistent(const std::string& a_name, const std::string& b_name) {
-        Graph G = random_graph(10, 40, gen);
+        Graph G = random_graph(15, 200, gen);
 
         A a_finder(G); B b_finder(G);
         auto a_subgraphs = find_all_subgraphs(a_finder);

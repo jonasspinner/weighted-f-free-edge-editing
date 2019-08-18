@@ -69,7 +69,7 @@ std::vector<std::vector<T>> normalize(std::vector<std::vector<T>> list) {
 
 std::vector<Subgraph> normalize(std::vector<Subgraph> list) {
     for (auto& subgraph : list) {
-        std::sort(subgraph.begin(), subgraph.end());
+        subgraph.sort_vertices();
     }
     std::sort(list.begin(), list.end());
     return list;
