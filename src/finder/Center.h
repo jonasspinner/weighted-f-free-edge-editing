@@ -65,7 +65,7 @@ namespace detail {
                             assert(valid_non_edge({b, P[i]}));
                     }
                     for (Vertex c : Graph::iterate(C)) {
-                        for (Vertex p : P)
+                        for (Vertex p : P.vertices())
                             assert(valid_non_edge({c, p}));
                     }
 #endif
@@ -74,7 +74,7 @@ namespace detail {
                         for (Vertex b : Graph::iterate(B)) {
 
                             assert(a != b);
-                            for (Vertex p : P) { assert(a != p); assert(b != p); }
+                            for (Vertex p : P.vertices()) { assert(a != p); assert(b != p); }
 
                             if (valid_non_edge({a, b})) {
 
@@ -86,12 +86,12 @@ namespace detail {
                                     for (Vertex v : Graph::iterate(B_p)) {
 
                                         assert(u != v); assert(u != a); assert(u != b); assert(v != a); assert(v != b);
-                                        for (Vertex p : P) { assert(u != p); assert(v != p); }
+                                        for (Vertex p : P.vertices()) { assert(u != p); assert(v != p); }
 
                                         if (valid_non_edge({u, v})) {
                                             // P' = uaPbv
                                             Subgraph P_p{u, a};
-                                            P_p.insert(P_p.end(), P.begin(), P.end());
+                                            P_p.append(P);
                                             P_p.push_back(b); P_p.push_back(v);
 #ifndef NDEBUG
                                             assert(P_p.size() == k);
@@ -162,12 +162,12 @@ namespace detail {
                     // for each (a, b) \in AxB
                     return Graph::iterate(A, B, [&](Vertex a, Vertex b) {
                         assert(a != b);
-                        for (Vertex p : P) { assert(a != p); assert(b != p); }
+                        for (Vertex p : P.vertices()) { assert(a != p); assert(b != p); }
 
                         if (valid_non_edge({a, b})) {
                             // P' = aPb
                             Subgraph P_p{a};
-                            P_p.insert(P_p.end(), P.begin(), P.end());
+                            P_p.append(P);
                             P_p.push_back(b);
 #ifndef NDEBUG
                             assert(P_p.size() == k);
