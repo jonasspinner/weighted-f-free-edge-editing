@@ -67,8 +67,14 @@ public:
                         VertexPair edge(u - 1, v - 1);
                         edit_costs[edge] = static_cast<Cost>(std::ceil(std::abs(weight) * multiplier));
                         if (weight > 0) G.set_edge(edge);
-                        else if (weight < 0) G.clear_edge(edge);
-                        else throw std::runtime_error("0 weight edge detected");
+                        else if (weight <= 0) G.clear_edge(edge);
+                        /*
+                        else {
+                            std::cerr << "zero edge " << edge << " " << weight << "\n";
+                            std::cerr << line << "\n";
+                            throw std::runtime_error("0 weight edge detected");
+                        }
+                        */
                     }
                 }
             }
