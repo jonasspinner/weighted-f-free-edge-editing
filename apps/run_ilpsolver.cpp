@@ -6,6 +6,8 @@
 #include <vector>
 #include <string>
 
+#include <boost/program_options.hpp>
+
 #include "../src/ILPSolver.h"
 #include "../src/graph/GraphIO.h"
 

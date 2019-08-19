@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
     auto lower_bound = Options::LB::Greedy;
 
     Configuration config(0, Options::Selector::FirstEditable, Options::FSG::P4C4, Options::LB::No, "", "");
-    config.read_input(argc, argv);
+    // config.read_input(argc, argv);
 
 
     std::vector<Solution> solutions;
