@@ -31,6 +31,16 @@ public:
         return os << "}";
     }
 
+    friend YAML::Emitter &operator<<(YAML::Emitter &out, const Solution &solution) {
+        out << YAML::BeginMap;
+        out << YAML::Key << "cost";
+        out << YAML::Value << solution.cost;
+        out << YAML::Key << "edits";
+        out << YAML::Value << solution.edits;
+        out << YAML::EndMap;
+        return out;
+    }
+
     [[nodiscard]] bool is_valid(const Instance &instance, Options::FSG fsg) const {
         Graph graph(instance.graph);
         std::unique_ptr<FinderI> finder = Finder::make(fsg, graph);

@@ -138,6 +138,12 @@ public:
         return os;
     }
 
+    friend YAML::Emitter &operator<<(YAML::Emitter &out, const Subgraph &subgraph) {
+        out << YAML::Flow << YAML::BeginSeq;
+        for (Vertex u : subgraph.vertices()) out << u;
+        return out << YAML::EndSeq;
+    }
+
     void sort_vertices() {
         std::sort(m_vertices.begin(), m_vertices.end());
     }

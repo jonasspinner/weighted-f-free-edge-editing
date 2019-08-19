@@ -7,7 +7,9 @@
 
 #include <iostream>
 #include <vector>
+
 #include <boost/dynamic_bitset.hpp>
+#include <yaml-cpp/yaml.h>
 
 #include "../definitions.h"
 
@@ -39,6 +41,12 @@ public:
 
     friend std::ostream &operator<<(std::ostream &os, VertexPair uv) {
         return os << "{" << uv.u << ", " << uv.v << "}";
+    }
+
+    friend YAML::Emitter &operator<<(YAML::Emitter &out, VertexPair uv) {
+        out << YAML::Flow;
+        out << YAML::BeginSeq << uv.u << uv.v << YAML::EndSeq;
+        return out;
     }
 
     friend bool operator==(const VertexPair &uv, const VertexPair &xy) {
@@ -429,6 +437,28 @@ public:
             os << "\n";
         }
         return os;
+    }
+
+    friend YAML::Emitter &operator<<(YAML::Emitter &out, const Graph &graph) {
+        unsigned num_edges = 0;
+        for (Vertex u : graph.vertices())
+            num_edges += graph.degree(u);
+        num_edges /= 2;
+
+        out << YAML::BeginMap;
+        out << YAML::Key << "num_vertices" << YAML::Value << graph.size();
+        out << YAML::Key << "num_edges" << YAML::Value << num_edges;
+        out << YAML::Key << "adj";
+        out << YAML::Value << YAML::BeginMap;
+        for (Vertex u : graph.vertices()) {
+            out << YAML::Key << u;
+            out << YAML::Value << YAML::Flow << YAML::BeginSeq;
+            for (Vertex v : graph.neighbors(u))
+                out << v;
+            out << YAML::EndSeq;
+        }
+        out << YAML::EndMap << YAML::EndMap;
+        return out;
     }
 
 private:

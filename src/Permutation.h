@@ -64,7 +64,7 @@ public:
     }
 
     Instance operator[](const Instance &instance) const {
-        return {(*this)[instance.graph], (*this)[instance.costs]};
+        return {instance.name + "-permuted", (*this)[instance.graph], (*this)[instance.costs]};
     }
 
     [[nodiscard]] Permutation reverse() const {

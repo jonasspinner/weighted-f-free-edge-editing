@@ -77,7 +77,7 @@ public:
     explicit ILPSolver(Options::FSG fsg) : m_fsg(fsg) {}
 
     std::vector<Solution> solve(Instance instance) override {
-        auto &[graph, costs] = instance;
+        auto &[_, graph, costs] = instance;
 
         GRBEnv env = GRBEnv();
         GRBModel model = GRBModel(env);

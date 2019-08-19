@@ -3,6 +3,8 @@
 //
 
 
+#include <boost/program_options.hpp>
+
 #include "../src/FPTSolver.h"
 #include "../src/graph/GraphIO.h"
 

@@ -83,7 +83,7 @@ public:
         }
 
 
-        return {G, edit_costs};
+        return {path, G, edit_costs};
     }
 
     template<typename Weight>

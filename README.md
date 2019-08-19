@@ -2,11 +2,29 @@
 
 ## How to run
 
-```
+```bash
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make
 ```
+
+
+## Install dependencies
+
+[BOOST](https://www.boost.org/)
+
+[GURBOBI](https://www.gurobi.com/) *(optional)*
+
+[YAML CPP](https://github.com/jbeder/yaml-cpp/)
+
+```bash
+git clone https://github.com/jbeder/yaml-cpp.git
+cd yaml-cpp
+mkdir build && cd build
+cmake .. -DBUILD_SHARED_LIBS=ON
+cmake --build .. --target install/local
+```
+
 
 ## Main Algorithm
 ```

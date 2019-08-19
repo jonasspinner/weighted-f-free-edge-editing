@@ -37,6 +37,16 @@ public:
         }
         return os << "]\n";
     }
+
+    friend YAML::Emitter &operator<<(YAML::Emitter &out, const VertexMap &map) {
+        out << YAML::BeginMap;
+        out << YAML::Key << "size";
+        out << YAML::Value << map.n;
+        out << YAML::Key << "values";
+        out << YAML::Value << map.values;
+        out << YAML::EndMap;
+        return out;
+    }
 };
 
 

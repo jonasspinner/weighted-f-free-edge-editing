@@ -74,8 +74,8 @@ int main(int argc, char *argv[]) {
         solutions.push_back(solution);
     };
     auto pruning_cb = [](Cost k, Cost lb) { std::cout << "pruned: k=" << k << ", lb=" << lb << ", eps=" << lb - k << "\n"; };
-    auto pruning_cb_2 = [](Cost, Cost) {};
-    auto pruning_cb_3 = [](Cost k, Cost lb) { if (k != 0 || lb != 0) std::cout << "pruned: k=" << k << ", lb=" << lb << ", eps=" << lb - k << "\n"; };
+    //auto pruning_cb_2 = [](Cost, Cost) {};
+    //auto pruning_cb_3 = [](Cost k, Cost lb) { if (k != 0 || lb != 0) std::cout << "pruned: k=" << k << ", lb=" << lb << ", eps=" << lb - k << "\n"; };
 
 
 
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
     //526 { {0, 3} {1, 8} {2, 6} {3, 8} {4, 11} {6, 8} {7, 8} }
 
 
-    bool solved = editor.edit(6 * multiplier, solution_cb, pruning_cb);
+    bool solved = editor.edit(0 * 6 * multiplier, solution_cb, pruning_cb);
 
 
 
@@ -117,14 +117,14 @@ int main(int argc, char *argv[]) {
     }
 
 
-    for (int seed = 0; seed < 1; ++seed) {
-        FinderTests(seed).run();
-        GraphTests(seed).run();
-        SubgraphTests(seed).run();
-        EditorTests(seed).run();
-    }
+    std::vector<VertexPair> edits = {{0, 1}, {4, 5}, {10, 2}};
 
+    Solution solution(instance, edits);
 
+    YAML::Emitter out;
+    out << edits << solution << instance;
+
+    std::cout << out.c_str();
 
     return 0;
 }
