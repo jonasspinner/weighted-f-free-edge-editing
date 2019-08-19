@@ -8,6 +8,7 @@
 
 #include <string>
 
+
 namespace Options {
     enum class Selector {
         FirstEditable, LeastWeight
@@ -18,6 +19,41 @@ namespace Options {
     enum class LB {
         No, Greedy, LocalSearch
     };
+
+    std::ostream &operator<<(std::ostream &os, Selector selector) {
+        switch (selector) {
+            case Selector::FirstEditable:
+                return os << "FirstEditable";
+            case Selector::LeastWeight:
+                return os << "LeastWeight";
+            default:
+                return os;
+        }
+    }
+
+    std::ostream &operator<<(std::ostream &os, FSG fsg) {
+        switch (fsg) {
+            case FSG::P3:
+                return os << "P3";
+            case FSG::P4C4:
+                return os << "P4C4";
+            default:
+                return os;
+        }
+    }
+
+    std::ostream &operator<<(std::ostream &os, LB lower_bound) {
+        switch (lower_bound) {
+            case LB::No:
+                return os << "No";
+            case LB::Greedy:
+                return os << "Greedy";
+            case LB::LocalSearch:
+                return os << "LocalSearch";
+            default:
+                return os;
+        }
+    }
 }
 
 class Configuration {
