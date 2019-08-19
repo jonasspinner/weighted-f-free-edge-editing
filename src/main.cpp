@@ -2,8 +2,11 @@
 
 #include "graph/Graph.h"
 #include "graph/GraphIO.h"
+
 #include "Statistics.h"
 #include "Editor.h"
+#include "Permutation.h"
+#include "Solution.h"
 
 #include "finder/NaiveP3.h"
 #include "finder/CenterC4P4.h"
@@ -15,44 +18,6 @@
 #include "tests/SubgraphTests.h"
 #include "tests/EditorTests.h"
 
-
-class Solution {
-public:
-    Cost cost;
-    std::vector<VertexPair> edits;
-
-    // Solution(Cost cost, std::vector<VertexPair> edits) : cost(cost), edits(std::move(edits)) {}
-    Solution(const VertexPairMap<Cost> &costs, std::vector<VertexPair> edits_) : cost(0), edits(std::move(edits_)) {
-        for (VertexPair uv : edits) cost += costs[uv];
-    }
-    Solution(const Instance &instance, std::vector<VertexPair> edits_) : Solution(instance.costs, std::move(edits_)) {}
-
-    friend std::ostream &operator<<(std::ostream &os, const Solution &solution) {
-        os << solution.cost << " { ";
-        for (auto uv : solution.edits) os << uv << " ";
-        return os << "}";
-    }
-};
-
-[[nodiscard]] bool is_solution_valid(const Graph &graph, const Solution &solution, Options::FSG forbidden) {
-    Graph graph_(graph);
-    std::unique_ptr<FinderI> finder;
-    switch (forbidden) {
-        case Options::FSG::P3:
-            finder = std::make_unique<Finder::NaiveP3>(graph_);
-            break;
-        case Options::FSG::P4C4:
-            finder = std::make_unique<Finder::CenterC4P4>(graph_);
-            break;
-    }
-
-    for (VertexPair uv : solution.edits)
-        graph_.toggle_edge(uv);
-
-    bool found_forbidden_subgraph = finder->find([&](const Subgraph &) { return true; });
-
-    return !found_forbidden_subgraph;
-}
 
 
 void search(const Instance &instance, const Configuration &config) {
@@ -76,7 +41,7 @@ void search(const Instance &instance, const Configuration &config) {
 }
 
 
-int main() {
+int main(int argc, char *argv[]) {
 
     const int multiplier = 100;
     const std::vector<std::string> paths {
@@ -84,18 +49,27 @@ int main() {
         "../data/cost_matrix_component_nr_4_size_39_cutoff_10.0.metis",
         "../data/cost_matrix_component_nr_11_size_22_cutoff_10.0.metis",
         "./data/karate.graph"};
+
     auto instance = GraphIO::read_graph(paths[0], multiplier);
 
-    auto selector = Options::Selector::LeastWeight;
+    Permutation P(instance.graph.size(), 1);
+    Permutation P_r = P.reverse();
+    instance = P[instance];
+
+    auto selector = Options::Selector::FirstEditable;
     auto forbidden_type = Options::FSG::P4C4;
-    auto lower_bound = Options::LB::LocalSearch;
+    auto lower_bound = Options::LB::Greedy;
+
+    Configuration config(0, Options::Selector::FirstEditable, Options::FSG::P4C4, Options::LB::No, "", "");
+    config.read_input(argc, argv);
 
 
     std::vector<Solution> solutions;
 
     Editor editor(instance, selector, forbidden_type, lower_bound);
     auto solution_cb = [&](const std::vector<VertexPair> &edits) {
-        Solution solution(instance, edits);
+
+        Solution solution(P_r[instance], P_r[edits]);
         std::cout << solution << "\n";
         solutions.push_back(solution);
     };
@@ -119,6 +93,14 @@ int main() {
     // 426 { {0, 3} {6, 8} {3, 8} {1, 8} {7, 8} {4, 11} }
 
 
+    //572 { {0, 3} {0, 11} {1, 8} {3, 8} {4, 11} {6, 8} {7, 8} {8, 9} {8, 14} }
+    //541 { {0, 3} {1, 8} {3, 8} {4, 11} {6, 8} {7, 8} {8, 9} {8, 14} }
+
+    //570 { {0, 3} {1, 8} {2, 6} {3, 8} {4, 11} {6, 8} {7, 8} {8, 14} }
+    //557 { {0, 3} {0, 11} {1, 8} {2, 6} {3, 8} {4, 11} {6, 8} {7, 8} }
+    //526 { {0, 3} {1, 8} {2, 6} {3, 8} {4, 11} {6, 8} {7, 8} }
+
+
     bool solved = editor.edit(6 * multiplier, solution_cb, pruning_cb);
 
 
@@ -130,7 +112,7 @@ int main() {
 
 
     for (const auto& solution : solutions) {
-        assert(is_solution_valid(instance.graph, solution, forbidden_type));
+        assert(solution.is_valid(P_r[instance], forbidden_type));
         std::cout << solution << "\n";
     }
 

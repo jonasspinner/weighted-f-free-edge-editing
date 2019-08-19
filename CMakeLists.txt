@@ -10,7 +10,8 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wshadow -Wnon-virtual-dt
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Wunused -Woverloaded-virtual -Wpedantic -Wconversion -Wsign-conversion -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wuseless-cast -Wdouble-promotion -Wformat=2")
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic")
 
-find_package(Boost REQUIRED)
+find_package(Boost COMPONENTS program_options REQUIRED)
+include_directories(${Boost_INCLUDE_DIR} )
 
 find_package(GUROBI REQUIRED)
 include_directories(SYSTEM ${GUROBI_INCLUDE_DIRS})
@@ -25,11 +26,24 @@ set(LIBS ${LIBS} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY}
 #message(${GUROBI_LIBRARIES})
 #message(${LIBS})
 
-add_executable(graphedit src/main.cpp)
+add_executable(graphedit src/main.cpp apps/run_tests.cpp)
 
-target_link_libraries(graphedit PRIVATE Boost::boost)
-target_link_libraries (graphedit LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${LIBS})
+# target_link_libraries(graphedit PRIVATE Boost::boost)
+target_link_libraries(graphedit LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${LIBS})
+target_link_libraries(graphedit LINK_PUBLIC ${Boost_LIBRARIES} )
 
 
-add_executable(ilp src/ilpsolver.cpp)
-target_link_libraries (ilp LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${LIBS})
+add_executable(fpt apps/run_fptsolver.cpp)
+
+target_link_libraries(fpt LINK_PUBLIC ${Boost_LIBRARIES} )
+
+
+add_executable(ilp apps/run_ilpsolver.cpp)
+
+target_link_libraries(ilp LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${LIBS})
+target_link_libraries(ilp LINK_PUBLIC ${Boost_LIBRARIES} )
+
+
+add_executable(tests apps/run_tests.cpp)
+
+target_link_libraries(tests LINK_PUBLIC ${Boost_LIBRARIES} )

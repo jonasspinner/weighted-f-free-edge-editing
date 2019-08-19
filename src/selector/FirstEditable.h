@@ -38,7 +38,7 @@ namespace Selector {
             return {pairs, !found};
         }
 
-        void push(Cost k) override {}
+        void push(Cost /*k*/) override {}
 
         void pop() override {}
 
