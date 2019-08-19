@@ -11,7 +11,7 @@
 #include "../interfaces/FinderI.h"
 
 class IteratedLocalSearch : public LowerBoundI {
-public:
+private:
     class State {
     public:
         struct Element {
@@ -102,7 +102,7 @@ public:
                     assert(!bound_graph.has_edge(uv));
                     assert(!debug[uv]);
                 } else {
-                    assert(bound_graph.has_edge(uv) == (bool)debug[uv]);
+                    assert(bound_graph.has_edge(uv) == static_cast<bool>(debug[uv]));
                 }
 #endif
         }
@@ -139,7 +139,7 @@ public:
                     assert(!bound_graph.has_edge(uv));
                     assert(!debug[uv]);
                 } else {
-                    assert(bound_graph.has_edge(uv) == (bool)debug[uv]);
+                    assert(bound_graph.has_edge(uv) == static_cast<bool>(debug[uv]));
                 }
             }
 
@@ -154,7 +154,6 @@ public:
         }
     };
 
-private:
     Graph m_bound_graph;
     const VertexPairMap<Cost> &m_costs;
     const VertexPairMap<bool> &m_marked;
@@ -199,7 +198,7 @@ public:
      * @param k
      * @return
      */
-    void push(Cost k) override {
+    void push(Cost /*k*/) override {
         if (!states.empty()) {
             states.push_back(std::make_unique<State>(*states.back()));
             return;

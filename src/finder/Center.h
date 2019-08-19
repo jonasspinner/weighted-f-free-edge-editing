@@ -6,8 +6,8 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_CENTER_H
 
 
-#include "../graph/Subgraph.h"
 #include "../interfaces/FinderI.h"
+
 
 namespace detail {
 

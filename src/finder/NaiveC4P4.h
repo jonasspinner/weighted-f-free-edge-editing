@@ -8,6 +8,7 @@
 
 #include "../interfaces/FinderI.h"
 
+
 namespace Finder {
     class NaiveC4P4 : public FinderI {
     public:

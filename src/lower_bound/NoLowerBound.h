@@ -2,15 +2,15 @@
 // Created by jonas on 15.07.19.
 //
 
-#ifndef CONCEPT_NOLOWERBOUND_H
-#define CONCEPT_NOLOWERBOUND_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_NOLOWERBOUND_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_NOLOWERBOUND_H
+
 
 #include "../interfaces/LowerBoundI.h"
 
+
 namespace LowerBound {
     class NoLowerBound : public LowerBoundI {
-    private:
-
     public:
         explicit NoLowerBound(std::shared_ptr<FinderI> finder_ptr) : LowerBoundI(std::move(finder_ptr)) {};
 
@@ -18,7 +18,7 @@ namespace LowerBound {
             return 0;
         }
 
-        void push(Cost k) override {}
+        void push(Cost /*k*/) override {}
 
         void pop() override {}
 
@@ -39,4 +39,4 @@ namespace LowerBound {
 }
 
 
-#endif //CONCEPT_NOLOWERBOUND_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_NOLOWERBOUND_H

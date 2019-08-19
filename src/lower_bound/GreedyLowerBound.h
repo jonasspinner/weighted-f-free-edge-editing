@@ -12,6 +12,7 @@
 
 namespace LowerBound {
     class GreedyLowerBound : public LowerBoundI {
+    private:
         const Graph &graph;
         const VertexPairMap<Cost> &costs;
         const VertexPairMap<bool> &m_forbidden;
@@ -70,7 +71,7 @@ namespace LowerBound {
             return bound_size;
         }
 
-        void push(Cost k) override {}
+        void push(Cost /*k*/) override {}
 
         void pop() override {}
 

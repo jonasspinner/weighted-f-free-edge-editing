@@ -2,11 +2,12 @@
 // Created by jonas on 23.07.19.
 //
 
-#ifndef CONCEPT_CENTERP3_H
-#define CONCEPT_CENTERP3_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_CENTERP3_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_CENTERP3_H
 
 
 #include "../interfaces/FinderI.h"
+
 
 namespace Finder {
     class CenterP3 : public FinderI {
@@ -120,4 +121,4 @@ namespace Finder {
 }
 
 
-#endif //CONCEPT_CENTERP3_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_CENTERP3_H

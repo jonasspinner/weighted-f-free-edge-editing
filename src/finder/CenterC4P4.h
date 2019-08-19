@@ -2,15 +2,16 @@
 // Created by jonas on 03.07.19.
 //
 
-#ifndef CONCEPT_CENTERC4P4_H
-#define CONCEPT_CENTERC4P4_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_CENTERC4P4_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_CENTERC4P4_H
+
 
 #include "../interfaces/FinderI.h"
-#include "../graph/Graph.h"
-#include "../graph/Subgraph.h"
+
 
 namespace Finder {
     class CenterC4P4 : public FinderI {
+
         Graph::AdjRow V;
         Graph::AdjRow A;
         Graph::AdjRow B;
@@ -275,4 +276,4 @@ namespace Finder {
 }
 
 
-#endif //CONCEPT_CENTERC4P4_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_CENTERC4P4_H
