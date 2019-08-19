@@ -7,6 +7,7 @@
 
 
 #include "Graph.h"
+#include "VertexPairMap.h"
 
 
 class Subgraph {
