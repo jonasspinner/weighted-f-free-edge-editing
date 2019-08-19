@@ -22,9 +22,12 @@ namespace Selector {
             Subgraph min_subgraph{};
             Cost min_subgraph_cost = invalid_cost;
 
-            bool no_subgraphs = true;
-            this->finder->find([&](Subgraph &&subgraph) {
-                no_subgraphs = false;
+
+            bool solved = true;
+
+            finder->find([&](Subgraph &&subgraph) {
+                solved = false;
+
                 Cost subgraph_cost = cost(subgraph, m_forbidden, m_costs);
                 if (subgraph_cost < min_subgraph_cost) {
                     min_subgraph_cost = subgraph_cost;
@@ -32,6 +35,7 @@ namespace Selector {
                 }
                 return false;
             });
+
 
             std::vector<VertexPair> pairs;
 
@@ -43,10 +47,10 @@ namespace Selector {
             std::sort(pairs.begin(), pairs.end(),
                       [&](VertexPair uv, VertexPair xy) { return m_costs[uv] < m_costs[xy]; });
 
-            return {pairs, no_subgraphs};
+            return {pairs, solved};
         }
 
-        void push(Cost k) override {}
+        void push(Cost /*k*/) override {}
 
         void pop() override {}
 

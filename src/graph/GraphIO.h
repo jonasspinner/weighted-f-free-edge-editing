@@ -28,8 +28,8 @@ public:
      * @param path
      * @return
      */
-    static Instance read_graph(const std::string &path, float multiplier = 1) {
-        using Real = float;
+    static Instance read_graph(const std::string &path, double multiplier = 1) {
+        using Real = double;
 
         std::ifstream file(path);
 

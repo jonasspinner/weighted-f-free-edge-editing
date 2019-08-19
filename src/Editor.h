@@ -196,8 +196,9 @@ private:
                 return std::make_shared<Finder::CenterP3>(instance.graph);
             case Options::FSG::P4C4:
                 return std::make_shared<Finder::CenterC4P4>(instance.graph);
+            default:
+                assert(false);
         }
-        assert(false);
     }
 
     static std::unique_ptr<SelectorI>
@@ -208,8 +209,9 @@ private:
                 return std::make_unique<Selector::LeastWeight>(instance.costs, finder, marked);
             case Options::Selector::FirstEditable:
                 return std::make_unique<Selector::FirstEditable>(finder, marked);
+            default:
+                assert(false);
         }
-        assert(false);
     }
 
     static std::unique_ptr<LowerBoundI>
@@ -222,8 +224,9 @@ private:
                 return std::make_unique<IteratedLocalSearch>(instance, marked, finder);
             case Options::LB::Greedy:
                 return std::make_unique<LowerBound::GreedyLowerBound>(instance, marked, finder);
+            default:
+                assert(false);
         }
-        assert(false);
     }
 };
 

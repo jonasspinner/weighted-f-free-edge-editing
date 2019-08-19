@@ -13,7 +13,7 @@
 class FinderI {
 
 public:
-    using SubgraphCallback = std::function<bool(Subgraph)>;
+    using SubgraphCallback = std::function<bool(Subgraph&&)>;
 
 protected:
     const Graph &graph;
@@ -63,6 +63,7 @@ public:
     virtual bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) = 0;
 
 
+    /*
     static const Graph::AdjRow &neighbors(Vertex u, const Graph &graph) {
         return graph.m_adj[u];
     }
@@ -82,6 +83,7 @@ public:
         result[u] = false;
         return result;
     }
+    */
 
 };
 

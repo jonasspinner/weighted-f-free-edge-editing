@@ -10,7 +10,17 @@
 #include <vector>
 #include <algorithm>
 #include <random>
+
 #include "../graph/Subgraph.h"
+
+template <class T>
+std::ostream &operator<<(std::ostream &os, const std::vector<T> &vec) {
+    os << "{ ";
+    for (const auto &t : vec)
+        os << t << " ";
+    return os << "}";
+}
+
 
 template <typename T>
 void expect(const std::string &name, T expected, T actual) {

@@ -7,41 +7,20 @@
 
 
 #include "../graph/Graph.h"
+#include "../graph/GraphIO.h"
 #include "../Configuration.h"
+#include "../Solution.h"
 #include "Tests.h"
 
 #include "../interfaces/FinderI.h"
 #include "../finder/NaiveC4P4.h"
 #include "../finder/NaiveP3.h"
 #include "../finder/CenterC4P4.h"
+#include "../finder/CenterP3.h"
 #include "../finder/Center.h"
+#include "../finder/util.h"
 
 
-std::unique_ptr<FinderI> create_finder(const Graph& graph, Options::FSG forbidden) {
-    switch (forbidden) {
-        case Options::FSG::P3:
-            return std::make_unique<Finder::CenterP3>(graph);
-        case Options::FSG::P4C4:
-            return std::make_unique<Finder::CenterC4P4>(graph);
-        default:
-            abort();
-    }
-}
-
-
-bool is_solution_valid(Graph &graph, const std::vector<VertexPair> &edits, Options::FSG forbidden) {
-    auto finder = create_finder(graph, forbidden);
-
-    for (VertexPair uv : edits)
-        graph.toggle_edge(uv);
-
-    bool found_forbidden_subgraph = finder->find([&](const Subgraph & /* subgraph */) { return true; });
-
-    for (VertexPair uv : edits)
-        graph.toggle_edge(uv);
-
-    return !found_forbidden_subgraph;
-}
 
 bool is_p4(const Graph &graph, const Subgraph &subgraph) {
     const Subgraph& P = subgraph;
@@ -98,8 +77,9 @@ class FinderTests {
 public:
     explicit FinderTests(int seed=0) : gen(seed) {}
 
-    void EditsSolveKarate()         {
-        Graph G = GraphIO::read_graph("./data/karate.graph").graph;
+    void EditsSolveKarate() {
+        Instance instance = GraphIO::read_graph("./data/karate.graph");
+        Graph G = instance.graph;
 
         std::vector<VertexPair> edits {
             {0, 8}, {0, 16}, {0, 31}, /*{0, 33},*/
@@ -114,7 +94,7 @@ public:
             {28, 31},
             {31, 32}, {31, 33}
         };
-        expect("Edits solve karate", true, is_solution_valid(G, edits, Options::FSG::P4C4));
+        expect("Edits solve karate", true, Solution(instance, edits).is_valid(instance, Options::FSG::P4C4));
     }
 
     template <typename A, typename B>
