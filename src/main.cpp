@@ -1,4 +1,7 @@
 #include <iostream>
+#include <chrono>
+
+#include <boost/program_options.hpp>
 
 #include "graph/Graph.h"
 #include "graph/GraphIO.h"
@@ -20,89 +23,74 @@
 
 
 
-void search(const Instance &instance, const Configuration &config) {
-    Cost k = 0;
-    bool solved = false;
-    do {
-        Cost min_delta = std::numeric_limits<Cost>::max();
-        std::vector<Cost> deltas;
-        std::cout << "edit(" << std::setw(10) << k << "):";
-        Editor e(instance, config.selector, config.forbidden, config.lower_bound);
-        solved = e.edit(k,
-                        [&](const std::vector<VertexPair> &edits) {
-                            std::cout << Solution(instance, edits) << "\n";
-                        },
-                        [&](Cost pruned_k, Cost lb) { min_delta = std::min(min_delta, lb - pruned_k); deltas.push_back(lb - pruned_k); });
-        std::sort(deltas.begin(), deltas.end(), [](Cost lhs, Cost rhs) { return lhs < rhs; });
-        Cost delta10 = deltas[std::min(deltas.size() - 1, deltas.size() / 5)];
-        std::cout << " min_delta = " << std::setw(10) << min_delta << ", deltas size = " << std::setw(10) << deltas.size() << ", delta10 = " << std::setw(10) << delta10 << "\n";
-        if (!solved) k += delta10;
-    } while (!solved);
+void read_args(int argc, char *argv[], int& seed, std::string &input, double &multiplier, Cost &k_max, Options::FSG &fsg, Options::Selector &selector, Options::LB &lower_bound) {
+    namespace po = boost::program_options;
+
+    po::options_description desc("Allowed options");
+    desc.add_options()
+            ("help", "produce help message")
+            ("input", po::value<std::string>(&input)->default_value(input), "path to input instance")
+            ("multiplier", po::value<double>(&multiplier)->default_value(multiplier), "multiplier for discretization of input instances")
+            ("seed", po::value<int>(&seed)->default_value(seed), "seed for instance permutation")
+            ("k", po::value<Cost>(&k_max)->default_value(k_max), "maximum editing cost")
+            ("F", po::value<Options::FSG>(&fsg)->default_value(fsg), "forbidden subgraphs")
+            ("selector", po::value<Options::Selector>(&selector)->default_value(selector))
+            ("lower_bound", po::value<Options::LB>(&lower_bound)->default_value(lower_bound))
+            ;
+
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
+    po::notify(vm);
+
+    if (vm.count("help")) {
+        std::cout << desc << "\n";
+        abort();
+    }
 }
 
 
 int main(int argc, char *argv[]) {
 
-    const int multiplier = 100;
     const std::vector<std::string> paths {
         "../data/cost_matrix_component_nr_3_size_16_cutoff_10.0.metis",
         "../data/cost_matrix_component_nr_4_size_39_cutoff_10.0.metis",
         "../data/cost_matrix_component_nr_11_size_22_cutoff_10.0.metis",
         "./data/karate.graph"};
 
-    auto instance = GraphIO::read_graph(paths[0], multiplier);
 
-    Permutation P(instance.graph.size(), 1);
+    int seed = 0;
+    std::string input = paths[0];
+    double multiplier = 100;
+    Cost k_max = 600;
+    auto forbidden_type = Options::FSG::P4C4;
+    auto selector = Options::Selector::FirstEditable;
+    auto lower_bound = Options::LB::No;
+
+    read_args(argc, argv, seed, input, multiplier, k_max, forbidden_type, selector, lower_bound);
+
+
+    auto instance = GraphIO::read_graph(input, multiplier);
+
+    Permutation P(instance.graph.size(), seed);
     Permutation P_r = P.reverse();
     instance = P[instance];
 
-    auto selector = Options::Selector::FirstEditable;
-    auto forbidden_type = Options::FSG::P4C4;
-    auto lower_bound = Options::LB::Greedy;
-
-    Configuration config(0, Options::Selector::FirstEditable, Options::FSG::P4C4, Options::LB::No, "", "");
+    // Configuration config(0, Options::Selector::FirstEditable, Options::FSG::P4C4, Options::LB::No, "", "");
     // config.read_input(argc, argv);
 
 
     std::vector<Solution> solutions;
 
     Editor editor(instance, selector, forbidden_type, lower_bound);
+
     auto solution_cb = [&](const std::vector<VertexPair> &edits) {
-
-        Solution solution(P_r[instance], P_r[edits]);
-        std::cout << solution << "\n";
-        solutions.push_back(solution);
+        solutions.emplace_back(P_r[instance], P_r[edits]);
     };
-    auto pruning_cb = [](Cost k, Cost lb) { std::cout << "pruned: k=" << k << ", lb=" << lb << ", eps=" << lb - k << "\n"; };
-    //auto pruning_cb_2 = [](Cost, Cost) {};
-    //auto pruning_cb_3 = [](Cost k, Cost lb) { if (k != 0 || lb != 0) std::cout << "pruned: k=" << k << ", lb=" << lb << ", eps=" << lb - k << "\n"; };
+    //auto pruning_cb = [](Cost k, Cost lb) { std::cout << "pruned: k=" << k << ", lb=" << lb << ", eps=" << lb - k << "\n"; };
+    auto pruning_cb_2 = [](Cost, Cost) {};
 
 
-
-    // 781 { {2, 6} {6, 8} {1, 4} {3, 8} {7, 8} {4, 11} {0, 3} }
-    // 777 { {2, 6} {6, 8} {3, 8} {5, 8} {7, 8} {1, 8} {4, 11} {0, 3} }
-    // 767 { {0, 3} {6, 8} {3, 8} {5, 8} {7, 8} {8, 9} {4, 10} }
-    // 753 { {0, 3} {6, 8} {3, 8} {1, 8} {0, 7} {4, 11} }
-    // 748 { {0, 3} {6, 8} {3, 8} {5, 8} {7, 8} {8, 9} {1, 8} {4, 11} }
-    // 728 { {0, 2} {6, 8} {3, 8} {1, 8} {0, 7} {4, 11} }
-    // 681 { {0, 3} {6, 8} {3, 8} {1, 4} {7, 8} {4, 11} }
-    // 677 { {3, 6} {6, 8} {3, 8} {1, 8} {7, 8} {4, 11} }
-    // 677 { {0, 3} {6, 8} {3, 8} {5, 8} {7, 8} {1, 8} {4, 11} }
-    // 597 { {3, 6} {6, 8} {1, 8} {7, 8} {4, 11} }
-    // 526 { {2, 6} {6, 8} {3, 8} {1, 8} {7, 8} {4, 11} {0, 3} }
-    // 426 { {0, 3} {6, 8} {3, 8} {1, 8} {7, 8} {4, 11} }
-
-
-    //572 { {0, 3} {0, 11} {1, 8} {3, 8} {4, 11} {6, 8} {7, 8} {8, 9} {8, 14} }
-    //541 { {0, 3} {1, 8} {3, 8} {4, 11} {6, 8} {7, 8} {8, 9} {8, 14} }
-
-    //570 { {0, 3} {1, 8} {2, 6} {3, 8} {4, 11} {6, 8} {7, 8} {8, 14} }
-    //557 { {0, 3} {0, 11} {1, 8} {2, 6} {3, 8} {4, 11} {6, 8} {7, 8} }
-    //526 { {0, 3} {1, 8} {2, 6} {3, 8} {4, 11} {6, 8} {7, 8} }
-
-
-    bool solved = editor.edit(0 * 6 * multiplier, solution_cb, pruning_cb);
-
+    bool solved = editor.edit(k_max, solution_cb, pruning_cb_2);
 
 
     std::cout << (solved ? "instance solved" : "instance not solved") << "\n";
@@ -113,18 +101,42 @@ int main(int argc, char *argv[]) {
 
     for (const auto& solution : solutions) {
         assert(solution.is_valid(P_r[instance], forbidden_type));
-        std::cout << solution << "\n";
     }
 
 
-    std::vector<VertexPair> edits = {{0, 1}, {4, 5}, {10, 2}};
 
-    Solution solution(instance, edits);
+    auto now = std::chrono::system_clock::now();
+    auto itt = std::chrono::system_clock::to_time_t(now);
+
+    std::ostringstream time_ss;
+    time_ss << std::put_time(std::localtime(&itt), "%FT%TZ%z");
 
     YAML::Emitter out;
-    out << edits << solution << instance;
+    out << YAML::BeginMap;
+    out << YAML::Key << "instance_name"
+        << YAML::Value << instance.name;
+    out << YAML::Key << "seed"
+        << YAML::Value << seed;
+    out << YAML::Key << "commit_hash"
+        << YAML::Value << GIT_COMMIT_HASH;
+    out << YAML::Key << "time"
+        << YAML::Value << time_ss.str();
+    out << YAML::Key << "algorithm"
+        << YAML::Value << "fpt";
+    out << YAML::Key << "forbidden_subgraphs"
+        << YAML::Key << forbidden_type;
+    out << YAML::Key << "config"
+        << YAML::Value << YAML::BeginMap;
+    out << YAML::Key << "selector"
+        << YAML::Value << selector;
+    out << YAML::Key << "lower_bound"
+        << YAML::Key << lower_bound;
+    out << YAML::EndMap;
+    out << YAML::Key << "solutions"
+        << YAML::Value << solutions;
+    out << YAML::EndMap;
 
-    std::cout << out.c_str();
+    std::cout << "\n" << out.c_str() << "\n";
 
     return 0;
 }

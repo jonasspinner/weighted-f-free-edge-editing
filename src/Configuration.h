@@ -20,6 +20,18 @@ namespace Options {
         No, Greedy, LocalSearch
     };
 
+    std::istream& operator>>(std::istream& in, Selector& selector) {
+        std::string token;
+        in >> token;
+        if (token == "FirstEditable")
+            selector = Selector::FirstEditable;
+        else if (token == "LeastWeight")
+            selector = Selector::LeastWeight;
+        else
+            in.setstate(std::ios_base::failbit);
+        return in;
+    }
+
     std::ostream &operator<<(std::ostream &os, Selector selector) {
         switch (selector) {
             case Selector::FirstEditable:
@@ -29,6 +41,24 @@ namespace Options {
             default:
                 return os;
         }
+    }
+
+    YAML::Emitter &operator<<(YAML::Emitter &out, Selector selector) {
+        std::ostringstream ss;
+        ss << selector;
+        return out << ss.str();
+    }
+
+    std::istream& operator>>(std::istream& in, FSG& fsg) {
+        std::string token;
+        in >> token;
+        if (token == "P3")
+            fsg = FSG::P3;
+        else if (token == "P4C4")
+            fsg = FSG::P4C4;
+        else
+            in.setstate(std::ios_base::failbit);
+        return in;
     }
 
     std::ostream &operator<<(std::ostream &os, FSG fsg) {
@@ -42,6 +72,26 @@ namespace Options {
         }
     }
 
+    YAML::Emitter &operator<<(YAML::Emitter &out, FSG fsg) {
+        std::ostringstream ss;
+        ss << fsg;
+        return out << ss.str();
+    }
+
+    std::istream& operator>>(std::istream& in, LB& lower_bound) {
+        std::string token;
+        in >> token;
+        if (token == "No")
+            lower_bound = LB::No;
+        else if (token == "Greedy")
+            lower_bound = LB::Greedy;
+        else if (token == "LocalSearch")
+            lower_bound = LB::LocalSearch;
+        else
+            in.setstate(std::ios_base::failbit);
+        return in;
+    }
+
     std::ostream &operator<<(std::ostream &os, LB lower_bound) {
         switch (lower_bound) {
             case LB::No:
@@ -53,6 +103,12 @@ namespace Options {
             default:
                 return os;
         }
+    }
+
+    YAML::Emitter &operator<<(YAML::Emitter &out, LB lower_bound) {
+        std::ostringstream ss;
+        ss << lower_bound;
+        return out << ss.str();
     }
 }
 

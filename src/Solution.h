@@ -36,7 +36,7 @@ public:
         out << YAML::Key << "cost";
         out << YAML::Value << solution.cost;
         out << YAML::Key << "edits";
-        out << YAML::Value << solution.edits;
+        out << YAML::Value << YAML::Flow << solution.edits;
         out << YAML::EndMap;
         return out;
     }
