@@ -1,0 +1,14 @@
+name: biological
+description: |-
+  Weighted graphs of size up to 100 derived from COG protein similarity data
+url: https://bio.informatik.uni-jena.de/data/#cluster_editing_data
+download_url: https://bio.informatik.uni-jena.de/wp/wp-content/uploads/2012/09/biological_bielefeld.zip
+references:
+  - |-
+    Sven Rahmann, Tobias Wittkop, Jan Baumbach, Marcel Martin, Anke Truss, and Sebastian Böcker.
+    Exact and Heuristic Algorithms for Weighted Cluster Editing.
+    Proc. of Computational Systems Bioinformatics (CSB 2007), volume 6, pages 391—401, 2007.
+  - |-
+    Sebastian Böcker, Sebastian Briesemeister, Quang Bao Anh Bui, and Anke Truss.
+    A fixed-parameter approach for Weighted Cluster Editing.
+    Proc. of Asia-Pacific Bioinformatics Conference (APBC 2008), volume 5, pages 211—220 of Series on Advances in Bioinformatics and Computational Biology, Imperial College Press, 2008.

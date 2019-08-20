@@ -1,0 +1,14 @@
+name: misc
+description: |-
+  Popular benchmark graphs. All graphs are unweighted. lesmis has weights for edges, but none for non edges.
+
+  * celegans_metabolic.graph
+  * dolphins.graph
+  * email.graph
+  * football.graph
+  * grass_web.metis.graph
+  * jazz.graph
+  * karate.graph
+  * lesmis.graph
+  * PGPgiantcompo.graph
+  * presentation.graph
