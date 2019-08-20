@@ -59,12 +59,12 @@ int main(int argc, char *argv[]) {
 
 
     int seed = 0;
-    std::string input = paths[0];
+    std::string input = paths[2Le];
     double multiplier = 100;
     Cost k_max = 600;
     auto forbidden_type = Options::FSG::P4C4;
     auto selector = Options::Selector::FirstEditable;
-    auto lower_bound = Options::LB::No;
+    auto lower_bound = Options::LB::Greedy;
 
     read_args(argc, argv, seed, input, multiplier, k_max, forbidden_type, selector, lower_bound);
 
@@ -134,6 +134,8 @@ int main(int argc, char *argv[]) {
     out << YAML::EndMap;
     out << YAML::Key << "solutions"
         << YAML::Value << solutions;
+    out << YAML::Key << "statistics"
+        << YAML::Value << editor.stats();
     out << YAML::EndMap;
 
     std::cout << "\n" << out.c_str() << "\n";

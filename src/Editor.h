@@ -11,6 +11,7 @@
 #include "graph/VertexPairMap.h"
 #include "Instance.h"
 #include "Configuration.h"
+#include "Statistics.h"
 
 #include "interfaces/SelectorI.h"
 #include "interfaces/LowerBoundI.h"
@@ -32,33 +33,39 @@
 #include "consumer/SubgraphStats.h"
 
 
+/**
+ * ConsumerI::push and ConsumerI::pop operations bound on lifetime of Level object.
+ */
+class Level {
+    const std::vector<ConsumerI *> &consumers;
+public:
+    Level(const std::vector<ConsumerI *> &consumers_, Cost k) : consumers(consumers_) {
+        for (auto &consumer : consumers)
+            consumer->push(k);
+    }
+    ~Level() {
+        for (auto &consumer : consumers)
+            consumer->pop();
+    }
+};
+
+
 class Editor {
 private:
     Instance m_instance;
     VertexPairMap<bool> m_marked;
+
     std::unique_ptr<LowerBoundI> m_lower_bound;
     std::unique_ptr<SelectorI> m_selector;
-    std::vector<ConsumerI *> m_consumers;
-    std::shared_ptr<FinderI> m_finder;
     std::unique_ptr<SubgraphStats> m_subgraph_stats;
+
+    std::vector<ConsumerI *> m_consumers;
+
+    std::shared_ptr<FinderI> m_finder;
 
     std::vector<VertexPair> edits;
 
-    /**
-     * ConsumerI::push and ConsumerI::pop operations bound on lifetime of Level object.
-     */
-    class Level {
-        const std::vector<ConsumerI *> &consumers;
-    public:
-        Level(const std::vector<ConsumerI *> &consumers_, Cost k) : consumers(consumers_) {
-            for (auto &consumer : consumers)
-                consumer->push(k);
-        }
-        ~Level() {
-            for (auto &consumer : consumers)
-                consumer->pop();
-        }
-    };
+    Statistics m_stats;
 
 public:
     explicit Editor(Instance instance, Options::Selector selector, Options::FSG forbidden, Options::LB lower_bound) :
@@ -79,7 +86,12 @@ public:
     template<typename ResultCallback, typename PrunedCallback>
     bool edit(Cost k, ResultCallback result, PrunedCallback pruned) {
         // init stats
+        m_stats = Statistics(-k / 10, k, 10);
         return edit_r(k, result, pruned);
+    }
+
+    const Statistics &stats() const {
+        return m_stats;
     }
 
 private:
@@ -92,6 +104,8 @@ private:
     template<typename ResultCallback, typename PrunedCallback>
     bool edit_r(Cost k, ResultCallback result, PrunedCallback pruned) {
         const VertexPairMap<Cost> &costs = m_instance.costs;
+
+        m_stats.calls(k)++;
 
         Level L(m_consumers, k);
 
@@ -110,6 +124,7 @@ private:
         if (k < lb) {
             //for (unsigned i = 0; i < edits.size(); ++i) std::cout << "  ";
             pruned(k, lb);
+            m_stats.prunes(k)++;
             return false; /* unsolvable, too few edits remaining */
         }
 

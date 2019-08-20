@@ -172,7 +172,6 @@ public:
      * @return A lower bound on the costs required to solve the current instance.
      */
     Cost result(Cost k) override {
-        // auto &state = dynamic_cast<State &>(_state);
         auto &state = current_state();
         if (!state.solvable()) return state.cost();
 

@@ -22,10 +22,12 @@ public:
 
     // virtual std::unique_ptr<StateI> initialize(Cost k) = 0;
 
+protected:
     virtual void push(Cost k) = 0;
 
     virtual void pop() = 0;
 
+public:
     // all
     virtual void before_mark_and_edit(VertexPair uv) = 0;
 
@@ -47,6 +49,7 @@ public:
     // subgraph_stats
     virtual void after_unmark(VertexPair uv) = 0;
 
+    friend class Level;
 };
 
 #endif //CONCEPT_CONSUMERI_H

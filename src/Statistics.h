@@ -13,43 +13,49 @@
 #include "definitions.h"
 
 class Statistics {
-    using Depth = int;
-    Cost min;
-    Cost max;
-    size_t n_buckets;
-    std::vector<int> calls_cost;
-    std::vector<int> calls_depth;
+    using Depth = unsigned int;
+    Cost m_min;
+    Cost m_max;
+    size_t m_num_buckets;
+
+    std::vector<int> m_prunes;
+    std::vector<int> m_calls;
 
 public:
-    Statistics(Cost min_, Cost max_, size_t n_buckets_) : min(min_), max(max_), n_buckets(n_buckets_), calls_cost(n_buckets + 2), calls_depth(max) {}
+    Statistics() : m_min(0), m_max(0), m_num_buckets(0) {}
 
-    void calls(Depth depth, Cost cost) {
-        calls_depth[depth]++;
-        calls_cost[bucket(cost)]++;
+    Statistics(Cost min, Cost max, size_t num_buckets) : m_min(min), m_max(max), m_num_buckets(num_buckets), m_prunes(m_num_buckets + 2), m_calls(m_num_buckets + 2) {}
+
+    int &calls(Cost cost) {
+        return m_calls[bucket(cost)];
     }
 
-    [[nodiscard]] std::string yaml() const {
-         std::stringstream ss;
-         ss << "buckets: [" << min << " " << max << "] " << n_buckets;
-         ss << "\ncalls_cost:\n\t";
-         for (auto x : calls_cost) ss << x << " ";
-         ss << "\ncalls_depth:\n\t";
-         for (auto x : calls_depth) ss << x << " ";
-         return ss.str();
+    int &prunes(Cost cost) {
+        return m_prunes[bucket(cost)];
     }
 
-    friend std::ostream& operator<<(std::ostream &os, const Statistics& statistics) {
-        return os << statistics.yaml();
+    friend YAML::Emitter &operator<<(YAML::Emitter &out, const Statistics &statistics) {
+        out << YAML::BeginMap;
+        out << YAML::Key << "buckets"
+            << YAML::Value << YAML::Flow << YAML::BeginSeq;
+        out << statistics.m_min << "..." << statistics.m_max;
+        out << YAML::EndSeq;
+        out << YAML::Key << "calls"
+            << YAML::Value << YAML::Flow << statistics.m_calls;
+        out << YAML::Key << "prunes"
+            << YAML::Value << YAML::Flow << statistics.m_prunes;
+        return out << YAML::EndMap;
     }
 
 private:
     [[nodiscard]] size_t bucket(Cost cost) const {
-        if (cost < min) {
+        if (cost < m_min) {
             return 0;
-        } else if (cost > max) {
-            return n_buckets + 1;
+        } else if (cost > m_max) {
+            return m_num_buckets + 1;
         } else {
-            return 1 + n_buckets * (cost - min) / (1 + max - min);
+            return 1 + m_num_buckets * (static_cast<unsigned long>(cost - m_min))
+                / (static_cast<unsigned long>(1 + m_max - m_min));
         }
     }
 };
