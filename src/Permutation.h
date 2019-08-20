@@ -51,7 +51,14 @@ public:
                 new_map[(*this)[uv]] = map[uv];
             }
         }
-
+#ifndef NDEBUG
+        for (Vertex u = 0; u < map.size(); ++u) {
+            for (Vertex v = u + 1; v < map.size(); ++v) {
+                VertexPair uv = {u, v};
+                assert(new_map[(*this)[uv]] == map[uv]);
+            }
+        }
+#endif
         return new_map;
     }
 
@@ -60,11 +67,16 @@ public:
         for (VertexPair uv : graph.edges())
             new_graph.set_edge((*this)[uv]);
 
+#ifndef NDEBUG
+        for (VertexPair uv : graph.vertexPairs())
+            assert(new_graph.has_edge((*this)[uv]) == graph.has_edge(uv));
+#endif
         return new_graph;
     }
 
     Instance operator[](const Instance &instance) const {
-        return {instance.name + "-permuted", (*this)[instance.graph], (*this)[instance.costs]};
+        Instance result(instance.name + "-permuted", (*this)[instance.graph], (*this)[instance.costs]);
+        return result;
     }
 
     [[nodiscard]] Permutation reverse() const {

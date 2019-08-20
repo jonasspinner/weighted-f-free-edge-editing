@@ -2,13 +2,14 @@
 // Created by jonas on 19.08.19.
 //
 
+
 #include <boost/program_options.hpp>
 
 #include "../src/tests/FinderTests.h"
 #include "../src/tests/GraphTests.h"
 #include "../src/tests/SubgraphTests.h"
 #include "../src/tests/EditorTests.h"
-
+#include "../src/tests/PermutationTest.h"
 
 
 int main(int argc, char* argv[]) {
@@ -35,6 +36,7 @@ int main(int argc, char* argv[]) {
     GraphTests(seed).run();
     SubgraphTests(seed).run();
     EditorTests(seed).run();
+    PermutationTest(seed).run();
 
 
     return 0;
