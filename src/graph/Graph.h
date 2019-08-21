@@ -28,7 +28,10 @@ namespace detail {
     class Center;
 
     template<int length, bool with_cycles>
-    class CenterFinderImpl;
+    class FindImpl;
+
+    template<int length, bool with_cycles>
+    class FindNearImpl;
 }
 
 
@@ -507,8 +510,11 @@ private:
     template<int length> friend
     class detail::Center;
 
-    template<int length, bool with_cycles> friend
-    class detail::CenterFinderImpl;
+    template<int length, bool with_cycles>
+    friend class detail::FindImpl;
+
+    template<int length, bool with_cycles>
+    friend class detail::FindNearImpl;
 };
 
 
