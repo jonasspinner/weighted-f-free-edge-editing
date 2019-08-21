@@ -56,6 +56,8 @@ def download_bio_dataset():
     for file_path in folder_path.glob("**/*.cm"):
         match = re.match(r"cost_matrix_component_nr_(\d+)_size_(\d+)_cutoff_10.0.cm", file_path.name)
         number, size = match.group(1, 2)
+        if size >= 1000: continue
+
         output_path = folder_path / f"bio-nr-{number}-size-{size}.metis"
         try:
             transform(file_path, output_path)
