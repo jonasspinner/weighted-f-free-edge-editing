@@ -247,6 +247,35 @@ public:
         a_normalized.erase(std::unique(a_normalized.begin(), a_normalized.end()), a_normalized.end());
         b_normalized.erase(std::unique(b_normalized.begin(), b_normalized.end()), b_normalized.end());
         expect(a_name + " and " + b_name + " P3 Finder have same output ignoring duplicates", a_normalized, b_normalized);
+
+
+        std::vector<std::vector<Subgraph>> a_near_subgraphs, b_near_subgraphs;
+        for (VertexPair uv : G.vertexPairs()) {
+            std::vector<Subgraph> a, b;
+
+            a_finder.find_near(uv, [&](Subgraph &&subgraph){
+                a.emplace_back(std::move(subgraph));
+                return false;
+            });
+            a_near_subgraphs.emplace_back(normalize(a));
+
+            b_finder.find_near(uv, [&](Subgraph &&subgraph){
+                b.emplace_back(std::move(subgraph));
+                return false;
+            });
+            b_near_subgraphs.emplace_back(normalize(b));
+        }
+
+        expect(a_name + " and " + b_name + " P3 Finder have same find_near output", a_near_subgraphs, b_near_subgraphs);
+
+        for (auto &subgraphs : a_near_subgraphs) {
+            subgraphs.erase(std::unique(subgraphs.begin(), subgraphs.end()), subgraphs.end());
+        }
+        for (auto &subgraphs : b_near_subgraphs) {
+            subgraphs.erase(std::unique(subgraphs.begin(), subgraphs.end()), subgraphs.end());
+        }
+
+        expect(a_name + " and " + b_name + " P3 Finder have same find_near output ignoring duplicates", a_near_subgraphs, b_near_subgraphs);
     }
 
     template <typename Finder>
@@ -276,10 +305,13 @@ public:
         C4P4_Finders_are_consistent<Finder::NaiveC4P4, CenterRecC4P4>("NaiveC4P4", "CenterRecC4P4");
         C4P4_Finders_are_consistent<Finder::CenterC4P4, CenterRecC4P4>("CenterC4P4", "CenterRecC4P4");
 
-        Finder_finds_P3<Finder::CenterP3>("CenterP3");
         Finder_finds_P3<Finder::NaiveP3>("NaiveP3");
+        Finder_finds_P3<Finder::CenterP3>("CenterP3");
+        Finder_finds_P3<CenterRecP3>("CenterRecP3");
 
-        P3_Finders_are_consistent<Finder::CenterP3, Finder::NaiveP3>("CenterP3", "NaiveP3");
+        P3_Finders_are_consistent<Finder::NaiveP3, Finder::CenterP3>("NaiveP3", "CenterP3");
+        P3_Finders_are_consistent<Finder::NaiveP3, CenterRecP3 >("NaiveP3", "CenterRecP3");
+        P3_Finders_are_consistent<Finder::CenterP3, CenterRecP3 >("CenterP3", "CenterRecP3");
 
         EditsSolveKarate();
     }

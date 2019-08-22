@@ -57,10 +57,6 @@ public:
 
                 Editor editor(instance, selector, fsg, lb);
                 editor.edit(600, [&](const std::vector<VertexPair> &edits){
-                    Cost cost = 0;
-                    for (VertexPair uv : edits)
-                        cost += instance.costs[uv];
-
                     solutions.emplace_back(instance, edits);
                 }, [](Cost, Cost){});
 
@@ -72,8 +68,47 @@ public:
         for (size_t i = 0; i < results.size(); ++i) {
             for (size_t j = i + 1; j < results.size(); ++j) {
                 const auto &[selector_i, fsg_i, lb_i, solutions_i] = results[i];
-                const auto &[selector_j, fsg_j, lb_j, solutions_j] = results[i];
-                expect("a b", solutions_i, solutions_j);
+                const auto &[selector_j, fsg_j, lb_j, solutions_j] = results[j];
+
+                std::stringstream name;
+                name << "Editor(" << selector_i << ", " << fsg_i << ", " << lb_i << ") and "
+                     << "Editor(" << selector_j << ", " << fsg_j << ", " << lb_j << ") "
+                     << "have the same solutions";
+                expect(name.str(), solutions_i, solutions_j);
+            }
+        }
+    }
+
+    void output_is_independent_of_seed(const std::vector<int> &seeds) {
+        auto orig_instance = GraphIO::read_graph(instance_path, 100);
+
+        std::vector<std::tuple<int, std::vector<Solution>>> results;
+
+        for (int seed : seeds) {
+            Permutation P(orig_instance.graph.size(), seed);
+            Permutation P_r = P.reverse();
+
+            auto instance = P[orig_instance];
+
+            std::vector<Solution> solutions;
+
+            Editor editor(instance, Options::Selector::FirstEditable, Options::FSG::P4C4, Options::LB::Greedy);
+            editor.edit(600, [&](const std::vector<VertexPair> &edits) {
+                solutions.emplace_back(orig_instance, P_r[edits]);
+            }, [](Cost, Cost){});
+
+            results.emplace_back(seed, std::move(solutions));
+        }
+
+        for (size_t i = 0; i < seeds.size(); ++i) {
+            for (size_t j = i + 1; j < seeds.size(); ++j) {
+                const auto &[seed_i, solutions_i] = results[i];
+                const auto &[seed_j, solutions_j] = results[j];
+                std::stringstream name;
+                name << "seed = " << seed_i << " and "
+                     << "seed = " << seed_j << " "
+                     << "have the same solutions";
+                expect(name.str(), solutions_i, solutions_j);
             }
         }
     }
@@ -85,7 +120,9 @@ public:
          lower_bounds_have_same_output("No", Options::LB::No, "Greedy", Options::LB::Greedy);
          lower_bounds_have_same_output("No", Options::LB::No, "LocalSearch", Options::LB::LocalSearch);
 
-         configurations_have_same_output(Options::FSG::P4C4, {Options::Selector::FirstEditable}, {Options::LB::Greedy});
+         configurations_have_same_output(Options::FSG::P4C4, {Options::Selector::FirstEditable, Options::Selector::LeastWeight}, {Options::LB::No, Options::LB::Greedy});
+
+         output_is_independent_of_seed({0, 1, 2});
      }
 };
 
