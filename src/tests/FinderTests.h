@@ -19,7 +19,7 @@
 #include "../finder/CenterP3.h"
 #include "../finder/Center.h"
 #include "../finder/util.h"
-
+#include "../Permutation.h"
 
 
 bool is_p4(const Graph &graph, const Subgraph &subgraph) {
@@ -289,6 +289,39 @@ public:
         expect(name + " recognizes P3", normalize(expected), normalize(actual));
     }
 
+
+    template <class Finder>
+    void Finder_is_seed_independent(const std::string &name, const std::vector<int> &seeds) {
+        Graph G = random_graph(10, 40, gen);
+
+        std::vector<std::pair<int, std::vector<Subgraph>>> results;
+        for (auto seed : seeds) {
+            auto P = Permutation(G.size(), seed);
+            auto P_r = P.reverse();
+
+            auto G_p = P[G];
+
+            std::vector<Subgraph> subgraphs;
+            Finder finder(G_p);
+            finder.find([&](Subgraph &&subgraph) {
+                subgraphs.push_back(P_r[subgraph]);
+                return false;
+            });
+
+            results.emplace_back(seed, std::move(subgraphs));
+        }
+
+        for (size_t i = 0; i < seeds.size(); ++i) {
+            for (size_t j = i + 1; j < seeds.size(); ++j) {
+                const auto &[seed_i, subgraphs_i] = results[i];
+                const auto &[seed_j, subgraphs_j] = results[j];
+                std::stringstream ss;
+                ss << "Finder " << name << " finds the same subgraphs with seed " << seed_i << " and " << seed_j;
+                expect(ss.str(), normalize(subgraphs_i), normalize(subgraphs_j));
+            }
+        }
+    }
+
     void run() {
         std::cout << "\nFinderTests"
                      "\n-----------" << std::endl;
@@ -301,6 +334,10 @@ public:
         Finder_finds_P4<Finder::CenterC4P4>("CenterC4P4");
         Finder_finds_P4<CenterRecC4P4>("CenterRecC4P4");
 
+        Finder_is_seed_independent<Finder::NaiveC4P4>("NaiveC4P4", {0, 1});
+        Finder_is_seed_independent<Finder::CenterC4P4>("CenterC4P4", {0, 1});
+        Finder_is_seed_independent<CenterRecC4P4>("CenterRecC4P4", {0, 1});
+
         C4P4_Finders_are_consistent<Finder::NaiveC4P4, Finder::CenterC4P4>("NaiveC4P4", "CenterC4P4");
         C4P4_Finders_are_consistent<Finder::NaiveC4P4, CenterRecC4P4>("NaiveC4P4", "CenterRecC4P4");
         C4P4_Finders_are_consistent<Finder::CenterC4P4, CenterRecC4P4>("CenterC4P4", "CenterRecC4P4");
@@ -308,6 +345,10 @@ public:
         Finder_finds_P3<Finder::NaiveP3>("NaiveP3");
         Finder_finds_P3<Finder::CenterP3>("CenterP3");
         Finder_finds_P3<CenterRecP3>("CenterRecP3");
+
+        Finder_is_seed_independent<Finder::NaiveP3>("NaiveP3", {0, 1});
+        Finder_is_seed_independent<Finder::CenterP3>("CenterP3", {0, 1});
+        Finder_is_seed_independent<CenterRecP3>("CenterRecP3", {0, 1});
 
         P3_Finders_are_consistent<Finder::NaiveP3, Finder::CenterP3>("NaiveP3", "CenterP3");
         P3_Finders_are_consistent<Finder::NaiveP3, CenterRecP3 >("NaiveP3", "CenterRecP3");
