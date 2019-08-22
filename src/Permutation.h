@@ -33,6 +33,13 @@ public:
         return {P[uv.u], P[uv.v]};
     }
 
+    Subgraph operator[](const Subgraph &subgraph) const {
+        Subgraph result{};
+        for (Vertex u : subgraph.vertices())
+            result.push_back(P[u]);
+        return result;
+    }
+
     template <class T>
     std::vector<T> operator[](std::vector<T> vec) const {
         std::vector<T> result;
