@@ -15,7 +15,7 @@
 class EditorTests {
 
     std::mt19937 gen;
-    std::string instance_path = "../data/cost_matrix_component_nr_3_size_16_cutoff_10.0.metis";
+    std::string instance_path = "./data/bio/bio-nr-3-size-16.metis";
 public:
     explicit EditorTests(int seed = 0) : gen(seed) {}
 

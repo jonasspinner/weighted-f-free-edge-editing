@@ -16,10 +16,10 @@ int main(int argc, char* argv[]) {
     namespace po = boost::program_options;
 
     const std::vector<std::string> paths {
-            "../data/cost_matrix_component_nr_3_size_16_cutoff_10.0.metis",
-            "../data/cost_matrix_component_nr_4_size_39_cutoff_10.0.metis",
-            "../data/cost_matrix_component_nr_11_size_22_cutoff_10.0.metis",
-            "../data/cost_matrix_component_nr_277_size_222_cutoff_10.0.metis",
+            "./data/bio/bio-nr-3-size-16.metis",
+            "./data/bio/bio-nr-4-size-39.metis",
+            "./data/bio/bio-nr-11-size-22.metis",
+            "./data/bio/bio-nr-277-size-222.metis",
             "./data/karate.graph",
             "./data/lesmis.graph",
             "./data/dolphins.graph",
