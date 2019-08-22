@@ -467,7 +467,9 @@ public:
 private:
 
     [[nodiscard]] AdjRow all_vertices() const {
-        return AdjRow(m_size, 1);
+        auto row = AdjRow(m_size);
+        row.set();
+        return row;
     }
 
     /**
@@ -515,6 +517,9 @@ private:
 
     template<int length, bool with_cycles>
     friend class detail::FindNearImpl;
+
+    template<int length, bool with_cycles>
+    friend class A;
 };
 
 
