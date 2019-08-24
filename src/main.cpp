@@ -11,16 +11,9 @@
 #include "Permutation.h"
 #include "Solution.h"
 
-#include "finder/NaiveP3.h"
-#include "finder/CenterC4P4.h"
+#include "finder/Center.h"
 
-#include "lower_bound/ExplicitMWISSolver.h"
-
-#include "tests/FinderTests.h"
-#include "tests/GraphTests.h"
-#include "tests/SubgraphTests.h"
-#include "tests/EditorTests.h"
-
+#include "graph/synthetic_graphs.h"
 
 
 void read_args(int argc, char *argv[], int& seed, std::string &input, double &multiplier, Cost &k_max, Options::FSG &fsg, Options::Selector &selector, Options::LB &lower_bound) {
@@ -50,18 +43,19 @@ void read_args(int argc, char *argv[], int& seed, std::string &input, double &mu
 
 
 int main(int argc, char *argv[]) {
+    /*
 
     const std::vector<std::string> paths {
-        "../data/cost_matrix_component_nr_3_size_16_cutoff_10.0.metis",
-        "../data/cost_matrix_component_nr_4_size_39_cutoff_10.0.metis",
-        "../data/cost_matrix_component_nr_11_size_22_cutoff_10.0.metis",
+        "./data/bio/bio-nr-3-size-16.metis",
+        "./data/bio/bio-nr-4-size-39.metis",
+        "./data/bio/bio-nr-11-size-22.metis",
         "./data/karate.graph"};
 
 
     int seed = 0;
-    std::string input = paths[2Le];
+    std::string input = paths[2];
     double multiplier = 100;
-    Cost k_max = 600;
+    Cost k_max = 0;
     auto forbidden_type = Options::FSG::P4C4;
     auto selector = Options::Selector::FirstEditable;
     auto lower_bound = Options::LB::Greedy;
@@ -139,6 +133,30 @@ int main(int argc, char *argv[]) {
     out << YAML::EndMap;
 
     std::cout << "\n" << out.c_str() << "\n";
+    */
+
+    auto print_subgraph = [](Subgraph &&subgraph) {
+        std::cout << subgraph << "\n";
+        return false;
+    };
+
+    auto adj_subgraphs = [](const Graph &G, VertexPair uv) {
+        std::vector<Subgraph> subgraphs;
+        detail::Center<4>(G).find_near(uv, [&](Subgraph &&subgraph) { subgraphs.push_back(std::move(subgraph)); return false; });
+        return subgraphs;
+    };
+
+    Graph G(9);
+    G.set_edges({{0, 1}, {1, 2}, {2, 3}, {1, 4}, {2, 5}, {4, 5}, {5, 6}, {6, 7}, {6, 8}});
+    // 3-2-5-6-7
+    //   | | |
+    // 0-1-4 8
+
+    for (VertexPair uv : G.vertexPairs()) {
+        detail::Center<4>(G).find_near(uv, print_subgraph);
+    }
+
+    create_synthetic_cluster_graph(100, 0);
 
     return 0;
 }
