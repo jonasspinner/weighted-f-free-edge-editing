@@ -16,7 +16,7 @@ def transform(input_path: Path, output_path: Path):
         lines = input_file.read().split('\n')
     n = int(lines[0])
     m = n * (n - 1) // 2
-    fmt = 2
+    fmt = 1
 
     M = [[0.0] + [float(value) for value in line.split('\t')] for line in lines[n + 1:-2]] + [[0.0]]
     S = [[M[min([i, j])][max([i, j]) - min([i, j])] for j in range(n)] for i in range(n)]
@@ -26,7 +26,7 @@ def transform(input_path: Path, output_path: Path):
     with output_path.open('w') as output_file:
         output_file.write(f"{n} {m} {fmt}\n")
         for i in range(n):
-            output_file.write(" ".join([f"{j} {S[i][j]}" for j in range(n) if i != j]))
+            output_file.write(" ".join([f"{j+1} {S[i][j]}" for j in range(n) if i != j]))
             output_file.write("\n")
 
 
@@ -56,7 +56,8 @@ def download_bio_dataset():
     for file_path in folder_path.glob("**/*.cm"):
         match = re.match(r"cost_matrix_component_nr_(\d+)_size_(\d+)_cutoff_10.0.cm", file_path.name)
         number, size = match.group(1, 2)
-        if size >= 1000: continue
+        if int(size) >= 1000:
+            continue
 
         output_path = folder_path / f"bio-nr-{number}-size-{size}.metis"
         try:
