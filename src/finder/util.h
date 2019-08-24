@@ -19,6 +19,7 @@ namespace Finder {
                 return std::make_unique<Finder::CenterC4P4>(graph);
             default:
                 assert(false);
+                return nullptr;
         }
     }
 }
