@@ -17,7 +17,7 @@ execute_process(
         OUTPUT_VARIABLE GIT_BRANCH
         OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-add_definitions("-DGIT_BRANCH=\"${GIT_BRANCH}\"")
+#add_definitions("-DGIT_BRANCH=\"${GIT_BRANCH}\"")
 
 execute_process(
     COMMAND git log -1 --format=%H
@@ -25,7 +25,11 @@ execute_process(
     OUTPUT_VARIABLE GIT_COMMIT_HASH
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
+# add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
+configure_file(
+        ${CMAKE_SOURCE_DIR}/src/version.h.in
+        ${CMAKE_BINARY_DIR}/src/version.h
+)
 
 
 
@@ -60,3 +64,6 @@ endif(GUROBI_FOUND)
 
 add_executable(tests apps/run_tests.cpp)
 target_link_libraries(tests LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
+
+add_executable(finder_benchmark apps/run_finder_benchmark.cpp)
+target_link_libraries(finder_benchmark LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
