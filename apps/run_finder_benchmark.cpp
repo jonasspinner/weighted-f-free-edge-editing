@@ -151,7 +151,7 @@ void find_one_near_subgraph(YAML::Emitter &out, FinderI &finder, const Graph &gr
         auto start = std::chrono::system_clock::now();
 
         for (VertexPair uv : graph.vertexPairs()) {
-            finder->find_near(uv, [&](Subgraph &&) {
+            finder.find_near(uv, [&](Subgraph &&) {
                 ++count;
                 return true;
             });
