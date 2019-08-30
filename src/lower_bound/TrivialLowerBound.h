@@ -2,17 +2,17 @@
 // Created by jonas on 15.07.19.
 //
 
-#ifndef WEIGHTED_F_FREE_EDGE_EDITING_NOLOWERBOUND_H
-#define WEIGHTED_F_FREE_EDGE_EDITING_NOLOWERBOUND_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_TRIVIALLOWERBOUND_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_TRIVIALLOWERBOUND_H
 
 
 #include "../interfaces/LowerBoundI.h"
 
 
 namespace LowerBound {
-    class NoLowerBound : public LowerBoundI {
+    class TrivialLowerBound : public LowerBoundI {
     public:
-        explicit NoLowerBound(std::shared_ptr<FinderI> finder_ptr) : LowerBoundI(std::move(finder_ptr)) {};
+        explicit TrivialLowerBound(std::shared_ptr<FinderI> finder_ptr) : LowerBoundI(std::move(finder_ptr)) {};
 
         Cost result(Cost /*k*/) override {
             return 0;
@@ -39,4 +39,4 @@ namespace LowerBound {
 }
 
 
-#endif //WEIGHTED_F_FREE_EDGE_EDITING_NOLOWERBOUND_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_TRIVIALLOWERBOUND_H

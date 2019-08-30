@@ -23,12 +23,13 @@
 #include "finder/CenterC4P4.h"
 #include "finder/CenterP3.h"
 
-#include "lower_bound/NoLowerBound.h"
-#include "lower_bound/IteratedLocalSearch.h"
+#include "lower_bound/TrivialLowerBound.h"
+#include "lower_bound/LocalSearchLowerBound.h"
 #include "lower_bound/GreedyLowerBound.h"
 
 #include "selector/FirstEditable.h"
 #include "selector/LeastWeight.h"
+#include "selector/MostMarkedPairs.h"
 
 #include "consumer/SubgraphStats.h"
 
@@ -72,15 +73,14 @@ public:
             m_instance(std::move(instance)), m_marked(m_instance.graph.size()) {
 
         m_finder = make_finder(forbidden, m_instance);
+        m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_marked);
+        // m_consumers.emplace_back(m_subgraph_stats.get());
+
         m_selector = make_selector(selector, m_finder, m_instance, m_marked);
         m_lower_bound = make_lower_bound(lower_bound, m_finder, m_instance, m_marked);
 
-        m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_marked);
-
         m_consumers.emplace_back(m_lower_bound.get());
         m_consumers.emplace_back(m_selector.get());
-
-        // m_consumers.emplace_back(m_subgraph_stats.get());
     }
 
     template<typename ResultCallback, typename PrunedCallback>
@@ -90,7 +90,7 @@ public:
         return edit_r(k, result, pruned);
     }
 
-    const Statistics &stats() const {
+    [[nodiscard]] const Statistics &stats() const {
         return m_stats;
     }
 
@@ -142,6 +142,7 @@ private:
         for (auto uv : problem.pairs) std::cout << " " << uv;
         std::cout << " }\n"; */
 
+        std::vector<VertexPair> M;
 
         bool solved = false;
         for (VertexPair uv : problem.pairs) {
@@ -149,6 +150,7 @@ private:
 
             // std::cout << "edit " << uv << "\n";
             mark_and_edit_edge(uv);
+            M.push_back(uv);
 
             // std::cout << "edited " << uv << "\n";
             if (edit_r(k - costs[uv], result, pruned)) solved = true;
@@ -159,9 +161,8 @@ private:
             // if (solved) break;
         }
 
-        for (VertexPair uv : problem.pairs) {
-            if (m_marked[uv]) unmark_edge(uv);
-        }
+        for (VertexPair uv : M)
+            unmark_edge(uv);
 
         return solved;
     }
@@ -213,6 +214,7 @@ private:
                 return std::make_shared<Finder::CenterC4P4>(instance.graph);
             default:
                 assert(false);
+                return nullptr;
         }
     }
 
@@ -226,6 +228,7 @@ private:
                 return std::make_unique<Selector::FirstEditable>(finder, marked);
             default:
                 assert(false);
+                return nullptr;
         }
     }
 
@@ -234,13 +237,14 @@ private:
                      const VertexPairMap<bool> &marked) {
         switch (lower_bound) {
             case Options::LB::No:
-                return std::make_unique<LowerBound::NoLowerBound>(finder);
+                return std::make_unique<LowerBound::TrivialLowerBound>(finder);
             case Options::LB::LocalSearch:
-                return std::make_unique<IteratedLocalSearch>(instance, marked, finder);
+                return std::make_unique<LocalSearchLowerBound>(instance, marked, finder);
             case Options::LB::Greedy:
                 return std::make_unique<LowerBound::GreedyLowerBound>(instance, marked, finder);
             default:
                 assert(false);
+                return nullptr;
         }
     }
 };

@@ -2,15 +2,15 @@
 // Created by jonas on 25.07.19.
 //
 
-#ifndef WEIGHTED_F_FREE_EDGE_EDITING_ITERATEDLOCALSEARCH_H
-#define WEIGHTED_F_FREE_EDGE_EDITING_ITERATEDLOCALSEARCH_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_LOCALSEARCHLOWERBOUND_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_LOCALSEARCHLOWERBOUND_H
 
 
 #include <random>
 #include "../interfaces/LowerBoundI.h"
 #include "../interfaces/FinderI.h"
 
-class IteratedLocalSearch : public LowerBoundI {
+class LocalSearchLowerBound : public LowerBoundI {
 private:
     class State {
     public:
@@ -160,8 +160,8 @@ private:
     std::vector<std::unique_ptr<State>> states;
 
 public:
-    explicit IteratedLocalSearch(const Instance &instance,
-                                 const VertexPairMap<bool> &forbidden, std::shared_ptr<FinderI> finder_ref) :
+    explicit LocalSearchLowerBound(const Instance &instance,
+                                   const VertexPairMap<bool> &forbidden, std::shared_ptr<FinderI> finder_ref) :
             LowerBoundI(std::move(finder_ref)), m_bound_graph(instance.graph.size()),
             m_costs(instance.costs), m_marked(forbidden) {}
 
@@ -617,9 +617,10 @@ private:
             assert(!bound_graph.has_edge(uv));
 
             finder.find_near(uv, bound_graph, [&](Subgraph &&neighbor) {
+#ifndef NDEBUG
                 auto vp = neighbor.vertexPairs();
                 assert(std::none_of(vp.begin(), vp.end(), [&](VertexPair xy) { return bound_graph.has_edge(xy); }));
-
+#endif
                 candidates.push_back(std::move(neighbor));
                 return false;
             });
@@ -656,4 +657,4 @@ private:
 };
 
 
-#endif //WEIGHTED_F_FREE_EDGE_EDITING_ITERATEDLOCALSEARCH_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_LOCALSEARCHLOWERBOUND_H

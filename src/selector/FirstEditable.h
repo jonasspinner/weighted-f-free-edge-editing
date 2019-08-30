@@ -23,19 +23,19 @@ namespace Selector {
 
         Problem result(Cost /*k*/) override {
             std::vector<VertexPair> pairs;
+            bool solved = true;
 
-            bool found = false;
             finder->find([&](const Subgraph &subgraph) {
-                for (VertexPair uv : subgraph.vertexPairs()) {
-                    if (!m_forbidden[uv]) {
+                solved = false;
+
+                for (VertexPair uv : subgraph.vertexPairs())
+                    if (!m_forbidden[uv])
                         pairs.push_back(uv);
-                    }
-                }
-                found |= true;
-                return !pairs.empty();
+
+                return true;
             });
 
-            return {pairs, !found};
+            return {pairs, solved};
         }
 
         void push(Cost /*k*/) override {}

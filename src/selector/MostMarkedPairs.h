@@ -1,46 +1,46 @@
 //
-// Created by jonas on 15.07.19.
+// Created by jonas on 29.08.19.
 //
 
-#ifndef CONCEPT_LEASTWEIGHT_H
-#define CONCEPT_LEASTWEIGHT_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_MOSTMARKEDPAIRS_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_MOSTMARKEDPAIRS_H
 
-#include "../graph/VertexPairMap.h"
 
 namespace Selector {
-    class LeastWeight : public SelectorI {
+    class MostMarkedPairs : public SelectorI {
     private:
-        const VertexPairMap<Cost> &m_costs;
         const VertexPairMap<bool> &m_forbidden;
-
     public:
-        LeastWeight(const VertexPairMap<Cost> &costs, std::shared_ptr<FinderI> finder_ptr,
-                    const VertexPairMap<bool> &forbidden) : SelectorI(std::move(finder_ptr)), m_costs(costs),
-                                                                     m_forbidden(forbidden) {}
+        MostMarkedPairs(std::shared_ptr <FinderI> finder_ptr, const VertexPairMap<bool> &forbidden) : SelectorI(
+                std::move(finder_ptr)), m_forbidden(forbidden) {}
 
         Problem result(Cost /*k*/) override {
             Subgraph min_subgraph{};
-            Cost min_subgraph_cost = invalid_cost;
+            size_t min_num_marked_pairs = std::numeric_limits<size_t>::max();
+
+
             bool solved = true;
 
             finder->find([&](Subgraph &&subgraph) {
                 solved = false;
 
-                Cost subgraph_cost = cost(subgraph, m_forbidden, m_costs);
-                if (subgraph_cost < min_subgraph_cost) {
-                    min_subgraph_cost = subgraph_cost;
+                size_t num_marked_pairs = 0;
+                for (VertexPair uv : subgraph.vertexPairs())
+                    if (m_forbidden[uv])
+                        ++num_marked_pairs;
+
+                if (num_marked_pairs < min_num_marked_pairs) {
+                    min_num_marked_pairs = num_marked_pairs;
                     min_subgraph = std::move(subgraph);
                 }
                 return false;
             });
 
+
             std::vector<VertexPair> pairs;
             for (VertexPair uv : min_subgraph.vertexPairs())
                 if (!m_forbidden[uv])
                     pairs.push_back(uv);
-
-            //std::sort(pairs.begin(), pairs.end(),
-            //          [&](VertexPair uv, VertexPair xy) { return m_costs[uv] < m_costs[xy]; });
 
             return {pairs, solved};
         }
@@ -66,4 +66,4 @@ namespace Selector {
 }
 
 
-#endif //CONCEPT_LEASTWEIGHT_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_MOSTMARKEDPAIRS_H
