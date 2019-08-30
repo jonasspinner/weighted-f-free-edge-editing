@@ -43,4 +43,5 @@ def write_metis_graph(path: Union[str, Path], graph: nx.Graph, costs: np.ndarray
         file.write(f"{n} {m} {fmt}")
 
         for u in range(n):
-            file.write(" ".join([f"{v + 1} {costs[u][v]}" for v in range(u + 1, n)]))
+            file.write(" ".join([f"{v + 1} {costs[u][v] if graph.has_edge(u, v) else -costs[u][v]}"
+                                 for v in range(u + 1, n)]))
