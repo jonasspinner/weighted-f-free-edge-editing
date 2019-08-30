@@ -28,10 +28,12 @@ def cost_stats(costs: np.ndarray) -> Dict[str, Any]:
 def graph_stats(G: nx.Graph) -> Dict[str, Any]:
     stats = dict()
 
-    stats['number_of_vertices'] = G.number_of_nodes()
-    stats['number_of_edges'] = G.number_of_edges()
-    stats['complexity'] = G.number_of_nodes() * G.number_of_edges()
-    stats['density'] = G.number_of_edges() / G.number_of_nodes() ** 2
+    n, m = G.number_of_nodes(), G.number_of_edges()
+
+    stats['number_of_vertices'] = n
+    stats['number_of_edges'] = m
+    stats['complexity'] = n * m
+    stats['density'] = 2 * m / (n * (n - 1))
 
     stats['connected_components'] = []
     for G_hat in (G.subgraph(c) for c in nx.connected_components(G)):
