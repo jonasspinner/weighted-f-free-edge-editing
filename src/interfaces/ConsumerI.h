@@ -20,36 +20,27 @@ public:
 
     virtual ~ConsumerI() = default;
 
-    // virtual std::unique_ptr<StateI> initialize(Cost k) = 0;
+    virtual void initialize() {};
 
-protected:
-    virtual void push(Cost k) = 0;
+    virtual void push_state(Cost /*k*/) {}; // push next_state = copy(state)
 
-    virtual void pop() = 0;
+    virtual void pop_state() {}; // pop state
 
-public:
-    // all
-    virtual void before_mark_and_edit(VertexPair uv) = 0;
+    virtual void before_mark_and_edit(VertexPair /*uv*/) {};    // all
 
-    // all
-    virtual void after_mark_and_edit(VertexPair uv) = 0;
+    virtual void after_mark_and_edit(VertexPair /*uv*/) {};     // all
 
-    // all
-    virtual void before_mark(VertexPair uv) = 0;
+    virtual void before_mark(VertexPair /*uv*/) {};             // all
 
-    // subgraph_stats
-    virtual void after_mark(VertexPair uv) = 0;
+    virtual void after_mark(VertexPair /*uv*/) {};              // subgraph_stats
 
-    // subgraph_stats
-    virtual void before_edit(VertexPair uv) = 0;
+    virtual void before_edit(VertexPair /*uv*/) {};             // subgraph_stats
 
-    // subgraph_stats
-    virtual void after_edit(VertexPair uv) = 0;
+    virtual void after_edit(VertexPair /*uv*/) {};              // subgraph_stats
 
-    // subgraph_stats
-    virtual void after_unmark(VertexPair uv) = 0;
+    virtual void after_unmark(VertexPair /*uv*/) {};            // subgraph_stats
 
-    friend class Level;
+    friend class Editor;
 };
 
 #endif //CONCEPT_CONSUMERI_H

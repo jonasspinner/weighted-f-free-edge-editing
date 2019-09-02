@@ -34,23 +34,6 @@
 #include "consumer/SubgraphStats.h"
 
 
-/**
- * ConsumerI::push and ConsumerI::pop operations bound on lifetime of Level object.
- */
-class Level {
-    const std::vector<ConsumerI *> &consumers;
-public:
-    Level(const std::vector<ConsumerI *> &consumers_, Cost k) : consumers(consumers_) {
-        for (auto &consumer : consumers)
-            consumer->push(k);
-    }
-    ~Level() {
-        for (auto &consumer : consumers)
-            consumer->pop();
-    }
-};
-
-
 class Editor {
 private:
     Instance m_instance;
@@ -65,12 +48,13 @@ private:
     std::shared_ptr<FinderI> m_finder;
 
     std::vector<VertexPair> edits;
+    bool m_found_solution;
 
     Statistics m_stats;
 
 public:
     explicit Editor(Instance instance, Options::Selector selector, Options::FSG forbidden, Options::LB lower_bound) :
-            m_instance(std::move(instance)), m_marked(m_instance.graph.size()) {
+            m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_found_solution(false) {
 
         m_finder = make_finder(forbidden, m_instance);
         m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_marked);
@@ -87,7 +71,12 @@ public:
     bool edit(Cost k, ResultCallback result, PrunedCallback pruned) {
         // init stats
         m_stats = Statistics(-k / 10, k, 10);
-        return edit_r(k, result, pruned);
+
+        for (auto &c : m_consumers) c->initialize();
+
+        m_found_solution = false;
+        edit_r(k, [&](const std::vector<VertexPair> &e) { result(e); return true; }, pruned);
+        return m_found_solution;
     }
 
     [[nodiscard]] const Statistics &stats() const {
@@ -107,83 +96,69 @@ private:
 
         m_stats.calls(k)++;
 
-        Level L(m_consumers, k);
-
-        /*std::cout << "marked:";
-        for (VertexPair uv : m_instance.graph.vertexPairs())
-            if (m_marked[uv]) std::cout << " " << uv;
-        std::cout << "\n";*/
-
-
-        //Cost sum = 0;
-        //for (unsigned i = 0; i < edits.size(); ++i) std::cout << "  ";
-        //for (VertexPair uv : edits) { std::cout << uv << " "; sum += costs[uv]; }
-        //std::cout << sum << std::endl;
 
         auto lb = m_lower_bound->result(k);
         if (k < lb) {
-            //for (unsigned i = 0; i < edits.size(); ++i) std::cout << "  ";
+            // unsolvable, too few edits remaining
             pruned(k, lb);
             m_stats.prunes(k)++;
-            return false; /* unsolvable, too few edits remaining */
+            return false;
         }
 
         auto problem = m_selector->result(k);
+
         if (problem.solved) {
-            result(edits); // output graph
-            return true; /* solved */
+            // solved
+            m_found_solution = true;
+            return result(edits); // output graph
         } else if (k == 0) {
+            // unsolved, no edits remaining
             pruned(0, 0);
             return false;
-        } /* unsolved, no edits remaining */
-
-
-        /* std::cout << "recurse on problem set {";
-        for (auto uv : problem.pairs) std::cout << " " << uv;
-        std::cout << " }\n"; */
-
-        std::vector<VertexPair> M;
-
-        bool solved = false;
-        for (VertexPair uv : problem.pairs) {
-            if (m_marked[uv]) continue;
-
-            // std::cout << "edit " << uv << "\n";
-            mark_and_edit_edge(uv);
-            M.push_back(uv);
-
-            // std::cout << "edited " << uv << "\n";
-            if (edit_r(k - costs[uv], result, pruned)) solved = true;
-
-            unedit_edge(uv);
-            // std::cout << "unedit " << uv << "\n";
-
-            // if (solved) break;
         }
 
-        for (VertexPair uv : M)
-            unmark_edge(uv);
 
-        return solved;
+        bool return_value = false;
+        for (VertexPair uv : problem.pairs) {
+            assert(!m_marked[uv]);
+
+            for (auto &c : m_consumers) c->push_state(k); // next_state(state)
+
+            mark_and_edit_edge(uv);
+
+            if (edit_r(k - costs[uv], result, pruned)) return_value = true;
+
+            unedit_edge(uv);
+
+            for (auto &c : m_consumers) c->pop_state(); // destroy next_state
+
+            if (return_value) break;
+        }
+
+        for (VertexPair uv : problem.pairs)
+            if (m_marked[uv])
+                unmark_edge(uv);
+
+        return return_value;
     }
 
     void mark_and_edit_edge(VertexPair uv) {
         assert(!m_marked[uv]);
         Graph &G = m_instance.graph;
 
-        for (auto &c : m_consumers) c->before_mark_and_edit(uv);  // all
-        for (auto &c : m_consumers) c->before_mark(uv);           // all
+        for (auto &c : m_consumers) c->before_mark_and_edit(uv);  // all - next_state
+        for (auto &c : m_consumers) c->before_mark(uv);           // all - state
 
         m_marked[uv] = true;
 
-        for (auto &c : m_consumers) c->after_mark(uv);            // subgraph_stats
+        for (auto &c : m_consumers) c->after_mark(uv);            // all - state
         for (auto &c : m_consumers) c->before_edit(uv);           // subgraph_stats
 
         G.toggle_edge(uv);
         edits.push_back(uv);
 
         for (auto &c : m_consumers) c->after_edit(uv);            // subgraph_stats
-        for (auto &c : m_consumers) c->after_mark_and_edit(uv);   // all
+        for (auto &c : m_consumers) c->after_mark_and_edit(uv);   // all - next_state
     }
 
     void unedit_edge(VertexPair uv) {

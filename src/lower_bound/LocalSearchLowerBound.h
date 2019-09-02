@@ -167,7 +167,6 @@ public:
 
     /**
      *
-     * @param _state
      * @param k
      * @return A lower bound on the costs required to solve the current instance.
      */
@@ -192,18 +191,11 @@ public:
     }
 
     /**
-     * Initializes the state by greedily constructing a maximal lower bound or copy it from previous level.
+     * Initializes the state by greedily constructing a maximal lower bound.
      *
-     * @param k
      * @return
      */
-    void push(Cost /*k*/) override {
-        if (!states.empty()) {
-            states.push_back(std::make_unique<State>(*states.back()));
-            return;
-        }
-
-
+    void initialize() override {
         using Element = State::Element;
         states.push_back(std::make_unique<State>());
         State &state = *states.back();
@@ -228,17 +220,26 @@ public:
 
         for (auto& [cost, subgraph] : subgraphs) {
             bool inserted = try_insert_into_graph(subgraph, m_marked, m_bound_graph);
-            if (inserted) {
 
+            if (inserted) {
                 assert(cost != invalid_cost);
                 state.insert({cost, std::move(subgraph)});
             }
         }
-
-        std::cout << "initial lower bound " << state << "\n";
     }
 
-    void pop() override {
+    /**
+     * Copy the state from the previous level.
+     *
+     * @param k
+     * @return
+     */
+    void push_state(Cost /*k*/) override {
+        assert(!states.empty());
+        states.push_back(std::make_unique<State>(*states.back()));
+    }
+
+    void pop_state() override {
         assert(!states.empty());
         states.pop_back();
     }
@@ -248,10 +249,14 @@ public:
         return *states.back();
     }
 
+    State &parent_state() {
+        assert(states.size() >= 2);
+        return *states[states.size() - 2];
+    }
+
     /**
      * Removes subgraphs from state.bound which have the vertex pair uv.
      *
-     * @param _state
      * @param uv
      */
     void before_mark_and_edit(VertexPair uv) override {
@@ -315,16 +320,6 @@ public:
             }
         }
     }
-
-    void before_mark(VertexPair) override { /* no op */ }
-
-    void after_mark(VertexPair) override { /* no op */ }
-
-    void before_edit(VertexPair) override { /* no op */ }
-
-    void after_edit(VertexPair) override { /* no op */ }
-
-    void after_unmark(VertexPair) override { /* no op */ }
 
 private:
     void optimize_bound(State &state, Cost k) {

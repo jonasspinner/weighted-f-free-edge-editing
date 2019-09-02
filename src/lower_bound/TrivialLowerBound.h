@@ -17,24 +17,6 @@ namespace LowerBound {
         Cost result(Cost /*k*/) override {
             return 0;
         }
-
-        void push(Cost /*k*/) override {}
-
-        void pop() override {}
-
-        void before_mark_and_edit(VertexPair) override {}
-
-        void after_mark_and_edit(VertexPair) override {}
-
-        void before_mark(VertexPair) override {}
-
-        void after_mark(VertexPair) override {}
-
-        void before_edit(VertexPair) override {}
-
-        void after_edit(VertexPair) override {}
-
-        void after_unmark(VertexPair) override {}
     };
 }
 

@@ -19,8 +19,9 @@ namespace LowerBound {
     public:
 
         GreedyLowerBound(const Instance &instance, const VertexPairMap<bool> &forbidden,
-                         std::shared_ptr<FinderI> finder_ref) : LowerBoundI(std::move(finder_ref)), graph(instance.graph),
-                                                            costs(instance.costs), m_forbidden(forbidden) {}
+                         std::shared_ptr<FinderI> finder_ref) : LowerBoundI(std::move(finder_ref)),
+                                                                graph(instance.graph),
+                                                                costs(instance.costs), m_forbidden(forbidden) {}
 
         /**
          * Calculates a lower bound on the costs required to solve the current instance.
@@ -28,7 +29,6 @@ namespace LowerBound {
          * Greedily inserts forbidden subgraphs into the bound. Higher minimum editing costs are preferred. A subgraph
          * is not inserted if it shares an editable vertex pair with a subgraph already in the bound.
          *
-         * @param state Not used
          * @param k Not used
          * @return A lower bound on the costs required to solve the current instance.
          */
@@ -70,24 +70,6 @@ namespace LowerBound {
 
             return bound_size;
         }
-
-        void push(Cost /*k*/) override {}
-
-        void pop() override {}
-
-        void before_mark_and_edit(VertexPair) override {}
-
-        void after_mark_and_edit(VertexPair) override {}
-
-        void before_mark(VertexPair) override {}
-
-        void after_mark(VertexPair) override {}
-
-        void before_edit(VertexPair) override {}
-
-        void after_edit(VertexPair) override {}
-
-        void after_unmark(VertexPair) override {}
     };
 }
 

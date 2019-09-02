@@ -22,17 +22,26 @@ namespace Selector {
             Subgraph min_subgraph{};
             Cost min_subgraph_cost = invalid_cost;
             bool solved = true;
+            bool unsolveable = false;
 
             finder->find([&](Subgraph &&subgraph) {
                 solved = false;
 
                 Cost subgraph_cost = cost(subgraph, m_forbidden, m_costs);
-                if (subgraph_cost < min_subgraph_cost) {
+
+                if (subgraph_cost == invalid_cost) {
+                    // if at least one forbidden subgraph has only marked vertex pairs, the problem is not solvable.
+                    unsolveable = true;
+                } else  if (subgraph_cost < min_subgraph_cost) {
+                    // update subgraph with minimum edit cost
                     min_subgraph_cost = subgraph_cost;
                     min_subgraph = std::move(subgraph);
                 }
-                return false;
+                return unsolveable;
             });
+
+            if (unsolveable)
+                return {{}, false};
 
             std::vector<VertexPair> pairs;
             for (VertexPair uv : min_subgraph.vertexPairs())
@@ -44,24 +53,6 @@ namespace Selector {
 
             return {pairs, solved};
         }
-
-        void push(Cost /*k*/) override {}
-
-        void pop() override {}
-
-        void before_mark_and_edit(VertexPair) override {}
-
-        void after_mark_and_edit(VertexPair) override {}
-
-        void before_mark(VertexPair) override {}
-
-        void after_mark(VertexPair) override {}
-
-        void before_edit(VertexPair) override {}
-
-        void after_edit(VertexPair) override {}
-
-        void after_unmark(VertexPair) override {}
     };
 }
 
