@@ -79,42 +79,48 @@ public:
     std::vector<Solution> solve(Instance instance) override {
         auto &[_, graph, costs] = instance;
 
-        GRBEnv env = GRBEnv();
-        GRBModel model = GRBModel(env);
+        try {
+            GRBEnv env = GRBEnv();
+            GRBModel model = GRBModel(env);
 
-        model.set(GRB_IntParam_LazyConstraints, 1);
-
-
-        // Add model variables: x_uv == 1  <=>  uv is edited
-        VertexPairMap<GRBVar> vars(graph.size());
-        for (VertexPair uv : graph.vertexPairs())
-            vars[uv] = model.addVar(0.0, 1.0, 0, GRB_BINARY);
+            model.set(GRB_IntParam_LazyConstraints, 1);
 
 
-        // Set objective. When uv is edited the objective is increased by costs[uv]
-        GRBLinExpr obj;
-        for (VertexPair uv : graph.vertexPairs())
-            obj += costs[uv] * vars[uv];
-
-        model.setObjective(obj, GRB_MINIMIZE);
+            // Add model variables: x_uv == 1  <=>  uv is edited
+            VertexPairMap<GRBVar> vars(graph.size());
+            for (VertexPair uv : graph.vertexPairs())
+                vars[uv] = model.addVar(0.0, 1.0, 0, GRB_BINARY);
 
 
-        // Register callback
-        FSGCallback cb(m_fsg, graph, vars);
-        model.setCallback(&cb);
+            // Set objective. When uv is edited the objective is increased by costs[uv]
+            GRBLinExpr obj;
+            for (VertexPair uv : graph.vertexPairs())
+                obj += costs[uv] * vars[uv];
+
+            model.setObjective(obj, GRB_MINIMIZE);
 
 
-        // Optimize model
-        model.optimize();
+            // Register callback
+            FSGCallback cb(m_fsg, graph, vars);
+            model.setCallback(&cb);
 
 
-        // Read solution
-        std::vector<VertexPair> edits;
-        for (VertexPair uv : graph.vertexPairs())
-            if (is_set(vars, uv))
-                edits.push_back(uv);
+            // Optimize model
+            model.optimize();
 
-        return {Solution(instance, edits)};
+
+            // Read solution
+            std::vector<VertexPair> edits;
+            for (VertexPair uv : graph.vertexPairs())
+                if (is_set(vars, uv))
+                    edits.push_back(uv);
+
+            return {Solution(instance, edits)};
+
+        } catch (GRBException &e) {
+            std::cerr << "Error " << e.getErrorCode() << " " << e.getMessage();
+            abort();
+        }
     }
 
 private:
