@@ -40,39 +40,43 @@ public:
         expect(name_a + " and " + name_b + " have the same solutions", normalize(edits_a), normalize(edits_b));
     }
 
-    void configurations_have_same_output(Options::FSG fsg, const std::vector<Options::Selector>& selectors, const std::vector<Options::LB>& lower_bounds, int seed = 0) {
+    void configurations_have_same_output(Options::FSG fsg, const std::vector<Options::Selector>& selectors, const std::vector<Options::LB>& lower_bounds, const std::vector<int> &seeds) {
 
         auto orig_instance = GraphIO::read_graph(instance_path, 100);
 
-        Permutation P(orig_instance.graph.size(), seed);
-        Permutation P_r = P.reverse();
+        std::vector<std::tuple<Options::Selector, Options::FSG, Options::LB, int, std::vector<Solution>>> results;
 
-        auto instance = P[orig_instance];
+        for (auto seed : seeds) {
 
-        std::vector<std::tuple<Options::Selector, Options::FSG, Options::LB, std::vector<Solution>>> results;
+            Permutation P(orig_instance.graph.size(), seed);
+            Permutation P_r = P.reverse();
 
-        for (auto selector : selectors) {
-            for (auto lb : lower_bounds) {
-                std::vector<Solution> solutions;
+            auto instance = P[orig_instance];
 
-                Editor editor(instance, selector, fsg, lb);
-                editor.edit(600, [&](const std::vector<VertexPair> &edits){
-                    solutions.emplace_back(instance, edits);
-                }, [](Cost, Cost){});
 
-                std::sort(solutions.begin(), solutions.end());
-                results.emplace_back(selector, fsg, lb, std::move(solutions));
+            for (auto selector : selectors) {
+                for (auto lb : lower_bounds) {
+                    std::vector<Solution> solutions;
+
+                    Editor editor(instance, selector, fsg, lb);
+                    editor.edit(600, [&](const std::vector<VertexPair> &edits) {
+                        solutions.emplace_back(instance, edits);
+                    }, [](Cost, Cost) {});
+
+                    std::sort(solutions.begin(), solutions.end());
+                    results.emplace_back(selector, fsg, lb, seed, std::move(solutions));
+                }
             }
         }
 
         for (size_t i = 0; i < results.size(); ++i) {
             for (size_t j = i + 1; j < results.size(); ++j) {
-                const auto &[selector_i, fsg_i, lb_i, solutions_i] = results[i];
-                const auto &[selector_j, fsg_j, lb_j, solutions_j] = results[j];
+                const auto &[selector_i, fsg_i, lb_i, seed_i, solutions_i] = results[i];
+                const auto &[selector_j, fsg_j, lb_j, seed_j, solutions_j] = results[j];
 
                 std::stringstream name;
-                name << "Editor(" << selector_i << ", " << fsg_i << ", " << lb_i << ") and "
-                     << "Editor(" << selector_j << ", " << fsg_j << ", " << lb_j << ") "
+                name << "Editor(" << selector_i << ", " << fsg_i << ", " << lb_i << ") seed=" << seed_i << " and "
+                     << "Editor(" << selector_j << ", " << fsg_j << ", " << lb_j << ") seed=" << seed_j << " "
                      << "have the same solutions";
                 expect(name.str(), solutions_i, solutions_j);
             }
@@ -120,7 +124,7 @@ public:
          lower_bounds_have_same_output("No", Options::LB::No, "Greedy", Options::LB::Greedy);
          lower_bounds_have_same_output("No", Options::LB::No, "LocalSearch", Options::LB::LocalSearch);
 
-         configurations_have_same_output(Options::FSG::P4C4, {Options::Selector::FirstEditable, Options::Selector::LeastWeight}, {Options::LB::No, Options::LB::Greedy});
+         configurations_have_same_output(Options::FSG::P4C4, {Options::Selector::FirstEditable, Options::Selector::LeastWeight}, {Options::LB::No, Options::LB::Greedy, Options::LB::LocalSearch}, {0, 1});
 
          output_is_independent_of_seed({0, 1, 2});
      }
