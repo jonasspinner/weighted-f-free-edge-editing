@@ -75,7 +75,7 @@ public:
         for (auto &c : m_consumers) c->initialize();
 
         m_found_solution = false;
-        edit_r(k, [&](const std::vector<VertexPair> &e) { result(e); return true; }, pruned);
+        edit_r(k, [&](const std::vector<VertexPair> &e) { result(e); return false; }, pruned);
         return m_found_solution;
     }
 
