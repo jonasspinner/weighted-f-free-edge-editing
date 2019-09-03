@@ -13,23 +13,24 @@
 
 #include "../definitions.h"
 
+
+/**
+ * Forward declaration for Graph friend classes.
+ */
 namespace Finder {
     class NaiveC4P4;
-
     class CenterC4P4;
-
     class CenterP3;
-
     class NaiveP3;
+    class SplitGraph;
+    class SplitCluster;
 }
 // template <int length> class Center;
 namespace detail {
     template<int length>
     class Center;
-
     template<int length, bool with_cycles>
     class FindImpl;
-
     template<int length, bool with_cycles>
     class FindNearImpl;
 }
@@ -40,6 +41,14 @@ public:
     Vertex u;
     Vertex v;
 
+    /**
+     * An pair of vertices. Can be used as an undirected edge.
+     *
+     * The vertex pairs {u, v} and {v, u} are the same object. It is guaranteed that pair.u < pair.v.
+     *
+     * @param x A vertex
+     * @param y A vertex
+     */
     VertexPair(Vertex x, Vertex y) : u(x < y ? x : y), v(x < y ? y : x) { assert(x != y); }
 
     friend std::ostream &operator<<(std::ostream &os, VertexPair uv) {
@@ -73,6 +82,11 @@ private:
 
 public:
 
+    /**
+     * A undirected graph. Vertices are represented as numbers from 0 to size - 1.
+     *
+     * @param size
+     */
     explicit Graph(unsigned int size) : m_size(size), m_adj(m_size, AdjRow(m_size)) {}
 
     /**
@@ -83,6 +97,9 @@ public:
     [[nodiscard]] Vertex size() const { return m_size; }
 
 
+    /**
+     * Clears all edges.
+     */
     void clear_edges() {
         for (auto &row: m_adj) { row.reset(); }
     }
@@ -179,6 +196,11 @@ public:
         [[nodiscard]] Iterator end() const { return Iterator(n); }
     };
 
+    /**
+     * Returns a range for the vertices of the graph (from 0 to size - 1).
+     *
+     * @return
+     */
     [[nodiscard]] Vertices vertices() const {
         return Vertices(m_size);
     }
@@ -189,7 +211,9 @@ public:
             const AdjRow &m_row;
             Vertex u;
         public:
+#ifndef NDEBUG
             static const Vertex end_vertex = static_cast<Vertex>(AdjRow::npos);
+#endif
 
             using value_type = Vertex;
             using difference_type = std::ptrdiff_t;
@@ -232,10 +256,24 @@ public:
         [[nodiscard]] Iterator end() const { return Iterator(m_row, m_row.size()); }
     };
 
+    /**
+     * Returns a range for the vertices indicated by the given adjacency row.
+     * The vertices are ordered by their value.
+     *
+     * @param row
+     * @return
+     */
     static RowVertices iterate(const AdjRow &row) {
         return RowVertices(row);
     }
 
+    /**
+     * Returns a range for the neighbors of the vertex u.
+     * The vertices are ordered by their value.
+     *
+     * @param u
+     * @return
+     */
     [[nodiscard]] RowVertices neighbors(Vertex u) const {
         return RowVertices(m_adj[u]);
     }
@@ -285,6 +323,12 @@ public:
         }
     };
 
+    /**
+     * Returns a range for all unordered pairs of vertices of the graph.
+     * The pairs are lexicographically ordered by their first and second vertex.
+     *
+     * @return
+     */
     [[nodiscard]] VertexPairs vertexPairs() const {
         return VertexPairs(m_size);
     }
@@ -354,6 +398,12 @@ public:
         }
     };
 
+    /**
+     * Returns a range for the edges of the graph.
+     * The pairs are lexicographically ordered by their first and second vertex.
+     *
+     * @return
+     */
     [[nodiscard]] Edges edges() const {
         return Edges(m_adj);
     }
@@ -369,7 +419,7 @@ public:
      * @return
      */
     template<typename VertexCallback>
-    bool for_neighbors_of(Vertex u, VertexCallback callback) const {
+    [[deprecated]] bool for_neighbors_of(Vertex u, VertexCallback callback) const {
         Vertex v = m_adj[u].find_first();
         while (v < m_size) {
             if (callback(v)) return true;
@@ -387,7 +437,7 @@ public:
      * @return
      */
     template<typename VertexCallback>
-    bool for_all_vertices(VertexCallback callback) const {
+    [[deprecated]] bool for_all_vertices(VertexCallback callback) const {
         for (Vertex u = 0; u < m_size; ++u) {
             if (callback(u)) return true;
         }
@@ -403,7 +453,9 @@ public:
      * @return
      */
     template<typename VertexPairCallback>
-    bool for_all_edges(VertexPairCallback callback) const {
+    [[deprecated]] bool for_all_edges(VertexPairCallback callback) const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         return for_all_vertices([&](Vertex u) {
             Vertex v = m_adj[u].find_next(u);
             while (v < m_size) {
@@ -412,6 +464,7 @@ public:
             }
             return false;
         });
+#pragma GCC diagnostic pop
     }
 
     /**
@@ -423,7 +476,7 @@ public:
      * @return
      */
     template<typename VertexPairCallback>
-    bool for_all_vertex_pairs(VertexPairCallback callback) const {
+    [[deprecated]] bool for_all_vertex_pairs(VertexPairCallback callback) const {
         for (Vertex u = 0; u < m_size; ++u) {
             for (Vertex v = u + 1; v < m_size; ++v) {
                 if (callback(VertexPair(u, v))) return true;
@@ -481,7 +534,7 @@ private:
      * @return
      */
     template<typename VertexCallback>
-    static bool iterate(const AdjRow &row, VertexCallback callback) {
+    [[deprecated]] static bool iterate(const AdjRow &row, VertexCallback callback) {
         Vertex u = row.find_first();
         while (u < row.size()) {
             if (callback(u)) return true;
@@ -491,35 +544,31 @@ private:
     }
 
     template<typename VertexCallback>
-    static bool iterate(const AdjRow &A, const AdjRow &B, VertexCallback callback) {
+    [[deprecated]] static bool iterate(const AdjRow &A, const AdjRow &B, VertexCallback callback) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         return iterate(A, [&](Vertex a) {
             return iterate(B, [&](Vertex b) {
                 return callback(a, b);
             });
         });
+#pragma GCC diagnostic pop
     }
 
     friend class FinderI;
-
     friend class Finder::NaiveP3;
-
     friend class Finder::CenterP3;
-
     friend class Finder::NaiveC4P4;
-
     friend class Finder::CenterC4P4;
+    friend class Finder::SplitGraph;
+    friend class Finder::SplitCluster;
 
-    template<int length> friend
-    class detail::Center;
-
+    template<int length>
+    friend class detail::Center;
     template<int length, bool with_cycles>
     friend class detail::FindImpl;
-
     template<int length, bool with_cycles>
     friend class detail::FindNearImpl;
-
-    template<int length, bool with_cycles>
-    friend class A;
 };
 
 
