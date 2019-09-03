@@ -13,12 +13,6 @@ namespace Options {
     enum class Selector {
         FirstEditable, LeastWeight
     };
-    enum class FSG {
-        P3, P4C4
-    };
-    enum class LB {
-        No, Greedy, LocalSearch
-    };
 
     std::istream& operator>>(std::istream& in, Selector& selector) {
         std::string token;
@@ -48,6 +42,13 @@ namespace Options {
         ss << selector;
         return out << ss.str();
     }
+}
+
+
+namespace Options {
+    enum class FSG {
+        P3, P4C4, C4_C5_2K2, C4_C5_P5_Bowtie_Necktie
+    };
 
     std::istream& operator>>(std::istream& in, FSG& fsg) {
         std::string token;
@@ -56,6 +57,10 @@ namespace Options {
             fsg = FSG::P3;
         else if (token == "P4C4")
             fsg = FSG::P4C4;
+        else if (token == "C4_C5_2K2")
+            fsg = FSG::C4_C5_2K2;
+        else if (token == "C4_C5_P5_Bowtie_Necktie")
+            fsg = FSG::C4_C5_P5_Bowtie_Necktie;
         else
             in.setstate(std::ios_base::failbit);
         return in;
@@ -67,6 +72,10 @@ namespace Options {
                 return os << "P3";
             case FSG::P4C4:
                 return os << "P4C4";
+            case FSG::C4_C5_2K2:
+                return os << "C4_C5_2K2";
+            case FSG::C4_C5_P5_Bowtie_Necktie:
+                return os << "C4_C5_P5_Bowtie_Necktie";
             default:
                 return os;
         }
@@ -77,6 +86,13 @@ namespace Options {
         ss << fsg;
         return out << ss.str();
     }
+}
+
+
+namespace Options {
+    enum class LB {
+        No, Greedy, LocalSearch, LinearProgram
+    };
 
     std::istream& operator>>(std::istream& in, LB& lower_bound) {
         std::string token;
@@ -87,6 +103,8 @@ namespace Options {
             lower_bound = LB::Greedy;
         else if (token == "LocalSearch")
             lower_bound = LB::LocalSearch;
+        else if (token == "LinearProgram")
+            lower_bound = LB::LinearProgram;
         else
             in.setstate(std::ios_base::failbit);
         return in;
@@ -100,6 +118,8 @@ namespace Options {
                 return os << "Greedy";
             case LB::LocalSearch:
                 return os << "LocalSearch";
+            case LB::LinearProgram:
+                return os << "LinearProgram";
             default:
                 return os;
         }
@@ -111,6 +131,7 @@ namespace Options {
         return out << ss.str();
     }
 }
+
 
 class Configuration {
 public:

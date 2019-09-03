@@ -22,10 +22,13 @@
 #include "finder/NaiveC4P4.h"
 #include "finder/CenterC4P4.h"
 #include "finder/CenterP3.h"
+#include "finder/SplitGraph.h"
+#include "finder/SplitCluster.h"
 
 #include "lower_bound/TrivialLowerBound.h"
 #include "lower_bound/LocalSearchLowerBound.h"
 #include "lower_bound/GreedyLowerBound.h"
+#include "lower_bound/LinearProgramLowerBound.h"
 
 #include "selector/FirstEditable.h"
 #include "selector/LeastWeight.h"
