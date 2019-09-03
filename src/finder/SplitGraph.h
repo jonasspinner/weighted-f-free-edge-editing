@@ -16,31 +16,43 @@ namespace Finder {
     public:
         explicit SplitGraph(const Graph &graph_ref) : FinderI(graph_ref), V(graph.size()), W(graph.size()), X(graph.size()), Y(graph.size()) {}
 
+        /**
+         * Calls callback on 2K_2, C_4 and C_5 subgraphs.
+         *
+         * @param forbidden
+         * @param callback
+         * @return
+         */
         bool find(SubgraphCallback callback) override {
-
-            auto neighbors =      [&](Vertex u)      { return  graph.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair uv) { return  graph.has_edge(uv); };
-            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv); };
-
-            return find(callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+            return find(callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
         }
 
+        /**
+         * Calls callback on 2K_2, C_4 and C_5 subgraphs. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
+         *
+         * @param forbidden
+         * @param callback
+         * @return
+         */
         bool find(const Graph& forbidden, SubgraphCallback callback) override {
-
-            auto neighbors =      [&](Vertex u)      { return graph.m_adj[u] & ~forbidden.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u] & ~forbidden.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair uv) { return  graph.has_edge(uv) && !forbidden.has_edge(uv); };
-            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv) && !forbidden.has_edge(uv); };
-
-            return find(callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+            return find(callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
         }
 
+        /**
+         * Note implemented.
+         *
+         * @return
+         */
         bool find_near(VertexPair /*uv*/, SubgraphCallback /*callback*/) override {
             assert(false);
             return false;
         }
 
+        /**
+         * Note implemented.
+         *
+         * @return
+         */
         bool find_near(VertexPair /*uv*/, const Graph& /*forbidden*/, SubgraphCallback /*callback*/) override  {
             assert(false);
             return false;

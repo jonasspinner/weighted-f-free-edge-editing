@@ -17,40 +17,48 @@ namespace Finder {
     public:
         explicit CenterP3(const Graph &graph_ref) : FinderI(graph_ref), W(graph.size()) {}
 
+        /**
+         * Calls callback for all P_3's.
+         *
+         * @param callback
+         * @return
+         */
         bool find(SubgraphCallback callback) override {
-            auto neighbors =      [&](Vertex u)      { return  graph.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair xy) { return  graph.has_edge(xy); };
-            auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy); };
-
-            return find(callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+            return find(callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
         }
 
+        /**
+         * Calls callback for all P_3's. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
+         *
+         * @param forbidden
+         * @param callback
+         * @return
+         */
         bool find(const Graph &forbidden, SubgraphCallback callback) override {
-            auto neighbors =      [&](Vertex u)      { return  graph.m_adj[u] - forbidden.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u] - forbidden.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair xy) { return  graph.has_edge(xy) && !forbidden.has_edge(xy); };
-            auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy) && !forbidden.has_edge(xy); };
-
-            return find(callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+            return find(callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
         }
 
+        /**
+         * Calls callback for all P_3's having both u and v as vertices.
+         *
+         * @param uv
+         * @param callback
+         * @return
+         */
         bool find_near(VertexPair uv, SubgraphCallback callback) override {
-            auto neighbors =      [&](Vertex u)      { return  graph.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair xy) { return  graph.has_edge(xy); };
-            auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy); };
-
-            return find_near(uv, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+            return find_near(uv, callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
         }
 
+        /**
+         * Calls callback for all P_3's having both u and v as vertices. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
+         *
+         * @param uv
+         * @param forbidden
+         * @param callback
+         * @return
+         */
         bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override {
-            auto neighbors =      [&](Vertex u)      { return  graph.m_adj[u] - forbidden.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u] - forbidden.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair xy) { return  graph.has_edge(xy) && !forbidden.has_edge(xy); };
-            auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy) && !forbidden.has_edge(xy); };
-
-            return find_near(uv, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+            return find_near(uv, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
         }
 
     private:
@@ -81,8 +89,7 @@ namespace Finder {
         template<typename F, typename G, typename H, typename I>
         bool find_near(VertexPair uv, const SubgraphCallback& callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
 
-            Vertex u = uv.u;
-            Vertex v = uv.v;
+            auto [u, v] = uv;
 
             if (valid_edge(uv)) {
                 W = neighbors(u) & non_neighbors(v);

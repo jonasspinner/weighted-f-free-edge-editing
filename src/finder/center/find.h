@@ -57,6 +57,7 @@ namespace detail {
                     C = graph.all_vertices(); // non adjacent to P
                     for (unsigned i = 0; i < k - 4; ++i) { C &= non_neighbors(P[i]); }
 
+
 #ifndef NDEBUG
                     for (Vertex a : Graph::iterate(A)) {
                         assert(valid_edge({a, P[0]}));
@@ -73,6 +74,7 @@ namespace detail {
                             assert(valid_non_edge({c, p}));
                     }
 #endif
+
                     // for each (a, b) \in AxB
                     for (Vertex a : Graph::iterate(A)) {
                         for (Vertex b : Graph::iterate(B)) {
@@ -97,7 +99,9 @@ namespace detail {
                                             Subgraph P_p{u, a};
                                             P_p.append(P);
                                             P_p.push_back(b); P_p.push_back(v);
+
 #ifndef NDEBUG
+                                            // assert that P_p is a path of length k
                                             assert(P_p.size() == k);
                                             for (unsigned i = 0; i < k; ++i)
                                                 for (unsigned j = i + 1; j < k; ++j)
@@ -107,6 +111,7 @@ namespace detail {
                                                         assert(valid_non_edge({P_p[i], P_p[j]}));
                                                     }
 #endif
+
                                             if (callback(std::move(P_p))) return true;
 
                                         } else if (valid_edge({u, v}) && with_cycles) { // See 3.4 Listing C_k
@@ -118,7 +123,9 @@ namespace detail {
                                             Vertex min_vertex = *std::min_element(vertices.begin(), vertices.end());
 
                                             if (P_p[0] == min_vertex && P_p[1] < P_p[k-1]) {
+
 #ifndef NDEBUG
+                                                // assert that P_p is a cycle of length k
                                                 assert(P_p.size() == k);
                                                 for (unsigned i = 0; i < k; ++i)
                                                     for (unsigned j = i + 1; j < k; ++j)
@@ -128,6 +135,7 @@ namespace detail {
                                                             assert(valid_non_edge({P_p[i], P_p[j]}));
                                                         }
 #endif
+
                                                 if (callback(std::move(P_p))) return true;
                                             }
                                         }
@@ -136,6 +144,7 @@ namespace detail {
                             }
                         }
                     }
+                    // no early exit
                     return false;
                 }, neighbors, non_neighbors, valid_edge, valid_non_edge);
             } else if constexpr (k >= 4) {
@@ -151,6 +160,7 @@ namespace detail {
                     B = neighbors(P[k - 3]); // adjacent to p_{k-2} and non adjacent to P - {p_{k-2}}
                     for (unsigned i = 0; i < k - 3; ++i) { B &= non_neighbors(P[i]); }
 
+
 #ifndef NDEBUG
                     for (Vertex a : Graph::iterate(A)) {
                         assert(valid_edge({a, P[0]}));
@@ -163,47 +173,57 @@ namespace detail {
                             assert(valid_non_edge({b, P[i]}));
                     }
 #endif
+
                     // for each (a, b) \in AxB
-                    return Graph::iterate(A, B, [&](Vertex a, Vertex b) {
+                    for (Vertex a : Graph::iterate(A)) {
+                        for (Vertex b : Graph::iterate(B)) {
 #ifndef NDEBUG
-                        assert(a != b);
-                        for (Vertex p : P.vertices()) { assert(a != p); assert(b != p); }
+                            assert(a != b);
+                            for (Vertex p : P.vertices()) { assert(a != p); assert(b != p); }
 #endif
-                        if (valid_non_edge({a, b})) {
-                            // P' = aPb
-                            Subgraph P_p{a};
-                            P_p.append(P);
-                            P_p.push_back(b);
+                            if (valid_non_edge({a, b})) {
+                                // P' = aPb
+                                Subgraph P_p{a};
+                                P_p.append(P);
+                                P_p.push_back(b);
+
 #ifndef NDEBUG
-                            assert(P_p.size() == k);
-                            for (unsigned i = 0; i < k; ++i)
-                                for (unsigned j = i + 1; j < k; ++j)
-                                    if (j - i == 1) assert(valid_edge({P_p[i], P_p[j]}));
-                                    else assert(valid_non_edge({P_p[i], P_p[j]}));
-#endif
-                            return callback(std::move(P_p));
-
-                        } else if (valid_edge({a , b}) && with_cycles) { // See 3.4 Listing C_k
-                            // P' = Pba
-                            Subgraph P_p(P);
-                            P_p.push_back(b); P_p.push_back(a);
-
-                            auto vertices = P_p.vertices();
-                            Vertex min_vertex = *std::min_element(vertices.begin(), vertices.end());
-
-                            if (P_p[0] == min_vertex && P_p[1] < P_p[k-1]) {
-#ifndef NDEBUG
+                                // assert that P_p is a path of length k
                                 assert(P_p.size() == k);
                                 for (unsigned i = 0; i < k; ++i)
                                     for (unsigned j = i + 1; j < k; ++j)
-                                        if (j - i == 1 || (i == 0 && j == k-1)) assert(valid_edge({P_p[i], P_p[j]}));
+                                        if (j - i == 1) assert(valid_edge({P_p[i], P_p[j]}));
                                         else assert(valid_non_edge({P_p[i], P_p[j]}));
 #endif
-                                return callback(std::move(P_p));
+
+                                if (callback(std::move(P_p))) return true;
+
+                            } else if (valid_edge({a , b}) && with_cycles) { // See 3.4 Listing C_k
+                                // P' = Pba
+                                Subgraph P_p(P);
+                                P_p.push_back(b); P_p.push_back(a);
+
+                                auto vertices = P_p.vertices();
+                                Vertex min_vertex = *std::min_element(vertices.begin(), vertices.end());
+
+                                if (P_p[0] == min_vertex && P_p[1] < P_p[k-1]) {
+
+#ifndef NDEBUG
+                                    // assert that P_p is a cycle of length k
+                                    assert(P_p.size() == k);
+                                    for (unsigned i = 0; i < k; ++i)
+                                        for (unsigned j = i + 1; j < k; ++j)
+                                            if (j - i == 1 || (i == 0 && j == k-1)) assert(valid_edge({P_p[i], P_p[j]}));
+                                            else assert(valid_non_edge({P_p[i], P_p[j]}));
+#endif
+
+                                    if (callback(std::move(P_p))) return true;
+                                }
                             }
                         }
-                        return false;
-                    });
+                    }
+                    // no early exit
+                    return false;
                 }, neighbors, non_neighbors, valid_edge, valid_non_edge);
             } else {
                 assert(false);

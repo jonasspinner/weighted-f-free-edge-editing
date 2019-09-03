@@ -15,6 +15,12 @@ namespace Finder {
     public:
         explicit NaiveP3(const Graph &graph_ref) : FinderI(graph_ref) {}
 
+        /**
+         * Calls callback for all P_3's.
+         *
+         * @param callback
+         * @return
+         */
         bool find(SubgraphCallback callback) override {
             for (Vertex u : graph.vertices()) {
                 for (Vertex v : graph.vertices()) {
@@ -31,6 +37,13 @@ namespace Finder {
             return false;
         }
 
+        /**
+         * Calls callback for all P_3's. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
+         *
+         * @param forbidden
+         * @param callback
+         * @return
+         */
         bool find(const Graph &forbidden, SubgraphCallback callback) override {
             return find([&](Subgraph &&subgraph) {
                 Vertex u = subgraph[0], v = subgraph[1], w = subgraph[2];
@@ -39,9 +52,15 @@ namespace Finder {
             });
         }
 
+        /**
+         * Calls callback for all P_3's having both u and v as vertices.
+         *
+         * @param uv
+         * @param callback
+         * @return
+         */
         bool find_near(VertexPair uv, SubgraphCallback callback) override {
-            Vertex u = uv.u;
-            Vertex v = uv.v;
+            auto [u, v] = uv;
 
             for (Vertex w : graph.vertices()) {
                 if (w == u || w == v) continue;
@@ -53,6 +72,14 @@ namespace Finder {
             return false;
         }
 
+        /**
+         * Calls callback for all P_3's having both u and v as vertices. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
+         *
+         * @param uv
+         * @param forbidden
+         * @param callback
+         * @return
+         */
         bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override {
             return find_near(uv, [&](Subgraph &&subgraph) {
                 Vertex u = subgraph[0], v = subgraph[1], w = subgraph[2];

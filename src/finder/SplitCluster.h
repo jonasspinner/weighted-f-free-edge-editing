@@ -16,36 +16,48 @@ namespace Finder {
     public:
         explicit SplitCluster(const Graph &graph_ref) : FinderI(graph_ref), V(graph.size()), W(graph.size()), X(graph.size()), Y(graph.size()) {}
 
+        /**
+         * Calls callback on C4, C5, P5, Necktie and Bowtie subgraphs.
+         *
+         * @param callback
+         * @return
+         */
         bool find(SubgraphCallback callback) override {
-
-            auto neighbors =      [&](Vertex u)      { return  graph.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair uv) { return  graph.has_edge(uv); };
-            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv); };
-
-            return find(callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+            return find(callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
         }
 
+        /**
+         * Calls callback on C4, C5, P5, Necktie and Bowtie subgraphs. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
+         *
+         * @param forbidden
+         * @param callback
+         * @return
+         */
         bool find(const Graph& forbidden, SubgraphCallback callback) override {
-
-            auto neighbors =      [&](Vertex u)      { return graph.m_adj[u] & ~forbidden.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u] & ~forbidden.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair uv) { return  graph.has_edge(uv) && !forbidden.has_edge(uv); };
-            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv) && !forbidden.has_edge(uv); };
-
-            return find(callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+            return find(callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
         }
 
+        /**
+         * Not implemented.
+         *
+         * @return
+         */
         bool find_near(VertexPair /*uv*/, SubgraphCallback /*callback*/) override {
             assert(false);
             return false;
         }
 
+        /**
+         * Not implemented.
+         *
+         * @return
+         */
         bool find_near(VertexPair /*uv*/, const Graph& /*forbidden*/, SubgraphCallback /*callback*/) override  {
             assert(false);
             return false;
         }
 
+    private:
         template <typename F, typename G, typename H, typename I>
         bool find(const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
 
@@ -65,6 +77,7 @@ namespace Finder {
                         X = neighbors(u) & neighbors(w) & non_neighbors(v);
                         for (Vertex x : Graph::iterate(X)) {
                             assert(valid_edge({u, v})); assert(valid_non_edge({u, w})); assert(valid_edge({u, x})); assert(valid_edge({v, w})); assert(valid_non_edge({v, x})); assert(valid_edge({w, x}));
+
                             if (callback({u, v, w, x})) return true;
                         }
 
@@ -82,6 +95,7 @@ namespace Finder {
                                     // P5
                                     assert(valid_edge({y, u})); assert(valid_non_edge({y, v})); assert(valid_non_edge({y, w})); assert(valid_non_edge({y, x}));
                                     assert(valid_edge({u, v})); assert(valid_non_edge({u, w})); assert(valid_non_edge({u, x})); assert(valid_edge({v, w})); assert(valid_non_edge({v, x})); assert(valid_edge({w, x}));
+
                                     if (callback({y, u, v, w, x})) return true;
                                 }
                             }
@@ -92,8 +106,10 @@ namespace Finder {
                         for (Vertex x : Graph::iterate(X)) {
                             Y = neighbors(u) & non_neighbors(v) & non_neighbors(w) & non_neighbors(x);
                             for (Vertex y : Graph::iterate(Y)) {
+
                                 assert(valid_edge({y, u})); assert(valid_non_edge({y, v})); assert(valid_non_edge({y, w})); assert(valid_non_edge({y, x}));
                                 assert(valid_edge({u, v})); assert(valid_non_edge({u, w})); assert(valid_non_edge({u, x})); assert(valid_edge({v, w})); assert(valid_edge({v, x})); assert(valid_edge({w, x}));
+
                                 if (callback({y, u, v, w, x})) return true;
                             }
                         }
@@ -102,8 +118,10 @@ namespace Finder {
                         for (Vertex x : Graph::iterate(X)) {
                             Y = neighbors(u) & neighbors(v) & non_neighbors(w) & non_neighbors(x);
                             for (Vertex y : Graph::iterate(Y)) {
+
                                 assert(valid_edge({y, u})); assert(valid_edge({y, v})); assert(valid_non_edge({y, w})); assert(valid_non_edge({y, x}));
                                 assert(valid_edge({u, v})); assert(valid_non_edge({u, w})); assert(valid_non_edge({u, x})); assert(valid_edge({v, w})); assert(valid_non_edge({v, x})); assert(valid_edge({w, x}));
+
                                 if (callback({y, u, v, w, x})) return true;
                             }
                         }
@@ -114,8 +132,10 @@ namespace Finder {
                         for (Vertex x : Graph::iterate(X)) {
                             for (Vertex y : Graph::iterate(Y)) {
                                 if (!valid_non_edge({x, y})) continue;
+
                                 assert(valid_edge({y, u})); assert(valid_edge({y, v})); assert(valid_non_edge({y, w})); assert(valid_non_edge({y, x}));
                                 assert(valid_edge({u, v})); assert(valid_non_edge({u, w})); assert(valid_non_edge({u, x})); assert(valid_edge({v, w})); assert(valid_edge({v, x})); assert(valid_edge({w, x}));
+
                                 if (callback({y, u, v, w, x})) return true;
                             }
                         }

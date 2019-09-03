@@ -62,29 +62,42 @@ public:
      */
     virtual bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) = 0;
 
-
+protected:
     /*
-    static const Graph::AdjRow &neighbors(Vertex u, const Graph &graph) {
-        return graph.m_adj[u];
+     * Utility functions for generating lambda functions for finder templates.
+     */
+
+    static inline auto neighbors(const Graph &graph) {
+        return [&](Vertex u) { return  graph.m_adj[u]; };
     }
 
-    static Graph::AdjRow neighbors(Vertex u, const Graph &graph, const Graph &forbidden) {
-        return graph.m_adj[u] - forbidden.m_adj[u];
+    static inline auto neighbors(const Graph &graph, const Graph &forbidden) {
+        return [&](Vertex u) { return graph.m_adj[u] - forbidden.m_adj[u]; };
     }
 
-    static Graph::AdjRow non_neighbors(Vertex u, const Graph &graph) {
-        auto result = ~graph.m_adj[u];
-        result[u] = false;
-        return result;
+    static inline auto non_neighbors(const Graph &graph) {
+        return [&](Vertex u) { auto result = ~graph.m_adj[u]; result[u] = false; return result; };
     }
 
-    static Graph::AdjRow non_neighbors(Vertex u, const Graph &graph, const Graph &forbidden) {
-        auto result = ~graph.m_adj[u] - forbidden.m_adj[u];
-        result[u] = false;
-        return result;
+    static inline auto non_neighbors(const Graph &graph, const Graph &forbidden) {
+        return [&](Vertex u) { auto result = ~graph.m_adj[u] - forbidden.m_adj[u]; result[u] = false; return result; };
     }
-    */
 
+    static inline auto valid_edge(const Graph &graph) {
+        return [&](VertexPair xy) { return graph.has_edge(xy); };
+    }
+
+    static inline auto valid_edge(const Graph &graph, const Graph &forbidden) {
+        return [&](VertexPair xy) { return graph.has_edge(xy) && !forbidden.has_edge(xy); };
+    }
+
+    static inline auto valid_non_edge(const Graph &graph) {
+        return [&](VertexPair xy) { return !graph.has_edge(xy); };
+    }
+
+    static inline auto valid_non_edge(const Graph &graph, const Graph &forbidden) {
+        return [&](VertexPair xy) { return !graph.has_edge(xy) && !forbidden.has_edge(xy); };
+    }
 };
 
 #endif //CONCEPT_FINDERI_H

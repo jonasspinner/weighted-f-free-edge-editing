@@ -18,46 +18,60 @@ namespace detail {
         static_assert(length > 1);
 
     public:
+        /**
+         * A finder class for paths and cycles with a given length.
+         * The implementation details can be found in the FindImpl and FindNearImpl classes.
+         *
+         * @param graph_ref A reference to the graph.
+         */
         explicit Center(const Graph &graph_ref) : FinderI(graph_ref) {}
 
+        /**
+         * Calls callback for all paths and cycles of the given length.
+         *
+         * @param callback
+         * @return
+         */
         bool find(SubgraphCallback callback) override {
-
-            auto neighbors =      [&](Vertex u)      { return  graph.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair uv) { return  graph.has_edge(uv); };
-            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv); };
-
-            return detail::FindImpl<length, (length > 3)>::find(graph, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+            return detail::FindImpl<length, (length > 3)>::find(graph, callback,
+                    neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
         }
 
-        bool find(const Graph& forbidden, SubgraphCallback callback) override {
-
-            auto neighbors =      [&](Vertex u)      { return graph.m_adj[u] & ~forbidden.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u] & ~forbidden.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair uv) { return  graph.has_edge(uv) && !forbidden.has_edge(uv); };
-            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv) && !forbidden.has_edge(uv); };
-
-            return detail::FindImpl<length, (length > 3)>::find(graph, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+        /**
+         * Calls callback for all paths and cycles of the given length. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
+         *
+         * @param forbidden
+         * @param callback
+         * @return
+         */
+        bool find(const Graph &forbidden, SubgraphCallback callback) override {
+            return detail::FindImpl<length, (length > 3)>::find(graph, callback,
+                    neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
         }
 
+        /**
+         * Calls callback for all paths and cycles of the given length having both u and v as vertices.
+         *
+         * @param uv
+         * @param callback
+         * @return
+         */
         bool find_near(VertexPair uv, SubgraphCallback callback) override {
-
-            auto neighbors =      [&](Vertex u)      { return graph.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair xy) { return  graph.has_edge(xy); };
-            auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy); };
-
-            return detail::FindNearImpl<length, (length > 3)>::find_near(graph, uv, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+            return detail::FindNearImpl<length, (length > 3)>::find_near(graph, uv, callback,
+                    neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
         }
 
-        bool find_near(VertexPair uv, const Graph& forbidden, SubgraphCallback callback) override  {
-
-            auto neighbors =      [&](Vertex u)      { return graph.m_adj[u] & ~forbidden.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u] & ~forbidden.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair xy) { return  graph.has_edge(xy) && !forbidden.has_edge(xy); };
-            auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy) && !forbidden.has_edge(xy); };
-
-            return detail::FindNearImpl<length, (length > 3)>::find_near(graph, uv, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+        /**
+         * Calls callback for all paths and cycles of the given length having both u and v as vertices. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
+         *
+         * @param uv
+         * @param forbidden
+         * @param callback
+         * @return
+         */
+        bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override  {
+            return detail::FindNearImpl<length, (length > 3)>::find_near(graph, uv, callback,
+                    neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
         }
 
     };
