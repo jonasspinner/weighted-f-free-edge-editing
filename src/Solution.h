@@ -63,6 +63,24 @@ public:
     bool operator==(const Solution &other) const {
         return cost == other.cost && edits == other.edits;
     }
+
+    static void filter_inclusion_minimal(std::vector<Solution> &solutions) {
+        //for (auto &solution : solutions)
+        //    std::sort(solution.edits.begin(), solution.edits.end());
+
+        std::sort(solutions.begin(), solutions.end(), [](const Solution &a, const Solution &b) { return a.edits.size() < b.edits.size(); });
+
+        std::vector<Solution> result;
+        for (auto &s_i : solutions) {
+            if (std::none_of(result.begin(), result.end(), [&](const Solution &s_j) {
+                return std::includes(s_i.edits.begin(), s_i.edits.end(), s_j.edits.begin(), s_j.edits.end());
+            })) {
+                result.push_back(std::move(s_i));
+            }
+        }
+        solutions = result;
+        std::sort(solutions.begin(), solutions.end());
+    }
 };
 
 

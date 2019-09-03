@@ -14,6 +14,9 @@
 #include "finder/Center.h"
 
 #include "graph/synthetic_graphs.h"
+#include "version.h"
+
+#include "lower_bound/LinearProgramLowerBound.h"
 
 
 void read_args(int argc, char *argv[], int& seed, std::string &input, double &multiplier, Cost &k_max, Options::FSG &fsg, Options::Selector &selector, Options::LB &lower_bound) {
@@ -43,7 +46,6 @@ void read_args(int argc, char *argv[], int& seed, std::string &input, double &mu
 
 
 int main(int argc, char *argv[]) {
-    /*
 
     const std::vector<std::string> paths {
         "./data/bio/bio-nr-3-size-16.metis",
@@ -51,6 +53,7 @@ int main(int argc, char *argv[]) {
         "./data/bio/bio-nr-11-size-22.metis",
         "./data/karate.graph"};
 
+     /*
 
     int seed = 0;
     std::string input = paths[2];
@@ -133,7 +136,6 @@ int main(int argc, char *argv[]) {
     out << YAML::EndMap;
 
     std::cout << "\n" << out.c_str() << "\n";
-    */
 
     auto print_subgraph = [](Subgraph &&subgraph) {
         std::cout << subgraph << "\n";
@@ -155,8 +157,33 @@ int main(int argc, char *argv[]) {
     for (VertexPair uv : G.vertexPairs()) {
         detail::Center<4>(G).find_near(uv, print_subgraph);
     }
+    */
 
-    create_synthetic_cluster_graph(100, 0);
+
+    // create_synthetic_cluster_graph(100, 0);
+
+
+
+    VertexPairMap<Cost> map(10);
+
+    std::vector<Solution> solutions = {{map, {{0, 1}}}, {map, {{0, 1}, {2, 3}}}, {map, {{0, 2}, {2, 4}}}};
+
+    for (const auto &solution : solutions)
+        std::cout << solution << " ";
+
+    std::cout << "\n";
+
+    Solution::filter_inclusion_minimal(solutions);
+    for (const auto &solution : solutions)
+        std::cout << solution << " ";
+
+
+    auto instance = GraphIO::read_graph(paths[0], 100);
+    VertexPairMap<bool> marked(instance.graph.size());
+    auto finder = std::make_shared<Finder::CenterC4P4>(instance.graph);
+    auto lb = LinearProgramLowerBound(instance, marked, finder);
+    lb.initialize();
+    std::cout << lb.result(1000);
 
     return 0;
 }

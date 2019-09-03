@@ -48,6 +48,7 @@ include_directories(${YAML_CPP_INCLUDE_DIR})
 
 
 add_executable(graphedit src/main.cpp)
+target_link_libraries(graphedit LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
 target_link_libraries(graphedit LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 
 
@@ -63,6 +64,7 @@ endif(GUROBI_FOUND)
 
 
 add_executable(tests apps/run_tests.cpp)
+target_link_libraries(tests LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
 target_link_libraries(tests LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 
 add_executable(finder_benchmark apps/run_finder_benchmark.cpp)

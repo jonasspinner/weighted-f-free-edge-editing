@@ -13,8 +13,14 @@
 class GraphTests {
     std::mt19937 gen;
 public:
+    /**
+     * Tests for checking consistency between range iteration and templated loops with lambda functions and tests for edge cases for graphs.
+     * @param seed
+     */
     explicit GraphTests(int seed = 0) : gen(seed) {}
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     void vertices_and_for_all_vertices_are_consistent() {
         Graph G = random_graph(10, 40, gen);
 
@@ -79,6 +85,7 @@ public:
 
         expect("neighbors() and for_all_neighbors() produce the same output", a, b);
     }
+#pragma GCC diagnostic pop
 
     static void iterators_on_empty_Graph_work() {
         Graph graph(0);

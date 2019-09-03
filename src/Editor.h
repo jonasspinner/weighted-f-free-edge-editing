@@ -70,15 +70,23 @@ public:
         m_consumers.emplace_back(m_selector.get());
     }
 
+    /**
+     * Initializes statistics and consumers. Calls recursive editing function.
+     *
+     * @param k The maximimum allowed editing cost.
+     * @param result_cb A callback which is called when a result is found (vector<VertexPair> -> void).
+     * @param prune_cb A callback which is called when a branch is pruned ((Cost, Cost) -> void).
+     * @return Whether a solution was found.
+     */
     template<typename ResultCallback, typename PrunedCallback>
-    bool edit(Cost k, ResultCallback result, PrunedCallback pruned) {
+    bool edit(Cost k, ResultCallback result_cb, PrunedCallback prune_cb) {
         // init stats
         m_stats = Statistics(-k / 10, k, 10);
 
         for (auto &c : m_consumers) c->initialize();
 
         m_found_solution = false;
-        edit_r(k, [&](const std::vector<VertexPair> &e) { result(e); return false; }, pruned);
+        edit_recursive(k, [&](const std::vector<VertexPair> &e) { result_cb(e); return false; }, prune_cb);
         return m_found_solution;
     }
 
@@ -90,11 +98,13 @@ private:
     /**
      * Perform an edit step with remaining edit cost k.
      *
-     * @param k
-     * @return
+     * @param k The remaining editing cost.
+     * @param result_cb A callback which is called when a result is found (vector<VertexPair> -> bool). If it returns true, the execution is stopped early.
+     * @param prune_cb A callback which is called when a branch is pruned ((Cost, Cost) -> void).
+     * @return Whether the execution was stopped early
      */
     template<typename ResultCallback, typename PrunedCallback>
-    bool edit_r(Cost k, ResultCallback result, PrunedCallback pruned) {
+    bool edit_recursive(Cost k, ResultCallback result_cb, PrunedCallback prune_cb) {
         const VertexPairMap<Cost> &costs = m_instance.costs;
 
         m_stats.calls(k)++;
@@ -103,7 +113,7 @@ private:
         auto lb = m_lower_bound->result(k);
         if (k < lb) {
             // unsolvable, too few edits remaining
-            pruned(k, lb);
+            prune_cb(k, lb);
             m_stats.prunes(k)++;
             return false;
         }
@@ -113,14 +123,15 @@ private:
         if (problem.solved) {
             // solved
             m_found_solution = true;
-            return result(edits); // output graph
+            return result_cb(edits); // output graph
         } else if (k == 0) {
             // unsolved, no edits remaining
-            pruned(0, 0);
+            prune_cb(0, 0);
             return false;
         }
 
 
+        // recurse on problem pairs. keep vertex pairs marked between calls.
         bool return_value = false;
         for (VertexPair uv : problem.pairs) {
             assert(!m_marked[uv]);
@@ -129,7 +140,7 @@ private:
 
             mark_and_edit_edge(uv);
 
-            if (edit_r(k - costs[uv], result, pruned)) return_value = true;
+            if (edit_recursive(k - costs[uv], result_cb, prune_cb)) return_value = true;
 
             unedit_edge(uv);
 
@@ -145,6 +156,12 @@ private:
         return return_value;
     }
 
+    /**
+     * Mark the vertex pair uv and make the edit in the graph.
+     * The consumers are informed before and after the actions are performed.
+     *
+     * @param uv
+     */
     void mark_and_edit_edge(VertexPair uv) {
         assert(!m_marked[uv]);
         Graph &G = m_instance.graph;
@@ -164,6 +181,11 @@ private:
         for (auto &c : m_consumers) c->after_mark_and_edit(uv);   // all - next_state
     }
 
+    /**
+     * Undo the edit in the graph.
+     *
+     * @param uv
+     */
     void unedit_edge(VertexPair uv) {
         assert(m_marked[uv]);
         Graph &G = m_instance.graph;
@@ -176,6 +198,11 @@ private:
         for (auto &c : m_consumers) c->after_edit(uv);            // subgraph_stats
     }
 
+    /**
+     * Unmark the vertex pair.
+     *
+     * @param uv
+     */
     void unmark_edge(VertexPair uv) {
         assert(m_marked[uv]);
         m_marked[uv] = false;
@@ -190,6 +217,10 @@ private:
                 return std::make_shared<Finder::CenterP3>(instance.graph);
             case Options::FSG::P4C4:
                 return std::make_shared<Finder::CenterC4P4>(instance.graph);
+            case Options::FSG::C4_C5_2K2:
+                return std::make_shared<Finder::SplitGraph>(instance.graph);
+            case Options::FSG::C4_C5_P5_Bowtie_Necktie:
+                return std::make_shared<Finder::SplitCluster>(instance.graph);
             default:
                 assert(false);
                 return nullptr;
@@ -220,6 +251,8 @@ private:
                 return std::make_unique<LocalSearchLowerBound>(instance, marked, finder);
             case Options::LB::Greedy:
                 return std::make_unique<LowerBound::GreedyLowerBound>(instance, marked, finder);
+            case Options::LB::LinearProgram:
+                return std::make_unique<LinearProgramLowerBound>(instance, marked, finder);
             default:
                 assert(false);
                 return nullptr;
