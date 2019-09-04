@@ -13,10 +13,11 @@ make
 
 [BOOST](https://www.boost.org/)
 
-[GURBOBI](https://www.gurobi.com/) *(optional)*
+[GUROBI](https://www.gurobi.com/) *(optional)*
 
 [YAML CPP](https://github.com/jbeder/yaml-cpp/)
 
+Installation from source:
 ```bash
 git clone https://github.com/jbeder/yaml-cpp.git
 cd yaml-cpp
