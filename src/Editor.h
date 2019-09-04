@@ -18,21 +18,9 @@
 #include "interfaces/ConsumerI.h"
 #include "interfaces/FinderI.h"
 
-#include "finder/NaiveP3.h"
-#include "finder/NaiveC4P4.h"
-#include "finder/CenterC4P4.h"
-#include "finder/CenterP3.h"
-#include "finder/SplitGraph.h"
-#include "finder/SplitCluster.h"
-
-#include "lower_bound/TrivialLowerBound.h"
-#include "lower_bound/LocalSearchLowerBound.h"
-#include "lower_bound/GreedyLowerBound.h"
-#include "lower_bound/LinearProgramLowerBound.h"
-
-#include "selector/FirstEditable.h"
-#include "selector/LeastWeight.h"
-#include "selector/MostMarkedPairs.h"
+#include "finder/utils.h"
+#include "lower_bound/utils.h"
+#include "selector/utils.h"
 
 #include "consumer/SubgraphStats.h"
 
@@ -47,7 +35,6 @@ private:
     std::unique_ptr<SubgraphStats> m_subgraph_stats;
 
     std::vector<ConsumerI *> m_consumers;
-
     std::shared_ptr<FinderI> m_finder;
 
     std::vector<VertexPair> edits;
@@ -59,12 +46,12 @@ public:
     explicit Editor(Instance instance, Options::Selector selector, Options::FSG forbidden, Options::LB lower_bound) :
             m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_found_solution(false) {
 
-        m_finder = make_finder(forbidden, m_instance);
+        m_finder = Finder::make(forbidden, m_instance.graph);
         m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_marked);
         // m_consumers.emplace_back(m_subgraph_stats.get());
 
-        m_selector = make_selector(selector, m_finder, m_instance, m_marked);
-        m_lower_bound = make_lower_bound(lower_bound, m_finder, m_instance, m_marked);
+        m_selector = Selector::make(selector, m_finder, m_instance, m_marked);
+        m_lower_bound = LowerBound::make(lower_bound, m_finder, m_instance, m_marked);
 
         m_consumers.emplace_back(m_lower_bound.get());
         m_consumers.emplace_back(m_selector.get());
@@ -208,55 +195,6 @@ private:
         m_marked[uv] = false;
 
         for (auto &c : m_consumers) c->after_unmark(uv);          // subgraph_stats
-    }
-
-
-    static std::shared_ptr<FinderI> make_finder(Options::FSG forbidden, const Instance &instance) {
-        switch (forbidden) {
-            case Options::FSG::P3:
-                return std::make_shared<Finder::CenterP3>(instance.graph);
-            case Options::FSG::P4C4:
-                return std::make_shared<Finder::CenterC4P4>(instance.graph);
-            case Options::FSG::C4_C5_2K2:
-                return std::make_shared<Finder::SplitGraph>(instance.graph);
-            case Options::FSG::C4_C5_P5_Bowtie_Necktie:
-                return std::make_shared<Finder::SplitCluster>(instance.graph);
-            default:
-                assert(false);
-                return nullptr;
-        }
-    }
-
-    static std::unique_ptr<SelectorI>
-    make_selector(Options::Selector selector, const std::shared_ptr<FinderI> &finder, const Instance &instance,
-                  const VertexPairMap<bool> &marked) {
-        switch (selector) {
-            case Options::Selector::LeastWeight:
-                return std::make_unique<Selector::LeastWeight>(instance.costs, finder, marked);
-            case Options::Selector::FirstEditable:
-                return std::make_unique<Selector::FirstEditable>(finder, marked);
-            default:
-                assert(false);
-                return nullptr;
-        }
-    }
-
-    static std::unique_ptr<LowerBoundI>
-    make_lower_bound(Options::LB lower_bound, const std::shared_ptr<FinderI> &finder, const Instance &instance,
-                     const VertexPairMap<bool> &marked) {
-        switch (lower_bound) {
-            case Options::LB::No:
-                return std::make_unique<LowerBound::TrivialLowerBound>(finder);
-            case Options::LB::LocalSearch:
-                return std::make_unique<LocalSearchLowerBound>(instance, marked, finder);
-            case Options::LB::Greedy:
-                return std::make_unique<LowerBound::GreedyLowerBound>(instance, marked, finder);
-            case Options::LB::LinearProgram:
-                return std::make_unique<LinearProgramLowerBound>(instance, marked, finder);
-            default:
-                assert(false);
-                return nullptr;
-        }
     }
 };
 

@@ -17,6 +17,12 @@ class FPTSolver : public Solver {
 public:
     FPTSolver(Cost k, Options::FSG fsg) : m_k(k), m_fsg(fsg) {}
 
+    /**
+     * Search for a minimum cost which yields solutions.
+     *
+     * @param instance
+     * @return
+     */
     std::vector<Solution> search(Instance instance) {
         auto selector = Options::Selector::FirstEditable;
         auto lower_bound = Options::LB::Greedy;
@@ -49,6 +55,12 @@ public:
         } while (!solved);
     }
 
+    /**
+     * Solves the given instance.
+     *
+     * @param instance
+     * @return
+     */
     std::vector<Solution> solve(Instance instance) override {
         auto selector = Options::Selector::FirstEditable;
         auto lower_bound = Options::LB::Greedy;

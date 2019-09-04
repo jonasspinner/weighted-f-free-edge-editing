@@ -18,7 +18,7 @@
 #include "../finder/CenterC4P4.h"
 #include "../finder/CenterP3.h"
 #include "../finder/Center.h"
-#include "../finder/util.h"
+#include "../finder/utils.h"
 #include "../Permutation.h"
 
 

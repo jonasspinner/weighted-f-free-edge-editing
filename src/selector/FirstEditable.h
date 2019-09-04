@@ -21,21 +21,26 @@ namespace Selector {
                                const VertexPairMap<bool> &forbidden) : SelectorI(std::move(finder_ptr)),
                                                                        m_forbidden(forbidden) {}
 
+        /**
+         * Select the first forbidden subgraph found.
+         *
+         * @return
+         */
         Problem result(Cost /*k*/) override {
-            std::vector<VertexPair> pairs;
-            bool solved = true;
+            Problem problem;
+            problem.solved = true;
 
             finder->find([&](const Subgraph &subgraph) {
-                solved = false;
+                problem.solved = false;
 
                 for (VertexPair uv : subgraph.vertexPairs())
                     if (!m_forbidden[uv])
-                        pairs.push_back(uv);
+                        problem.pairs.push_back(uv);
 
                 return true;
             });
 
-            return {pairs, solved};
+            return problem;
         }
     };
 }

@@ -10,7 +10,7 @@
 #include "graph/Graph.h"
 #include "Configuration.h"
 #include "interfaces/FinderI.h"
-#include "finder/util.h"
+#include "finder/utils.h"
 
 
 class Solution {

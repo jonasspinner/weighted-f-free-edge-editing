@@ -60,6 +60,7 @@ namespace Finder {
 
         template <typename F, typename G, typename H, typename I>
         bool find(const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+            // TODO: avoid listing a subgraph more than once
 
             for (Vertex u : graph.vertices()) {
                 V = neighbors(u);

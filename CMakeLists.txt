@@ -40,6 +40,7 @@ find_package(GUROBI)
 if(GUROBI_FOUND)
     include_directories(SYSTEM ${GUROBI_INCLUDE_DIRS})
     # set(LIBS ${LIBS} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
+    add_definitions("-DGUROBI_FOUND")
 endif(GUROBI_FOUND)
 
 
@@ -69,3 +70,7 @@ target_link_libraries(tests LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES}
 
 add_executable(finder_benchmark apps/run_finder_benchmark.cpp)
 target_link_libraries(finder_benchmark LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
+
+add_executable(lower_bound_benchmark apps/run_lower_bound_benchmark.cpp)
+target_link_libraries(lower_bound_benchmark LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
+target_link_libraries(lower_bound_benchmark LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
