@@ -18,43 +18,68 @@ private:
             Cost cost;
             Subgraph subgraph;
         };
-        std::vector<Element> bound;
+    private:
+        std::vector<Element> m_bound;
         Cost m_cost = 0;
+    public:
+        [[nodiscard]] inline const std::vector<Element> &bound() const { return m_bound; }
+        [[nodiscard]] inline const Element &bound(size_t index) const { return m_bound[index]; }
+        [[nodiscard]] inline Cost cost() const { return m_cost; }
 
-        [[nodiscard]] Cost cost() const { return m_cost; }
-
-        void remove(size_t index) {
-            m_cost -= bound[index].cost;
-            bound[index] = std::move(bound.back());
-            bound.pop_back();
+        /**
+         * Shuffle the order of the subgraphs in the bound.
+         *
+         * @param g A random number generator.
+         */
+        template <class URBG>
+        inline void shuffle(URBG &&g) {
+            std::shuffle(m_bound.begin(), m_bound.end(), g);
         }
 
-        void replace(size_t index, Element &&element) {
-            m_cost -= bound[index].cost;
+        /**
+         * Removes the subgraph at the given index. The position is filled by the last subgraph.
+         *
+         * @param index
+         */
+        inline void remove(size_t index) {
+            m_cost -= m_bound[index].cost;
+            m_bound[index] = std::move(m_bound.back());
+            m_bound.pop_back();
+        }
+
+        /**
+         * Replaces the element at the index position with the given element.
+         *
+         * @param index
+         * @param element
+         */
+        inline void replace(size_t index, Element &&element) {
+            m_cost -= m_bound[index].cost;
             m_cost += element.cost;
-            bound[index] = std::move(element);
+            m_bound[index] = std::move(element);
         }
 
-        void insert(Element &&element) {
+        inline void insert(Element &&element) {
             m_cost += element.cost;
-            bound.emplace_back(std::move(element));
+            m_bound.emplace_back(std::move(element));
         }
 
-        void set_unsolvable() {
-            bound.clear();
+        inline void set_unsolvable() {
+            m_bound.clear();
             m_cost = invalid_cost;
         }
 
-        [[nodiscard]] bool solvable() const { return m_cost != invalid_cost; }
+        [[nodiscard]] inline bool solvable() const { return m_cost != invalid_cost; }
 
-        void clear() {
-            bound.clear();
-            m_cost = 0;
-        }
-
+        /**
+         * Recalculate the cost of the bound from the marked vertex pairs and costs.
+         *
+         * @param marked
+         * @param costs
+         */
         void recalculate(const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs) {
             m_cost = 0;
-            for (auto &e : bound) {
+            for (auto &e : m_bound) {
                 e.cost = ::cost(e.subgraph, marked, costs);
                 m_cost += e.cost;
                 if (e.cost == invalid_cost) {
@@ -66,7 +91,7 @@ private:
 #ifndef NDEBUG
             if (solvable()) {
                 Cost sum = 0;
-                for (const auto &e : bound) {
+                for (const auto &e : m_bound) {
                     assert(e.cost == ::cost(e.subgraph, marked, costs));
                     sum += e.cost;
                 }
@@ -75,10 +100,16 @@ private:
 #endif
         }
 
+        /**
+         * Initializes the bound_graph. Every unmarked vertex pair of a subgraph in the bound becomes an edge in the graph.
+         *
+         * @param marked
+         * @param bound_graph
+         */
         void initialize_bound_graph(const VertexPairMap<bool> &marked, Graph &bound_graph) {
             bound_graph.clear_edges();
 
-            for (const auto &[cost, subgraph] : bound) {
+            for (const auto &[cost, subgraph] : m_bound) {
                 for (VertexPair uv : subgraph.vertexPairs()) {
                     if (!marked[uv]) {
                         assert(!bound_graph.has_edge(uv));
@@ -89,7 +120,7 @@ private:
 
 #ifndef NDEBUG
             VertexPairMap<bool> debug(bound_graph.size());
-            for (const auto&[cost, subgraph] : bound)
+            for (const auto&[cost, subgraph] : m_bound)
                 for (VertexPair uv : subgraph.vertexPairs())
                     if (!marked[uv]) {
                         assert(bound_graph.has_edge(uv));
@@ -116,7 +147,7 @@ private:
 
             // costs are matching
             Cost sum = 0;
-            for (const auto &e : bound) {
+            for (const auto &e : m_bound) {
                 assert(e.cost == ::cost(e.subgraph, marked, costs));
                 sum += e.cost;
             }
@@ -124,7 +155,7 @@ private:
 
             VertexPairMap<bool> debug(bound_graph.size());
 
-            for (const auto& [cost, subgraph] : bound) {
+            for (const auto& [cost, subgraph] : m_bound) {
                 for (VertexPair uv : subgraph.vertexPairs()) {
                     if (!marked[uv]) {
                         assert(bound_graph.has_edge(uv));
@@ -148,7 +179,7 @@ private:
         friend std::ostream &operator<<(std::ostream &os, const State &state) {
             if (!state.solvable()) return os << "unsolvable";
             std::cout << state.cost() << ":";
-            for (const auto &[cost, subgraph] : state.bound)
+            for (const auto &[cost, subgraph] : state.bound())
                 std::cout << " (" << subgraph << ", " << cost << ")";
             return os;
         }
@@ -158,16 +189,18 @@ private:
     const VertexPairMap<Cost> &m_costs;
     const VertexPairMap<bool> &m_marked;
     std::vector<std::unique_ptr<State>> states;
+    std::mt19937_64 gen;
 
 public:
     explicit LocalSearchLowerBound(const Instance &instance,
-                                   const VertexPairMap<bool> &forbidden, std::shared_ptr<FinderI> finder_ref) :
+                                   const VertexPairMap<bool> &forbidden, std::shared_ptr<FinderI> finder_ref, int seed = 0) :
             LowerBoundI(std::move(finder_ref)), m_bound_graph(instance.graph.size()),
-            m_costs(instance.costs), m_marked(forbidden) {}
+            m_costs(instance.costs), m_marked(forbidden), gen(seed) {}
 
     /**
+     * Returns a lower bound on the editing cost.
      *
-     * @param k
+     * @param k Remaining editing cost.
      * @return A lower bound on the costs required to solve the current instance.
      */
     Cost result(Cost k) override {
@@ -181,7 +214,7 @@ public:
         state.assert_valid(m_marked, m_bound_graph, m_costs);
 
         if (state.cost() <= k) {
-            optimize_bound(state, k);
+            local_search(state, k);
         }
 
         assert(state.cost() >= 0);
@@ -249,11 +282,6 @@ public:
         return *states.back();
     }
 
-    State &parent_state() {
-        assert(states.size() >= 2);
-        return *states[states.size() - 2];
-    }
-
     /**
      * Removes subgraphs from state.bound which have the vertex pair uv.
      *
@@ -264,8 +292,8 @@ public:
         assert(state.solvable());
         // state.assert_valid(m_marked, m_bound_graph, m_costs);
 
-        for (size_t i = 0; i < state.bound.size(); ) {
-            const auto &[cost, subgraph] = state.bound[i];
+        for (size_t i = 0; i < state.bound().size(); ) {
+            const auto &[cost, subgraph] = state.bound(i);
             const auto vertices = subgraph.vertices();
 
             bool has_u = std::any_of(vertices.begin(), vertices.end(), [&](Vertex x) { return x == uv.u; });
@@ -281,6 +309,11 @@ public:
         }
     }
 
+    /**
+     * Find forbidden subgraphs near uv and insert them. Subgraphs with higher minimum editing cost are preferred.
+     *
+     * @param uv
+     */
     void after_mark_and_edit(VertexPair uv) override {
         auto &state = current_state();
         assert(state.solvable());
@@ -300,6 +333,7 @@ public:
         std::sort(subgraphs.begin(), subgraphs.end(),
                   [](const auto &lhs, const auto &rhs) { return lhs.first > rhs.first; });
 
+        // if one forbidden subgraph has no unmarked pairs, the instance is unsolvable.
         if (!subgraphs.empty() && subgraphs[0].first == invalid_cost) {
             state.set_unsolvable();
             return;
@@ -322,33 +356,54 @@ public:
     }
 
 private:
-    void optimize_bound(State &state, Cost k) {
-        std::mt19937 gen(static_cast<unsigned long>(state.cost()) + state.bound.size());
-        
-        std::shuffle(state.bound.begin(), state.bound.end(), gen);
+    /**
+     * Tries to optimise the bound. Stops if the lower bound is larger than k or the bound does not improve in five consecutive rounds.
+     *
+     * @param state
+     * @param k
+     */
+    void local_search(State &state, Cost k) {
+        state.shuffle(gen);
 
-        bool improvement_found;
-        bool bound_changed;
+        bool improvement_found, bound_changed;
         size_t rounds_no_improvement = 0;
-        do {
-            improvement_found = false;
-            bound_changed = false;
+        int mode = 0;
 
-            for (size_t sg_i = 0; sg_i < state.bound.size(); ++sg_i) {
-                find_2_improvement(state, sg_i, gen, improvement_found, bound_changed);
-                if (state.cost() > k) {
-                    return;
+        do {
+            // a single round consists of a loop over all subgraphs in the bound and trying to find an improvement depending on the current mode.
+            improvement_found = bound_changed = false;
+
+            for (size_t index = 0; index < state.bound().size(); ++index) {
+
+                // if mode is 0, try one improvements for all subgraphs in the bound. If mode is 1, try two improvements.
+                if (mode == 0 && find_one_improvements(state, index)) {
+                    improvement_found = true;
+                } else if (mode == 1 && find_two_improvement(state, index, bound_changed)) {
+                    improvement_found = true;
                 }
+
+                // if the cost is large enough stop the local_search
+                if (state.cost() > k)
+                    return;
             }
+
+            if (improvement_found)
+                mode = (mode + 1) % 2;
 
             rounds_no_improvement = improvement_found ? 0 : rounds_no_improvement + 1;
         } while (improvement_found || (rounds_no_improvement < 5 && bound_changed));
     }
 
-    void find_one_improvements(State &state, size_t index) {
+    /**
+     * Try to find a (1, 1) swap for the subgraph at the index which improves the lower bound.
+     *
+     * @param state
+     * @param index
+     */
+    bool find_one_improvements(State &state, size_t index) {
         bool found_improvement = false;
 
-        const auto &[subgraph_cost, subgraph] = state.bound[index];
+        const auto &[subgraph_cost, subgraph] = state.bound(index);
         assert(subgraph_cost == cost(subgraph, m_marked, m_costs));
 
         remove_from_graph(subgraph, m_marked, m_bound_graph);
@@ -400,24 +455,25 @@ private:
         insert_into_graph(max_subgraph, m_marked, m_bound_graph);
         state.replace(index, {max_cost, std::move(max_subgraph)});
 
+        return found_improvement;
     }
 
     /**
-     * Find a 2 improvement for subgraph at index.
+     * Try to find a (1, 2) swap for the subgraph at the index which improves the lower bound.
      *
      * @param state
      * @param index
      * @param gen
-     * @param improvement_found
      * @param bound_changed
      * @return
      */
-    void find_2_improvement(State &state, size_t index, std::mt19937 &gen, bool &improvement_found,
-                            bool &bound_changed) {
+    bool find_two_improvement(State &state, size_t index, bool &bound_changed) {
         constexpr Cost invalid_max_cost = std::numeric_limits<Cost>::min();
         constexpr size_t invalid_index = std::numeric_limits<size_t>::max();
 
-        const auto &[subgraph_cost, subgraph] = state.bound[index];
+        bool found_improvement = false;
+
+        const auto &[subgraph_cost, subgraph] = state.bound(index);
         assert(subgraph_cost == cost(subgraph, m_marked, m_costs));
         assert(subgraph_cost != invalid_cost);
 
@@ -500,7 +556,7 @@ private:
 
         if (!max_subgraphs.empty()) {
             size_t a_i = max_subgraphs[0];
-            improvement_found = true;
+            found_improvement = true;
             bound_changed = true;
 
             // better candidates found
@@ -526,6 +582,7 @@ private:
                 insert_into_graph(subgraph, m_marked, m_bound_graph);
             }
         }
+        return found_improvement;
     }
 
     /**
@@ -584,9 +641,8 @@ private:
                     graph.set_edge(uv);
 
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /**
