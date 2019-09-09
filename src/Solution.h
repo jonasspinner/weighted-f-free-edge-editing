@@ -10,7 +10,7 @@
 #include "graph/Graph.h"
 #include "Configuration.h"
 #include "interfaces/FinderI.h"
-#include "finder/utils.h"
+#include "finder/finder_utils.h"
 
 
 class Solution {
@@ -47,7 +47,7 @@ public:
         Cost sum = 0;
 
         for (VertexPair uv : edits) {
-            graph.toggle_edge(uv);
+            graph.toggleEdge(uv);
             sum += instance.costs[uv];
         }
 

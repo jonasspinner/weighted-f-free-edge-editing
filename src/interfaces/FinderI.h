@@ -8,6 +8,7 @@
 
 #include "../graph/Graph.h"
 #include "../graph/Subgraph.h"
+#include "../Configuration.h"
 
 
 class FinderI {
@@ -62,13 +63,24 @@ public:
      */
     virtual bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) = 0;
 
+    [[nodiscard]] virtual Options::FSG forbidden_subgraphs() const = 0;
+
+    [[nodiscard]] virtual std::string name() const = 0;
+
+    virtual void to_yaml(YAML::Emitter &out) const = 0;
+
+    friend YAML::Emitter &operator<<(YAML::Emitter &out, const FinderI &finder) {
+        finder.to_yaml(out);
+        return out;
+    }
+
 protected:
     /*
      * Utility functions for generating lambda functions for finder templates.
      */
 
     static inline auto neighbors(const Graph &graph) {
-        return [&](Vertex u) { return  graph.m_adj[u]; };
+        return [&](Vertex u) -> const Graph::AdjRow& { return  graph.m_adj[u]; };
     }
 
     static inline auto neighbors(const Graph &graph, const Graph &forbidden) {
@@ -84,19 +96,19 @@ protected:
     }
 
     static inline auto valid_edge(const Graph &graph) {
-        return [&](VertexPair xy) { return graph.has_edge(xy); };
+        return [&](VertexPair xy) { return graph.hasEdge(xy); };
     }
 
     static inline auto valid_edge(const Graph &graph, const Graph &forbidden) {
-        return [&](VertexPair xy) { return graph.has_edge(xy) && !forbidden.has_edge(xy); };
+        return [&](VertexPair xy) { return graph.hasEdge(xy) && !forbidden.hasEdge(xy); };
     }
 
     static inline auto valid_non_edge(const Graph &graph) {
-        return [&](VertexPair xy) { return !graph.has_edge(xy); };
+        return [&](VertexPair xy) { return !graph.hasEdge(xy); };
     }
 
     static inline auto valid_non_edge(const Graph &graph, const Graph &forbidden) {
-        return [&](VertexPair xy) { return !graph.has_edge(xy) && !forbidden.has_edge(xy); };
+        return [&](VertexPair xy) { return !graph.hasEdge(xy) && !forbidden.hasEdge(xy); };
     }
 };
 

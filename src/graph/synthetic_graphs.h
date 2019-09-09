@@ -58,7 +58,7 @@ Instance create_synthetic_cluster_graph(size_t num_nodes, int seed) {
     Graph graph(num_nodes);
     VertexPairMap<Cost> costs(num_nodes);
     for (VertexPair uv : graph.vertexPairs()) {
-        if (weights[uv] >= 0) graph.set_edge(uv);
+        if (weights[uv] >= 0) graph.setEdge(uv);
         costs[uv] = std::abs(weights[uv]);
     }
 

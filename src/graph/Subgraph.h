@@ -12,7 +12,9 @@
 
 class Subgraph {
     std::vector<Vertex> m_vertices;
+#ifndef NDEBUG
     std::string m_tag;
+#endif
 public:
 
     Subgraph(std::initializer_list<Vertex> list) : m_vertices(list) {
@@ -26,7 +28,18 @@ public:
 #endif
     }
 
+    Subgraph(std::initializer_list<Vertex> A, const Subgraph &other, std::initializer_list<Vertex> B) {
+        m_vertices.reserve(A.size() + other.size() + B.size());
+        m_vertices.insert(m_vertices.end(), A);
+        m_vertices.insert(m_vertices.end(), other.m_vertices.begin(), other.m_vertices.end());
+        m_vertices.insert(m_vertices.end(), B);
+    }
+
+#ifndef NDEBUG
     Subgraph(std::vector<Vertex> &&vertices, std::string &&tag) : m_vertices(std::move(vertices)), m_tag(std::move(tag)) {}
+#else
+    [[deprecated]] Subgraph(std::vector<Vertex> &&vertices, std::string &&tag) : m_vertices(std::move(vertices)) {}
+#endif
 
     class Vertices {
         const std::vector<Vertex> &m_vertices;
@@ -39,7 +52,7 @@ public:
     };
 
     /**
-     * Returns Iterator over all vertices.
+     * Returns a range over the vertices in the subgraph.
      *
      * @return
      */
@@ -49,8 +62,6 @@ public:
 
     class VertexPairs {
         class Iterator {
-            //const std::vector<Vertex> &m_vertices;
-            //size_t i, j;
             using VertexIt = std::vector<Vertex>::const_iterator;
             VertexIt uit, vit, end;
         public:
@@ -99,7 +110,7 @@ public:
     };
 
     /**
-     * Returns Iterator over all pairs of vertices {u, v}.
+     * Returns a range over all pairs of vertices {u, v} in the subgraph.
      *
      * @return
      */
@@ -112,7 +123,7 @@ public:
 
 
     template<typename VertexPairCallback>
-    bool for_all_vertex_pairs(VertexPairCallback callback) const {
+    [[deprecated]] bool for_all_vertex_pairs(VertexPairCallback callback) const {
         for (size_t i = 0; i < m_vertices.size(); ++i) {
             for (size_t j = i + 1; j < m_vertices.size(); ++j) {
                 if (callback(VertexPair(m_vertices[i], m_vertices[j]))) return true;
@@ -122,19 +133,22 @@ public:
     }
 
     template<typename VertexPairCallback>
-    bool for_all_unmarked_vertex_pairs(const VertexPairMap<bool> &marked, VertexPairCallback callback) const {
+    [[deprecated]] bool for_all_unmarked_vertex_pairs(const VertexPairMap<bool> &marked, VertexPairCallback callback) const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         return for_all_vertex_pairs([&](VertexPair uv) {
             return !marked[uv] && callback(uv);
-            // if (!marked[uv]) return callback(uv);
-            //return false;
         });
+#pragma GCC diagnostic pop
     }
 
     friend std::ostream &operator<<(std::ostream &os, const Subgraph &subgraph) {
         os << "{";
         for (Vertex u : subgraph.m_vertices) os << " " << u;
         os << " }";
+#ifndef NDEBUG
         if (!subgraph.m_tag.empty()) os << "#" << subgraph.m_tag;
+#endif
         return os;
     }
 
@@ -144,7 +158,7 @@ public:
         return out << YAML::EndSeq;
     }
 
-    void sort_vertices() {
+    void sortVertices() {
         std::sort(m_vertices.begin(), m_vertices.end());
     }
 
@@ -169,57 +183,9 @@ public:
 
 constexpr Cost invalid_cost = std::numeric_limits<Cost>::max();
 
-Cost cost(const Subgraph &subgraph, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs) {
-    Cost min_cost = invalid_cost;
-    subgraph.for_all_unmarked_vertex_pairs(marked, [&](VertexPair uv) {
-        min_cost = std::min(min_cost, costs[uv]);
-        return false;
-    });
-    return min_cost;
-}
+Cost get_subgraph_cost(const Subgraph &subgraph, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs);
 
-void verify(const Subgraph &subgraph, const Graph &graph) {
-    assert(subgraph.m_vertices.size() == 4);
-
-    const Subgraph &S = subgraph;
-
-    assert(S[0] != S[1]);
-    assert(S[0] != S[2]);
-    assert(S[0] != S[3]);
-    assert(S[1] != S[2]);
-    assert(S[1] != S[3]);
-    assert(S[2] != S[3]);
-
-    bool is_one = false;
-    std::vector<size_t> map = {0, 1, 2, 3};
-    do {
-        size_t i = map[0], j = map[1], k = map[2], l = map[3];
-        bool is_path =
-                 graph.has_edge({S[i], S[j]}) &&
-                !graph.has_edge({S[i], S[k]}) &&
-                !graph.has_edge({S[i], S[l]}) &&
-                 graph.has_edge({S[j], S[k]}) &&
-                !graph.has_edge({S[j], S[l]}) &&
-                 graph.has_edge({S[k], S[l]});
-        bool is_cycle =
-                 graph.has_edge({S[i], S[j]}) &&
-                !graph.has_edge({S[i], S[k]}) &&
-                 graph.has_edge({S[i], S[l]}) &&
-                 graph.has_edge({S[j], S[k]}) &&
-                !graph.has_edge({S[j], S[l]}) &&
-                 graph.has_edge({S[k], S[l]});
-        is_one |= is_path || is_cycle;
-    } while (std::next_permutation(map.begin(), map.end()));
-
-    if (!is_one) {
-        std::cout << subgraph << " E = {";
-        for (VertexPair uv : subgraph.vertexPairs()) {
-            if (graph.has_edge(uv)) std::cout << " " << uv;
-        }
-        std::cout << " }\n";
-    }
-    assert(is_one);
-}
+void verify(const Subgraph &subgraph, const Graph &graph);
 
 
 #endif //CONCEPT_SUBGRAPH_H

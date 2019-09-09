@@ -18,6 +18,8 @@
 
 #include "lower_bound/LinearProgramLowerBound.h"
 
+#include "graph/algorithms.h"
+
 
 void read_args(int argc, char *argv[], int& seed, std::string &input, double &multiplier, Cost &k_max, Options::FSG &fsg, Options::Selector &selector, Options::LB &lower_bound) {
     namespace po = boost::program_options;
@@ -149,7 +151,7 @@ int main(int argc, char *argv[]) {
     };
 
     Graph G(9);
-    G.set_edges({{0, 1}, {1, 2}, {2, 3}, {1, 4}, {2, 5}, {4, 5}, {5, 6}, {6, 7}, {6, 8}});
+    G.setEdges({{0, 1}, {1, 2}, {2, 3}, {1, 4}, {2, 5}, {4, 5}, {5, 6}, {6, 7}, {6, 8}});
     // 3-2-5-6-7
     //   | | |
     // 0-1-4 8

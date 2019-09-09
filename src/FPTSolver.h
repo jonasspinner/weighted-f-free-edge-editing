@@ -53,6 +53,8 @@ public:
 
             if (!solved) k += delta10;
         } while (!solved);
+
+        return solutions;
     }
 
     /**
@@ -75,6 +77,7 @@ public:
         }, [](Cost, Cost) {});
 
 
+        std::sort(solutions.begin(), solutions.end());
         return solutions;
     }
 };

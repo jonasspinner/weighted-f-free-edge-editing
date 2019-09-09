@@ -18,9 +18,9 @@
 #include "interfaces/ConsumerI.h"
 #include "interfaces/FinderI.h"
 
-#include "finder/utils.h"
-#include "lower_bound/utils.h"
-#include "selector/utils.h"
+#include "finder/finder_utils.h"
+#include "lower_bound/lower_bound_utils.h"
+#include "selector/lower_bound_utils.h"
 
 #include "consumer/SubgraphStats.h"
 
@@ -48,10 +48,10 @@ public:
 
         m_finder = Finder::make(forbidden, m_instance.graph);
         m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_marked);
-        // m_consumers.emplace_back(m_subgraph_stats.get());
+        m_consumers.emplace_back(m_subgraph_stats.get());
 
         m_selector = Selector::make(selector, m_finder, m_instance, m_marked);
-        m_lower_bound = LowerBound::make(lower_bound, m_finder, m_instance, m_marked);
+        m_lower_bound = LowerBound::make(lower_bound, m_finder, m_instance, m_marked, *m_subgraph_stats);
 
         m_consumers.emplace_back(m_lower_bound.get());
         m_consumers.emplace_back(m_selector.get());
@@ -136,9 +136,9 @@ private:
             if (return_value) break;
         }
 
-        for (VertexPair uv : problem.pairs)
-            if (m_marked[uv])
-                unmark_edge(uv);
+        for (auto uv = problem.pairs.rbegin(); uv != problem.pairs.rend(); ++uv)
+            if (m_marked[*uv])
+                unmark_edge(*uv);
 
         return return_value;
     }
@@ -161,7 +161,7 @@ private:
         for (auto &c : m_consumers) c->after_mark(uv);            // all - state
         for (auto &c : m_consumers) c->before_edit(uv);           // subgraph_stats
 
-        G.toggle_edge(uv);
+        G.toggleEdge(uv);
         edits.push_back(uv);
 
         for (auto &c : m_consumers) c->after_edit(uv);            // subgraph_stats
@@ -179,7 +179,7 @@ private:
 
         for (auto &c : m_consumers) c->before_edit(uv);           // subgraph_stats
 
-        G.toggle_edge(uv);
+        G.toggleEdge(uv);
         edits.pop_back();
 
         for (auto &c : m_consumers) c->after_edit(uv);            // subgraph_stats

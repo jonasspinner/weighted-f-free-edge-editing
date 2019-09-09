@@ -34,18 +34,13 @@ public:
             register_subgraph(subgraph);
             return false;
         });
-    }
-
-    void after_mark(VertexPair uv) override {
-        subgraph_count_per_vertex_pair_sum -= subgraph_count_per_vertex_pair[uv];
-        before_mark_subgraph_count.push_back(subgraph_count_per_vertex_pair[uv]);
-        subgraph_count_per_vertex_pair[uv] = 0;
 
         verify();
     }
 
     void before_edit(VertexPair uv) override {
         assert(m_forbidden[uv]);
+        verify();
         finder->find_near(uv, [&](Subgraph &&subgraph) {
             remove_subgraph(subgraph);
             return false;
@@ -58,7 +53,16 @@ public:
             register_subgraph(subgraph);
             return false;
         });
+        verify();
         assert(subgraph_count_per_vertex_pair[uv] == 0);
+    }
+
+    void after_mark(VertexPair uv) override {
+        subgraph_count_per_vertex_pair_sum -= subgraph_count_per_vertex_pair[uv];
+        before_mark_subgraph_count.push_back(subgraph_count_per_vertex_pair[uv]);
+        subgraph_count_per_vertex_pair[uv] = 0;
+
+        verify();
     }
 
     void after_unmark(VertexPair uv) override {
@@ -89,7 +93,7 @@ private:
         }
     }
 
-    void verify() {
+    void verify() const {
 #ifndef NDEBUG
         VertexPairMap<size_t> debug_sg_per_vertex_pair(graph.size());
         size_t debug_sg_count = 0;
@@ -109,7 +113,7 @@ private:
 
         for (VertexPair uv : graph.vertexPairs()) {
             assert(debug_sg_per_vertex_pair[uv] == subgraph_count_per_vertex_pair[uv]);
-            assert(!m_forbidden[uv] || debug_sg_per_vertex_pair[uv]);
+            assert(!m_forbidden[uv] || debug_sg_per_vertex_pair[uv] == 0);
         }
 #endif
     }

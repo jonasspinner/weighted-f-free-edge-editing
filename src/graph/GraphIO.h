@@ -52,7 +52,7 @@ public:
                 Vertex v;
                 while (ss >> v) {
                     if (u <= v) {
-                        G.set_edge({u - 1, v - 1});
+                        G.setEdge({u - 1, v - 1});
                     }
                 }
             }
@@ -66,8 +66,8 @@ public:
                     if (u <= v) {
                         VertexPair edge(u - 1, v - 1);
                         edit_costs[edge] = static_cast<Cost>(std::ceil(std::abs(weight) * multiplier));
-                        if (weight > 0) G.set_edge(edge);
-                        else if (weight <= 0) G.clear_edge(edge);
+                        if (weight > 0) G.setEdge(edge);
+                        else if (weight <= 0) G.clearEdge(edge);
                         /*
                         else {
                             std::cerr << "zero edge " << edge << " " << weight << "\n";
@@ -104,7 +104,7 @@ public:
         for (Vertex u : graph.vertices()) {
             for (Vertex v : graph.vertices()) {
                 if (u >= v) continue;
-                file << (v + 1) << " " << (graph.has_edge({u, v}) ? 1 : -1) * weights[{u, v}]
+                file << (v + 1) << " " << (graph.hasEdge({u, v}) ? 1 : -1) * weights[{u, v}]
                      << " ";
             }
             file << "\n";

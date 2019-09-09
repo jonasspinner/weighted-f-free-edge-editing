@@ -27,12 +27,10 @@ namespace Finder {
 }
 // template <int length> class Center;
 namespace detail {
-    template<int length>
-    class Center;
     template<int length, bool with_cycles>
-    class FindImpl;
+    class CenterFindImpl;
     template<int length, bool with_cycles>
-    class FindNearImpl;
+    class CenterFindNearImpl;
 }
 
 
@@ -100,7 +98,7 @@ public:
     /**
      * Clears all edges.
      */
-    void clear_edges() {
+    void clearEdges() {
         for (auto &row: m_adj) { row.reset(); }
     }
 
@@ -109,7 +107,7 @@ public:
      *
      * @param edge
      */
-    void toggle_edge(VertexPair edge) {
+    void toggleEdge(VertexPair edge) {
         const auto[u, v] = edge;
         m_adj[u].flip(v);
         m_adj[v].flip(u);
@@ -129,14 +127,14 @@ public:
      * @param edge
      * @return
      */
-    [[nodiscard]] bool has_edge(VertexPair edge) const { return m_adj[edge.u][edge.v]; }
+    [[nodiscard]] bool hasEdge(VertexPair edge) const { return m_adj[edge.u][edge.v]; }
 
     /**
      * Inserts the edge into the Graph.
      *
      * @param edge
      */
-    void set_edge(VertexPair edge) {
+    void setEdge(VertexPair edge) {
         const auto[u, v] = edge;
         m_adj[u].set(v);
         m_adj[v].set(u);
@@ -147,10 +145,10 @@ public:
      *
      * @param edges
      */
-    void set_edges(const std::vector<VertexPair> &edges) {
+    void setEdges(const std::vector<VertexPair> &edges) {
         for (VertexPair uv : edges) {
-            assert(!has_edge(uv));
-            set_edge(uv);
+            assert(!hasEdge(uv));
+            setEdge(uv);
         }
     }
 
@@ -159,7 +157,7 @@ public:
      *
      * @param edge
      */
-    void clear_edge(VertexPair edge) {
+    void clearEdge(VertexPair edge) {
         const auto[u, v] = edge;
         m_adj[u].reset(v);
         m_adj[v].reset(u);
@@ -563,12 +561,11 @@ private:
     friend class Finder::SplitGraph;
     friend class Finder::SplitCluster;
 
-    template<int length>
-    friend class detail::Center;
+
     template<int length, bool with_cycles>
-    friend class detail::FindImpl;
+    friend class detail::CenterFindImpl;
     template<int length, bool with_cycles>
-    friend class detail::FindNearImpl;
+    friend class detail::CenterFindNearImpl;
 };
 
 

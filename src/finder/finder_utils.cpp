@@ -1,10 +1,9 @@
 //
-// Created by jonas on 19.08.19.
+// Created by jonas on 06.09.19.
 //
 
-#ifndef WEIGHTED_F_FREE_EDGE_EDITING_FINDER_UTILS_H
-#define WEIGHTED_F_FREE_EDGE_EDITING_FINDER_UTILS_H
 
+#include "finder_utils.h"
 
 #include "Center.h"
 #include "CenterC4P4.h"
@@ -16,16 +15,15 @@
 
 
 namespace Finder {
-    using Options::FSG;
-
     /**
      * Factory function for Finders. The enum forbidden determines the class.
-     * 
-     * @param forbidden 
-     * @param graph 
-     * @return 
+     *
+     * @param forbidden
+     * @param graph
+     * @return
      */
-    static std::unique_ptr<FinderI> make(FSG forbidden, const Graph &graph) {
+    std::unique_ptr<FinderI> make(Options::FSG forbidden, const Graph &graph) {
+        using Options::FSG;
         switch (forbidden) {
             case FSG::P3:
                 return std::make_unique<CenterP3>(graph);
@@ -41,5 +39,3 @@ namespace Finder {
         }
     }
 }
-
-#endif //WEIGHTED_F_FREE_EDGE_EDITING_FINDER_UTILS_H

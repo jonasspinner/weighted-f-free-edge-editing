@@ -8,10 +8,8 @@
 
 #include <gurobi_c++.h>
 
+#include "finder/finder_utils.h"
 #include "../src/Solver.h"
-#include "../src/finder/CenterC4P4.h"
-#include "finder/SplitGraph.h"
-#include "finder/SplitCluster.h"
 #include "../src/Instance.h"
 #include "Configuration.h"
 
@@ -26,19 +24,7 @@ private:
     public:
         FSGCallback(Options::FSG fsg, Graph graph, const VertexPairMap<GRBVar> &vars) : m_graph(std::move(graph)),
                                                                                         m_vars(vars) {
-            switch (fsg) {
-                case Options::FSG::P4C4:
-                    m_finder = std::make_unique<Finder::CenterC4P4>(m_graph);
-                    break;
-                case Options::FSG::C4_C5_2K2:
-                    m_finder = std::make_unique<Finder::SplitGraph_2K2_C4_C5>(m_graph);
-                    break;
-                case Options::FSG::C4_C5_P5_Bowtie_Necktie:
-                    m_finder = std::make_unique<Finder::SplitCluster>(m_graph);
-                    break;
-                default:
-                    abort();
-            }
+            m_finder = Finder::make(fsg, m_graph);
         };
 
     protected:
@@ -52,7 +38,7 @@ private:
                 for (VertexPair uv : m_graph.vertexPairs())
                     if (getSolution(m_vars[uv]) > 0.5) {
                         edits.push_back(uv);
-                        m_graph.toggle_edge(uv);
+                        m_graph.toggleEdge(uv);
                         edited[uv] = true;
                     }
 
@@ -73,7 +59,7 @@ private:
 
                 // Undo edits.
                 for (VertexPair uv : edits)
-                    m_graph.toggle_edge(uv);
+                    m_graph.toggleEdge(uv);
 
             }
         }

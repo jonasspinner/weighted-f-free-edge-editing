@@ -6,50 +6,34 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_ENDPOINT_H
 
 
+#include "detail/EndpointFindImpl.h"
+
+
 namespace Finder {
     template <size_t length>
     class Endpoint : public FinderI {
+        constexpr static bool with_cycles = length > 3;
     public:
         explicit Endpoint(const Graph &graph_ref) : FinderI(graph_ref) {};
 
         bool find(SubgraphCallback callback) override {
-
-            auto neighbors =      [&](Vertex u)      { return  graph.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair uv) { return  graph.has_edge(uv); };
-            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv); };
-
-            return detail::FindImpl<length, (length > 3)>::find(graph, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+            return detail::EndpointFindImpl<length, with_cycles>::find(graph, callback,
+                    neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
         }
 
         bool find(const Graph& forbidden, SubgraphCallback callback) override {
-
-            auto neighbors =      [&](Vertex u)      { return graph.m_adj[u] & ~forbidden.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u] & ~forbidden.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair uv) { return  graph.has_edge(uv) && !forbidden.has_edge(uv); };
-            auto valid_non_edge = [&](VertexPair uv) { return !graph.has_edge(uv) && !forbidden.has_edge(uv); };
-
-            return detail::FindImpl<length, (length > 3)>::find(graph, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+            return detail::EndpointFindImpl<length, with_cycles>::find(graph, callback,
+                    neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
         }
 
-        bool find_near(VertexPair uv, SubgraphCallback callback) override {
-
-            auto neighbors =      [&](Vertex u)      { return graph.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair xy) { return  graph.has_edge(xy); };
-            auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy); };
-
-            return detail::FindNearImpl<length, (length > 3)>::find_near(graph, uv, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+        bool find_near(VertexPair /*uv*/, SubgraphCallback /*callback*/) override {
+            assert(false);
+            return false;
         }
 
-        bool find_near(VertexPair uv, const Graph& forbidden, SubgraphCallback callback) override  {
-
-            auto neighbors =      [&](Vertex u)      { return graph.m_adj[u] & ~forbidden.m_adj[u]; };
-            auto non_neighbors =  [&](Vertex u)      { auto result = ~graph.m_adj[u] & ~forbidden.m_adj[u]; result[u] = false; return result; };
-            auto valid_edge =     [&](VertexPair xy) { return  graph.has_edge(xy) && !forbidden.has_edge(xy); };
-            auto valid_non_edge = [&](VertexPair xy) { return !graph.has_edge(xy) && !forbidden.has_edge(xy); };
-
-            return detail::FindNearImpl<length, (length > 3)>::find_near(graph, uv, callback, neighbors, non_neighbors, valid_edge, valid_non_edge);
+        bool find_near(VertexPair /*uv*/, const Graph& /*forbidden*/, SubgraphCallback /*callback*/) override  {
+            assert(false);
+            return false;
         }
     };
 }

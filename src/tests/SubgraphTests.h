@@ -9,13 +9,15 @@
 #include <random>
 #include "../graph/Graph.h"
 #include "../graph/Subgraph.h"
-#include "Tests.h"
+#include "test_utils.h"
 
 class SubgraphTests {
     std::mt19937 gen;
 public:
     explicit SubgraphTests(int seed = 0) : gen(seed) {}
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     void vertexPairs_and_for_all_vertex_pairs_are_consistent() {
         Subgraph subgraph = random_subgraph(10, 20, gen);
 
@@ -73,6 +75,7 @@ public:
         auto vertexPairs = subgraph.vertexPairs();
         expect("singleton Subgraph has no vertex pairs", true, vertexPairs.begin() == vertexPairs.end());
     }
+#pragma GCC diagnostic pop
 
     void run() {
         std::cout << "\nSubgraphTests"

@@ -7,6 +7,7 @@
 
 
 #include <gurobi_c++.h>
+#include "../finder/finder_utils.h"
 
 
 class LinearProgramLowerBound : public LowerBoundI {
@@ -42,7 +43,7 @@ public:
 
             for (VertexPair uv : m_graph.vertexPairs()) {
                 m_variables[uv] = m_model->addVar(0.0, 1.0, 0.0, GRB_CONTINUOUS);
-                if (m_graph.has_edge(uv)) {
+                if (m_graph.hasEdge(uv)) {
                     objective += (1 - m_variables[uv]) * m_costs[uv];
                 } else {
                     objective += m_variables[uv] * m_costs[uv];
@@ -51,10 +52,12 @@ public:
 
             m_model->setObjective(objective, GRB_MINIMIZE);
 
-            add_forbidden_subgraphs();
+            addForbiddenSubgraphs();
         } catch (GRBException &e) {
-            std::cout << e.getMessage() << std::endl;
-            throw e;
+            std::cerr << e.getMessage() << std::endl;
+            std::stringstream ss;
+            ss << "GRBException errorCode: " << e.getErrorCode() << ", message: " << e.getMessage();
+            throw std::runtime_error(ss.str());
         }
 
     }
@@ -65,10 +68,10 @@ public:
      * @param uv
      */
     void after_mark_and_edit(VertexPair uv) override {
-        fix_pair(uv, m_graph.has_edge(uv));
+        fixPair(uv, m_graph.hasEdge(uv));
 
         finder->find_near(uv, [&](const Subgraph &subgraph) {
-            add_constraint(subgraph);
+            addConstraint(subgraph);
             return false;
         });
     }
@@ -79,7 +82,7 @@ public:
      * @param uv
      */
     void after_mark(VertexPair uv) override {
-        fix_pair(uv, m_graph.has_edge(uv));
+        fixPair(uv, m_graph.hasEdge(uv));
     }
 
     /**
@@ -94,12 +97,12 @@ public:
         for (VertexPair uv : m_graph.vertexPairs()) {
             // TODO: overwrites changes made by after_mark and after_mark_and_edit
             if (m_marked[uv]) {
-                fix_pair(uv, m_graph.has_edge(uv));
+                fixPair(uv, m_graph.hasEdge(uv));
             } else {
-                relax_pair(uv);
+                relaxPair(uv);
             }
 
-            if (m_graph.has_edge(uv)) {
+            if (m_graph.hasEdge(uv)) {
                 objective += (1 - m_variables[uv]) * m_costs[uv];
             } else {
                 objective += m_variables[uv] * m_costs[uv];
@@ -136,7 +139,7 @@ private:
 #ifndef NDEBUG
         std::vector<VertexPair> edits;
         for (VertexPair uv : m_graph.vertexPairs())
-            if (m_graph.has_edge(uv) != (m_variables[uv].get(GRB_DoubleAttr_X) >= 0.99))
+            if (m_graph.hasEdge(uv) != (m_variables[uv].get(GRB_DoubleAttr_X) >= 0.99))
                 edits.push_back(uv);
 
         Cost sum = 0;
@@ -157,7 +160,7 @@ private:
      * Adds a subgraph as a contraint. Assumes that the subgraph is either a P_4 or a C_4.
      * @param fs
      */
-    void add_constraint(const Subgraph &fs) {
+    void addConstraint(const Subgraph &fs) {
         //GRBLinExpr expr = 0;
         //for (VertexPair uv : fs.vertexPairs())
         //    if (m_graph.has_edge(uv))
@@ -181,7 +184,7 @@ private:
      * @param uv
      * @param exists
      */
-    void fix_pair(VertexPair uv, bool exists) {
+    void fixPair(VertexPair uv, bool exists) {
         double value = exists ? 1.0 : 0.0;
         m_variables[uv].set(GRB_DoubleAttr_UB, value);
         m_variables[uv].set(GRB_DoubleAttr_LB, value);
@@ -192,28 +195,43 @@ private:
      *
      * @param uv
      */
-    void relax_pair(VertexPair uv) {
+    void relaxPair(VertexPair uv) {
         m_variables[uv].set(GRB_DoubleAttr_LB, 0.0);
         m_variables[uv].set(GRB_DoubleAttr_UB, 1.0);
     }
 
     /**
-     * Adds all found forbidden subgraphs as constraints to the model.
+     * Adds all found forbidden subgraphs currently in the graph as constraints to the model.
      *
      * @return
      */
-    size_t add_forbidden_subgraphs() {
+    size_t addForbiddenSubgraphs() {
         size_t num_found = 0;
 
         finder->find([&](const Subgraph &fs) {
             ++num_found;
-            add_constraint(fs);
+            addConstraint(fs);
             return false;
         });
 
         if (verbose)
             std::cout << "added " << num_found << " constraints" << std::endl;
         return num_found;
+    }
+
+    void addDistanceOneGraphForbiddenSubgraphs() {
+        Graph G(m_graph);
+        auto G_finder = Finder::make(finder->forbidden_subgraphs(), G);
+        for (VertexPair uv : G.vertexPairs()) {
+            G.toggleEdge(uv);
+
+            G_finder->find_near(uv, [&](Subgraph &&subgraph) {
+                addConstraint(subgraph);
+                return false;
+            });
+
+            G.toggleEdge(uv);
+        }
     }
 };
 

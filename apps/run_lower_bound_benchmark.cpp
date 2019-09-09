@@ -4,59 +4,122 @@
 
 
 #include <iostream>
+#include <fstream>
 #include <chrono>
+#include <boost/program_options.hpp>
 
 #include "../src/graph/GraphIO.h"
 #include "../src/Configuration.h"
 
-#include "../src/lower_bound/utils.h"
-#include "../src/finder/utils.h"
+#include "../src/lower_bound/lower_bound_utils.h"
+#include "../src/finder/finder_utils.h"
+#include "../src/Permutation.h"
 
 
-int main() {
-    const std::vector<std::string> paths {
-            "./data/bio/bio-nr-3-size-16.metis",
-            "./data/bio/bio-nr-4-size-39.metis",
-            "./data/bio/bio-nr-11-size-22.metis",
-            "./data/bio/bio-nr-277-size-222.metis",
-            "./data/karate.graph",
-            "./data/lesmis.graph",
-            "./data/dolphins.graph",
-            "./data/grass_web.metis.graph"};
-
-
+int main(int argc, char* argv[]) {
+    namespace po = boost::program_options;
     using Options::LB;
-    std::vector<Options::LB> lower_bounds = {LB::Greedy, LB::No, LB::LocalSearch, LB::LinearProgram};
+
+    // std::vector<Options::LB> lower_bounds = {LB::Greedy, LB::No, LB::LocalSearch, LB::LinearProgram};
+    LB lower_bound = LB::LocalSearch;
+    std::vector<std::string> inputs = {
+        "./data/bio/bio-nr-3-size-16.metis",
+        "./data/bio/bio-nr-4-size-39.metis",
+        "./data/bio/bio-nr-11-size-22.metis",
+        "./data/karate.graph"
+    };
+    std::string output;
+    std::vector<int> seeds = {0};
+    size_t iterations = 1;
+    double multiplier = 100;
 
 
-    auto instance = GraphIO::read_graph(paths[0], 100);
-    VertexPairMap<bool> marked(instance.graph.size());
+    po::options_description desc("Allowed options");
+    desc.add_options()
+            ("help", "produce help message")
+            ("lower_bound", po::value<Options::LB>(&lower_bound)->default_value(lower_bound))
+            ("inputs", po::value<std::vector<std::string>>()->multitoken(), "path to input instances")
+            ("output", po::value<std::string>(&output)->default_value(output), "output file")
+            ("iterations", po::value<size_t>(&iterations)->default_value(iterations), "number of repetitions")
+            ("seeds", po::value<std::vector<int>>()->multitoken(), "seeds for permutation of instances")
+            ("multiplier", po::value<double>(&multiplier)->default_value(multiplier), "multiplier for discretization of input instances")
+            ;
 
-    std::shared_ptr<FinderI> finder = Finder::make(Options::FSG::P4C4, instance.graph);
-    
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
+    po::notify(vm);
+
+    if (vm.count("help")) {
+        std::cout << desc << "\n";
+        return 1;
+    }
+
+
+    if (vm.count("inputs"))
+        inputs = vm["inputs"].as<std::vector<std::string>>();
+
+    if (vm.count("seeds"))
+        seeds = vm["seeds"].as<std::vector<int>>();
+
+    std::ofstream file;
+    if (!output.empty()) {
+        file = std::ofstream(output);
+    }
+
     constexpr Cost max_k = std::numeric_limits<Cost>::max();
 
-    for (auto lower_bound : lower_bounds) {
-        auto lb = LowerBound::make(lower_bound, finder, instance, marked);
-        
 
-        auto t1 = std::chrono::steady_clock::now();
-        lb->initialize();
-        auto t2 = std::chrono::steady_clock::now();
-        auto value = lb->result(max_k);
-        auto t3 = std::chrono::steady_clock::now();
+    for (const auto &input : inputs) {
+    
+        auto orig_instance = GraphIO::read_graph(input, 100);
+        VertexPairMap<bool> marked(orig_instance.graph.size());
+    
         
-        using namespace YAML;
-        Emitter out;
-        out << BeginDoc << BeginMap;
-        out << Key << "lower_bound_name" << Value << lower_bound;
-        out << Key << "instance" << Value << instance.name;
-        out << Key << "value" << Value << value;
-        out << Key << "initialization_time" << Value << std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() << Comment("ns");
-        out << Key << "result_time" << Value << std::chrono::duration_cast<std::chrono::nanoseconds>(t3 - t2).count() << Comment("ns");
-        out << Key << "complete_time" << Value << std::chrono::duration_cast<std::chrono::nanoseconds>(t3 - t1).count() << Comment("ns");
-        out << EndMap << EndDoc;
-        std::cout << out.c_str();
+        for (auto seed : seeds) {
+            Permutation P(orig_instance.graph.size(), seed);
+            auto instance = P[orig_instance];
+
+            std::shared_ptr<FinderI> finder = Finder::make(Options::FSG::P4C4, instance.graph);
+            SubgraphStats subgraph_stats(finder, instance, marked);
+            subgraph_stats.initialize();
+            auto lb = LowerBound::make(lower_bound, finder, instance, marked, subgraph_stats);
+
+
+            std::vector<double> initialization_times, result_times, complete_times;
+            std::vector<Cost> values;
+            for (size_t it = 0; it < iterations; ++it) {
+                using namespace std::chrono;
+                
+                auto t1 = steady_clock::now();
+                lb->initialize();
+                auto t2 = steady_clock::now();
+                auto value = lb->result(max_k);
+                auto t3 = steady_clock::now();
+                
+                initialization_times.push_back(duration_cast<nanoseconds>(t2 - t1).count());
+                result_times.push_back(duration_cast<nanoseconds>(t3 - t2).count());
+                complete_times.push_back(duration_cast<nanoseconds>(t3 - t1).count());
+                values.push_back(value);
+            }
+            
+            using namespace YAML;
+            Emitter out;
+            out << BeginDoc << BeginMap;
+            out << Key << "lower_bound_name" << Value << lower_bound;
+            out << Key << "instance" << Value << instance.name;
+            out << Key << "seed" << Value << seed;
+            out << Key << "values" << Value << Flow << values;
+            out << Key << "initialization_times" << Value << Flow << initialization_times << Comment("ns");
+            out << Key << "result_times" << Value << Flow << result_times << Comment("ns");
+            out << Key << "complete_times" << Value << Flow << complete_times << Comment("ns");
+            out << EndMap << EndDoc;
+
+            if (output.empty()) {
+                std::cout << out.c_str();
+            } else {
+                file << out.c_str();
+            }
+        }
     }
 
     return 0;

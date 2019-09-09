@@ -2,8 +2,8 @@
 // Created by jonas on 29.07.19.
 //
 
-#ifndef WEIGHTED_F_FREE_EDGE_EDITING_TESTS_H
-#define WEIGHTED_F_FREE_EDGE_EDITING_TESTS_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_TEST_UTILS_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_TEST_UTILS_H
 
 
 #include <iostream>
@@ -69,52 +69,15 @@ void expect(const std::string &name, std::vector<std::vector<T>> expected, std::
 
 
 template <typename T>
-std::vector<std::vector<T>> normalize(std::vector<std::vector<T>> list) {
-    for (auto& set : list) {
-        std::sort(set.begin(), set.end());
-    }
-    std::sort(list.begin(), list.end());
-    return list;
-}
+std::vector<std::vector<T>> normalize(std::vector<std::vector<T>> list);
 
-std::vector<Subgraph> normalize(std::vector<Subgraph> list) {
-    for (auto& subgraph : list) {
-        subgraph.sort_vertices();
-    }
-    std::sort(list.begin(), list.end());
-    return list;
-}
+std::vector<Subgraph> normalize(std::vector<Subgraph> list);
 
-VertexPair random_vertex_pair(unsigned size, std::mt19937 &gen) {
-    std::uniform_int_distribution<Vertex> dist(0, size - 2);
-    Vertex u = dist(gen), v = dist(gen);
-    v = (u != v) ? v : v + 1;
-    return {u, v};
-}
+VertexPair random_vertex_pair(unsigned size, std::mt19937 &gen);
+
+Graph random_graph(unsigned size, int n_edges, std::mt19937 &gen);
+
+Subgraph random_subgraph(unsigned size, unsigned graph_size, std::mt19937 &gen);
 
 
-Graph random_graph(unsigned size, int n_edges, std::mt19937 &gen) {
-    Graph G(size);
-    for (int m = 0; m < n_edges; ++m) {
-        auto uv = random_vertex_pair(size, gen);
-        G.set_edge(uv);
-    }
-    return G;
-}
-
-Subgraph random_subgraph(unsigned size, unsigned graph_size, std::mt19937 &gen) {
-    std::uniform_int_distribution<Vertex> dist(0, graph_size - 1);
-    std::vector<bool> marked(graph_size);
-
-    Subgraph subgraph{};
-    while (subgraph.size() < size) {
-        Vertex u = dist(gen);
-        while (marked[u]) u = u + 1 % graph_size;
-        subgraph.push_back(u);
-        marked[u] = true;
-    }
-    return subgraph;
-}
-
-
-#endif //WEIGHTED_F_FREE_EDGE_EDITING_TESTS_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_TEST_UTILS_H

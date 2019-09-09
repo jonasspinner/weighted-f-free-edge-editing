@@ -10,7 +10,7 @@
 #include "../graph/GraphIO.h"
 #include "../Configuration.h"
 #include "../Solution.h"
-#include "Tests.h"
+#include "test_utils.h"
 
 #include "../interfaces/FinderI.h"
 #include "../finder/NaiveC4P4.h"
@@ -18,7 +18,7 @@
 #include "../finder/CenterC4P4.h"
 #include "../finder/CenterP3.h"
 #include "../finder/Center.h"
-#include "../finder/utils.h"
+#include "../finder/finder_utils.h"
 #include "../Permutation.h"
 
 
@@ -27,12 +27,12 @@ bool is_p4(const Graph &graph, const Subgraph &subgraph) {
     assert(P.size() == 4);
 
     bool result = true;
-    result &=  graph.has_edge({P[0], P[1]});
-    result &= !graph.has_edge({P[0], P[2]});
-    result &= !graph.has_edge({P[0], P[3]});
-    result &=  graph.has_edge({P[1], P[2]});
-    result &= !graph.has_edge({P[1], P[3]});
-    result &=  graph.has_edge({P[2], P[3]});
+    result &= graph.hasEdge({P[0], P[1]});
+    result &= !graph.hasEdge({P[0], P[2]});
+    result &= !graph.hasEdge({P[0], P[3]});
+    result &= graph.hasEdge({P[1], P[2]});
+    result &= !graph.hasEdge({P[1], P[3]});
+    result &= graph.hasEdge({P[2], P[3]});
     return result;
 }
 
@@ -41,12 +41,12 @@ bool is_c4(const Graph &graph, const Subgraph &subgraph) {
     assert(C.size() == 4);
 
     bool result = true;
-    result &=  graph.has_edge({C[0], C[1]});
-    result &= !graph.has_edge({C[0], C[2]});
-    result &=  graph.has_edge({C[0], C[3]});
-    result &=  graph.has_edge({C[1], C[2]});
-    result &= !graph.has_edge({C[1], C[3]});
-    result &=  graph.has_edge({C[2], C[3]});
+    result &= graph.hasEdge({C[0], C[1]});
+    result &= !graph.hasEdge({C[0], C[2]});
+    result &= graph.hasEdge({C[0], C[3]});
+    result &= graph.hasEdge({C[1], C[2]});
+    result &= !graph.hasEdge({C[1], C[3]});
+    result &= graph.hasEdge({C[2], C[3]});
     return result;
 }
 
@@ -151,7 +151,10 @@ public:
     template <typename Finder>
     void Finder_finds_C4(const std::string& name) {
         Graph C4(4);
-        C4.set_edges({{0, 1}, {1, 2},{2, 3}, {3, 0}});
+        C4.setEdges({{0, 1},
+                     {1, 2},
+                     {2, 3},
+                     {3, 0}});
 
         {
             std::vector<Subgraph> expected{{0, 1, 2, 3}};
@@ -165,7 +168,12 @@ public:
         // | |
         // 2-1-5
         Graph G(6);
-        G.set_edges({{0, 1}, {1 , 2}, {2 , 3}, {3 , 0}, {0 , 4}, {1 , 5}});
+        G.setEdges({{0, 1},
+                    {1, 2},
+                    {2, 3},
+                    {3, 0},
+                    {0, 4},
+                    {1, 5}});
 
         {
             std::vector<Subgraph> expected({{0, 1, 2, 3}, {0, 1, 2, 4}, {0, 1, 3, 5}, {0, 1, 4, 5}, {0, 2, 3, 4}, {1, 2, 3, 5}});
@@ -176,7 +184,7 @@ public:
 
         {
             Graph marked(6);
-            marked.set_edge({1, 2});
+            marked.setEdge({1, 2});
             std::vector<Subgraph> expected({{0, 1, 3, 5}, {0, 1, 4, 5}, {0, 2, 3, 4}});
             Finder finder(G);
             auto actual = find_all_non_marked_subgraphs(finder, marked);
@@ -191,7 +199,18 @@ public:
            /| |\
           a 9 8 7  */
         Graph G2(12);
-        G2.set_edges({{0, 1}, {1, 2}, {2, 0}, {0, 3}, {0, 4}, {0, 5}, {1, 6}, {1, 7}, {1, 8}, {2, 9}, {2, 10}, {2, 11}});
+        G2.setEdges({{0, 1},
+                     {1, 2},
+                     {2, 0},
+                     {0, 3},
+                     {0, 4},
+                     {0, 5},
+                     {1, 6},
+                     {1, 7},
+                     {1, 8},
+                     {2, 9},
+                     {2, 10},
+                     {2, 11}});
 
         {
             Finder finder(G2);
@@ -205,7 +224,7 @@ public:
 
         {
             Graph marked(12);
-            marked.set_edge({0, 1});
+            marked.setEdge({0, 1});
             Finder finder(G2);
             std::vector<Subgraph> expected({{3, 0, 2, 9}, {3, 0, 2, 10}, {3, 0, 2, 11},
                                             {4, 0, 2, 9}, {4, 0, 2, 10}, {4, 0, 2, 11},
@@ -219,7 +238,9 @@ public:
     template <typename Finder>
     void Finder_finds_P4(const std::string& name) {
         Graph G(4);
-        G.set_edges({{0, 1}, {1, 2},{2, 3}});
+        G.setEdges({{0, 1},
+                    {1, 2},
+                    {2, 3}});
 
         std::vector<Subgraph> expected{{0, 1, 2, 3}};
         Finder finder(G);
@@ -281,7 +302,8 @@ public:
     template <typename Finder>
     void Finder_finds_P3(const std::string& name) {
         Graph G(3);
-        G.set_edges({{0, 1}, {1, 2}});
+        G.setEdges({{0, 1},
+                    {1, 2}});
 
         std::vector<Subgraph> expected{{0, 1, 2}};
         Finder finder(G);
@@ -328,31 +350,31 @@ public:
 
         Finder_finds_C4<Finder::NaiveC4P4>("NaiveC4P4");
         Finder_finds_C4<Finder::CenterC4P4>("CenterC4P4");
-        Finder_finds_C4<CenterRecC4P4>("CenterRecC4P4");
+        Finder_finds_C4<Finder::CenterRecC4P4>("CenterRecC4P4");
 
         Finder_finds_P4<Finder::NaiveC4P4>("NaiveC4P4");
         Finder_finds_P4<Finder::CenterC4P4>("CenterC4P4");
-        Finder_finds_P4<CenterRecC4P4>("CenterRecC4P4");
+        Finder_finds_P4<Finder::CenterRecC4P4>("CenterRecC4P4");
 
         Finder_is_seed_independent<Finder::NaiveC4P4>("NaiveC4P4", {0, 1});
         Finder_is_seed_independent<Finder::CenterC4P4>("CenterC4P4", {0, 1});
-        Finder_is_seed_independent<CenterRecC4P4>("CenterRecC4P4", {0, 1});
+        Finder_is_seed_independent<Finder::CenterRecC4P4>("CenterRecC4P4", {0, 1});
 
         C4P4_Finders_are_consistent<Finder::NaiveC4P4, Finder::CenterC4P4>("NaiveC4P4", "CenterC4P4");
-        C4P4_Finders_are_consistent<Finder::NaiveC4P4, CenterRecC4P4>("NaiveC4P4", "CenterRecC4P4");
-        C4P4_Finders_are_consistent<Finder::CenterC4P4, CenterRecC4P4>("CenterC4P4", "CenterRecC4P4");
+        C4P4_Finders_are_consistent<Finder::NaiveC4P4, Finder::CenterRecC4P4>("NaiveC4P4", "CenterRecC4P4");
+        C4P4_Finders_are_consistent<Finder::CenterC4P4, Finder::CenterRecC4P4>("CenterC4P4", "CenterRecC4P4");
 
         Finder_finds_P3<Finder::NaiveP3>("NaiveP3");
         Finder_finds_P3<Finder::CenterP3>("CenterP3");
-        Finder_finds_P3<CenterRecP3>("CenterRecP3");
+        Finder_finds_P3<Finder::CenterRecP3>("CenterRecP3");
 
         Finder_is_seed_independent<Finder::NaiveP3>("NaiveP3", {0, 1});
         Finder_is_seed_independent<Finder::CenterP3>("CenterP3", {0, 1});
-        Finder_is_seed_independent<CenterRecP3>("CenterRecP3", {0, 1});
+        Finder_is_seed_independent<Finder::CenterRecP3>("CenterRecP3", {0, 1});
 
         P3_Finders_are_consistent<Finder::NaiveP3, Finder::CenterP3>("NaiveP3", "CenterP3");
-        P3_Finders_are_consistent<Finder::NaiveP3, CenterRecP3 >("NaiveP3", "CenterRecP3");
-        P3_Finders_are_consistent<Finder::CenterP3, CenterRecP3 >("CenterP3", "CenterRecP3");
+        P3_Finders_are_consistent<Finder::NaiveP3, Finder::CenterRecP3 >("NaiveP3", "CenterRecP3");
+        P3_Finders_are_consistent<Finder::CenterP3, Finder::CenterRecP3 >("CenterP3", "CenterRecP3");
 
         EditsSolveKarate();
     }

@@ -13,15 +13,15 @@
 namespace LowerBound {
     class GreedyLowerBound : public LowerBoundI {
     private:
-        const Graph &graph;
-        const VertexPairMap<Cost> &costs;
-        const VertexPairMap<bool> &m_forbidden;
+        const Graph &m_graph;
+        const VertexPairMap<Cost> &m_costs;
+        const VertexPairMap<bool> &m_marked;
     public:
 
-        GreedyLowerBound(const Instance &instance, const VertexPairMap<bool> &forbidden,
+        GreedyLowerBound(const Instance &instance, const VertexPairMap<bool> &marked,
                          std::shared_ptr<FinderI> finder_ref) : LowerBoundI(std::move(finder_ref)),
-                                                                graph(instance.graph),
-                                                                costs(instance.costs), m_forbidden(forbidden) {}
+                                                                m_graph(instance.graph),
+                                                                m_costs(instance.costs), m_marked(marked) {}
 
         /**
          * Calculates a lower bound on the costs required to solve the current instance.
@@ -33,12 +33,12 @@ namespace LowerBound {
          * @return A lower bound on the costs required to solve the current instance.
          */
         Cost result(Cost /*k*/) override {
-
+            /*
             // Find all forbidden subgraphs with editable vertex pairs
             // The cost for a single forbidden subgraph is the minimum edit cost for an editable vertex pair
             std::vector<std::pair<Cost, Subgraph>> subgraphs;
             finder->find([&](Subgraph &&subgraph) {
-                Cost min_cost = cost(subgraph, m_forbidden, costs);
+                Cost min_cost = cost(subgraph, m_marked, m_costs);
                 subgraphs.emplace_back(min_cost, std::move(subgraph));
                 return false;
             });
@@ -50,23 +50,44 @@ namespace LowerBound {
             if (!subgraphs.empty() && subgraphs[0].first == invalid_cost) return 0;
 
             Cost bound_size = 0;
-            VertexPairMap<bool> is_in_bound(graph.size(), false);
+            VertexPairMap<bool> is_in_bound(m_graph.size(), false);
 
             // Insert forbidden subgraphs with decreasing minimum edit cost into the bound
             // Only insert a subgraph if it does not share an editable vertex pair with a subgraph already in the bound
             for (const auto&[cost, subgraph] : subgraphs) {
                 bool touches_bound = false;
                 for (VertexPair uv : subgraph.vertexPairs()) {
-                    if (!m_forbidden[uv] && is_in_bound[uv]) touches_bound = true;
+                    if (!m_marked[uv] && is_in_bound[uv]) touches_bound = true;
                 }
 
                 if (!touches_bound) {
                     bound_size += cost;
                     for (VertexPair uv : subgraph.vertexPairs()) {
-                        if (!m_forbidden[uv]) is_in_bound[uv] = true;
+                        if (!m_marked[uv])
+                        is_in_bound[uv] = true;
                     }
                 }
             }
+            */
+
+            Cost bound_size = 0;
+            VertexPairMap<bool> is_in_bound(m_graph.size(), false);
+
+            finder->find([&](Subgraph &&subgraph) {
+                bool touches_bound = false;
+                for (VertexPair uv : subgraph.vertexPairs()) {
+                    if (!m_marked[uv] && is_in_bound[uv])
+                        touches_bound = true;
+                }
+                if (!touches_bound) {
+                    bound_size += get_subgraph_cost(subgraph, m_marked, m_costs);
+                    for (VertexPair uv : subgraph.vertexPairs()) {
+                        if (!m_marked[uv])
+                            is_in_bound[uv] = true;
+                    }
+                }
+                return false;
+            });
 
             return bound_size;
         }

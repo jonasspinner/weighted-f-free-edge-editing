@@ -2,11 +2,12 @@
 // Created by jonas on 31.07.19.
 //
 
-#ifndef WEIGHTED_F_FREE_EDGE_EDITING_FIND_NEAR_H
-#define WEIGHTED_F_FREE_EDGE_EDITING_FIND_NEAR_H
+
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_CENTERFINDNEARIMPL_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_CENTERFINDNEARIMPL_H
 
 
-#include "find.h"
+#include "CenterFindImpl.h"
 
 
 namespace detail {
@@ -26,7 +27,7 @@ namespace detail {
          */
         template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
         static bool find_near(const Graph& graph, VertexPair uv, SubgraphCallback callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
-            return FindImpl<k, with_cycles>::find(graph, [&](Subgraph &&subgraph) {
+            return CenterFindImpl<k, with_cycles>::find(graph, [&](Subgraph &&subgraph, Vertex) {
                 auto vertices = subgraph.vertices();
 
                 bool has_u = std::any_of(vertices.begin(), vertices.end(), [&](Vertex x) { return x == uv.u; });
@@ -47,94 +48,94 @@ namespace detail {
          * @param uv
          * @return
          */
-         /*
-        template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
-        static bool find_near(const Graph& graph, VertexPair uv, SubgraphCallback callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
-            auto [u, v] = uv;
+        /*
+       template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
+       static bool find_near(const Graph& graph, VertexPair uv, SubgraphCallback callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+           auto [u, v] = uv;
 
-            std::cout << "find_near " << uv << "\n";
+           std::cout << "find_near " << uv << "\n";
 
-            size_t d_init = 1, d_max = 0;
-            if (valid_edge(uv)) {
-                d_init = 0; d_max = 0;
-            } else if (valid_non_edge(uv)) {
-                d_init = 1; d_max = k - 2;
-            }
+           size_t d_init = 1, d_max = 0;
+           if (valid_edge(uv)) {
+               d_init = 0; d_max = 0;
+           } else if (valid_non_edge(uv)) {
+               d_init = 1; d_max = k - 2;
+           }
 
-            // For each possible distance between u and v on a path (or cycle).
-            for (size_t d = d_init; d <= d_max; ++d) {
-                std::cout << "d = " << d << "\n";
-                std::vector<Vertex> init_path(d + 2);
-                init_path[0] = u;
-                init_path[d + 1] = v;
+           // For each possible distance between u and v on a path (or cycle).
+           for (size_t d = d_init; d <= d_max; ++d) {
+               std::cout << "d = " << d << "\n";
+               std::vector<Vertex> init_path(d + 2);
+               init_path[0] = u;
+               init_path[d + 1] = v;
 
-                // Fill path between u and v
-                if (fill_inner(init_path, 0, d + 1, d + 2, graph, [&](const std::vector<Vertex> &vertices) {
-                    assert(vertices.size() == d + 2);
-                    std::vector<Vertex> path(k);
+               // Fill path between u and v
+               if (fill_inner(init_path, 0, d + 1, d + 2, graph, [&](const std::vector<Vertex> &vertices) {
+                   assert(vertices.size() == d + 2);
+                   std::vector<Vertex> path(k);
 
-                    for (size_t i = 0; i < d + 2; ++i)
-                        path[i] = vertices[i];
+                   for (size_t i = 0; i < d + 2; ++i)
+                       path[i] = vertices[i];
 
-                    // Vertices is filled with a path. Move it on the result path
-                    for (size_t offset = 0; offset < k - d - 1; ++offset) {
-                        std::cout << "offset = " << offset << "\n";
+                   // Vertices is filled with a path. Move it on the result path
+                   for (size_t offset = 0; offset < k - d - 1; ++offset) {
+                       std::cout << "offset = " << offset << "\n";
 
-                        for (size_t i = 0; i < d + 2; ++i)
-                            path[i + offset] = vertices[i];
+                       for (size_t i = 0; i < d + 2; ++i)
+                           path[i + offset] = vertices[i];
 
-                        // Fill remaining part of the path
-                        if (fill_outer(path, offset, offset + d + 1, graph, [&](Subgraph &&subgraph) {
+                       // Fill remaining part of the path
+                       if (fill_outer(path, offset, offset + d + 1, graph, [&](Subgraph &&subgraph) {
 
-                            if (valid_edge({subgraph[0], subgraph[k - 1]})) {
-                                // C_k
+                           if (valid_edge({subgraph[0], subgraph[k - 1]})) {
+                               // C_k
 #ifndef NDEBUG
-                                assert(subgraph.size() == k);
-                                for (unsigned i = 0; i < k; ++i)
-                                    for (unsigned j = i + 1; j < k; ++j)
-                                        if (j - i == 1 || j - i == k - 1) {
-                                            assert(valid_edge({subgraph[i], subgraph[j]}));
-                                        } else {
-                                            assert(valid_non_edge({subgraph[i], subgraph[j]}));
-                                        }
+                               assert(subgraph.size() == k);
+                               for (unsigned i = 0; i < k; ++i)
+                                   for (unsigned j = i + 1; j < k; ++j)
+                                       if (j - i == 1 || j - i == k - 1) {
+                                           assert(valid_edge({subgraph[i], subgraph[j]}));
+                                       } else {
+                                           assert(valid_non_edge({subgraph[i], subgraph[j]}));
+                                       }
 #endif
-                                auto sg_vertices = subgraph.vertices();
-                                Vertex min_vertex = *std::min_element(sg_vertices.begin(), sg_vertices.end());
+                               auto sg_vertices = subgraph.vertices();
+                               Vertex min_vertex = *std::min_element(sg_vertices.begin(), sg_vertices.end());
 
-                                if (subgraph[0] == min_vertex) {
-                                    std::cout << "=> " << subgraph << "\n";
-                                    if (callback(std::move(subgraph))) return true;
-                                }
-                            } else if (valid_non_edge({subgraph[0], subgraph[k - 1]})) {
-                                // P_k
+                               if (subgraph[0] == min_vertex) {
+                                   std::cout << "=> " << subgraph << "\n";
+                                   if (callback(std::move(subgraph))) return true;
+                               }
+                           } else if (valid_non_edge({subgraph[0], subgraph[k - 1]})) {
+                               // P_k
 #ifndef NDEBUG
-                                assert(subgraph.size() == k);
-                                for (unsigned i = 0; i < k; ++i)
-                                    for (unsigned j = i + 1; j < k; ++j)
-                                        if (j - i == 1) {
-                                            assert(valid_edge({subgraph[i], subgraph[j]}));
-                                        } else {
-                                            assert(valid_non_edge({subgraph[i], subgraph[j]}));
-                                        }
+                               assert(subgraph.size() == k);
+                               for (unsigned i = 0; i < k; ++i)
+                                   for (unsigned j = i + 1; j < k; ++j)
+                                       if (j - i == 1) {
+                                           assert(valid_edge({subgraph[i], subgraph[j]}));
+                                       } else {
+                                           assert(valid_non_edge({subgraph[i], subgraph[j]}));
+                                       }
 #endif
-                                std::cout << "=> " << subgraph << "\n";
-                                if (callback(std::move(subgraph))) return true;
-                            }
-                            return false;
-                        }, neighbors, non_neighbors, valid_edge, valid_non_edge)) return true;
-                    }
+                               std::cout << "=> " << subgraph << "\n";
+                               if (callback(std::move(subgraph))) return true;
+                           }
+                           return false;
+                       }, neighbors, non_neighbors, valid_edge, valid_non_edge)) return true;
+                   }
 
-                    // path [0..k-1]
-                    // vertices [0..d+1]
-                    for (size_t i = 0; i < d + 2; ++i)
-                        path[i] = path[i + k - d - 2 ];
+                   // path [0..k-1]
+                   // vertices [0..d+1]
+                   for (size_t i = 0; i < d + 2; ++i)
+                       path[i] = path[i + k - d - 2 ];
 
-                    return false;
-                }, neighbors, non_neighbors, valid_edge, valid_non_edge)) return true;
-            }
-            return false;
-        }
-        */
+                   return false;
+               }, neighbors, non_neighbors, valid_edge, valid_non_edge)) return true;
+           }
+           return false;
+       }
+       */
 
     private:
         template <typename Callback, typename F, typename G, typename H, typename I>
@@ -373,5 +374,4 @@ namespace detail {
     };
 }
 
-
-#endif //WEIGHTED_F_FREE_EDGE_EDITING_FIND_NEAR_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_CENTERFINDNEARIMPL_H
