@@ -13,25 +13,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG")
 
-execute_process(
-        COMMAND git rev-parse --abbrev-ref HEAD
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_BRANCH
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-#add_definitions("-DGIT_BRANCH=\"${GIT_BRANCH}\"")
 
-execute_process(
-    COMMAND git log -1 --format=%H
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE GIT_COMMIT_HASH
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-# add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
-configure_file(
-    ${CMAKE_SOURCE_DIR}/src/version.h.in
-    ${CMAKE_BINARY_DIR}/src/version.h
-)
 
 
 
@@ -81,3 +63,11 @@ if(GUROBI_FOUND)
     target_link_libraries(tests LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
     target_link_libraries(lower_bound_benchmark LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
 endif(GUROBI_FOUND)
+
+
+add_custom_command(TARGET graphedit PRE_BUILD COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_LIST_DIR}/FillVersionH.cmake")
+add_custom_command(TARGET fpt PRE_BUILD COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_LIST_DIR}/FillVersionH.cmake")
+add_custom_command(TARGET ilp PRE_BUILD COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_LIST_DIR}/FillVersionH.cmake")
+add_custom_command(TARGET tests PRE_BUILD COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_LIST_DIR}/FillVersionH.cmake")
+add_custom_command(TARGET finder_benchmark PRE_BUILD COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_LIST_DIR}/FillVersionH.cmake")
+add_custom_command(TARGET lower_bound_benchmark PRE_BUILD COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_LIST_DIR}/FillVersionH.cmake")
