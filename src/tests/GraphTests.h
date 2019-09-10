@@ -19,13 +19,13 @@ public:
      */
     explicit GraphTests(int seed = 0) : gen(seed) {}
 
-    void vertices_and_for_all_vertices_are_consistent();
+    void vertices_and_for_loop_are_consistent();
 
-    void edges_and_for_all_edges_are_consistent();
+    void edges_and_for_loops_are_consistent();
 
-    void vertexPairs_and_for_all_vertex_pairs_are_consistent();
+    void vertexPairs_and_for_loops_are_consistent();
 
-    void neighbors_and_for_all_neighbors_are_consistent();
+    void neighbors_and_for_loops_are_consistent();
 
     static void iterators_on_empty_Graph_work();
 

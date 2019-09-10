@@ -406,83 +406,6 @@ public:
         return Edges(m_adj);
     }
 
-
-    /**
-     * Iterate over all neighbors of u.
-     * If the callback returns true, the iteration is stopped early.
-     *
-     * @tparam VertexCallback
-     * @param u
-     * @param callback
-     * @return
-     */
-    template<typename VertexCallback>
-    [[deprecated]] bool for_neighbors_of(Vertex u, VertexCallback callback) const {
-        Vertex v = m_adj[u].find_first();
-        while (v < m_size) {
-            if (callback(v)) return true;
-            v = m_adj[u].find_next(v);
-        }
-        return false;
-    }
-
-    /**
-     * Iterate over all vertices u (0..n-1).
-     * If the callback returns true, the iteration is stopped early.
-     *
-     * @tparam VertexCallback
-     * @param callback
-     * @return
-     */
-    template<typename VertexCallback>
-    [[deprecated]] bool for_all_vertices(VertexCallback callback) const {
-        for (Vertex u = 0; u < m_size; ++u) {
-            if (callback(u)) return true;
-        }
-        return false;
-    }
-
-    /**
-     * Iterate over all edges {u, v}.
-     * If the callback returns true, the iteration is stopped early.
-     *
-     * @tparam VertexPairCallback
-     * @param callback
-     * @return
-     */
-    template<typename VertexPairCallback>
-    [[deprecated]] bool for_all_edges(VertexPairCallback callback) const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        return for_all_vertices([&](Vertex u) {
-            Vertex v = m_adj[u].find_next(u);
-            while (v < m_size) {
-                if (callback(VertexPair(u, v))) return true;
-                v = m_adj[u].find_next(v);
-            }
-            return false;
-        });
-#pragma GCC diagnostic pop
-    }
-
-    /**
-     * Iterate over all vertex pairs {u, v} ({0, 1}, {0, 2}, ..., {n-2, n-1}).
-     * If the callback returns true, the iteration is stopped early.
-     *
-     * @tparam VertexPairCallback
-     * @param callback
-     * @return
-     */
-    template<typename VertexPairCallback>
-    [[deprecated]] bool for_all_vertex_pairs(VertexPairCallback callback) const {
-        for (Vertex u = 0; u < m_size; ++u) {
-            for (Vertex v = u + 1; v < m_size; ++v) {
-                if (callback(VertexPair(u, v))) return true;
-            }
-        }
-        return false;
-    }
-
     friend std::ostream &operator<<(std::ostream &os, const Graph &graph) {
         for (Vertex u = 0; u < graph.size(); ++u) {
             for (Vertex v = 0; v < graph.size(); ++v) {
@@ -521,36 +444,6 @@ private:
         auto row = AdjRow(m_size);
         row.set();
         return row;
-    }
-
-    /**
-     * Iterate over the vertex set indicated by row.
-     *
-     * @tparam VertexCallback
-     * @param row
-     * @param callback
-     * @return
-     */
-    template<typename VertexCallback>
-    [[deprecated]] static bool iterate(const AdjRow &row, VertexCallback callback) {
-        Vertex u = row.find_first();
-        while (u < row.size()) {
-            if (callback(u)) return true;
-            u = row.find_next(u);
-        }
-        return false;
-    }
-
-    template<typename VertexCallback>
-    [[deprecated]] static bool iterate(const AdjRow &A, const AdjRow &B, VertexCallback callback) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        return iterate(A, [&](Vertex a) {
-            return iterate(B, [&](Vertex b) {
-                return callback(a, b);
-            });
-        });
-#pragma GCC diagnostic pop
     }
 
     friend class FinderI;

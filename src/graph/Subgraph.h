@@ -121,27 +121,6 @@ public:
     [[nodiscard]] size_t size() const { return m_vertices.size(); }
     const Vertex &operator[](size_t index) const { return m_vertices[index]; }
 
-
-    template<typename VertexPairCallback>
-    [[deprecated]] bool for_all_vertex_pairs(VertexPairCallback callback) const {
-        for (size_t i = 0; i < m_vertices.size(); ++i) {
-            for (size_t j = i + 1; j < m_vertices.size(); ++j) {
-                if (callback(VertexPair(m_vertices[i], m_vertices[j]))) return true;
-            }
-        }
-        return false;
-    }
-
-    template<typename VertexPairCallback>
-    [[deprecated]] bool for_all_unmarked_vertex_pairs(const VertexPairMap<bool> &marked, VertexPairCallback callback) const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        return for_all_vertex_pairs([&](VertexPair uv) {
-            return !marked[uv] && callback(uv);
-        });
-#pragma GCC diagnostic pop
-    }
-
     friend std::ostream &operator<<(std::ostream &os, const Subgraph &subgraph) {
         os << "{";
         for (Vertex u : subgraph.m_vertices) os << " " << u;

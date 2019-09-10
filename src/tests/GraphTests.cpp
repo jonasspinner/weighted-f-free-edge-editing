@@ -11,54 +11,52 @@
 #include "test_utils.h"
 
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-void GraphTests::vertices_and_for_all_vertices_are_consistent() {
+void GraphTests::vertices_and_for_loop_are_consistent() {
     Graph G = random_graph(10, 40, gen);
 
     std::vector<Vertex> a, b;
 
-    for (Vertex u : G.vertices()) a.push_back(u);
+    for (Vertex u : G.vertices())
+        a.push_back(u);
 
-    G.for_all_vertices([&](Vertex u) {
+    for (Vertex u = 0; u < G.size(); ++u)
         b.push_back(u);
-        return false;
-    });
 
-    expect("vertices() and for_all_vertices() produce the same output", a, b);
+    expect("vertices() and for loop produce the same output", a, b);
 }
 
-void GraphTests::edges_and_for_all_edges_are_consistent() {
+void GraphTests::edges_and_for_loops_are_consistent() {
     Graph G = random_graph(10, 40, gen);
 
     std::vector<VertexPair> a, b;
 
-    for (VertexPair uv : G.edges()) a.push_back(uv);
+    for (VertexPair uv : G.edges())
+        a.push_back(uv);
 
-    G.for_all_edges([&](VertexPair uv) {
-        b.push_back(uv);
-        return false;
-    });
+    for (Vertex u = 0; u < G.size(); ++u)
+        for (Vertex v = u + 1; v < G.size(); ++v)
+            if (G.hasEdge({u, v}))
+                b.emplace_back(u, v);
 
-    expect("edges() and for_all_edges() produce the same output", a, b);
+    expect("edges() and for loops produce the same output", a, b);
 }
 
-void GraphTests::vertexPairs_and_for_all_vertex_pairs_are_consistent() {
+void GraphTests::vertexPairs_and_for_loops_are_consistent() {
     Graph G = random_graph(10, 40, gen);
 
     std::vector<VertexPair> a, b;
 
-    for (VertexPair uv : G.vertexPairs()) a.push_back(uv);
+    for (VertexPair uv : G.vertexPairs())
+        a.push_back(uv);
 
-    G.for_all_vertex_pairs([&](VertexPair uv) {
-        b.push_back(uv);
-        return false;
-    });
+    for (Vertex u = 0; u < G.size(); ++u)
+        for (Vertex v = u + 1; v < G.size(); ++v)
+            b.emplace_back(u, v);
 
-    expect("vertexPairs() and for_all_vertex_pairs() produce the same output", a, b);
+    expect("vertexPairs() and for loops produce the same output", a, b);
 }
 
-void GraphTests::neighbors_and_for_all_neighbors_are_consistent() {
+void GraphTests::neighbors_and_for_loops_are_consistent() {
     Graph G = random_graph(10, 40, gen);
 
     std::vector<std::vector<Vertex>> a(10), b(10);
@@ -67,17 +65,13 @@ void GraphTests::neighbors_and_for_all_neighbors_are_consistent() {
         for (Vertex v : G.neighbors(u))
             a[u].push_back(v);
 
-    G.for_all_vertices([&](Vertex u) {
-        G.for_neighbors_of(u, [&](Vertex v) {
-            b[u].push_back(v);
-            return false;
-        });
-        return false;
-    });
+    for (Vertex u = 0; u < G.size(); ++u)
+        for (Vertex v = 0; v < G.size(); ++v)
+            if (u != v && G.hasEdge({u, v}))
+                b[u].push_back(v);
 
-    expect("neighbors() and for_all_neighbors() produce the same output", a, b);
+    expect("neighbors() and for loops produce the same output", a, b);
 }
-#pragma GCC diagnostic pop
 
 void GraphTests::iterators_on_empty_Graph_work() {
     Graph graph(0);
@@ -109,10 +103,10 @@ void GraphTests::run() {
     std::cout << "\nGraphTests"
                  "\n----------" << std::endl;
 
-    vertices_and_for_all_vertices_are_consistent();
-    edges_and_for_all_edges_are_consistent();
-    vertexPairs_and_for_all_vertex_pairs_are_consistent();
-    neighbors_and_for_all_neighbors_are_consistent();
+    vertices_and_for_loop_are_consistent();
+    edges_and_for_loops_are_consistent();
+    vertexPairs_and_for_loops_are_consistent();
+    neighbors_and_for_loops_are_consistent();
     iterators_on_empty_Graph_work();
     iterators_on_singleton_Graph_work();
 }

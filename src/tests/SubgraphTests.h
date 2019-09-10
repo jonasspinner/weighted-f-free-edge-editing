@@ -16,44 +16,31 @@ class SubgraphTests {
 public:
     explicit SubgraphTests(int seed = 0) : gen(seed) {}
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    void vertexPairs_and_for_all_vertex_pairs_are_consistent() {
+    void vertices_and_for_loop_are_consistent() {
+        Subgraph subgraph = random_subgraph(10, 20, gen);
+
+        std::vector<Vertex> a, b;
+
+        for (Vertex u : subgraph.vertices())
+            a.push_back(u);
+
+        for (size_t i = 0; i < subgraph.size(); ++i)
+            b.push_back(subgraph[i]);
+    }
+
+    void vertexPairs_and_for_loops_are_consistent() {
         Subgraph subgraph = random_subgraph(10, 20, gen);
 
         std::vector<VertexPair> a, b;
 
-        for (VertexPair uv : subgraph.vertexPairs()) a.push_back(uv);
+        for (VertexPair uv : subgraph.vertexPairs())
+            a.push_back(uv);
 
-        subgraph.for_all_vertex_pairs([&](VertexPair uv) {
-            b.push_back(uv);
-            return false;
-        });
+        for (size_t i = 0; i < subgraph.size(); ++i)
+            for (size_t j = i + 1; j < subgraph.size(); ++j)
+                b.emplace_back(subgraph[i], subgraph[j]);
 
-        expect("vertexPairs() and for_all_vertex_pairs() produce the same output", a, b);
-    }
-
-    void vertexPairs_and_for_all_unmarked_vertex_pairs_are_consistent(unsigned n = 10, unsigned N = 20) {
-        Subgraph subgraph = random_subgraph(n, N, gen);
-        VertexPairMap<bool> marked(N);
-        for (unsigned i = 0; i < N; ++i) {
-            marked[random_vertex_pair(N, gen)] = true;
-        }
-
-        std::vector<VertexPair> a, b;
-
-        for (VertexPair uv : subgraph.vertexPairs()) {
-            if (!marked[uv]) {
-                a.push_back(uv);
-            }
-        }
-
-        subgraph.for_all_unmarked_vertex_pairs(marked, [&](VertexPair uv) {
-            b.push_back(uv);
-            return false;
-        });
-
-        expect("vertexPairs() and for_all_unmarked_vertex_pairs() produce the same output", a, b);
+        expect("vertexPairs() and for loops produce the same output", a, b);
     }
 
     static void iterators_on_empty_Subgraph_work() {
@@ -75,13 +62,12 @@ public:
         auto vertexPairs = subgraph.vertexPairs();
         expect("singleton Subgraph has no vertex pairs", true, vertexPairs.begin() == vertexPairs.end());
     }
-#pragma GCC diagnostic pop
 
     void run() {
         std::cout << "\nSubgraphTests"
                      "\n-------------" << std::endl;
-        vertexPairs_and_for_all_vertex_pairs_are_consistent();
-        vertexPairs_and_for_all_unmarked_vertex_pairs_are_consistent();
+        vertices_and_for_loop_are_consistent();
+        vertexPairs_and_for_loops_are_consistent();
         iterators_on_empty_Subgraph_work();
         iterators_on_singleton_Subgraph_work();
     }
