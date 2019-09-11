@@ -12,9 +12,6 @@
 
 class Subgraph {
     std::vector<Vertex> m_vertices;
-#ifndef NDEBUG
-    std::string m_tag;
-#endif
 public:
 
     Subgraph(std::initializer_list<Vertex> list) : m_vertices(list) {
@@ -34,12 +31,6 @@ public:
         m_vertices.insert(m_vertices.end(), other.m_vertices.begin(), other.m_vertices.end());
         m_vertices.insert(m_vertices.end(), B);
     }
-
-#ifndef NDEBUG
-    Subgraph(std::vector<Vertex> &&vertices, std::string &&tag) : m_vertices(std::move(vertices)), m_tag(std::move(tag)) {}
-#else
-    [[deprecated]] Subgraph(std::vector<Vertex> &&vertices, std::string &&tag) : m_vertices(std::move(vertices)) {}
-#endif
 
     class Vertices {
         const std::vector<Vertex> &m_vertices;
@@ -125,9 +116,6 @@ public:
         os << "{";
         for (Vertex u : subgraph.m_vertices) os << " " << u;
         os << " }";
-#ifndef NDEBUG
-        if (!subgraph.m_tag.empty()) os << "#" << subgraph.m_tag;
-#endif
         return os;
     }
 

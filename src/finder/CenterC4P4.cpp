@@ -119,7 +119,7 @@ namespace Finder {
                         assert(valid_edge({u, a})); assert(valid_non_edge({u, b})); assert(valid_non_edge({u, v})); assert(valid_edge({a, b})); assert(valid_non_edge({a, v})); assert(valid_edge({b, v}));
 
                         // P_4
-                        if (callback(Subgraph({u, a, b, v}, "A"))) return true;
+                        if (callback(Subgraph{u, a, b, v})) return true;
                     }
                 }
             }
@@ -135,10 +135,10 @@ namespace Finder {
 
                     if (valid_edge({u, b}) && u < std::min({a, v, b}) && a < b) {
                         // C_4
-                        if (callback(Subgraph({u, a, v, b}, "B1"))) return true;
+                        if (callback(Subgraph{u, a, v, b})) return true;
                     } else if (valid_non_edge({u, b})) {
                         // P_4
-                        if (callback(Subgraph({u, a, v, b}, "B2"))) return true;
+                        if (callback(Subgraph{u, a, v, b})) return true;
                     }
                 }
             }
@@ -154,10 +154,10 @@ namespace Finder {
 
                     if (valid_edge({a, v}) && a < std::min({u, b, v})) {
                         // C_4
-                        if (callback(Subgraph({a, u, b, v}, "C1"))) return true;
+                        if (callback(Subgraph{a, u, b, v})) return true;
                     } else if (valid_non_edge({a, v})) {
                         // P_4
-                        if (callback(Subgraph({a, u, b, v}, "C2"))) return true;
+                        if (callback(Subgraph{a, u, b, v})) return true;
                     }
                 }
             }
@@ -175,7 +175,7 @@ namespace Finder {
                         assert(valid_edge({u, a})); assert(valid_non_edge({u, b})); assert(valid_edge({u, v})); assert(valid_edge({a, b})); assert(valid_non_edge({a, v})); assert(valid_edge({b, v}));
 
                         // C_4
-                        if (callback(Subgraph({u, a, b, v}, "D"))) return true;
+                        if (callback(Subgraph{u, a, b, v})) return true;
                     }
                 }
             }
@@ -192,10 +192,10 @@ namespace Finder {
 
                     if (valid_edge({a, b}) && a < std::min({u, v, b})) {
                         // C_4
-                        if (callback(Subgraph({a, u, v, b}, "E1"))) return true;
+                        if (callback(Subgraph{a, u, v, b})) return true;
                     } else if (valid_non_edge({a, b})) {
                         // P_4
-                        if (callback(Subgraph({a, u, v, b}, "E2"))) return true;
+                        if (callback(Subgraph{a, u, v, b})) return true;
                     }
                 }
             }
@@ -214,10 +214,10 @@ namespace Finder {
 
                     if (valid_edge({u, b}) && u < std::min({v, a, b}) && v < b) {
                         // C_4
-                        if (callback(Subgraph({u, v, a, b}, "F1"))) return true;
+                        if (callback(Subgraph{u, v, a, b})) return true;
                     } else if (valid_non_edge({u, b})) {
                         // P_4
-                        if (callback(Subgraph({u, v, a, b}, "F2"))) return true;
+                        if (callback(Subgraph{u, v, a, b})) return true;
                     }
                 }
             }
@@ -236,10 +236,10 @@ namespace Finder {
 
                     if (valid_edge({b, v}) && b < std::min({a, u, v})) {
                         // C_4
-                        if (callback(Subgraph({b, a, u, v}, "G1"))) return true;
+                        if (callback(Subgraph{b, a, u, v})) return true;
                     } else if (valid_non_edge({b, v})) {
                         // P_4
-                        if (callback(Subgraph({b, a, u, v}, "G2"))) return true;
+                        if (callback(Subgraph{b, a, u, v})) return true;
                     }
                 }
             }
