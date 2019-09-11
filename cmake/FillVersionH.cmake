@@ -10,7 +10,8 @@ execute_process(
     OUTPUT_VARIABLE GIT_COMMIT_HASH
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+message("configure_file" ${CMAKE_SOURCE_DIR})
 configure_file(
-    ${CMAKE_SOURCE_DIR}/src/version.h.in
-    ${CMAKE_BINARY_DIR}/src/version.h
+    ${CMAKE_SOURCE_DIR}/../src/version.h.in
+    ${CMAKE_BINARY_DIR}/../src/version.h
 )
