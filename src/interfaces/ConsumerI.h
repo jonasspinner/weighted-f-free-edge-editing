@@ -20,7 +20,7 @@ public:
 
     virtual ~ConsumerI() = default;
 
-    virtual void initialize() {};
+    virtual void initialize(Cost /*k*/) {};
 
     virtual void push_state(Cost /*k*/) {}; // push next_state = copy(state)
 

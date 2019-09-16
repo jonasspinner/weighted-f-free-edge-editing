@@ -7,6 +7,7 @@
 
 
 #include <gurobi_c++.h>
+
 #include "../finder/finder_utils.h"
 
 
@@ -17,8 +18,14 @@ class LinearProgramLowerBound : public LowerBoundI {
     std::unique_ptr<GRBEnv> m_env;
     std::unique_ptr<GRBModel> m_model;
     VertexPairMap<GRBVar> m_variables;
+    Options::FSG m_fsg;
+    Cost k_initial;
 
-    bool verbose = false;
+    int verbosity = 0;
+
+    constexpr static bool variable_means_edit = false;
+
+    VertexPairMap<bool> m_edited;
 
 public:
     /**
@@ -28,31 +35,39 @@ public:
                             const VertexPairMap<bool> &forbidden, std::shared_ptr<FinderI> finder_ref) :
             LowerBoundI(std::move(finder_ref)), m_graph(instance.graph),
             m_costs(instance.costs), m_marked(forbidden), m_env(std::make_unique<GRBEnv>()),
-            m_variables(m_graph.size()) {}
+            m_variables(m_graph.size()), m_fsg(finder->forbidden_subgraphs()), k_initial(0), m_edited(m_costs.size(), false) {}
 
     /**
      * Initializes the model.
      */
-    void initialize() override {
+    void initialize(Cost k) override {
+        k_initial = k;
         try {
             m_model = std::make_unique<GRBModel>(*m_env);
             m_model->set(GRB_IntParam_Threads, 1);
             m_model->getEnv().set(GRB_IntParam_OutputFlag, 1);
-            m_model->getEnv().set(GRB_IntParam_LogToConsole, verbose ? 1 : 0);
-            GRBLinExpr objective = 0;
+            m_model->getEnv().set(GRB_IntParam_LogToConsole, (verbosity > 0) ? 1 : 0);
 
+            GRBLinExpr objective = 0;
             for (VertexPair uv : m_graph.vertexPairs()) {
                 m_variables[uv] = m_model->addVar(0.0, 1.0, 0.0, GRB_CONTINUOUS);
-                if (m_graph.hasEdge(uv)) {
-                    objective += (1 - m_variables[uv]) * m_costs[uv];
-                } else {
+                if (variable_means_edit) {
                     objective += m_variables[uv] * m_costs[uv];
+                } else {
+                    if (m_graph.hasEdge(uv)) {
+                        objective += (1 - m_variables[uv]) * m_costs[uv];
+                    } else {
+                        objective += m_variables[uv] * m_costs[uv];
+                    }
                 }
             }
 
             m_model->setObjective(objective, GRB_MINIMIZE);
 
             addForbiddenSubgraphs();
+
+            if (variable_means_edit)
+                m_model->addConstr(objective <= k_initial);
         } catch (GRBException &e) {
             std::cerr << e.getMessage() << std::endl;
             std::stringstream ss;
@@ -68,7 +83,12 @@ public:
      * @param uv
      */
     void after_mark_and_edit(VertexPair uv) override {
-        fixPair(uv, m_graph.hasEdge(uv));
+        if (variable_means_edit) {
+            assert(m_edited[uv]);
+            fixPair(uv, m_edited[uv]);
+        }
+        else
+            fixPair(uv, m_graph.hasEdge(uv));
 
         finder->find_near(uv, [&](const Subgraph &subgraph) {
             addConstraint(subgraph);
@@ -82,7 +102,23 @@ public:
      * @param uv
      */
     void after_mark(VertexPair uv) override {
-        fixPair(uv, m_graph.hasEdge(uv));
+        if (!variable_means_edit)
+            fixPair(uv, m_graph.hasEdge(uv));
+    }
+
+    void after_edit(VertexPair uv) override {
+        // toggle edited status
+        if (variable_means_edit) {
+            m_edited[uv] = !m_edited[uv];
+            fixPair(uv, m_edited[uv]);
+        }
+    }
+
+    void after_unmark(VertexPair uv) override {
+        if (variable_means_edit) {
+            assert(!m_edited[uv]);
+            relaxPair(uv);
+        }
     }
 
     /**
@@ -91,27 +127,36 @@ public:
      *
      * @return
      */
-    Cost result(Cost /*k*/) override {
+    Cost result(Cost k) override {
         GRBLinExpr objective = 0;
 
         for (VertexPair uv : m_graph.vertexPairs()) {
             // TODO: overwrites changes made by after_mark and after_mark_and_edit
             if (m_marked[uv]) {
-                fixPair(uv, m_graph.hasEdge(uv));
+                if (variable_means_edit)
+                    fixPair(uv, m_edited[uv]);
+                else
+                    fixPair(uv, m_graph.hasEdge(uv));
             } else {
                 relaxPair(uv);
             }
 
-            if (m_graph.hasEdge(uv)) {
-                objective += (1 - m_variables[uv]) * m_costs[uv];
-            } else {
-                objective += m_variables[uv] * m_costs[uv];
+            if (!variable_means_edit) {
+                if (m_graph.hasEdge(uv)) {
+                    objective += (1 - m_variables[uv]) * m_costs[uv];
+                } else {
+                    objective += m_variables[uv] * m_costs[uv];
+                }
             }
         }
 
-        m_model->setObjective(objective, GRB_MINIMIZE);
+        if (!variable_means_edit)
+            m_model->setObjective(objective, GRB_MINIMIZE);
 
-        return solve();
+        if (variable_means_edit)
+            return solve() - k;
+        else
+            return solve();
     }
 
 private:
@@ -131,7 +176,7 @@ private:
         Cost result = std::ceil(found_objective);
 
         if (result - found_objective > 0.99) {
-            if (verbose)
+            if (verbosity)
                 std::cout << "found_objective: " << found_objective << " rounded result: " << result << std::endl;
             result = std::floor(found_objective);
         }
@@ -139,13 +184,18 @@ private:
 #ifndef NDEBUG
         std::vector<VertexPair> edits;
         for (VertexPair uv : m_graph.vertexPairs())
-            if (m_graph.hasEdge(uv) != (m_variables[uv].get(GRB_DoubleAttr_X) >= 0.99))
-                edits.push_back(uv);
+            if (variable_means_edit) {
+                if (m_variables[uv].get(GRB_DoubleAttr_X) >= 0.99)
+                    edits.push_back(uv);
+            } else {
+                if (m_graph.hasEdge(uv) != (m_variables[uv].get(GRB_DoubleAttr_X) >= 0.99))
+                    edits.push_back(uv);
+            }
 
         Cost sum = 0;
         for (VertexPair uv : edits)
             sum += m_costs[uv];
-        if (verbose) {
+        if (verbosity) {
             std::cout << "lower bound ";
             for (VertexPair uv : edits)
                 std::cout << uv << " " << m_costs[uv] << "  ";
@@ -161,19 +211,21 @@ private:
      * @param fs
      */
     void addConstraint(const Subgraph &fs) {
-        //GRBLinExpr expr = 0;
-        //for (VertexPair uv : fs.vertexPairs())
-        //    if (m_graph.has_edge(uv))
-        //        expr += (1 - variables[uv]);
-        //    else
-        //        expr += variables[uv];
-
-        GRBLinExpr expr = 3;
-        expr -= m_variables[{fs[0], fs[1]}];
-        expr -= m_variables[{fs[1], fs[2]}];
-        expr -= m_variables[{fs[2], fs[3]}];
-        expr += m_variables[{fs[0], fs[2]}];
-        expr += m_variables[{fs[1], fs[3]}];
+        GRBLinExpr expr;
+        if (variable_means_edit) {
+            for (VertexPair uv : fs.vertexPairs())
+                if (m_marked[uv])
+                    expr += (1 - m_variables[uv]);
+                else
+                    expr += m_variables[uv];
+        } else {
+            expr += 3;
+            expr -= m_variables[{fs[0], fs[1]}];
+            expr -= m_variables[{fs[1], fs[2]}];
+            expr -= m_variables[{fs[2], fs[3]}];
+            expr += m_variables[{fs[0], fs[2]}];
+            expr += m_variables[{fs[1], fs[3]}];
+        }
 
         m_model->addConstr(expr >= 1);
     }
@@ -214,14 +266,14 @@ private:
             return false;
         });
 
-        if (verbose)
+        if (verbosity)
             std::cout << "added " << num_found << " constraints" << std::endl;
         return num_found;
     }
 
     void addDistanceOneGraphForbiddenSubgraphs() {
         Graph G(m_graph);
-        auto G_finder = Finder::make(finder->forbidden_subgraphs(), G);
+        auto G_finder = Finder::make(m_fsg, G);
         for (VertexPair uv : G.vertexPairs()) {
             G.toggleEdge(uv);
 

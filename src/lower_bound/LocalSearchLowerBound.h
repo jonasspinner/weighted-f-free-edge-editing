@@ -239,7 +239,7 @@ public:
      *
      * @return
      */
-    void initialize() override {
+    void initialize(Cost /*k*/) override {
         using Element = State::Element;
         m_states.push_back(std::make_unique<State>());
         State &state = *m_states.back();
