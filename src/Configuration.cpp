@@ -15,6 +15,8 @@ namespace Options {
             selector = Selector::FirstEditable;
         else if (token == "LeastWeight")
             selector = Selector::LeastWeight;
+        else if (token == "MostMarked")
+            selector = Selector::MostMarked;
         else
             in.setstate(std::ios_base::failbit);
         return in;
@@ -26,6 +28,8 @@ namespace Options {
                 return os << "FirstEditable";
             case Selector::LeastWeight:
                 return os << "LeastWeight";
+            case Selector::MostMarked:
+                return os << "MostMarked";
             default:
                 return os;
         }
@@ -116,6 +120,35 @@ namespace Options {
     YAML::Emitter &operator<<(YAML::Emitter &out, LB lower_bound) {
         std::ostringstream ss;
         ss << lower_bound;
+        return out << ss.str();
+    }
+
+    std::istream &operator>>(std::istream &in, SolverType &type) {
+        std::string token;
+        in >> token;
+        if (token == "FPT")
+            type = SolverType::FPT;
+        else if (token == "ILP")
+            type = SolverType::ILP;
+        else
+            in.setstate(std::ios_base::failbit);
+        return in;
+    }
+
+    std::ostream &operator<<(std::ostream &os, SolverType type) {
+        switch (type) {
+            case SolverType::FPT:
+                return os << "FPT";
+            case SolverType::ILP:
+                return os << "ILP";
+            default:
+                return os;
+        }
+    }
+
+    YAML::Emitter &operator<<(YAML::Emitter &out, SolverType type) {
+        std::ostringstream ss;
+        ss << type;
         return out << ss.str();
     }
 }
