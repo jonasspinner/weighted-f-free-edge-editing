@@ -18,13 +18,13 @@
 
 std::unique_ptr<FinderI> make_finder(const std::string &name, const Graph &graph) {
     if (name == "CenterRecC4P4") {
-        return std::make_unique<CenterRecC4P4>(graph);
+        return std::make_unique<Finder::CenterRecC4P4>(graph);
     } else if (name == "CenterC4P4") {
         return std::make_unique<Finder::CenterC4P4>(graph);
     } else if (name == "NaiveC4P4") {
         return std::make_unique<Finder::NaiveC4P4>(graph);
     } else if (name == "CenterRecP3") {
-        return std::make_unique<CenterRecP3>(graph);
+        return std::make_unique<Finder::CenterRecP3>(graph);
     } else if (name == "CenterP3") {
         return std::make_unique<Finder::CenterP3>(graph);
     } else if (name == "NaiveP3") {

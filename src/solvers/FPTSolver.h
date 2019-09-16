@@ -7,8 +7,8 @@
 
 
 #include "Solver.h"
-#include "Configuration.h"
-#include "Editor.h"
+#include "../Configuration.h"
+#include "../Editor.h"
 
 class FPTSolver : public Solver {
 
@@ -71,11 +71,15 @@ public:
 
 
         Editor editor(instance, selector, m_fsg, lower_bound);
+        auto k_min = editor.initialize(m_k);
+        if (k_min > m_k)
+            return Result::Unsolved();
 
         bool solved = editor.edit(m_k, [&](const std::vector<VertexPair> &edits) {
             solutions.emplace_back(instance, edits);
         }, [](Cost, Cost) {});
 
+        std::cout << editor.stats() << "\n";
 
         if (solved) {
             std::sort(solutions.begin(), solutions.end());

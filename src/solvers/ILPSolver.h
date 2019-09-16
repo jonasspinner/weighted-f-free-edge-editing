@@ -8,10 +8,10 @@
 
 #include <gurobi_c++.h>
 
-#include "finder/finder_utils.h"
-#include "../src/Solver.h"
-#include "../src/Instance.h"
-#include "Configuration.h"
+#include "../finder/finder_utils.h"
+#include "Solver.h"
+#include "../Instance.h"
+#include "../Configuration.h"
 
 
 class ILPSolver : public Solver {

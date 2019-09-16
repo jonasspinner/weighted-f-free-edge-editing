@@ -25,7 +25,7 @@ public:
             : ConsumerI(std::move(finder_ptr)), subgraph_count_per_vertex_pair(instance.graph.size()),
               subgraph_count_per_vertex_pair_sum(0), subgraph_count(0), graph(instance.graph), m_forbidden(forbidden) {}
 
-    void initialize() override {
+    void initialize(Cost /*k*/) override {
         subgraph_count_per_vertex_pair = VertexPairMap<size_t>(graph.size());
         subgraph_count_per_vertex_pair_sum = 0;
         subgraph_count = 0;

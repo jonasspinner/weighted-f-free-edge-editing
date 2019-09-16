@@ -68,7 +68,13 @@ public:
         //for (auto &solution : solutions)
         //    std::sort(solution.edits.begin(), solution.edits.end());
 
-        std::sort(solutions.begin(), solutions.end(), [](const Solution &a, const Solution &b) { return a.edits.size() < b.edits.size(); });
+        std::sort(solutions.begin(), solutions.end(), [](const Solution &a, const Solution &b) {
+            if (a.edits.size() == b.edits.size()) {
+                return std::lexicographical_compare(a.edits.begin(), a.edits.end(), b.edits.begin(), b.edits.end());
+            } else {
+                return a.edits.size() < b.edits.size();
+            }
+        });
 
         std::vector<Solution> result;
         for (auto &s_i : solutions) {
@@ -79,7 +85,13 @@ public:
             }
         }
         solutions = result;
-        std::sort(solutions.begin(), solutions.end());
+        std::sort(solutions.begin(), solutions.end(), [](const Solution &a, const Solution &b) {
+            if (a.cost == b.cost) {
+                return std::lexicographical_compare(a.edits.begin(), a.edits.end(), b.edits.begin(), b.edits.end());
+            } else {
+                return a.cost < b.cost;
+            }
+        });
     }
 };
 

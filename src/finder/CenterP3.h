@@ -32,8 +32,11 @@ namespace Finder {
         void to_yaml(YAML::Emitter &out) const override;
 
     private:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
         template<typename F, typename G, typename H, typename I>
         bool find(const SubgraphCallback& callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge);
+#pragma GCC diagnostic pop
 
         template<typename F, typename G, typename H, typename I>
         bool find_near(VertexPair uv, const SubgraphCallback& callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge);

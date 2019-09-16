@@ -94,7 +94,7 @@ public:
             return *this;
         }
 
-        explicit operator bool() const {
+        operator bool() const {
             return m_map.adj[m_uv.u][m_uv.v];
         }
     };

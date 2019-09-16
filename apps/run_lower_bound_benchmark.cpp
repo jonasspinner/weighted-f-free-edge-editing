@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
     using Options::LB;
 
     // std::vector<Options::LB> lower_bounds = {LB::Greedy, LB::No, LB::LocalSearch, LB::LinearProgram};
-    LB lower_bound = LB::LocalSearch;
+    LB lower_bound = LB::LinearProgram;
     std::vector<std::string> inputs = {
         "./data/bio/bio-nr-3-size-16.metis",
         "./data/bio/bio-nr-4-size-39.metis",
@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
 
             std::shared_ptr<FinderI> finder = Finder::make(Options::FSG::P4C4, instance.graph);
             SubgraphStats subgraph_stats(finder, instance, marked);
-            subgraph_stats.initialize();
+            subgraph_stats.initialize(max_k);
             auto lb = LowerBound::make(lower_bound, finder, instance, marked, subgraph_stats);
 
 
@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
                 using namespace std::chrono;
                 
                 auto t1 = steady_clock::now();
-                lb->initialize();
+                lb->initialize(max_k);
                 auto t2 = steady_clock::now();
                 auto value = lb->result(max_k);
                 auto t3 = steady_clock::now();

@@ -22,7 +22,7 @@ public:
     /**
      * Reads a graph from path.
      *
-     * Assumes that the file is in metis format with fmt == 1 and that the edges are from the upper triangular adjaceny
+     * Assumes that the file is in metis format with fmt == 1 and that the edges are from the upper triangular adjacency
      * matrix of a fully connected graph.
      *
      * @param path
@@ -33,7 +33,11 @@ public:
 
         std::ifstream file(path);
 
-        if (!file) throw std::runtime_error("could not open file");
+        if (!file){
+            std::stringstream ss;
+            ss << "could not open file " << path;
+            throw std::runtime_error(ss.str());
+        }
 
         Vertex n, m, fmt;
         std::string line;
@@ -42,7 +46,7 @@ public:
 
 
         Graph G(n);
-        VertexPairMap<Cost> edit_costs(G.size());
+        VertexPairMap<Cost> edit_costs(G.size(), 1);
 
         if (fmt == 0) {
             edit_costs = VertexPairMap<Cost>(G.size(), 1);

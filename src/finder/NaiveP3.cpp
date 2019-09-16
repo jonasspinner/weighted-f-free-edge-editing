@@ -65,7 +65,7 @@ namespace Finder {
             for (Vertex v : graph.vertices()) {
                 for (Vertex w : graph.vertices()) {
                     if (u != v && u != w && v != w) { // u, v, w are three distinct vertices
-                        if (valid_edge({u, v}) && valid_non_edge({u, w}) && valid_edge({u, w})) { // uvw is a P3
+                        if (valid_edge({u, v}) && valid_non_edge({u, w}) && valid_edge({v, w})) { // uvw is a P3
                             if (u < w) // break symmetry and list {u, v, w} only once
                                 if (callback(Subgraph{u, v, w})) return true;
                         }

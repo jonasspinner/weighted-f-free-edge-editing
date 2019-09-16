@@ -12,6 +12,7 @@
 #include "Solution.h"
 
 #include "finder/Center.h"
+#include "finder/CenterC4P4.h"
 
 #include "graph/synthetic_graphs.h"
 #include "version.h"
@@ -182,9 +183,9 @@ int main(int argc, char *argv[]) {
 
     auto instance = GraphIO::read_graph(paths[0], 100);
     VertexPairMap<bool> marked(instance.graph.size());
-    auto finder = std::make_shared<Finder::CenterC4P4>(instance.graph);
+    std::shared_ptr<FinderI> finder = std::make_shared<Finder::CenterC4P4>(instance.graph);
     auto lb = LinearProgramLowerBound(instance, marked, finder);
-    lb.initialize();
+    lb.initialize(1000);
     std::cout << lb.result(1000);
 
     return 0;

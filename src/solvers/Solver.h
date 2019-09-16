@@ -6,8 +6,8 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_SOLVER_H
 
 
-#include "Instance.h"
-#include "Solution.h"
+#include "../Instance.h"
+#include "../Solution.h"
 
 
 class Solver {

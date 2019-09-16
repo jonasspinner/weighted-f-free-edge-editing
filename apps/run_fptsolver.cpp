@@ -5,7 +5,7 @@
 
 #include <boost/program_options.hpp>
 
-#include "../src/FPTSolver.h"
+#include "../src/solvers/FPTSolver.h"
 #include "../src/graph/GraphIO.h"
 
 
@@ -13,14 +13,14 @@ int main(int argc, char* argv[]) {
     namespace po = boost::program_options;
 
     const std::vector<std::string> paths {
-            "./data/bio/bio-nr-3-size-16.metis",
-            "./data/bio/bio-nr-4-size-39.metis",
-            "./data/bio/bio-nr-11-size-22.metis",
-            "./data/bio/bio-nr-277-size-222.metis",
-            "./data/karate.graph",
-            "./data/lesmis.graph",
-            "./data/dolphins.graph",
-            "./data/grass_web.metis.graph"};
+            "../data/bio/bio-nr-3-size-16.metis",
+            "../data/bio/bio-nr-4-size-39.metis",
+            "../data/bio/bio-nr-11-size-22.metis",
+            "../data/bio/bio-nr-277-size-222.metis",
+            "../data/karate.graph",
+            "../data/lesmis.graph",
+            "../data/dolphins.graph",
+            "../data/grass_web.metis.graph"};
 
 
     std::string input = paths[0];
@@ -45,13 +45,15 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    Configuration config(k_max, Options::Selector::FirstEditable, Options::FSG::P4C4, Options::LB::Greedy,
+            {input}, "", multiplier, Options::SolverType::FPT, 0, 0);
 
     auto instance = GraphIO::read_graph(input, multiplier);
 
-    FPTSolver solver(k_max, Options::FSG::P4C4);
-    auto solutions = solver.solve(instance);
+    FPTSolver solver(config);
+    auto result = solver.solve(instance);
 
-    for (const auto &solution : solutions)
+    for (const auto &solution : result.solutions)
         std::cout << solution << "\n";
 
     return 0;

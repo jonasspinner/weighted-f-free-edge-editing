@@ -20,7 +20,7 @@
 
 #include "finder/finder_utils.h"
 #include "lower_bound/lower_bound_utils.h"
-#include "selector/lower_bound_utils.h"
+#include "selector/selector_utils.h"
 
 #include "consumer/SubgraphStats.h"
 
@@ -42,9 +42,12 @@ private:
 
     Statistics m_stats;
 
+    bool m_find_all_solutions;
+
 public:
     explicit Editor(Instance instance, Options::Selector selector, Options::FSG forbidden, Options::LB lower_bound) :
-            m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_found_solution(false) {
+            m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_found_solution(false),
+            m_find_all_solutions(true) {
 
         m_finder = Finder::make(forbidden, m_instance.graph);
         m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_marked);
@@ -55,6 +58,11 @@ public:
 
         m_consumers.emplace_back(m_lower_bound.get());
         m_consumers.emplace_back(m_selector.get());
+    }
+
+    Cost initialize(Cost k) {
+        for (auto &c : m_consumers) c->initialize(k);
+        return m_lower_bound->result(std::numeric_limits<Cost>::max());
     }
 
     /**
@@ -68,12 +76,10 @@ public:
     template<typename ResultCallback, typename PrunedCallback>
     bool edit(Cost k, ResultCallback result_cb, PrunedCallback prune_cb) {
         // init stats
-        m_stats = Statistics(-k / 10, k, 10);
-
-        for (auto &c : m_consumers) c->initialize();
-
+        m_stats = Statistics(-k / 2, k, 5);
         m_found_solution = false;
-        edit_recursive(k, [&](const std::vector<VertexPair> &e) { result_cb(e); return false; }, prune_cb);
+
+        edit_recursive(k, [&](const std::vector<VertexPair> &e) { result_cb(e); return !m_find_all_solutions; }, prune_cb);
         return m_found_solution;
     }
 
@@ -114,6 +120,7 @@ private:
         } else if (k == 0) {
             // unsolved, no edits remaining
             prune_cb(0, 0);
+            m_stats.prunes(k)++;
             return false;
         }
 

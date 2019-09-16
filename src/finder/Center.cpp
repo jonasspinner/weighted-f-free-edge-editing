@@ -67,7 +67,7 @@ namespace Finder {
 
     template <int length, bool with_cycles>
     Options::FSG Center<length, with_cycles>::forbidden_subgraphs() const {
-        assert(false);
+        throw std::runtime_error("No forbidden subgraph available");
     }
 
     template <>

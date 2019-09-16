@@ -31,6 +31,8 @@ namespace Selector {
                 return std::make_unique<LeastWeight>(instance.costs, finder, marked);
             case Options::Selector::FirstEditable:
                 return std::make_unique<FirstEditable>(finder, marked);
+            case Options::Selector::MostMarked:
+                return std::make_unique<MostMarkedPairs>(finder, marked);
             default:
                 assert(false);
                 return nullptr;
