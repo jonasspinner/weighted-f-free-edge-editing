@@ -78,19 +78,20 @@ public:
     explicit FinderTests(int seed=0) : gen(seed) {}
 
     void EditsSolveKarate() {
-        Instance instance = GraphIO::read_graph("./data/karate.graph");
+        Instance instance = GraphIO::read_graph("../data/karate.graph");
         Graph G = instance.graph;
 
         std::vector<VertexPair> edits {
-            {0, 8}, {0, 16}, {0, 31}, /*{0, 33},*/
-            /*{1, 3},*/ {1, 12}, {1, 30},
-            {2, 8}, {2, 9}, {2, 27}, {2, 28}, {2, 32}, /*{2, 33},*/
-            {4, 6}, {4, 10},
+            {0, 8}, {0, 16}, {0, 31},
+            {1, 30},
+            {2, 8}, {2, 9}, {2, 27}, {2, 28}, {2, 32},
+            {3, 12},
+            {4, 5}, {4, 10},
             {13, 33},
             {19, 33},
-            {23, 25}, {13, 27},
-            {24, 27},
+            {23, 25}, {23, 27},
             {26, 29},
+            {27, 33},
             {28, 31},
             {31, 32}, {31, 33}
         };

@@ -21,9 +21,10 @@
  * @param seeds
  */
 void EditorTests::configurations_have_same_output(Options::FSG fsg, const std::vector<Options::Selector> &selectors,
-                                     const std::vector<Options::LB> &lower_bounds, const std::vector<int> &seeds) {
+                                     const std::vector<Options::LB> &lower_bounds, const std::vector<int> &seeds,
+                                     double multiplier) {
 
-    auto orig_instance = GraphIO::read_graph(instance_path, 100);
+    auto orig_instance = GraphIO::read_graph(instance_path, multiplier);
     std::vector<std::tuple<Options::Selector, Options::FSG, Options::LB, int, std::vector<Solution>>> results;
 
     for (auto seed : seeds) {
@@ -39,7 +40,8 @@ void EditorTests::configurations_have_same_output(Options::FSG fsg, const std::v
                 std::vector<Solution> solutions;
 
                 Editor editor(instance, selector, fsg, lb);
-                editor.edit(800, [&](const std::vector<VertexPair> &edits) {
+                editor.initialize(10 * multiplier);
+                editor.edit(10 * multiplier, [&](const std::vector<VertexPair> &edits) {
                     solutions.emplace_back(orig_instance, P_r[edits]);
                 }, [](Cost, Cost) {});
 
@@ -88,7 +90,8 @@ void EditorTests::output_is_independent_of_seed(const std::vector<int> &seeds) {
         std::vector<Solution> solutions;
 
         Editor editor(instance, Options::Selector::FirstEditable, Options::FSG::P4C4, Options::LB::Greedy);
-        editor.edit(1000, [&](const std::vector<VertexPair> &edits) {
+        editor.initialize(1100);
+        editor.edit(1100, [&](const std::vector<VertexPair> &edits) {
             solutions.emplace_back(orig_instance, P_r[edits]);
         }, [](Cost, Cost) {});
 
@@ -118,11 +121,15 @@ void EditorTests::run() {
     std::cout << "\nEditorTests"
                  "\n-----------" << std::endl;
 
-    configurations_have_same_output(Options::FSG::P4C4,
-                                    {Options::Selector::FirstEditable, Options::Selector::LeastWeight},
-                                    {Options::LB::No, Options::LB::Greedy, Options::LB::LocalSearch,
-                                     Options::LB::LinearProgram},
-                                    {0, 1});
+    using Options::Selector;
+    using Options::LB;
+    using Options::FSG;
+
+    auto all_selectors = {Selector::FirstEditable, Selector::LeastWeight, Selector::MostMarked};
+    auto all_lower_bounds = {LB::No, LB::Greedy, LB::LocalSearch, LB::LinearProgram};
+
+    configurations_have_same_output(FSG::P4C4, all_selectors, all_lower_bounds, {0, 1}, 100);
+    configurations_have_same_output(FSG::P4C4, all_selectors, all_lower_bounds, {0, 1}, 1);
 
     output_is_independent_of_seed({0, 1, 2, 3, 4});
 }

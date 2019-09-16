@@ -14,12 +14,13 @@
 class EditorTests {
 
     std::mt19937 gen;
-    std::string instance_path = "./data/bio/bio-nr-3-size-16.metis";
+    std::string instance_path = "../data/bio/bio-nr-3-size-16.metis";
 public:
     explicit EditorTests(int seed = 0) : gen(seed) {}
 
     void configurations_have_same_output(Options::FSG fsg, const std::vector<Options::Selector> &selectors,
-                                         const std::vector<Options::LB> &lower_bounds, const std::vector<int> &seeds);
+                                         const std::vector<Options::LB> &lower_bounds, const std::vector<int> &seeds,
+                                         double multiplier);
 
     void output_is_independent_of_seed(const std::vector<int> &seeds);
 
