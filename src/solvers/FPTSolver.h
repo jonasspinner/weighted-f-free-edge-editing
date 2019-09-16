@@ -15,7 +15,7 @@ class FPTSolver : public Solver {
     Cost m_k;
     Options::FSG m_fsg;
 public:
-    FPTSolver(Cost k, Options::FSG fsg) : m_k(k), m_fsg(fsg) {}
+    explicit FPTSolver(const Configuration& config) : m_k(config.k_max), m_fsg(config.forbidden_subgraphs) {}
 
     /**
      * Search for a minimum cost which yields solutions.
@@ -63,7 +63,7 @@ public:
      * @param instance
      * @return
      */
-    std::vector<Solution> solve(Instance instance) override {
+    Result solve(Instance instance) override {
         auto selector = Options::Selector::FirstEditable;
         auto lower_bound = Options::LB::Greedy;
 
@@ -72,13 +72,17 @@ public:
 
         Editor editor(instance, selector, m_fsg, lower_bound);
 
-        editor.edit(m_k, [&](const std::vector<VertexPair> &edits) {
+        bool solved = editor.edit(m_k, [&](const std::vector<VertexPair> &edits) {
             solutions.emplace_back(instance, edits);
         }, [](Cost, Cost) {});
 
 
-        std::sort(solutions.begin(), solutions.end());
-        return solutions;
+        if (solved) {
+            std::sort(solutions.begin(), solutions.end());
+            return Result::Solved(solutions);
+        } else {
+            return Result::Unsolved();
+        }
     }
 };
 
