@@ -83,6 +83,7 @@ public:
 
         if (solved) {
             std::sort(solutions.begin(), solutions.end());
+            Solution::filter_inclusion_minimal(solutions);
             return Result::Solved(solutions);
         } else {
             return Result::Unsolved();

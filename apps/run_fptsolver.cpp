@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
 
     std::string input = paths[0];
     double multiplier = 100;
-    Cost k_max = 600;
+    Cost k_max = 800;
 
     po::options_description desc("Allowed options");
     desc.add_options()
