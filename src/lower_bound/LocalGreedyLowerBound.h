@@ -16,12 +16,13 @@ namespace LowerBound {
         const Graph &m_graph;
         const VertexPairMap<Cost> &m_costs;
         const VertexPairMap<bool> &m_marked;
+        VertexPairMap<bool> m_used_in_bound;
     public:
 
         LocalGreedyLowerBound(const Instance &instance, const VertexPairMap<bool> &marked,
-                              std::shared_ptr<FinderI> finder_ref) : LowerBoundI(std::move(finder_ref)),
-                                                                     m_graph(instance.graph),
-                                                                     m_costs(instance.costs), m_marked(marked) {}
+                              std::shared_ptr<FinderI> finder_ref) :
+                LowerBoundI(std::move(finder_ref)), m_graph(instance.graph), m_costs(instance.costs),
+                m_marked(marked), m_used_in_bound(m_graph.size()) {}
 
         Cost result(Cost /*k*/) override;
     };

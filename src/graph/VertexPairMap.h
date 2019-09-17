@@ -134,6 +134,15 @@ public:
     }
 
     [[nodiscard]] Vertex size() const { return n; }
+
+    /**
+     * Sets all entries to false.
+     */
+    void clear() {
+        for (auto &row : adj) {
+            row.reset();
+        }
+    }
 };
 
 #endif //CONCEPT_VERTEXPAIRMAP_H

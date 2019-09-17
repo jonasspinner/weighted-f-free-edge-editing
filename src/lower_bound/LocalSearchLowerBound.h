@@ -209,7 +209,8 @@ public:
             m_subgraph_stats(subgraph_stats), m_bound_graph(instance.graph.size()), gen(seed) {}
 
     /**
-     * Returns a lower bound on the editing cost.
+     * Returns a lower bound on the editing cost. The state keeps a maximal lower bound. Local search tries to improve
+     * bound by performing (1, 1), (1, 2) or (\omega, 1) swaps on the forbidden subgraphs to improve the lower bound.
      *
      * @param k Remaining editing cost.
      * @return A lower bound on the costs required to solve the current instance.
@@ -218,19 +219,18 @@ public:
         auto &state = current_state();
         if (!state.solvable()) return state.cost();
 
-        // std::cout << "result start: " << state << "\n";
+        // The bound is beeing kept maximal. When the cost is zero, no improvement can be made.
+        if (state.cost() == 0) return 0;
 
         state.recalculate(m_marked, m_costs);
         state.initialize_bound_graph(m_marked, m_bound_graph);
         state.assert_valid(m_marked, m_bound_graph, m_costs);
 
-        if (state.cost() <= k) {
+        if (state.cost() <= k)
             local_search(state, k);
-        }
 
         assert(state.cost() >= 0);
 
-        // std::cout << "result end: " << state << "\n";
         return state.cost();
     }
 
@@ -252,7 +252,7 @@ public:
         finder->find([&](Subgraph &&subgraph) {
             Cost min_cost = get_subgraph_cost(subgraph, m_marked, m_costs);
             subgraphs.push_back({min_cost, std::move(subgraph)});
-            return false;
+            return min_cost == invalid_cost;
         });
 
         std::sort(subgraphs.begin(), subgraphs.end(),
@@ -271,27 +271,6 @@ public:
                 state.insert({cost, std::move(subgraph)});
             }
         }
-
-        /*
-        auto unsolvable = finder->find([&](Subgraph &&subgraph) {
-            Cost min_cost = cost(subgraph, m_marked, m_costs);
-            bool inserted = try_insert_into_graph(subgraph, m_marked, m_bound_graph);
-
-            if (min_cost == invalid_cost)
-                return true;
-
-            if (inserted) {
-                assert(min_cost != invalid_cost);
-                state.insert({min_cost, std::move(subgraph)});
-            }
-
-            return false;
-        });
-
-        if (unsolvable) {
-            state.set_unsolvable();
-            return;
-        }*/
 
         if (verbosity) std::cout << "[" << state.cost() << "] greedy lb\n";
         local_search(state, std::numeric_limits<Cost>::max());
@@ -402,6 +381,17 @@ private:
      * @param k
      */
     void local_search(State &state, Cost k) {
+        constexpr static bool use_one_improvement = true;
+        constexpr static bool use_two_improvement = true;
+        constexpr static bool use_omega_improvement = true;
+//#define stats
+#ifdef stats
+        Cost cost_before = state.cost();
+        size_t num_rounds_one = 0; Cost improvement_one = 0;
+        size_t num_rounds_two = 0; Cost improvement_two = 0;
+        size_t num_rounds_omega = 0; Cost improvement_omega = 0;
+#endif
+
         state.shuffle(gen);
 
         bool improvement_found, bound_changed;
@@ -411,26 +401,54 @@ private:
             // a single round consists of a loop over all subgraphs in the bound and trying to find an improvement depending on the current mode.
             improvement_found = bound_changed = false;
 
-            if (verbosity) std::cout << "[" << state.cost() << "] round mode=0\n";
 
-            for (size_t index = 0; state.cost() <= k && index < state.bound().size(); ++index)
-                improvement_found |= find_one_improvements(state, index);
+            if (use_one_improvement) {
+#ifdef stats
+                Cost before = state.cost();
+#endif
+                if (verbosity) std::cout << "[" << state.cost() << "] round mode=0\n";
+                for (size_t index = 0; state.cost() <= k && index < state.bound().size(); ++index)
+                    improvement_found |= find_one_improvements(state, index);
+#ifdef stats
+                ++num_rounds_one; improvement_one += state.cost() - before;
+#endif
+            }
 
-            if (!improvement_found) {
+            if (!improvement_found && use_two_improvement) {
+#ifdef stats
+                Cost before = state.cost();
+#endif
                 if (verbosity) std::cout << "[" << state.cost() << "] round mode=1\n";
                 for (size_t index = 0; state.cost() <= k && index < state.bound().size(); ++index)
                     improvement_found |= find_two_improvement(state, index, bound_changed);
+#ifdef stats
+                ++num_rounds_two; improvement_two += state.cost() - before;
+#endif
             }
 
-            if (!improvement_found) {
+            if (!improvement_found && use_omega_improvement) {
+#ifdef stats
+                Cost before = state.cost();
+#endif
                 if (verbosity) std::cout << "[" << state.cost() << "] round mode=2\n";
                 improvement_found = find_omega_improvement(state, k);
+#ifdef stats
+                ++num_rounds_omega; improvement_omega += state.cost() - before;
+#endif
             }
 
             rounds_no_improvement = improvement_found ? 0 : rounds_no_improvement + 1;
             // improvement_found || (rounds_no_improvement < 5 && bound_changed)
-        } while (state.cost() <= k && (improvement_found || (rounds_no_improvement < 5 && bound_changed)));
+        } while (state.cost() <= k && (improvement_found || (rounds_no_improvement < 2 && bound_changed)));
         if (verbosity) std::cout << "[" << state.cost() << "] end local search\n";
+#ifdef stats
+        std::cerr << "local_search(state.cost=" << std::setw(4) << cost_before << ", k=" << std::setw(4) << k << ") "
+                  << std::setw(4) << cost_before << " -> " << std::setw(4) << state.cost() << "\t "
+                  << "one #" << num_rounds_one << " cost " << std::setw(4) << improvement_one << "\t "
+                  << "two #" << num_rounds_two << " cost " << std::setw(4) << improvement_two << "\t "
+                  << "omega #" << num_rounds_omega << " cost " << std::setw(4) << improvement_omega << "\n";
+#endif
+#undef stats
     }
 
     /**
@@ -464,7 +482,8 @@ private:
         {
             bool touches = false;
             for (VertexPair uv : subgraph.vertexPairs())
-                if (m_bound_graph.hasEdge(uv)) touches = true;
+                if (m_bound_graph.hasEdge(uv))
+                    touches = true;
             assert(!touches);
         }
 #endif
@@ -536,14 +555,17 @@ private:
         assert(subgraph_cost == get_subgraph_cost(subgraph, m_marked, m_costs));
         assert(subgraph_cost != invalid_cost);
 
+        // If the subgraph has no neighbors on at least one vertex pair it can be skipped.
         const auto [num_pairs_with_neighbors, num_neighbors_upper_bound] = count_neighbors(m_subgraph_stats, m_marked, subgraph);
         if (num_pairs_with_neighbors < 1 || num_neighbors_upper_bound < 1)
-            return false;
+            return false; // No improvement possible.
 
+        // Remove the subgraph from m_bound_graph. Either the subgraph or other subgraphs will be reinserted.
         remove_from_graph(subgraph, m_marked, m_bound_graph);
 
-        // candidates are subgraphs which are only adjacent to subgraph but no other subgraph in the lower bound.
+        // Candidates are subgraphs which are only adjacent to subgraph but no other subgraph in the lower bound.
         const auto pairs = get_pairs(subgraph, m_marked);
+        auto[candidates, border] = get_candidates(*finder, pairs, m_bound_graph);
 
 #ifndef NDEBUG
         {
@@ -553,14 +575,13 @@ private:
             assert(!touches);
         }
 #endif
-        auto[candidates, border] = get_candidates(*finder, pairs, m_bound_graph);
-
 
         std::vector<Cost> candidate_costs(candidates.size());
-        for (size_t i = 0; i < candidates.size(); ++i) {
+        for (size_t i = 0; i < candidates.size(); ++i)
             candidate_costs[i] = get_subgraph_cost(candidates[i], m_marked, m_costs);
-        }
 
+
+        // The information about the best solution.
         Cost max_subgraphs_cost = subgraph_cost;
         std::vector<size_t> max_subgraphs;
 
