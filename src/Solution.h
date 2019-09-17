@@ -64,26 +64,27 @@ public:
         return cost == other.cost && edits == other.edits;
     }
 
-    static void filter_inclusion_minimal(std::vector<Solution> &solutions) {
-        //for (auto &solution : solutions)
-        //    std::sort(solution.edits.begin(), solution.edits.end());
+    bool operator!=(const Solution &other) const {
+        return !(*this == other);
+    }
 
-        std::sort(solutions.begin(), solutions.end(), [](const Solution &a, const Solution &b) {
-            if (a.edits.size() == b.edits.size()) {
-                return std::lexicographical_compare(a.edits.begin(), a.edits.end(), b.edits.begin(), b.edits.end());
-            } else {
-                return a.edits.size() < b.edits.size();
-            }
-        });
+    static void filter_inclusion_minimal(std::vector<Solution> &solutions) {
+        for (auto &solution : solutions)
+            std::sort(solution.edits.begin(), solution.edits.end());
 
         std::vector<Solution> result;
-        for (auto &s_i : solutions) {
-            if (std::none_of(result.begin(), result.end(), [&](const Solution &s_j) {
-                return std::includes(s_i.edits.begin(), s_i.edits.end(), s_j.edits.begin(), s_j.edits.end());
-            })) {
-                result.push_back(std::move(s_i));
+        for (const auto &a : solutions) {
+            bool is_subset = false;
+            for (const auto &b : solutions) {
+                if (a != b && std::includes(a.edits.begin(), a.edits.end(), b.edits.begin(), b.edits.end())) {
+                    is_subset = true;
+                    break;
+                }
             }
+            if (!is_subset)
+                result.push_back(a);
         }
+
         solutions = result;
         std::sort(solutions.begin(), solutions.end(), [](const Solution &a, const Solution &b) {
             if (a.cost == b.cost) {
