@@ -18,6 +18,12 @@ class VertexMap {
     Vertex n;
     std::vector<T> values;
 public:
+    /**
+     * A map from vertices to T. V \mapsto T.
+     *
+     * @param size The number of vertices. Vertices are indexed by 0..size-1.
+     * @param initial An initial value. Default constructed if not given.
+     */
     explicit VertexMap(Vertex size, T initial = T()) : n(size), values(size, initial) {}
 
     const_reference operator[](Vertex vertex) const {

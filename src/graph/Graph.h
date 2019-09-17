@@ -261,7 +261,7 @@ public:
      * @param row
      * @return
      */
-    static RowVertices iterate(const AdjRow &row) {
+    [[nodiscard]] static RowVertices iterate(const AdjRow &row) {
         return RowVertices(row);
     }
 
@@ -417,29 +417,35 @@ public:
     }
 
     friend YAML::Emitter &operator<<(YAML::Emitter &out, const Graph &graph) {
+        using namespace YAML;
         unsigned num_edges = 0;
         for (Vertex u : graph.vertices())
             num_edges += graph.degree(u);
         num_edges /= 2;
 
-        out << YAML::BeginMap;
-        out << YAML::Key << "num_vertices" << YAML::Value << graph.size();
-        out << YAML::Key << "num_edges" << YAML::Value << num_edges;
-        out << YAML::Key << "adj";
-        out << YAML::Value << YAML::BeginMap;
+        out << BeginMap;
+        out << Key << "num_vertices" << Value << graph.size();
+        out << Key << "num_edges" << Value << num_edges;
+        out << Key << "adj";
+        out << Value << BeginMap;
         for (Vertex u : graph.vertices()) {
-            out << YAML::Key << u;
-            out << YAML::Value << YAML::Flow << YAML::BeginSeq;
+            out << Key << u;
+            out << Value << Flow << BeginSeq;
             for (Vertex v : graph.neighbors(u))
                 out << v;
-            out << YAML::EndSeq;
+            out << EndSeq;
         }
-        out << YAML::EndMap << YAML::EndMap;
+        out << EndMap << EndMap;
         return out;
     }
 
 private:
 
+    /**
+     * Returns an adjacency row with every vertex.
+     *
+     * @return
+     */
     [[nodiscard]] AdjRow all_vertices() const {
         auto row = AdjRow(m_size);
         row.set();

@@ -39,10 +39,7 @@ namespace Finder {
      * @return
      */
     bool CenterC4P4::find_near(VertexPair uv, SubgraphCallback callback) {
-        return find_near(uv, [&](Subgraph &&subgraph) {
-            verify(subgraph, graph); // TODO: remove check
-            return callback(std::move(subgraph));
-        }, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
+        return find_near(uv, callback,neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
     }
 
     /**
@@ -54,10 +51,7 @@ namespace Finder {
      * @return
      */
     bool CenterC4P4::find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) {
-        return find_near(uv, [&](Subgraph &&subgraph) {
-            verify(subgraph, graph); // TODO: remove check
-            return callback(std::move(subgraph));
-        }, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
+        return find_near(uv, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
     void CenterC4P4::to_yaml(YAML::Emitter &out) const {

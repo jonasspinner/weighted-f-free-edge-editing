@@ -14,8 +14,16 @@ class Subgraph {
     std::vector<Vertex> m_vertices;
 public:
 
+    /**
+     * An induced subgraph G[S]. A reference to the corresponding graph is not stored.
+     *
+     * The subgraph is identified by the vertices S \subseteq V that are part of it. The order of the vertices is preserved.
+     *
+     * @param list
+     */
     Subgraph(std::initializer_list<Vertex> list) : m_vertices(list) {
 #ifndef NDEBUG
+
         unsigned n = 0;
         for (auto x : list)
             for (auto y : list)
@@ -25,6 +33,15 @@ public:
 #endif
     }
 
+    /**
+     * An optimized constructor for concatinating the vertices and the subgraph.
+     *
+     * Only allocates memory once.
+     *
+     * @param A
+     * @param other
+     * @param B
+     */
     Subgraph(std::initializer_list<Vertex> A, const Subgraph &other, std::initializer_list<Vertex> B) {
         m_vertices.reserve(A.size() + other.size() + B.size());
         m_vertices.insert(m_vertices.end(), A);
@@ -110,7 +127,13 @@ public:
     }
 
     [[nodiscard]] size_t size() const { return m_vertices.size(); }
-    const Vertex &operator[](size_t index) const { return m_vertices[index]; }
+
+    /**
+     * Returns the Vertex at the given index in the subgraph.
+     *
+     * @param index
+     */
+    [[nodiscard]] const Vertex &operator[](size_t index) const { return m_vertices[index]; }
 
     friend std::ostream &operator<<(std::ostream &os, const Subgraph &subgraph) {
         os << "{";
@@ -120,6 +143,7 @@ public:
     }
 
     friend YAML::Emitter &operator<<(YAML::Emitter &out, const Subgraph &subgraph) {
+        using namespace YAML;
         out << YAML::Flow << YAML::BeginSeq;
         for (Vertex u : subgraph.vertices()) out << u;
         return out << YAML::EndSeq;
@@ -144,15 +168,11 @@ public:
     bool operator<(const Subgraph &other) const {
         return std::lexicographical_compare(m_vertices.begin(), m_vertices.end(), other.m_vertices.begin(), other.m_vertices.end());
     }
-
-    friend void verify(const Subgraph &, const Graph&);
 };
 
 constexpr Cost invalid_cost = std::numeric_limits<Cost>::max();
 
 Cost get_subgraph_cost(const Subgraph &subgraph, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs);
-
-void verify(const Subgraph &subgraph, const Graph &graph);
 
 
 #endif //CONCEPT_SUBGRAPH_H
