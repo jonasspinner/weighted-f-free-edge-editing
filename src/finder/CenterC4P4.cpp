@@ -6,7 +6,6 @@
 #include "CenterC4P4.h"
 
 #include "../interfaces/FinderI.h"
-#include "../Configuration.h"
 
 
 namespace Finder {
