@@ -536,6 +536,10 @@ private:
         assert(subgraph_cost == get_subgraph_cost(subgraph, m_marked, m_costs));
         assert(subgraph_cost != invalid_cost);
 
+        const auto [num_pairs_with_neighbors, num_neighbors_upper_bound] = count_neighbors(m_subgraph_stats, m_marked, subgraph);
+        if (num_pairs_with_neighbors < 1 || num_neighbors_upper_bound < 1)
+            return false;
+
         remove_from_graph(subgraph, m_marked, m_bound_graph);
 
         // candidates are subgraphs which are only adjacent to subgraph but no other subgraph in the lower bound.
@@ -576,6 +580,7 @@ private:
 
                 // for each candidate pair (a, b)
                 for (size_t pair_j = pair_i + 1; pair_j < pairs.size(); ++pair_j) {
+                    if (m_bound_graph.hasEdge(pairs[pair_j])) continue;
                     for (size_t b_i = border[pair_j]; b_i < border[pair_j + 1]; ++b_i) {
                         const Subgraph &b = candidates[b_i];
 
@@ -672,26 +677,28 @@ private:
 
         bool found_improvement = false;
 
-        VertexPairMap<bool> used(m_bound_graph.size());
+        // VertexPairMap<bool> used(m_bound_graph.size());
         VertexPairMap<size_t> subgraph_index(m_bound_graph.size(), invalid_index);
 
+        // Assign i at all unmarked vertex pairs.
         auto index_assign = [&](const Subgraph &subgraph, size_t i) {
             for (VertexPair uv : subgraph.vertexPairs())
                 if (!m_marked[uv])
                     subgraph_index[uv] = i;
         };
 
+        // Return the indices of the subgraphs already in the lower bound which share a vertex pair with the subgraph.
         auto candidate_neighbors_indices = [&](const Subgraph &subgraph) {
             std::vector<size_t> is;
-            auto vp = subgraph.vertexPairs();
-            std::transform(vp.begin(), vp.end(), std::back_inserter(is),
-                           [&](VertexPair uv) { return subgraph_index[uv]; });
+            for (VertexPair uv : subgraph.vertexPairs())
+                is.push_back(subgraph_index[uv]);
             is.erase(std::remove_if(is.begin(), is.end(), [](size_t i) { return i == invalid_index; }), is.end());
             std::sort(is.begin(), is.end());
             is.erase(std::unique(is.begin(), is.end()), is.end());
             return is;
         };
 
+        // populate the subgraph_index map
         for (size_t i = 0; i < state.bound().size(); ++i)
             index_assign(state.bound(i).subgraph, i);
 
@@ -700,46 +707,54 @@ private:
             auto subgraph_cost = get_subgraph_cost(subgraph, m_marked, m_costs);
             assert(subgraph_cost != invalid_cost);
 
-            for (VertexPair uv : subgraph.vertexPairs())
-                if (!m_marked[uv])
-                    used[uv] = true;
+            // for (VertexPair uv : subgraph.vertexPairs()) // TODO: Removed later.
+            //     if (!m_marked[uv])
+            //         used[uv] = true;
 
             Cost sum = 0;
             size_t count = 0;
 
-            auto is = candidate_neighbors_indices(subgraph);
-            for (auto i : is) {
+
+            // add the costs of all adjacent subgraphs in the lower bound
+            for (auto i : candidate_neighbors_indices(subgraph)) {
                 sum += state.bound(i).cost;
                 count++;
             }
 
             if (subgraph_cost > sum) {
+                // The cost of the single subgraph is larger than the cost of the adjacent subgraphs in the lower bound.
+                // Swapping them improves the lower bound.
                 found_improvement = true;
                 if (verbosity > 1)
                     std::cout << "found (" << count << ", 1) swap " << std::setw(4) << subgraph_cost - sum << ", "
                               << sum << " => " << subgraph_cost << ", ... => " << subgraph << "\n";
 
+                // Remove adjacent subgraphs from the lower bound.
                 for (VertexPair uv : subgraph.vertexPairs()) {
                     auto i = subgraph_index[uv];
                     if (i != invalid_index) {
-                        const auto &bound_subgraph = state.bound(i).subgraph;
+                        const auto &neighbor = state.bound(i).subgraph;
 
-                        index_assign(bound_subgraph, invalid_index);
-                        remove_from_graph(bound_subgraph, m_marked, m_bound_graph);
+                        // Remove neighbor from subgraph_index, m_bound_graph and the bound.
+                        index_assign(neighbor, invalid_index);
+                        remove_from_graph(neighbor, m_marked, m_bound_graph);
                         state.remove(i);
+
+                        // Overwrite the subgraph_index positions of previously last subgraph.
                         index_assign(state.bound(i).subgraph, i);
                     }
                 }
 
-                for (VertexPair uv : subgraph.vertexPairs())
-                    used[uv] = false;
+                // for (VertexPair uv : subgraph.vertexPairs())
+                //     used[uv] = false;
 
+                // Insert the subgraph into subgraph_index, m_bound_graph and the bound.
                 index_assign(subgraph, state.bound().size());
                 insert_into_graph(subgraph, m_marked, m_bound_graph);
                 state.insert({subgraph_cost, std::move(subgraph)});
             } else {
-                for (VertexPair uv : subgraph.vertexPairs())
-                    used[uv] = false;
+                // for (VertexPair uv : subgraph.vertexPairs())
+                //     used[uv] = false;
             }
             return state.cost() > k;
         });
@@ -866,6 +881,28 @@ private:
                 pairs.push_back(uv);
         }
         return pairs;
+    }
+
+    /**
+     * Return the number of pairs with neighbors and a upper bound on the number of subgraphs sharing an unmarked pair
+     * of vertices with the given subgraph.
+     *
+     * @param subgraph_stats
+     * @param marked
+     * @param subgraph
+     * @return
+     */
+    static std::tuple<size_t, size_t> count_neighbors(const SubgraphStats& subgraph_stats,
+            const VertexPairMap<bool> &marked, const Subgraph& subgraph) {
+        size_t num_pairs = 0, num_neighbors_ub = 0;
+        for (VertexPair uv : subgraph.vertexPairs()) {
+            if (!marked[uv]) {
+                size_t nn = subgraph_stats.subgraphCount(uv) - 1;
+                num_neighbors_ub += nn;
+                if (nn > 0) ++num_pairs;
+            }
+        }
+        return {num_pairs, num_neighbors_ub};
     }
 };
 
