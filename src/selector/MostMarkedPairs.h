@@ -9,10 +9,11 @@
 namespace Selector {
     class MostMarkedPairs : public SelectorI {
     private:
-        const VertexPairMap<bool> &m_forbidden;
+        const VertexPairMap<bool> &m_marked;
+        const SubgraphStats &m_subgraph_stats;
     public:
-        MostMarkedPairs(std::shared_ptr <FinderI> finder_ptr, const VertexPairMap<bool> &forbidden) : SelectorI(
-                std::move(finder_ptr)), m_forbidden(forbidden) {}
+        MostMarkedPairs(std::shared_ptr <FinderI> finder_ptr, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) : SelectorI(
+                std::move(finder_ptr)), m_marked(marked), m_subgraph_stats(subgraph_stats) {}
 
         Problem result(Cost /*k*/) override {
             Subgraph min_subgraph{};
@@ -26,7 +27,7 @@ namespace Selector {
 
                 size_t num_marked_pairs = 0;
                 for (VertexPair uv : subgraph.vertexPairs())
-                    if (m_forbidden[uv])
+                    if (m_marked[uv])
                         ++num_marked_pairs;
 
                 if (num_marked_pairs < min_num_marked_pairs) {
@@ -39,8 +40,12 @@ namespace Selector {
 
             std::vector<VertexPair> pairs;
             for (VertexPair uv : min_subgraph.vertexPairs())
-                if (!m_forbidden[uv])
+                if (!m_marked[uv])
                     pairs.push_back(uv);
+
+            std::sort(pairs.begin(), pairs.end(), [&](const VertexPair &uv, const VertexPair &xy) {
+                return m_subgraph_stats.subgraphCount(uv) > m_subgraph_stats.subgraphCount(xy);
+            });
 
             return {pairs, solved};
         }

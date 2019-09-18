@@ -11,12 +11,12 @@ namespace Selector {
     class LeastWeight : public SelectorI {
     private:
         const VertexPairMap<Cost> &m_costs;
-        const VertexPairMap<bool> &m_forbidden;
+        const VertexPairMap<bool> &m_marked;
 
     public:
         LeastWeight(const VertexPairMap<Cost> &costs, std::shared_ptr<FinderI> finder_ptr,
-                    const VertexPairMap<bool> &forbidden) : SelectorI(std::move(finder_ptr)), m_costs(costs),
-                                                                     m_forbidden(forbidden) {}
+                    const VertexPairMap<bool> &marked) : SelectorI(std::move(finder_ptr)), m_costs(costs),
+                                                                     m_marked(marked) {}
 
         Problem result(Cost /*k*/) override {
             Subgraph min_subgraph{};
@@ -27,7 +27,7 @@ namespace Selector {
             finder->find([&](Subgraph &&subgraph) {
                 solved = false;
 
-                Cost subgraph_cost = get_subgraph_cost(subgraph, m_forbidden, m_costs);
+                Cost subgraph_cost = get_subgraph_cost(subgraph, m_marked, m_costs);
 
                 if (subgraph_cost == invalid_cost) {
                     // if at least one forbidden subgraph has only marked vertex pairs, the problem is not solvable.
@@ -45,11 +45,11 @@ namespace Selector {
 
             std::vector<VertexPair> pairs;
             for (VertexPair uv : min_subgraph.vertexPairs())
-                if (!m_forbidden[uv])
+                if (!m_marked[uv])
                     pairs.push_back(uv);
 
-            //std::sort(pairs.begin(), pairs.end(),
-            //          [&](VertexPair uv, VertexPair xy) { return m_costs[uv] < m_costs[xy]; });
+            std::sort(pairs.begin(), pairs.end(),
+                      [&](VertexPair uv, VertexPair xy) { return m_costs[uv] < m_costs[xy]; });
 
             return {pairs, solved};
         }
