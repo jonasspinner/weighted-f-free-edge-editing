@@ -38,10 +38,10 @@ def write_metis_graph(path: Union[str, Path], graph: nx.Graph, costs: np.ndarray
     with Path(path).open('w') as file:
         n = graph.number_of_nodes()
         m = n * (n - 1) // 2
-        fmt = graph.is_directed()
+        fmt = 1 if graph.is_directed() else 0
 
-        file.write(f"{n} {m} {fmt}")
+        file.write(f"{n} {m} {fmt}\n")
 
         for u in range(n):
             file.write(" ".join([f"{v + 1} {costs[u][v] if graph.has_edge(u, v) else -costs[u][v]}"
-                                 for v in range(u + 1, n)]))
+                                 for v in range(u + 1, n)]) + "\n")
