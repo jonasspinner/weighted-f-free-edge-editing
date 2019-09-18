@@ -16,6 +16,18 @@
 
 class ILPSolver : public Solver {
 private:
+    // constexpr static bool restrict_solution_by_k = false;
+    struct Config {
+        bool add_extended_constraints = true;
+        bool sparse_constraints = false;
+
+        int all_lazy = 1;
+        int num_threads = 4;
+        int timelimit = -1;
+
+        int verbosity = 1;
+    } config;
+
     class FSGCallback : public GRBCallback {
     private:
         Graph m_graph;
@@ -23,11 +35,11 @@ private:
         const VertexPairMap<GRBVar> &m_vars;
         VertexPairMap<bool> m_edited;
 
-        int verbosity;
+        Config config;
 
     public:
-        FSGCallback(Options::FSG fsg, Graph graph, const VertexPairMap<GRBVar> &vars, int verbosity_) :
-            m_graph(std::move(graph)), m_vars(vars), m_edited(m_graph.size()), verbosity(verbosity_) {
+        FSGCallback(Options::FSG fsg, Graph graph, const VertexPairMap<GRBVar> &vars, Config config_) :
+            m_graph(std::move(graph)), m_vars(vars), m_edited(m_graph.size()), config(config_) {
             m_finder = Finder::make(fsg, m_graph);
         };
 
@@ -49,14 +61,37 @@ private:
 
 
                 size_t num_added = 0;
-                // Find forbidden subgraphs in current solution and add additional constraints.
-                m_finder->find([&](Subgraph &&subgraph) {
-                    addSubgraphConstraint(subgraph);
-                    ++num_added;
-                    return false;
-                });
 
-                if (verbosity)
+                 if (config.sparse_constraints) {
+                    VertexPairMap<bool> used_pairs(m_graph.size());
+                    m_finder->find([&](const Subgraph& subgraph) {
+
+                        bool not_covered = false;
+                        for (VertexPair uv : subgraph.vertexPairs())
+                            if (!used_pairs[uv]) {
+                                not_covered = true;
+                                break;
+                            }
+
+
+                        if (not_covered) {
+                            for (VertexPair uv : subgraph.vertexPairs())
+                                used_pairs[uv] = true;
+                            ++num_added;
+                            addSubgraphConstraint(subgraph);
+                        }
+                        return false;
+                    });
+                } else {
+                    // Find forbidden subgraphs in current solution and add additional constraints.
+                    m_finder->find([&](Subgraph &&subgraph) {
+                        addSubgraphConstraint(subgraph);
+                        ++num_added;
+                        return false;
+                    });
+                }
+
+                if (config.verbosity)
                     std::cout << "Callback constraints: added " << num_added << " constraints.\n";
 
                 // Undo edits.
@@ -84,14 +119,6 @@ private:
     Options::FSG m_fsg;
 
 
-    constexpr static bool restrict_solution_by_k = false;
-    constexpr static bool add_initial_constraints = true;
-    constexpr static bool add_extended_constraints = true;
-
-    int all_lazy = 1;
-    int num_threads = 4;
-
-    int verbosity = 1;
 
 public:
     explicit ILPSolver(Options::FSG fsg) : m_fsg(fsg) {}
@@ -103,10 +130,11 @@ public:
             GRBEnv env = GRBEnv();
             GRBModel model = GRBModel(env);
 
-            model.getEnv().set(GRB_IntParam_LogToConsole, (verbosity > 0) ? 1 : 0);
+            model.getEnv().set(GRB_IntParam_LogToConsole, (config.verbosity > 0) ? 1 : 0);
             model.set(GRB_IntParam_LazyConstraints, 1);
-            model.set(GRB_IntParam_Threads, num_threads);
-            model.set(GRB_DoubleParam_TimeLimit, 100);
+            model.set(GRB_IntParam_Threads, config.num_threads);
+            if (config.timelimit >= 0)
+                model.set(GRB_DoubleParam_TimeLimit, config.timelimit);
 
 
             // Add model variables: x_uv == 1  <=>  uv is edited
@@ -122,18 +150,13 @@ public:
 
             model.setObjective(obj, GRB_MINIMIZE);
 
+            size_t num_added = addConstraints(model, vars, graph);
 
-            size_t num_added = 0;
-            if (add_initial_constraints)
-                num_added += addInitialConstraints(model, vars, graph);
-            if (add_extended_constraints)
-                num_added += addExtendedConstraints(model, vars, graph);
-
-            if (num_added >= 1'000'000)
-                return {};
+            //if (num_added >= 1'000'000)
+            //    return Result::Unsolved();
 
             // Register callback
-            FSGCallback cb(m_fsg, graph, vars, verbosity);
+            FSGCallback cb(m_fsg, graph, vars, config);
             model.setCallback(&cb);
 
 
@@ -165,47 +188,75 @@ private:
         return value > 0.5;
     }
 
-    size_t addInitialConstraints(GRBModel &model, VertexPairMap<GRBVar> &vars, Graph &graph) {
-        auto finder = Finder::make(m_fsg, graph);
-        size_t num_added = 0;
-
-        finder->find([&](Subgraph&& subgraph) {
-            GRBLinExpr expr;
-            for (VertexPair xy : subgraph.vertexPairs())
-                expr += vars[xy];
-            auto constr = model.addConstr(expr >= 1);
-            constr.set(GRB_IntAttr_Lazy, all_lazy);
-            ++num_added;
-            return false;
-        });
-        if (verbosity)
-            std::cout << "Initial constraints: added " << num_added << " constraints.\n";
-        return num_added;
+    static void coverVariables(VertexPairMap<bool> &covered, const Subgraph &subgraph) {
+        for (VertexPair uv : subgraph.vertexPairs())
+            covered[uv] = true;
     }
 
-    size_t addExtendedConstraints(GRBModel &model, VertexPairMap<GRBVar> &vars, Graph &graph) {
+    static bool variablesAreCovered(const VertexPairMap<bool> &covered, const Subgraph &subgraph) {
+        for (VertexPair uv : subgraph.vertexPairs())
+            if (!covered[uv])
+                return false;
+        return true;
+    }
+
+    size_t addConstraints(GRBModel &model, VertexPairMap<GRBVar> &vars, Graph &graph) {
         auto finder = Finder::make(m_fsg, graph);
         size_t num_added = 0;
 
-        for (VertexPair uv : graph.vertexPairs()) {
-            graph.toggleEdge(uv);
+        if (config.add_extended_constraints) {
+            VertexPairMap<bool> covered(graph.size());
 
-            finder->find_near(uv, [&](Subgraph&& subgraph) {
+            finder->find([&](Subgraph&& subgraph) {
+                for (VertexPair uv : subgraph.vertexPairs())
+                    covered[uv] = true;
+
                 GRBLinExpr expr;
                 for (VertexPair xy : subgraph.vertexPairs())
-                    if (xy == uv)
-                        expr += (1 - vars[xy]);
-                    else
-                        expr += vars[xy];
+                    expr += vars[xy];
                 auto constr = model.addConstr(expr >= 1);
-                constr.set(GRB_IntAttr_Lazy, all_lazy);
+
+                constr.set(GRB_IntAttr_Lazy, config.all_lazy);
                 ++num_added;
                 return false;
             });
 
-            graph.toggleEdge(uv);
+            for (VertexPair uv : graph.vertexPairs()) {
+                if (covered[uv]) {
+                    graph.toggleEdge(uv);
+
+                    finder->find_near(uv, [&](Subgraph&& subgraph) {
+
+                        GRBLinExpr expr;
+                        for (VertexPair xy : subgraph.vertexPairs())
+                            if (xy == uv) // xy is an edited pair of vertices
+                                expr += (1 - vars[xy]);
+                            else
+                                expr += vars[xy];
+                        auto constr = model.addConstr(expr >= 1);
+
+                        constr.set(GRB_IntAttr_Lazy, config.all_lazy);
+                        ++num_added;
+                        return false;
+                    });
+
+                    graph.toggleEdge(uv);
+                }
+            }
+        } else  {
+            finder->find([&](const Subgraph& subgraph) {
+                GRBLinExpr expr;
+                for (VertexPair xy : subgraph.vertexPairs())
+                    expr += vars[xy];
+                auto constr = model.addConstr(expr >= 1);
+
+                constr.set(GRB_IntAttr_Lazy, config.all_lazy);
+                ++num_added;
+                return false;
+            });
         }
-        if (verbosity)
+
+        if (config.verbosity)
             std::cout << "Extended constraints: added " << num_added << " constraints.\n";
         return num_added;
     }
