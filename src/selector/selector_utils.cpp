@@ -8,9 +8,8 @@
 #include "FirstEditable.h"
 #include "LeastWeight.h"
 #include "MostMarkedPairs.h"
-#include "../Configuration.h"
-#include "../Instance.h"
-
+#include "Most_adapted.h"
+#include "Most.h"
 
 namespace Selector {
 
@@ -25,14 +24,14 @@ namespace Selector {
      */
     std::unique_ptr<SelectorI>
     make(Options::Selector selector, const std::shared_ptr<FinderI> &finder, const Instance &instance,
-         const VertexPairMap<bool> &marked) {
+         const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) {
         switch (selector) {
             case Options::Selector::LeastWeight:
                 return std::make_unique<LeastWeight>(instance.costs, finder, marked);
             case Options::Selector::FirstEditable:
                 return std::make_unique<FirstEditable>(finder, marked);
             case Options::Selector::MostMarked:
-                return std::make_unique<MostMarkedPairs>(finder, marked);
+                return std::make_unique<MostMarkedPairs>(finder, marked, subgraph_stats);
             default:
                 assert(false);
                 return nullptr;
