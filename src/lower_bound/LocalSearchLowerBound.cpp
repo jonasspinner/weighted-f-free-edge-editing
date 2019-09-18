@@ -5,7 +5,7 @@
 
 #include "LocalSearchLowerBound.h"
 
-
+#include <chrono>
 
 
 /**
@@ -167,6 +167,10 @@ void LocalSearchLowerBound::local_search(State &state, Cost k) {
     size_t num_rounds_two = 0; Cost improvement_two = 0;
     size_t num_rounds_omega = 0; Cost improvement_omega = 0;
 
+    long time_one = 0;
+    long time_two = 0;
+    long time_omega = 0;
+
     size_t num_marked = 0;
     for (VertexPair uv : m_bound_graph.vertexPairs())
         if (m_marked[uv])
@@ -187,48 +191,55 @@ void LocalSearchLowerBound::local_search(State &state, Cost k) {
         if (use_one_improvement) {
 #ifdef stats
             Cost before = state.cost();
+            auto start = std::chrono::steady_clock::now();
 #endif
             if (verbosity) std::cout << "[" << state.cost() << "] round mode=0\n";
             for (size_t index = 0; state.cost() <= k && index < state.bound().size(); ++index)
                 improvement_found |= find_one_improvements(state, index);
 #ifdef stats
             ++num_rounds_one; improvement_one += state.cost() - before;
+            time_one = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count();
 #endif
         }
 
         if (!improvement_found && use_two_improvement) {
 #ifdef stats
             Cost before = state.cost();
+            auto start = std::chrono::steady_clock::now();
 #endif
             if (verbosity) std::cout << "[" << state.cost() << "] round mode=1\n";
             for (size_t index = 0; state.cost() <= k && index < state.bound().size(); ++index)
                 improvement_found |= find_two_improvement(state, index, bound_changed);
 #ifdef stats
             ++num_rounds_two; improvement_two += state.cost() - before;
+            time_two = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count();
 #endif
         }
 
         if (!improvement_found && use_omega_improvement) {
 #ifdef stats
             Cost before = state.cost();
+            auto start = std::chrono::steady_clock::now();
 #endif
             if (verbosity) std::cout << "[" << state.cost() << "] round mode=2\n";
             improvement_found = find_omega_improvement(state, k);
 #ifdef stats
             ++num_rounds_omega; improvement_omega += state.cost() - before;
+            time_omega = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count();
 #endif
         }
 
         rounds_no_improvement = improvement_found ? 0 : rounds_no_improvement + 1;
         // improvement_found || (rounds_no_improvement < 5 && bound_changed)
-    } while (state.cost() <= k && (improvement_found || (rounds_no_improvement < 2 && bound_changed)));
+    } while (state.cost() <= k && (improvement_found || (rounds_no_improvement < m_max_rounds_no_improvement && bound_changed)));
     if (verbosity) std::cout << "[" << state.cost() << "] end local search\n";
 #ifdef stats
     std::cerr << "local_search(state.cost=" << std::setw(4) << cost_before << ", k=" << std::setw(4) << k << ") "
               << std::setw(4) << cost_before << " -> " << std::setw(4) << state.cost() << "\t "
-              << "one #" << num_rounds_one << " cost " << std::setw(4) << improvement_one << "\t "
-              << "two #" << num_rounds_two << " cost " << std::setw(4) << improvement_two << "\t "
-              << "omega #" << num_rounds_omega << " cost " << std::setw(4) << improvement_omega << "\n";
+              << "one / two / omega\t "
+              << "# " << num_rounds_one << " " << num_rounds_two << " " << num_rounds_omega << "\t\t"
+              << "+cost " << std::setw(4) << improvement_one << " " << std::setw(4) << improvement_two << " " << std::setw(4) << improvement_omega << "\t\t"
+              << std::setw(6) << time_one << "\t " << std::setw(6) << time_two << "\t " << std::setw(6) << time_omega << "\n";
 #endif
 #undef stats
 }
@@ -250,6 +261,11 @@ bool LocalSearchLowerBound::find_one_improvements(State &state, size_t index) {
 
     const auto &[subgraph_cost, subgraph] = state.bound(index);
     assert(subgraph_cost == get_subgraph_cost(subgraph, m_marked, m_costs));
+
+
+    const auto [num_pairs_with_neighbors, num_neighbors_upper_bound] = count_neighbors(m_subgraph_stats, m_marked, subgraph);
+    if (num_pairs_with_neighbors < 1 || num_neighbors_upper_bound < 1)
+        return false; // No improvement possible.
 
     remove_from_graph(subgraph, m_marked, m_bound_graph);
 
@@ -273,23 +289,26 @@ bool LocalSearchLowerBound::find_one_improvements(State &state, size_t index) {
     for (VertexPair uv : pairs) {
         assert(!m_bound_graph.hasEdge(uv));
 
-        finder->find_near(uv, m_bound_graph, [&](Subgraph &&neighbor) {
-#ifndef NDEBUG
-            {
-                auto vp = neighbor.vertexPairs();
-                assert(std::none_of(vp.begin(), vp.end(),
-                                    [&](VertexPair xy) { return m_bound_graph.hasEdge(xy); }));
-            }
-#endif
-            Cost n_cost = get_subgraph_cost(neighbor, m_marked, m_costs);
-            if (n_cost > max_cost) {
-                found_improvement = true;
-                max_cost = n_cost;
-                max_subgraph = std::move(neighbor);
-            }
+        if (m_subgraph_stats.subgraphCount(uv) > 1) {
 
-            return false;
-        });
+            finder->find_near(uv, m_bound_graph, [&](Subgraph &&neighbor) {
+#ifndef NDEBUG
+                {
+                    auto vp = neighbor.vertexPairs();
+                    assert(std::none_of(vp.begin(), vp.end(),
+                                        [&](VertexPair xy) { return m_bound_graph.hasEdge(xy); }));
+                }
+#endif
+                Cost n_cost = get_subgraph_cost(neighbor, m_marked, m_costs);
+                if (n_cost > max_cost) {
+                    found_improvement = true;
+                    max_cost = n_cost;
+                    max_subgraph = std::move(neighbor);
+                }
+
+                return false;
+            });
+        }
 
         // prevent subgraphs including uv to be counted twice
         m_bound_graph.setEdge(uv);
@@ -347,7 +366,7 @@ bool LocalSearchLowerBound::find_two_improvement(State &state, size_t index, boo
 
     // Candidates are subgraphs which are only adjacent to subgraph but no other subgraph in the lower bound.
     const auto pairs = get_pairs(subgraph, m_marked);
-    auto[candidates, border] = get_candidates(*finder, pairs, m_bound_graph);
+    auto[candidates, border] = get_candidates(*finder, pairs, m_bound_graph, m_subgraph_stats);
 
 #ifndef NDEBUG
     {
@@ -447,11 +466,13 @@ bool LocalSearchLowerBound::find_two_improvement(State &state, size_t index, boo
         if (!plateau_candidates.empty()) {
             bound_changed = true;
 
-            // std::cerr << "plateau search";
-
             std::uniform_real_distribution<float> uniform(0, 1);
 
             if (uniform(m_gen) < m_alpha) {
+                // Every \alpha percent.
+                // Do not choose between all candidates, but only between the candidates with the lowest upper bound on
+                // subgraphs covered.
+
                 std::vector<size_t> new_plateau_candidates;
                 size_t min_num_subgraphs_covered = std::numeric_limits<size_t>::max();
 
@@ -464,17 +485,11 @@ bool LocalSearchLowerBound::find_two_improvement(State &state, size_t index, boo
                         new_plateau_candidates.push_back(i);
                     }
                 }
-                // std::cerr << " 70% " << plateau_candidates.size() << " -> " << new_plateau_candidates.size();
                 plateau_candidates = new_plateau_candidates;
             }
 
             std::uniform_int_distribution<size_t> sample(0, plateau_candidates.size() - 1);
             auto a_i = plateau_candidates[sample(m_gen)];
-
-            //std::shuffle(plateau_candidates.begin(), plateau_candidates.end(), m_gen);
-            //auto a_i = plateau_candidates[0];
-
-            // std::cerr << " " << subgraph << " => " << candidates[a_i] << " " << plateau_candidates.size() << "\n";
 
             if (verbosity > 1)
                 std::cout << "made (1, 1) swap for plateau search " << std::setw(4) << 0 << ", " << subgraph
@@ -650,8 +665,8 @@ bool LocalSearchLowerBound::try_insert_into_graph(const Subgraph &subgraph, cons
  * @param bound_graph
  * @return candidates and a border array partitioning the candidates by vertex pairs.
  */
-std::pair<std::vector<Subgraph>, std::vector<size_t>>
-LocalSearchLowerBound::get_candidates(FinderI &finder, const std::vector<VertexPair> &pairs, Graph &bound_graph) {
+std::pair<std::vector<Subgraph>, std::vector<size_t>> LocalSearchLowerBound::get_candidates(FinderI &finder,
+        const std::vector<VertexPair> &pairs, Graph &bound_graph, const SubgraphStats &subgraph_stats) {
 
     // Precondition: subgraph is removed from bound_graph.
     assert(std::none_of(pairs.begin(), pairs.end(), [&](VertexPair uv) { return bound_graph.hasEdge(uv); }));
@@ -663,14 +678,16 @@ LocalSearchLowerBound::get_candidates(FinderI &finder, const std::vector<VertexP
         VertexPair uv = pairs[i];
         assert(!bound_graph.hasEdge(uv));
 
-        finder.find_near(uv, bound_graph, [&](Subgraph &&neighbor) {
+        if (subgraph_stats.subgraphCount(uv) > 1) {
+            finder.find_near(uv, bound_graph, [&](Subgraph &&neighbor) {
 #ifndef NDEBUG
-            auto vp = neighbor.vertexPairs();
-            assert(std::none_of(vp.begin(), vp.end(), [&](VertexPair xy) { return bound_graph.hasEdge(xy); }));
+                auto vp = neighbor.vertexPairs();
+                assert(std::none_of(vp.begin(), vp.end(), [&](VertexPair xy) { return bound_graph.hasEdge(xy); }));
 #endif
-            candidates.push_back(std::move(neighbor));
-            return false;
-        });
+                candidates.push_back(std::move(neighbor));
+                return false;
+            });
+        }
         border[i + 1] = candidates.size();
 
         // prevent subgraphs including uv to be counted twice

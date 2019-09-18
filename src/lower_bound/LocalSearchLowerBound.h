@@ -199,6 +199,7 @@ private:
     std::vector<std::unique_ptr<State>> m_states;
     std::mt19937_64 m_gen;
     float m_alpha = 0.7; // percent of plateau candidates being chosen from the ones covering the least other subgraphs instead of all candidates
+    size_t m_max_rounds_no_improvement = 5;
 
     const int verbosity = 0;
 
@@ -254,8 +255,8 @@ private:
 
     static bool try_insert_into_graph(const Subgraph &subgraph, const VertexPairMap<bool> &marked, Graph &graph);
 
-    static std::pair<std::vector<Subgraph>, std::vector<size_t>>
-    get_candidates(FinderI &finder, const std::vector<VertexPair> &pairs, Graph &bound_graph);
+    static std::pair<std::vector<Subgraph>, std::vector<size_t>> get_candidates(FinderI &finder,
+            const std::vector<VertexPair> &pairs, Graph &bound_graph, const SubgraphStats &subgraph_stats);
 
     static std::vector<VertexPair> get_pairs(const Subgraph &subgraph, const VertexPairMap<bool> &marked);
 
