@@ -78,7 +78,7 @@ public:
     explicit FinderTests(int seed=0) : gen(seed) {}
 
     void EditsSolveKarate() {
-        Instance instance = GraphIO::read_graph("../data/karate.graph");
+        Instance instance = GraphIO::read_instance("../data/karate.graph");
         Graph G = instance.graph;
 
         std::vector<VertexPair> edits {

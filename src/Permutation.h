@@ -6,11 +6,14 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_PERMUTATION_H
 
 
+#include "graph/Subgraph.h"
+
 class Permutation {
 private:
     std::vector<Vertex> P;
+    int m_seed = 0;
 
-    explicit Permutation(std::vector<Vertex> P_) : P(std::move(P_)) {}
+    explicit Permutation(std::vector<Vertex> P_, int seed) : P(std::move(P_)), m_seed(seed) {}
 
 public:
     explicit Permutation(size_t size) : P(size) {
@@ -19,7 +22,9 @@ public:
     }
 
     Permutation(size_t size, int seed) : Permutation(size) {
-        std::shuffle(P.begin(), P.end(), std::mt19937_64(seed));
+        m_seed = seed;
+        if (seed != 0)
+            std::shuffle(P.begin(), P.end(), std::mt19937_64(seed));
     }
 
     inline Vertex operator[](Vertex u) const {
@@ -82,8 +87,12 @@ public:
     }
 
     Instance operator[](const Instance &instance) const {
-        Instance result(instance.name + "-permuted", (*this)[instance.graph], (*this)[instance.costs]);
-        return result;
+        if (instance.permutation == -m_seed)
+            return Instance(instance.name, (*this)[instance.graph], (*this)[instance.costs], instance.multiplier, 0);
+        else if (instance.permutation == 0)
+            return Instance(instance.name, (*this)[instance.graph], (*this)[instance.costs], instance.multiplier, m_seed);
+        else
+            throw std::runtime_error("at most one application of permutation is allowed for instances");
     }
 
     [[nodiscard]] Permutation reverse() const {
@@ -91,7 +100,7 @@ public:
         for (Vertex u = 0; u < P.size(); ++u)
             r_P[P[u]] = u;
 
-        return Permutation(r_P);
+        return Permutation(r_P, -m_seed);
     }
 };
 

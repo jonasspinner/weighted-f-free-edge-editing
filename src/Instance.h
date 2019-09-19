@@ -11,22 +11,28 @@
 
 class Instance {
 public:
-    std::string name;
     Graph graph;
     VertexPairMap<Cost> costs;
 
-    Instance(std::string name_, Graph graph_, VertexPairMap<Cost> costs_) : name(std::move(name_)), graph(std::move(graph_)), costs(std::move(costs_)) {}
+    std::string name;
+    double multiplier;
+    int permutation;
+
+    Instance(std::string name_, Graph graph_, VertexPairMap<Cost> costs_, double multiplier_ = 1.0,
+            int permutation_ = 0) :
+            graph(std::move(graph_)), costs(std::move(costs_)), name(std::move(name_)), multiplier(multiplier_),
+            permutation(permutation_){}
 
 
     friend YAML::Emitter &operator<<(YAML::Emitter &out, const Instance &instance) {
-        out << YAML::BeginMap;
-        out << YAML::Key << "name";
-        out << YAML::Value << instance.name;
-        out << YAML::Key << "graph";
-        out << YAML::Value << instance.graph;
-        out << YAML::Key << "costs";
-        out << YAML::Value << instance.costs;
-        return out << YAML::EndMap;
+        using namespace YAML;
+        out << BeginMap;
+        out << Key << "name" << Value << instance.name;
+        out << Key << "multiplier" << Value << instance.multiplier;
+        out << Key << "permutation" << Value << instance.permutation;
+        //out << Key << "graph" << Value << instance.graph;
+        //out << Key << "costs" << Value << instance.costs;
+        return out << EndMap;
     }
 };
 

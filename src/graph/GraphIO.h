@@ -11,6 +11,7 @@
 #include "Graph.h"
 #include "VertexPairMap.h"
 #include "../Instance.h"
+#include "../Permutation.h"
 
 class GraphIO {
 public:
@@ -25,10 +26,15 @@ public:
      * Assumes that the file is in metis format with fmt == 1 and that the edges are from the upper triangular adjacency
      * matrix of a fully connected graph.
      *
-     * @param path
+     * The instance is constructed as follows. Editing costs c(uv) = ceil(abs(s(uv)) * multiplier). If permutation is
+     * not 0, then the instance is permuted with the given permutation as seed.
+     *
+     * @param path The path to the instance file.
+     * @param multiplier A factor for multiplying the given similarity scores.
+     * @param permutation
      * @return
      */
-    static Instance read_graph(const std::string &path, double multiplier = 1) {
+    static Instance read_instance(const std::string &path, double multiplier = 1.0, int permutation = 0) {
         using Real = double;
 
         std::ifstream file(path);
@@ -72,13 +78,6 @@ public:
                         edit_costs[edge] = static_cast<Cost>(std::ceil(std::abs(weight) * multiplier));
                         if (weight > 0) G.setEdge(edge);
                         else if (weight <= 0) G.clearEdge(edge);
-                        /*
-                        else {
-                            std::cerr << "zero edge " << edge << " " << weight << "\n";
-                            std::cerr << line << "\n";
-                            throw std::runtime_error("0 weight edge detected");
-                        }
-                        */
                     }
                 }
             }
@@ -86,18 +85,21 @@ public:
             throw std::runtime_error("fmt not supported");
         }
 
+        Instance instance(path, G, edit_costs, multiplier);
+        Permutation P(G.size(), permutation);
+        instance = P[instance];
 
-        return {path, G, edit_costs};
+        return instance;
     }
 
     template<typename Weight>
-    static void write_graph(const std::string &path, const Graph &graph, const VertexPairMap<Weight> &weights) {
-        write_graph(path, graph, weights, Format::Metis());
+    static void write_instance(const std::string &path, const Graph &graph, const VertexPairMap<Weight> &weights) {
+        write_instance(path, graph, weights, Format::Metis());
     }
 
     template<typename Weight>
     static void
-    write_graph(const std::string &path, const Graph &graph, const VertexPairMap<Weight> &weights, Format::Metis) {
+    write_instance(const std::string &path, const Graph &graph, const VertexPairMap<Weight> &weights, Format::Metis) {
         std::ofstream file(path);
 
         if (!file) throw std::runtime_error("could not open file");

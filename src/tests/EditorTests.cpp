@@ -24,7 +24,7 @@ void EditorTests::configurations_have_same_output(Options::FSG fsg, const std::v
                                      const std::vector<Options::LB> &lower_bounds, const std::vector<int> &seeds,
                                      double multiplier) {
 
-    auto orig_instance = GraphIO::read_graph(instance_path, multiplier);
+    auto orig_instance = GraphIO::read_instance(instance_path, multiplier);
     std::vector<std::tuple<Options::Selector, Options::FSG, Options::LB, int, std::vector<Solution>>> results;
 
     for (auto seed : seeds) {
@@ -77,7 +77,7 @@ void EditorTests::configurations_have_same_output(Options::FSG fsg, const std::v
  * @param seeds
  */
 void EditorTests::output_is_independent_of_seed(const std::vector<int> &seeds) {
-    auto orig_instance = GraphIO::read_graph(instance_path, 100);
+    auto orig_instance = GraphIO::read_instance(instance_path, 100);
 
     std::vector<std::tuple<int, std::vector<Solution>>> results;
 
