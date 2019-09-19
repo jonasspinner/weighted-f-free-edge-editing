@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
 
     for (const auto &input : inputs) {
     
-        auto orig_instance = GraphIO::read_graph(input, 100);
+        auto orig_instance = GraphIO::read_instance(input, 100);
         VertexPairMap<bool> marked(orig_instance.graph.size());
     
         

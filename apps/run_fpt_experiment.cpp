@@ -49,12 +49,12 @@ int main(int argc, char* argv[]) {
     }
 
     Configuration config(k_max, Options::Selector::FirstEditable, Options::FSG::P4C4, Options::LB::Greedy,
-                         {input}, "", multiplier, Options::SolverType::FPT, 0, 0);
+                         input, "", multiplier, Options::SolverType::FPT, 0, 0, false);
 
 
     // std::cout << config << "\n";
 
-    auto instance = GraphIO::read_graph(config.input_paths[0], multiplier);
+    auto instance = GraphIO::read_instance(config.input_path, config.multiplier);
     Editor editor(instance, config.selector, config.forbidden_subgraphs, config.lower_bound);
     editor.initialize(0);
 

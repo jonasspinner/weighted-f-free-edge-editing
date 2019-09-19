@@ -12,10 +12,11 @@
 
 class FPTSolver : public Solver {
 
+    Configuration m_config;
     Cost m_k;
     Options::FSG m_fsg;
 public:
-    explicit FPTSolver(const Configuration& config) : m_k(config.k_max), m_fsg(config.forbidden_subgraphs) {}
+    explicit FPTSolver(Configuration config) : m_config(std::move(config)), m_k(m_config.k_max), m_fsg(m_config.forbidden_subgraphs) {}
 
     /**
      * Search for a minimum cost which yields solutions.
@@ -24,8 +25,8 @@ public:
      * @return
      */
     std::vector<Solution> search(Instance instance) {
-        auto selector = Options::Selector::FirstEditable;
-        auto lower_bound = Options::LB::Greedy;
+        auto selector = m_config.selector;
+        auto lower_bound = m_config.lower_bound;
 
         Cost k = 0;
         bool solved;
@@ -64,8 +65,8 @@ public:
      * @return
      */
     Result solve(Instance instance) override {
-        auto selector = Options::Selector::FirstEditable;
-        auto lower_bound = Options::LB::Greedy;
+        auto selector = m_config.selector;
+        auto lower_bound = m_config.lower_bound;
 
         std::vector<Solution> solutions;
 

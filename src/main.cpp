@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
     read_args(argc, argv, seed, input, multiplier, k_max, forbidden_type, selector, lower_bound);
 
 
-    auto instance = GraphIO::read_graph(input, multiplier);
+    auto instance = GraphIO::read_instance(input, multiplier);
 
     Permutation P(instance.graph.size(), seed);
     Permutation P_r = P.reverse();
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
         std::cout << solution << " ";
 
 
-    auto instance = GraphIO::read_graph(paths[0], 100);
+    auto instance = GraphIO::read_instance(paths[0], 100);
     VertexPairMap<bool> marked(instance.graph.size());
     std::shared_ptr<FinderI> finder = std::make_shared<Finder::CenterC4P4>(instance.graph);
     auto lb = LinearProgramLowerBound(instance, marked, finder);

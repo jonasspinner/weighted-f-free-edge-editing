@@ -212,7 +212,7 @@ int main(int argc, char* argv[]) {
 
 
     for (const auto &input : inputs) {
-        auto instance = GraphIO::read_graph(input, multiplier);
+        auto instance = GraphIO::read_instance(input, multiplier);
 
         YAML::Emitter out;
         out << YAML::BeginDoc << YAML::BeginMap;

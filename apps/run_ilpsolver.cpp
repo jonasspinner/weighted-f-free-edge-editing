@@ -30,74 +30,62 @@ int main(int argc, char* argv[]) {
             "../data/dolphins.graph",
             "../data/grass_web.metis.graph"};
 
-
-    std::vector<std::string> inputs = {paths[0]};
+    std::string input = paths[2];
     double multiplier = 100;
-    std::string output;
-    auto forbidden_subgraphs = Options::FSG::P4C4;
 
-    po::options_description desc("Allowed options");
-    desc.add_options()
-            ("help", "produce help message")
-            ("inputs", po::value<std::vector<std::string>>()->multitoken(), "paths to input instances")
-            ("multiplier", po::value<double>(&multiplier)->default_value(multiplier), "multiplier for discretization of input instances")
-            ("output", po::value<std::string>(&output)->default_value(output), "path to output file")
-            ;
+    Configuration config(0, Options::Selector::MostMarked, Options::FSG::P4C4, Options::LB::LocalSearch,
+                         input, "", multiplier, Options::SolverType::ILP, 0, 0, false);
+
+    auto options = config.options({Options::SolverType::ILP});
 
     po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
+    po::store(po::command_line_parser(argc, argv).options(options).run(), vm);
     po::notify(vm);
 
     if (vm.count("help")) {
-        std::cout << desc << "\n";
+        std::cout << options << "\n";
         return 1;
     }
 
-    if (vm.count("inputs")) {
-        inputs = vm["inputs"].as<std::vector<std::string>>();
-    }
-
     std::ofstream outputFile;
-    if (!output.empty())
-        outputFile.open(output);
+    if (!config.output_path.empty())
+        outputFile.open(config.output_path);
 
+    auto instance = GraphIO::read_instance(config.input_path, config.multiplier);
 
-    for (const auto &input : inputs) {
-        auto instance = GraphIO::read_graph(input, multiplier);
+    std::cout << "Solve " << instance.name << "\n";
 
-        std::cout << "Solve " << instance.name << "\n";
+    ILPSolver solver(config.forbidden_subgraphs);
 
-        ILPSolver solver(forbidden_subgraphs);
-
-        std::vector<Solution> solutions;
-        std::vector<double> solve_times;
-        for (int it = 0; it < 1; ++it) {
-            auto t1 = steady_clock::now();
-            auto result = solver.solve(instance);
-            solutions = std::move(result.solutions);
-            auto t2 = steady_clock::now();
-            solve_times.push_back(duration_cast<microseconds>(t2 - t1).count());
-        }
-
-
-        std::sort(solutions.begin(), solutions.end());
-
-        Cost solution_cost = -1;
-        if (!solutions.empty())
-            solution_cost = solutions[0].cost;
-
-        YAML::Emitter out;
-        out << YAML::BeginDoc << YAML::BeginMap;
-        out << YAML::Key << "instance" << YAML::Value << instance.name;
-        out << YAML::Key << "forbidden_subgraphs" << YAML::Value << forbidden_subgraphs;
-        out << YAML::Key << "solutions" << YAML::Value << solutions;
-        out << YAML::Key << "solution_cost" << YAML::Value << solution_cost;
-        out << YAML::Key << "time" << YAML::Value << YAML::Flow << solve_times << YAML::Comment("ns");
-        out << YAML::EndMap << YAML::EndDoc;
-
-        std::cout << out.c_str() << "\n";
-        if (!output.empty())
-            outputFile << out.c_str();
+    std::vector<Solution> solutions;
+    std::vector<double> solve_times;
+    for (int it = 0; it < 1; ++it) {
+        auto t1 = steady_clock::now();
+        auto result = solver.solve(instance);
+        solutions = std::move(result.solutions);
+        auto t2 = steady_clock::now();
+        solve_times.push_back(duration_cast<microseconds>(t2 - t1).count());
     }
+
+
+    std::sort(solutions.begin(), solutions.end());
+
+    Cost solution_cost = -1;
+    if (!solutions.empty())
+        solution_cost = solutions[0].cost;
+
+    YAML::Emitter out;
+    out << YAML::BeginDoc << YAML::BeginMap;
+    out << YAML::Key << "instance" << YAML::Value << instance;
+    out << YAML::Key << "forbidden_subgraphs" << YAML::Value << config.forbidden_subgraphs;
+    out << YAML::Key << "solutions" << YAML::Value << solutions;
+    out << YAML::Key << "solution_cost" << YAML::Value << solution_cost;
+    out << YAML::Key << "time" << YAML::Value << YAML::Flow << solve_times << YAML::Comment("ns");
+    out << YAML::EndMap << YAML::EndDoc;
+
+    std::cout << out.c_str() << "\n";
+    if (outputFile)
+        outputFile << out.c_str();
+
     return 0;
 }

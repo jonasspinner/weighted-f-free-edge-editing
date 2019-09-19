@@ -124,7 +124,7 @@ public:
     explicit ILPSolver(Options::FSG fsg) : m_fsg(fsg) {}
 
     Result solve(Instance instance) override {
-        auto &[_, graph, costs] = instance;
+        auto &[graph, costs, _1, _2, _3] = instance;
 
         try {
             GRBEnv env = GRBEnv();
