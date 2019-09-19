@@ -175,6 +175,7 @@ void LocalSearchLowerBound::local_search(State &state, Cost k) {
     for (VertexPair uv : m_bound_graph.vertexPairs())
         if (m_marked[uv])
             ++num_marked;
+    std::cerr << "depth " << std::setw(2) << m_states.size() << " ";
     std::cerr << "num_marked " << std::setw(3) << num_marked << " ";
 #endif
 
@@ -549,6 +550,11 @@ bool LocalSearchLowerBound::find_omega_improvement(State &state, Cost k) {
 
     finder->find([&](Subgraph &&subgraph) {
         auto subgraph_cost = get_subgraph_cost(subgraph, m_marked, m_costs);
+
+        if (subgraph_cost == invalid_cost) {
+            state.set_unsolvable();
+            return true;
+        }
         assert(subgraph_cost != invalid_cost);
 
         Cost sum = 0;
