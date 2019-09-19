@@ -40,20 +40,72 @@ private:
     std::vector<VertexPair> edits;
     bool m_found_solution;
 
+    /*
+    // The idea was/is to mark all vertex pairs which editing cost is larger than the current available cost in advance
+    // for each recursion call. This could potentially increase the quality of packing based lower bounds as more vertex
+    // pairs are marked and therefore subgraphs which have these marked pairs are not considered adjacent.
+    class OrderedVertexPairs {
+        std::vector<VertexPair> m_vertex_pairs;
+        std::vector<std::vector<VertexPair>> m_stack;
+        std::vector<size_t> m_indices;
+    public:
+        OrderedVertexPairs(const Graph &graph, const VertexPairMap<Cost> &costs) : m_indices({0}) {
+            m_vertex_pairs.reserve(graph.size() * (graph.size() - 1) / 2);
+            for (VertexPair uv : graph.vertexPairs())
+                m_vertex_pairs.push_back(uv);
+
+            std::sort(m_vertex_pairs.begin(), m_vertex_pairs.end(),
+                      [&](VertexPair uv, VertexPair xy) { return costs[uv] > costs[xy]; });
+
+            for (VertexPair uv : m_vertex_pairs) {
+                std::cerr << costs[uv] << " ";
+            }
+            std::cerr << "\n";
+        }
+
+        void push(Cost k, const VertexPairMap<Cost> &costs, VertexPairMap<bool> &marked, std::vector<ConsumerI *> &consumers) {
+            size_t index = m_indices.back();
+            m_stack.emplace_back();
+            while (costs[m_vertex_pairs[index]] > k) {
+                VertexPair uv = m_vertex_pairs[index];
+                if (!marked[uv]) {
+                    for (auto &c : consumers) c->before_mark(uv);
+                    marked[uv] = true;
+                    for (auto &c : consumers) c->after_mark(uv);
+                    m_stack.back().push_back(uv);
+                }
+                ++index;
+            }
+            m_indices.push_back(index);
+        }
+
+        void pop(VertexPairMap<bool> &marked, std::vector<ConsumerI *> &consumers) {
+            m_indices.pop_back();
+            for (auto it = m_stack.back().rbegin(); it != m_stack.back().rend(); ++it) {
+                VertexPair uv = *it;
+                assert(marked[uv]);
+                marked[uv] = false;
+                for (auto &c : consumers) c->after_unmark(uv);
+            }
+            m_stack.pop_back();
+        }
+    } m_ordered_vertex_pairs;
+     */
+
     Statistics m_stats;
 
     bool m_find_all_solutions;
 
 public:
     explicit Editor(Instance instance, Options::Selector selector, Options::FSG forbidden, Options::LB lower_bound) :
-            m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_found_solution(false),
-            m_find_all_solutions(true) {
+            m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_found_solution(false), /*m_ordered_vertex_pairs(m_instance.graph, m_instance.costs),*/
+            m_find_all_solutions(false) {
 
         m_finder = Finder::make(forbidden, m_instance.graph);
         m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_marked);
         m_consumers.emplace_back(m_subgraph_stats.get());
 
-        m_selector = Selector::make(selector, m_finder, m_instance, m_marked);
+        m_selector = Selector::make(selector, m_finder, m_instance, m_marked, *m_subgraph_stats);
         m_lower_bound = LowerBound::make(lower_bound, m_finder, m_instance, m_marked, *m_subgraph_stats);
 
         m_consumers.emplace_back(m_lower_bound.get());
@@ -76,7 +128,7 @@ public:
     template<typename ResultCallback, typename PrunedCallback>
     bool edit(Cost k, ResultCallback result_cb, PrunedCallback prune_cb) {
         // init stats
-        m_stats = Statistics(-k / 2, k, 5);
+        m_stats = Statistics(-k / 2, k, 100);
         m_found_solution = false;
 
         edit_recursive(k, [&](const std::vector<VertexPair> &e) { result_cb(e); return !m_find_all_solutions; }, prune_cb);
@@ -102,6 +154,7 @@ private:
 
         m_stats.calls(k)++;
 
+        // m_ordered_vertex_pairs.push(k, costs, m_marked, m_consumers);
 
         auto lb = m_lower_bound->result(k);
         if (k < lb) {
@@ -143,9 +196,12 @@ private:
             if (return_value) break;
         }
 
+        // Iterating in reverse order because SubgraphStats keeps the history on a stack.
         for (auto uv = problem.pairs.rbegin(); uv != problem.pairs.rend(); ++uv)
             if (m_marked[*uv])
                 unmark_edge(*uv);
+
+        // m_ordered_vertex_pairs.pop(m_marked, m_consumers);
 
         return return_value;
     }
