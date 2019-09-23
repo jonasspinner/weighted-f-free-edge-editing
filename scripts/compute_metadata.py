@@ -20,8 +20,8 @@ def cost_stats(costs: np.ndarray) -> Dict[str, Any]:
     stats['std'] = np.std(costs)
     stats['min'] = np.min(costs)
     stats['max'] = np.max(costs)
-    stats['median'] = np.quantile(costs, 0.5)
-    stats['quantiles'] = np.quantile(costs, np.linspace(0, 1, 11))
+    stats['median'] = np.median(costs)
+    stats['quantiles'] = np.percentile(costs, 100 * np.linspace(0, 1, 11))
 
     return stats
 
