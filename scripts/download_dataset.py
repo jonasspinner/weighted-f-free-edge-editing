@@ -82,7 +82,7 @@ def main():
     parser.add_argument("--config", type=str, required=True,
                         help="Path for config file.")
 
-    parser.add_argument("--max-size", type=str, default=None,
+    parser.add_argument("--max-size", type=int, default=None,
                         help="Maximum instance size (default: unrestricted).")
 
     data_group = parser.add_mutually_exclusive_group(required=True)
