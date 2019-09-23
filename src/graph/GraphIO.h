@@ -45,45 +45,66 @@ public:
             throw std::runtime_error(ss.str());
         }
 
+        auto next_non_comment_line = [](std::ifstream &f, std::string &line) {
+            do {
+                std::getline(f, line);
+            } while (!line.empty() && line[0] == '%');
+        };
+
         Vertex n, m, fmt;
         std::string line;
-        std::getline(file, line);
+        next_non_comment_line(file, line);
         std::stringstream(line) >> n >> m >> fmt;
 
 
         Graph G(n);
-        VertexPairMap<Cost> edit_costs(G.size(), 1);
+        Cost undefined_cost = std::numeric_limits<Cost>::max();
+        VertexPairMap<Cost> edit_costs(G.size(), undefined_cost);
 
         if (fmt == 0) {
             edit_costs = VertexPairMap<Cost>(G.size(), 1);
             for (Vertex u = 1; u <= n; ++u) {
-                std::getline(file, line);
+                next_non_comment_line(file, line);
                 std::stringstream ss(line);
                 Vertex v;
                 while (ss >> v) {
                     if (u <= v) {
+                        if (u == v)
+                            throw std::runtime_error("self loops are not allowed");
                         G.setEdge({u - 1, v - 1});
                     }
                 }
             }
         } else if (fmt == 1) {
             for (Vertex u = 1; u <= n; ++u) {
-                std::getline(file, line);
+                next_non_comment_line(file, line);
                 std::stringstream ss(line);
                 Vertex v;
                 Real weight;
                 while (ss >> v >> weight) {
                     if (u <= v) {
+                        if (u == v)
+                            throw std::runtime_error("self loops are not allowed");
+
                         VertexPair edge(u - 1, v - 1);
-                        edit_costs[edge] = static_cast<Cost>(std::ceil(std::abs(weight) * multiplier));
-                        if (weight > 0) G.setEdge(edge);
-                        else if (weight <= 0) G.clearEdge(edge);
+                        Cost edge_cost = static_cast<Cost>(std::ceil(std::abs(weight) * multiplier));
+
+                        if (edit_costs[edge] != undefined_cost && edit_costs[edge] != edge_cost)
+                            throw std::runtime_error("weights are not symmetric");
+
+                        edit_costs[edge] = edge_cost;
+                        if (weight >= 0) G.setEdge(edge);
+                        else G.clearEdge(edge);
                     }
                 }
             }
         } else {
             throw std::runtime_error("fmt not supported");
         }
+
+        for (VertexPair uv : G.vertexPairs())
+            if (edit_costs[uv] == undefined_cost)
+                throw std::runtime_error("undefined editing cost");
 
         Instance instance(path, G, edit_costs, multiplier);
         Permutation P(G.size(), permutation);

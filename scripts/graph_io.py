@@ -25,9 +25,9 @@ def read_metis_graph(path: Union[str, Path]) -> Tuple[nx.Graph, np.ndarray]:
     S = np.zeros((n, n))
 
     for u, line in enumerate(lines[1:]):
-        it = iter(line.split(" "))
+        it = iter(line.split())
         for v, c in [(int(v) - 1, float(c)) for (v, c) in zip(it, it)]:
-            if c > 0:
+            if c >= 0:
                 graph.add_edge(u, v, cost=c)
             S[u, v] = c
 
@@ -38,7 +38,7 @@ def write_metis_graph(path: Union[str, Path], graph: nx.Graph, costs: np.ndarray
     with Path(path).open('w') as file:
         n = graph.number_of_nodes()
         m = n * (n - 1) // 2
-        fmt = 1 if graph.is_directed() else 0
+        fmt = 1
 
         file.write(f"{n} {m} {fmt}\n")
 
