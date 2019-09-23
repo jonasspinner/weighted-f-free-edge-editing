@@ -1,5 +1,4 @@
 import networkx as nx
-import sys
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
@@ -173,7 +172,7 @@ def main():
     parser.add_argument("--seed", type=int, default=0,
                         help="Seed for random sampling.")
     parser.add_argument("--dir", type=str, default=".",
-                        help="Path for output dicectory.")
+                        help="Path for output directory.")
 
     model_group = parser.add_mutually_exclusive_group(required=True)
     model_group.add_argument("--barabasi-albert", action='store_true',
@@ -192,19 +191,19 @@ def main():
     parser.add_argument("--step-size", type=int, default=1)
     parser.add_argument("--num-steps", type=int, default=1)
 
-    namespace = parser.parse_args()
+    options = parser.parse_args()
 
     model = ""
-    if namespace.barabasi_albert:
+    if options.barabasi_albert:
         model = "barabasi-albert"
-    elif namespace.powerlaw_cluster:
+    elif options.powerlaw_cluster:
         model = "powerlaw-cluster"
-    elif namespace.duplication_divergence:
+    elif options.duplication_divergence:
         model = "duplication-divergence"
 
-    num_vertices = [namespace.vertices + i * namespace.step_size for i in range(namespace.num_steps)]
+    num_vertices = [options.vertices + i * options.step_size for i in range(options.num_steps)]
 
-    generate_dataset(Path(namespace.dir), model, num_vertices, seed=namespace.seed)
+    generate_dataset(Path(options.dir), model, num_vertices, seed=options.seed)
 
 
 if __name__ == "__main__":

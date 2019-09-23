@@ -1,6 +1,6 @@
 name: biological
 description: |-
-  Weighted graphs of size up to 100 derived from COG protein similarity data
+  Weighted graphs derived from COG protein similarity data
 url: https://bio.informatik.uni-jena.de/data/#cluster_editing_data
 download_url: https://bio.informatik.uni-jena.de/wp/wp-content/uploads/2012/09/biological_bielefeld.zip
 references:

@@ -2,12 +2,13 @@ import numpy as np
 from pathlib import Path
 import networkx as nx
 from concurrent.futures import ThreadPoolExecutor
+import argparse
 
 import yaml
 yaml.add_representer(np.float64, lambda dumper, data: dumper.represent_float(data))
 yaml.add_representer(np.ndarray, lambda dumper, data: dumper.represent_list(data))
 
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Sequence
 
 from graph_io import read_metis_graph
 
@@ -66,7 +67,7 @@ def instance_stats(instance: Tuple[nx.Graph, np.ndarray]) -> Dict[str, Any]:
     return stats
 
 
-def generate(paths, output_path):
+def compute_metadata(paths: Sequence[Path], output_path: Path) -> None:
     def handle_path(path):
         print(f"collecting stats on {path}")
         instance = read_metis_graph(path)
@@ -77,5 +78,21 @@ def generate(paths, output_path):
         yaml.dump(stats, file, default_flow_style=False)
 
 
+def main():
+    parser = argparse.ArgumentParser(
+            description="Generates metadata for instances in a given directory.")
+
+    parser.add_argument("dir", type=str, default=".",
+                        help="Path for input directory.")
+
+    parser.add_argument("--pattern", type=str, default="*.graph",
+                        help="Pattern for files in the directory.")
+
+    options = parser.parse_args()
+
+    input_dir = Path(options.dir)
+    compute_metadata(list(input_dir.glob(options.pattern)), input_dir / f"{input_dir.resolve().name}.metadata.yaml")
+
+
 if __name__ == '__main__':
-    generate(Path('bio').glob('*.metis'), Path('bio/metadata2.yaml'))
+    main()

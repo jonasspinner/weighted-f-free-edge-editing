@@ -29,7 +29,7 @@ def read_metis_graph(path: Union[str, Path]) -> Tuple[nx.Graph, np.ndarray]:
         for v, c in [(int(v) - 1, float(c)) for (v, c) in zip(it, it)]:
             if c >= 0:
                 graph.add_edge(u, v, cost=c)
-            S[u, v] = c
+            S[u, v] = S[v, u] = c
 
     return graph, S
 

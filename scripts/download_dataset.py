@@ -5,6 +5,9 @@ from pathlib import Path
 import zipfile
 import re
 from shutil import rmtree
+import argparse
+
+from typing import Optional
 
 
 def output(text: str):
@@ -30,15 +33,14 @@ def transform(input_path: Path, output_path: Path):
             output_file.write("\n")
 
 
-def download_bio_dataset():
-    folder_path = Path("bio")
-    if folder_path.exists():
-        output(f"{folder_path.name} already exists")
+def download_bio_dataset(output_dir: Path, config_file: Path, max_size: Optional[int]):
+    if output_dir.exists():
+        output(f"{output_dir.name} already exists")
         pass
 
     output("loading config")
 
-    with Path("bio.yaml").open('r') as file:
+    with config_file.open('r') as file:
         config = yaml.safe_load(file)
 
     output("downloading data")
@@ -49,17 +51,17 @@ def download_bio_dataset():
         for chunk in iter(lambda: response.read(CHUNK), b''):
             file.write(chunk)
         with zipfile.ZipFile(file.name, 'r') as zip_ref:
-            zip_ref.extractall(folder_path)
+            zip_ref.extractall(output_dir)
 
     output("transforming files")
 
-    for file_path in folder_path.glob("**/*.cm"):
+    for file_path in output_dir.glob("**/*.cm"):
         match = re.match(r"cost_matrix_component_nr_(\d+)_size_(\d+)_cutoff_10.0.cm", file_path.name)
         number, size = match.group(1, 2)
-        if int(size) >= 1000:
+        if max_size is not None and int(size) > max_size:
             continue
 
-        output_path = folder_path / f"bio-nr-{number}-size-{size}.metis"
+        output_path = output_dir / f"bio-nr-{number}-size-{size}.graph"
         try:
             transform(file_path, output_path)
         except MemoryError:
@@ -67,11 +69,30 @@ def download_bio_dataset():
 
     output("deleting original data")
 
-    rmtree(folder_path / "biological")
+    rmtree(output_dir / "biological")
 
 
 def main():
-    download_bio_dataset()
+    parser = argparse.ArgumentParser(
+            description="Downloads the specified dataset.")
+
+    parser.add_argument("--dir", type=str, default=".",
+                        help="Path for output directory.")
+
+    parser.add_argument("--config", type=str, required=True,
+                        help="Path for config file.")
+
+    parser.add_argument("--max-size", type=str, default=None,
+                        help="Maximum instance size (default: unrestricted).")
+
+    data_group = parser.add_mutually_exclusive_group(required=True)
+    data_group.add_argument("--biological", action='store_true',
+                            help=f"Download instances derived from COG protein similarity data.")
+
+    options = parser.parse_args()
+
+    if options.biological:
+        download_bio_dataset(Path(options.dir), Path(options.config), options.max_size)
 
 
 if __name__ == '__main__':
