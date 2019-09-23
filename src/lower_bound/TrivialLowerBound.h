@@ -14,7 +14,7 @@ namespace LowerBound {
     public:
         explicit TrivialLowerBound(std::shared_ptr<FinderI> finder_ptr) : LowerBoundI(std::move(finder_ptr)) {};
 
-        Cost result(Cost /*k*/) override;
+        Cost calculate_lower_bound(Cost /*k*/) override;
     };
 }
 

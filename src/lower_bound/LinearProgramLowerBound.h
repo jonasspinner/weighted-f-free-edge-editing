@@ -114,6 +114,10 @@ public:
         }
     }
 
+    void after_unedit(VertexPair uv) override {
+        after_edit(uv);
+    }
+
     void after_unmark(VertexPair uv) override {
         if (variable_means_edit) {
             assert(!m_edited[uv]);
@@ -127,7 +131,7 @@ public:
      *
      * @return
      */
-    Cost result(Cost k) override {
+    Cost calculate_lower_bound(Cost k) override {
         GRBLinExpr objective = 0;
 
         for (VertexPair uv : m_graph.vertexPairs()) {

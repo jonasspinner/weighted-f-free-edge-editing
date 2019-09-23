@@ -6,6 +6,9 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_ALGORITHMS_H
 
 
+#include <deque>
+
+
 std::pair<std::vector<Graph>, std::vector<VertexMap<Vertex>>> connectedComponents(const Graph &graph) {
     VertexMap<bool> marked(graph.size(), false);
     std::vector<std::vector<Vertex>> ccVertices;
@@ -34,7 +37,7 @@ std::pair<std::vector<Graph>, std::vector<VertexMap<Vertex>>> connectedComponent
     std::vector<Graph> ccs;
     std::vector<VertexMap<Vertex>> mappings;
 
-    for (const auto& vertices : ccVertices) {
+    for (const auto &vertices : ccVertices) {
         ccs.emplace_back(vertices.size());
         mappings.emplace_back(vertices.size());
 
@@ -44,7 +47,7 @@ std::pair<std::vector<Graph>, std::vector<VertexMap<Vertex>>> connectedComponent
         for (Vertex i = 0; i < static_cast<Vertex>(vertices.size()); ++i)
             m[i] = vertices[i];
 
-        for (auto [u, v] : graph.vertexPairs())
+        for (auto[u, v] : graph.vertexPairs())
             if (graph.hasEdge({m[u], m[v]}))
                 cc.setEdge({u, v});
     }

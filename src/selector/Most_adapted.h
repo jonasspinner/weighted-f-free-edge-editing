@@ -129,7 +129,7 @@ public:
         });
     }
 
-    Problem result(Cost k) override {
+    Problem select_problem(Cost k) override {
         State &state = current_state();
 
         Problem problem;

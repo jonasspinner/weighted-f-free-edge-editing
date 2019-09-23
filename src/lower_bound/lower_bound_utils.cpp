@@ -5,8 +5,8 @@
 
 #include "lower_bound_utils.h"
 
-#include "LocalGreedyLowerBound.h"
-#include "GlobalGreedyLowerBound.h"
+#include "GreedyLowerBound.h"
+#include "SortedGreedyLowerBound.h"
 #include "LocalSearchLowerBound.h"
 #include "TrivialLowerBound.h"
 
@@ -37,7 +37,7 @@ namespace LowerBound {
             case LB::LocalSearch:
                 return std::make_unique<LocalSearchLowerBound>(instance, marked, subgraph_stats, finder);
             case LB::Greedy:
-                return std::make_unique<GlobalGreedyLowerBound>(instance, marked, finder);
+                return std::make_unique<SortedGreedyLowerBound>(instance, marked, finder);
             case LB::LinearProgram:
 #ifdef GUROBI_FOUND
                 return std::make_unique<LinearProgramLowerBound>(instance, marked, finder);

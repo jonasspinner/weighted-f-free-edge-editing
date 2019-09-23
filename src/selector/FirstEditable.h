@@ -26,7 +26,7 @@ namespace Selector {
          *
          * @return
          */
-        Problem result(Cost /*k*/) override {
+        Problem select_problem(Cost /*k*/) override {
             Problem problem;
             problem.solved = true;
 

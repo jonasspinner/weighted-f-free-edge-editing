@@ -38,6 +38,10 @@ public:
 
     virtual void after_edit(VertexPair /*uv*/) {};              // subgraph_stats
 
+    virtual void before_unedit(VertexPair /*uv*/) {};           // subgraph_stats
+
+    virtual void after_unedit(VertexPair /*uv*/) {};            // subgraph_stats
+
     virtual void after_unmark(VertexPair /*uv*/) {};            // subgraph_stats
 
     friend class Editor;

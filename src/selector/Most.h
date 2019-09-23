@@ -20,7 +20,7 @@ public:
     Most(std::shared_ptr<FinderI> finder_ptr, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) : SelectorI(
             std::move(finder_ptr)), m_marked(marked), m_subgraph_stats(subgraph_stats), m_used(m_marked.size()) {}
 
-    Problem result(Cost /*k*/) override {
+    Problem select_problem(Cost /*k*/) override {
 
         // TODO: This selector triggers the assertion in the loop over the problem pairs: assert(!m_marked[uv]);
 

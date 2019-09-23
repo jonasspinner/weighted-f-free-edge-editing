@@ -12,7 +12,7 @@ namespace LowerBound {
      *
      * @return 0
      */
-    Cost TrivialLowerBound::result(Cost /*k*/) {
+    Cost TrivialLowerBound::calculate_lower_bound(Cost /*k*/) {
         return 0;
     }
 }

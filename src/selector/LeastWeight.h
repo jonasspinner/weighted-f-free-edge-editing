@@ -18,7 +18,7 @@ namespace Selector {
                     const VertexPairMap<bool> &marked) : SelectorI(std::move(finder_ptr)), m_costs(costs),
                                                                      m_marked(marked) {}
 
-        Problem result(Cost /*k*/) override {
+        Problem select_problem(Cost /*k*/) override {
             Subgraph min_subgraph{};
             Cost min_subgraph_cost = invalid_cost;
             bool solved = true;

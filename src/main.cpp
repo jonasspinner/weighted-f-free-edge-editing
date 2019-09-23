@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
     std::shared_ptr<FinderI> finder = std::make_shared<Finder::CenterC4P4>(instance.graph);
     auto lb = LinearProgramLowerBound(instance, marked, finder);
     lb.initialize(1000);
-    std::cout << lb.result(1000);
+    std::cout << lb.calculate_lower_bound(1000);
 
     return 0;
 }

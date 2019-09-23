@@ -4,7 +4,6 @@
 
 
 #include <iostream>
-#include <fstream>
 #include <chrono>
 #include <boost/program_options.hpp>
 
@@ -13,7 +12,6 @@
 
 #include "../src/lower_bound/lower_bound_utils.h"
 #include "../src/finder/finder_utils.h"
-#include "../src/Permutation.h"
 
 
 int main(int argc, char* argv[]) {
@@ -93,7 +91,7 @@ int main(int argc, char* argv[]) {
                 auto t1 = steady_clock::now();
                 lb->initialize(max_k);
                 auto t2 = steady_clock::now();
-                auto value = lb->result(max_k);
+                auto value = lb->calculate_lower_bound(max_k);
                 auto t3 = steady_clock::now();
                 
                 initialization_times.push_back(duration_cast<nanoseconds>(t2 - t1).count());

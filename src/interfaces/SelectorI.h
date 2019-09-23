@@ -17,7 +17,7 @@ class SelectorI : public ConsumerI {
 public:
     explicit SelectorI(std::shared_ptr<FinderI> finder_ptr) : ConsumerI(std::move(finder_ptr)) {}
 
-    virtual Problem result(Cost k) = 0;
+    virtual Problem select_problem(Cost k) = 0;
 };
 
 #endif //CONCEPT_SELECTORI_H

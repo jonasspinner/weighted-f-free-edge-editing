@@ -99,7 +99,7 @@ private:
 public:
     explicit Editor(Instance instance, Options::Selector selector, Options::FSG forbidden, Options::LB lower_bound) :
             m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_found_solution(false), /*m_ordered_vertex_pairs(m_instance.graph, m_instance.costs),*/
-            m_find_all_solutions(false) {
+            m_find_all_solutions(true) {
 
         m_finder = Finder::make(forbidden, m_instance.graph);
         m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_marked);
@@ -114,7 +114,7 @@ public:
 
     Cost initialize(Cost k) {
         for (auto &c : m_consumers) c->initialize(k);
-        return m_lower_bound->result(std::numeric_limits<Cost>::max());
+        return m_lower_bound->calculate_lower_bound(std::numeric_limits<Cost>::max());
     }
 
     /**
@@ -156,7 +156,7 @@ private:
 
         // m_ordered_vertex_pairs.push(k, costs, m_marked, m_consumers);
 
-        auto lb = m_lower_bound->result(k);
+        auto lb = m_lower_bound->calculate_lower_bound(k);
         if (k < lb) {
             // unsolvable, too few edits remaining
             prune_cb(k, lb);
@@ -164,7 +164,7 @@ private:
             return false;
         }
 
-        auto problem = m_selector->result(k);
+        auto problem = m_selector->select_problem(k);
 
         if (problem.solved) {
             // solved
@@ -189,9 +189,9 @@ private:
 
             if (edit_recursive(k - costs[uv], result_cb, prune_cb)) return_value = true;
 
-            unedit_edge(uv);
-
             for (auto &c : m_consumers) c->pop_state(); // destroy next_state
+
+            unedit_edge(uv);
 
             if (return_value) break;
         }
@@ -240,12 +240,12 @@ private:
         assert(m_marked[uv]);
         Graph &G = m_instance.graph;
 
-        for (auto &c : m_consumers) c->before_edit(uv);           // subgraph_stats
+        for (auto &c : m_consumers) c->before_unedit(uv);           // subgraph_stats
 
         G.toggleEdge(uv);
         edits.pop_back();
 
-        for (auto &c : m_consumers) c->after_edit(uv);            // subgraph_stats
+        for (auto &c : m_consumers) c->after_unedit(uv);            // subgraph_stats
     }
 
     /**

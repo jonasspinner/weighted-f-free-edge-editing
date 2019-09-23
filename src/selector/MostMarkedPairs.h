@@ -15,7 +15,7 @@ namespace Selector {
         MostMarkedPairs(std::shared_ptr <FinderI> finder_ptr, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) : SelectorI(
                 std::move(finder_ptr)), m_marked(marked), m_subgraph_stats(subgraph_stats) {}
 
-        Problem result(Cost /*k*/) override {
+        Problem select_problem(Cost /*k*/) override {
             Subgraph min_subgraph{};
             size_t min_num_marked_pairs = std::numeric_limits<size_t>::max();
 

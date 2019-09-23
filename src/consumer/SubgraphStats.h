@@ -56,6 +56,10 @@ public:
         assert(subgraph_count_per_vertex_pair[uv] == 0);
     }
 
+    void before_unedit(VertexPair uv) override {
+        before_edit(uv);
+    }
+
     void after_edit(VertexPair uv) override {
         finder->find_near(uv, [&](Subgraph &&subgraph) {
             register_subgraph(subgraph);
@@ -63,6 +67,10 @@ public:
         });
         verify();
         assert(subgraph_count_per_vertex_pair[uv] == 0);
+    }
+
+    void after_unedit(VertexPair uv) override {
+        after_edit(uv);
     }
 
     void after_mark(VertexPair uv) override {

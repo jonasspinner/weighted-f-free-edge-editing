@@ -210,7 +210,9 @@ public:
             LowerBoundI(std::move(finder_ref)), m_costs(instance.costs), m_marked(marked),
             m_subgraph_stats(subgraph_stats), m_bound_graph(instance.graph.size()), m_gen(seed) {}
 
-    Cost result(Cost k) override;
+    Cost calculate_lower_bound(Cost k) override;
+
+    Cost get_lower_bound() override { return current_state().cost(); }
 
     void initialize(Cost /*k*/) override;
 
@@ -235,7 +237,18 @@ public:
         return *m_states.back();
     }
 
+    State &parent_state() {
+        assert(m_states.size() > 1);
+        return *m_states[m_states.size() - 2];
+    }
+
+    static void remove_subgraphs_from_bound(State& state, VertexPair uv);
+
+    void insert_subgraphs_into_bound(State& state, VertexPair uv);
+
     void before_mark_and_edit(VertexPair uv) override;
+
+    void before_mark(VertexPair uv) override;
 
     void after_mark_and_edit(VertexPair uv) override;
 

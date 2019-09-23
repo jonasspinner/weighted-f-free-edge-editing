@@ -15,7 +15,7 @@
  * @param k Remaining editing cost.
  * @return A lower bound on the costs required to solve the current instance.
  */
-Cost LocalSearchLowerBound::result(Cost k) {
+Cost LocalSearchLowerBound::calculate_lower_bound(Cost k) {
     auto &state = current_state();
     if (!state.solvable()) return state.cost();
 
@@ -75,13 +75,7 @@ void LocalSearchLowerBound::initialize(Cost /*k*/) {
     }
 }
 
-/**
- * Removes subgraphs from state.bound which have the vertex pair uv.
- *
- * @param uv
- */
-void LocalSearchLowerBound::before_mark_and_edit(VertexPair uv) {
-    auto &state = current_state();
+void LocalSearchLowerBound::remove_subgraphs_from_bound(State& state, VertexPair uv) {
     assert(state.solvable());
     // state.assert_valid(m_marked, m_bound_graph, m_costs);
 
@@ -102,13 +96,7 @@ void LocalSearchLowerBound::before_mark_and_edit(VertexPair uv) {
     }
 }
 
-/**
- * Find forbidden subgraphs near uv and insert them. Subgraphs with higher minimum editing cost are preferred.
- *
- * @param uv
- */
-void LocalSearchLowerBound::after_mark_and_edit(VertexPair uv) {
-    auto &state = current_state();
+void LocalSearchLowerBound::insert_subgraphs_into_bound(State& state, VertexPair uv) {
     assert(state.solvable());
 
     // TODO: Check if needed
@@ -151,13 +139,38 @@ void LocalSearchLowerBound::after_mark_and_edit(VertexPair uv) {
 }
 
 /**
+ * Removes subgraphs from state.bound which have the vertex pair uv.
+ *
+ * @param uv
+ */
+void LocalSearchLowerBound::before_mark_and_edit(VertexPair uv) {
+    auto &state = current_state();
+    remove_subgraphs_from_bound(state, uv);
+}
+
+void LocalSearchLowerBound::before_mark(VertexPair uv) {
+    auto &state = parent_state();
+    remove_subgraphs_from_bound(state, uv);
+}
+
+/**
+ * Find forbidden subgraphs near uv and insert them. Subgraphs with higher minimum editing cost are preferred.
+ *
+ * @param uv
+ */
+void LocalSearchLowerBound::after_mark_and_edit(VertexPair uv) {
+    auto &state = current_state();
+    insert_subgraphs_into_bound(state, uv);
+}
+
+/**
  * Tries to optimise the bound. Stops if the lower bound is larger than k or the bound does not improve in five consecutive rounds.
  *
  * @param state
  * @param k
  */
 void LocalSearchLowerBound::local_search(State &state, Cost k) {
-    constexpr static bool use_one_improvement = true;
+    constexpr static bool use_one_improvement = false;
     constexpr static bool use_two_improvement = true;
     constexpr static bool use_omega_improvement = true;
 #define stats

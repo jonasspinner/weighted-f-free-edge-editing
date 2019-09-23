@@ -19,16 +19,22 @@
  */
 namespace Finder {
     class NaiveC4P4;
+
     class CenterC4P4;
+
     class CenterP3;
+
     class NaiveP3;
+
     class SplitGraph;
+
     class SplitCluster;
 }
 // template <int length> class Center;
 namespace detail {
     template<int length, bool with_cycles>
     class CenterFindImpl;
+
     template<int length, bool with_cycles>
     class CenterFindNearImpl;
 }
@@ -215,8 +221,8 @@ public:
 
             using value_type = Vertex;
             using difference_type = std::ptrdiff_t;
-            using pointer = const Vertex*;
-            using reference = const Vertex&;
+            using pointer = const Vertex *;
+            using reference = const Vertex &;
             using iterator_category = std::forward_iterator_tag;
 
             explicit Iterator(const AdjRow &row) : m_row(row) {
@@ -284,8 +290,8 @@ public:
         public:
             using value_type = VertexPair;
             using difference_type = std::ptrdiff_t;
-            using pointer = const VertexPair*;
-            using reference = const VertexPair&;
+            using pointer = const VertexPair *;
+            using reference = const VertexPair &;
             using iterator_category = std::forward_iterator_tag;
 
             Iterator(VertexPair start, Vertex size) : m_uv(start), n(size) {}
@@ -339,8 +345,8 @@ public:
         public:
             using value_type = VertexPair;
             using difference_type = std::ptrdiff_t;
-            using pointer = const VertexPair*;
-            using reference = const VertexPair&;
+            using pointer = const VertexPair *;
+            using reference = const VertexPair &;
             using iterator_category = std::forward_iterator_tag;
 
             Iterator(const AdjMatrix &adj, VertexPair start) : m_adj(adj), m_uv(start) {}
@@ -372,7 +378,7 @@ public:
                     ++m_uv.u;
                     m_uv.v = m_adj[m_uv.u].find_next(m_uv.u);
                 }
-                if (m_uv.u >= size - 1 || m_uv.v >= size){
+                if (m_uv.u >= size - 1 || m_uv.v >= size) {
                     m_uv = {size - 1, size};
                 }
                 return *this;
@@ -453,18 +459,27 @@ private:
     }
 
     friend class FinderI;
+
     friend class Finder::NaiveP3;
+
     friend class Finder::CenterP3;
+
     friend class Finder::NaiveC4P4;
+
     friend class Finder::CenterC4P4;
+
     friend class Finder::SplitGraph;
+
     friend class Finder::SplitCluster;
 
 
     template<int length, bool with_cycles>
-    friend class detail::CenterFindImpl;
+    friend
+    class detail::CenterFindImpl;
+
     template<int length, bool with_cycles>
-    friend class detail::CenterFindNearImpl;
+    friend
+    class detail::CenterFindNearImpl;
 };
 
 
