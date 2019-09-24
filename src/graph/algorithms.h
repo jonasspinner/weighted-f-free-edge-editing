@@ -8,6 +8,8 @@
 
 #include <deque>
 
+#include "VertexMap.h"
+
 
 std::pair<std::vector<Graph>, std::vector<VertexMap<Vertex>>> connectedComponents(const Graph &graph) {
     VertexMap<bool> marked(graph.size(), false);

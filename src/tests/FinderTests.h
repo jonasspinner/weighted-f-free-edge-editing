@@ -78,24 +78,29 @@ public:
     explicit FinderTests(int seed=0) : gen(seed) {}
 
     void EditsSolveKarate() {
-        Instance instance = GraphIO::read_instance("../data/karate.graph");
-        Graph G = instance.graph;
+        try {
+            auto instance = GraphIO::read_instance("../data/misc/karate.graph");
+            Graph G = instance.graph;
 
-        std::vector<VertexPair> edits {
-            {0, 8}, {0, 16}, {0, 31},
-            {1, 30},
-            {2, 8}, {2, 9}, {2, 27}, {2, 28}, {2, 32},
-            {3, 12},
-            {4, 5}, {4, 10},
-            {13, 33},
-            {19, 33},
-            {23, 25}, {23, 27},
-            {26, 29},
-            {27, 33},
-            {28, 31},
-            {31, 32}, {31, 33}
-        };
-        expect("Edits solve karate", true, Solution(instance, edits).is_valid(instance, Options::FSG::P4C4));
+            std::vector<VertexPair> edits {
+                    {0, 8}, {0, 16}, {0, 31},
+                    {1, 30},
+                    {2, 8}, {2, 9}, {2, 27}, {2, 28}, {2, 32},
+                    {3, 12},
+                    {4, 5}, {4, 10},
+                    {13, 33},
+                    {19, 33},
+                    {23, 25}, {23, 27},
+                    {26, 29},
+                    {27, 33},
+                    {28, 31},
+                    {31, 32}, {31, 33}
+            };
+            expect("Edits solve karate", true, Solution(instance, edits).is_valid(instance, Options::FSG::P4C4));
+
+        } catch (const std::runtime_error &e) {
+            std::cerr << e.what() << "\n";
+        }
     }
 
     template <typename A, typename B>

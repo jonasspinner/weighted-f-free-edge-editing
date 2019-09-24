@@ -13,14 +13,14 @@ int main(int argc, char* argv[]) {
     namespace po = boost::program_options;
 
     const std::vector<std::string> paths {
-            "../data/bio/bio-nr-3-size-16.metis",
-            "../data/bio/bio-nr-4-size-39.metis",
-            "../data/bio/bio-nr-11-size-22.metis",
-            "../data/bio/bio-nr-277-size-222.metis",
-            "../data/karate.graph",
-            "../data/lesmis.graph",
-            "../data/dolphins.graph",
-            "../data/grass_web.metis.graph"};
+            "../data/bio/bio-nr-3-size-16.graph",
+            "../data/bio/bio-nr-4-size-39.graph",
+            "../data/bio/bio-nr-11-size-22.graph",
+            "../data/bio/bio-nr-277-size-222.graph",
+            "../data/misc/karate.graph",
+            "../data/misc/lesmis.graph",
+            "../data/misc/dolphins.graph",
+            "../data/misc/grass_web.graph"};
 
     std::string input = paths[0];
     double multiplier = 100;
@@ -40,8 +40,17 @@ int main(int argc, char* argv[]) {
             ;
 
     po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
-    po::notify(vm);
+    try {
+        auto parsed_options = po::command_line_parser(argc, argv).options(desc).run();
+        po::store(parsed_options, vm);
+        po::notify(vm);
+    } catch (const po::invalid_option_value &e) {
+        std::cerr << "invalid options value " << e.get_option_name() << "\n";
+        return 1;
+    } catch (const po::unknown_option &e) {
+        std::cerr << "unknown option " << e.get_option_name() << "\n";
+        return 1;
+    }
 
     if (vm.count("help")) {
         std::cout << desc << "\n";
@@ -56,7 +65,7 @@ int main(int argc, char* argv[]) {
 
     auto instance = GraphIO::read_instance(config.input_path, config.multiplier);
     Editor editor(instance, config.selector, config.forbidden_subgraphs, config.lower_bound);
-    editor.initialize(0);
+    editor.initial_lower_bound();
 
     std::vector<Cost> ks;
     std::vector<double> times;

@@ -4,151 +4,96 @@
 
 
 #include "Configuration.h"
+#include "options.h"
 
 
-namespace Options {
+boost::program_options::options_description
+Configuration::options(const std::set<Options::SolverType> &types) {
+    namespace po = boost::program_options;
 
-    std::istream& operator>>(std::istream& in, Selector& selector) {
-        std::string token;
-        in >> token;
-        if (token == "FirstEditable")
-            selector = Selector::FirstEditable;
-        else if (token == "LeastWeight")
-            selector = Selector::LeastWeight;
-        else if (token == "MostMarked")
-            selector = Selector::MostMarked;
-        else
-            in.setstate(std::ios_base::failbit);
-        return in;
+    po::options_description cmdline_options;
+
+    po::options_description general("General options");
+    general.add_options()
+            ("help", "produce help message")
+            ("output", po::value<std::string>(&output_path)->default_value(output_path), "output file path")
+            ("seed", po::value<int>(&seed)->default_value(seed), "seed for instance permutation");
+
+    if (types.size() > 1) {
+        general.add_options()
+                ("solver", po::value<Options::SolverType>(&solver_type)->default_value(solver_type),
+                 "type of solver");
     }
 
-    std::ostream &operator<<(std::ostream &os, Selector selector) {
-        switch (selector) {
-            case Selector::FirstEditable:
-                return os << "FirstEditable";
-            case Selector::LeastWeight:
-                return os << "LeastWeight";
-            case Selector::MostMarked:
-                return os << "MostMarked";
-            default:
-                return os;
-        }
+    cmdline_options.add(general);
+
+
+    po::options_description problem_options("Problem options");
+    problem_options.add_options()
+            ("input", po::value<std::string>(&input_path)->default_value(input_path), "path to input instance")
+            ("permutation", po::value<int>(&permutation)->default_value(permutation), "seed for input permutation")
+            ("multiplier", po::value<double>(&multiplier)->default_value(multiplier),
+             "multiplier for discretization of input instances")
+            ("F", po::value<Options::FSG>(&forbidden_subgraphs)->default_value(forbidden_subgraphs),
+             "forbidden subgraphs");
+
+    cmdline_options.add(problem_options);
+
+
+    if (types.count(Options::SolverType::FPT)) {
+        po::options_description fpt_options("FPT algorithm options");
+        fpt_options.add_options()
+                ("k", po::value<Cost>(&k_max)->default_value(k_max), "maximum editing cost")
+                ("selector", po::value<Options::Selector>(&selector)->default_value(selector))
+                ("lower-bound", po::value<Options::LB>(&lower_bound)->default_value(lower_bound))
+                ("all", po::value<bool>(&find_all_solutions)->default_value(find_all_solutions));
+
+        cmdline_options.add(fpt_options);
     }
 
-    YAML::Emitter &operator<<(YAML::Emitter &out, Selector selector) {
-        std::ostringstream ss;
-        ss << selector;
-        return out << ss.str();
+    if (types.count(Options::SolverType::ILP)) {
+        po::options_description ilp_options("ILP algorithm options");
+        ilp_options.add_options()
+                ("sparse-constraints", po::value<bool>(&sparse_constraints)->default_value(sparse_constraints), "only add O(n^2) constraints at once")
+                ("extended-constraints", po::value<bool>(&extended_constraints)->default_value(extended_constraints), "initialize constraints from graphs which are ")
+                ("num-threads", po::value<int>(&num_threads)->default_value(num_threads))
+                ("timelimit", po::value<int>(&timelimit)->default_value(timelimit));
+
+        cmdline_options.add(ilp_options);
     }
+
+    return cmdline_options;
 }
 
+YAML::Emitter &operator<<(YAML::Emitter &out, const Configuration &config) {
+    using namespace YAML;
+    out << BeginMap;
+    out << Key << "output" << Value << config.output_path;
+    out << Key << "seed" << Value << config.seed;
+    out << Key << "solver" << Value << config.solver_type;
 
-namespace Options {
+    out << Key << "input" << Value << config.input_path;
+    out << Key << "permutation" << Value << config.permutation;
+    out << Key << "multiplier" << Value << config.multiplier;
+    out << Key << "forbidden_subgraphs" << Value << config.forbidden_subgraphs;
 
-    std::istream& operator>>(std::istream& in, FSG& fsg) {
-        std::string token;
-        in >> token;
-        if (token == "P3")
-            fsg = FSG::P3;
-        else if (token == "P4C4")
-            fsg = FSG::P4C4;
-        else if (token == "C4_C5_2K2")
-            fsg = FSG::C4_C5_2K2;
-        else if (token == "C4_C5_P5_Bowtie_Necktie")
-            fsg = FSG::C4_C5_P5_Bowtie_Necktie;
-        else
-            in.setstate(std::ios_base::failbit);
-        return in;
+    if (config.solver_type == Options::SolverType::FPT) {
+        out << Key << "k" << Value << config.k_max;
+        out << Key << "selector" << Value << config.selector;
+        out << Key << "lower_bound" << Value << config.lower_bound;
+    } else if (config.solver_type == Options::SolverType::ILP) {
+        out << Key << "extended_constraints" << Value << config.extended_constraints;
+        out << Key << "sparse_constraints" << Value << config.sparse_constraints;
+        out << Key << "num_threads" << Value << config.num_threads;
+        out << Key << "timelimit"<< Value << config.timelimit;
+        out << Key << "lazy" << Value << config.lazy;
     }
-
-    std::ostream &operator<<(std::ostream &os, FSG fsg) {
-        switch (fsg) {
-            case FSG::P3:
-                return os << "P3";
-            case FSG::P4C4:
-                return os << "P4C4";
-            case FSG::C4_C5_2K2:
-                return os << "C4_C5_2K2";
-            case FSG::C4_C5_P5_Bowtie_Necktie:
-                return os << "C4_C5_P5_Bowtie_Necktie";
-            default:
-                return os;
-        }
-    }
-
-    YAML::Emitter &operator<<(YAML::Emitter &out, FSG fsg) {
-        std::ostringstream ss;
-        ss << fsg;
-        return out << ss.str();
-    }
+    out << EndMap;
+    return out;
 }
 
-
-namespace Options {
-
-    std::istream& operator>>(std::istream& in, LB& lower_bound) {
-        std::string token;
-        in >> token;
-        if (token == "No")
-            lower_bound = LB::No;
-        else if (token == "Greedy")
-            lower_bound = LB::Greedy;
-        else if (token == "LocalSearch")
-            lower_bound = LB::LocalSearch;
-        else if (token == "LinearProgram")
-            lower_bound = LB::LinearProgram;
-        else
-            in.setstate(std::ios_base::failbit);
-        return in;
-    }
-
-    std::ostream &operator<<(std::ostream &os, LB lower_bound) {
-        switch (lower_bound) {
-            case LB::No:
-                return os << "No";
-            case LB::Greedy:
-                return os << "Greedy";
-            case LB::LocalSearch:
-                return os << "LocalSearch";
-            case LB::LinearProgram:
-                return os << "LinearProgram";
-            default:
-                return os;
-        }
-    }
-
-    YAML::Emitter &operator<<(YAML::Emitter &out, LB lower_bound) {
-        std::ostringstream ss;
-        ss << lower_bound;
-        return out << ss.str();
-    }
-
-    std::istream &operator>>(std::istream &in, SolverType &type) {
-        std::string token;
-        in >> token;
-        if (token == "FPT")
-            type = SolverType::FPT;
-        else if (token == "ILP")
-            type = SolverType::ILP;
-        else
-            in.setstate(std::ios_base::failbit);
-        return in;
-    }
-
-    std::ostream &operator<<(std::ostream &os, SolverType type) {
-        switch (type) {
-            case SolverType::FPT:
-                return os << "FPT";
-            case SolverType::ILP:
-                return os << "ILP";
-            default:
-                return os;
-        }
-    }
-
-    YAML::Emitter &operator<<(YAML::Emitter &out, SolverType type) {
-        std::ostringstream ss;
-        ss << type;
-        return out << ss.str();
-    }
+std::ostream &operator<<(std::ostream &os, Configuration &config) {
+    YAML::Emitter out;
+    out << config;
+    return os << out.c_str();
 }

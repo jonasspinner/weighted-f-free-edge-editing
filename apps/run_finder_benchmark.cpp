@@ -13,7 +13,6 @@
 #include "../src/finder/NaiveC4P4.h"
 #include "../src/finder/NaiveP3.h"
 #include "../src/graph/GraphIO.h"
-#include "../src/Permutation.h"
 
 
 std::unique_ptr<FinderI> make_finder(const std::string &name, const Graph &graph) {
@@ -177,7 +176,7 @@ int main(int argc, char* argv[]) {
     namespace po = boost::program_options;
 
     std::string finder_name = "CenterC4P4";
-    std::vector<std::string> inputs = {"./data/bio/bio-nr-3-size-16.metis"};
+    std::vector<std::string> inputs = {"../data/bio/bio-nr-3-size-16.graph"};
     std::vector<int> seeds = {0, 1};
     size_t iterations = 100;
     double multiplier = 100;

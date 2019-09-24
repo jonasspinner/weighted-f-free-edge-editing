@@ -8,7 +8,7 @@
 #include <boost/program_options.hpp>
 
 #include "../src/graph/GraphIO.h"
-#include "../src/Configuration.h"
+#include "../src/options.h"
 
 #include "../src/lower_bound/lower_bound_utils.h"
 #include "../src/finder/finder_utils.h"
@@ -21,10 +21,10 @@ int main(int argc, char* argv[]) {
     // std::vector<Options::LB> lower_bounds = {LB::Greedy, LB::No, LB::LocalSearch, LB::LinearProgram};
     LB lower_bound = LB::LinearProgram;
     std::vector<std::string> inputs = {
-        "./data/bio/bio-nr-3-size-16.metis",
-        "./data/bio/bio-nr-4-size-39.metis",
-        "./data/bio/bio-nr-11-size-22.metis",
-        "./data/karate.graph"
+        "../data/bio/bio-nr-3-size-16.graph",
+        "../data/bio/bio-nr-4-size-39.graph",
+        "../data/bio/bio-nr-11-size-22.graph",
+        "../data/misc/karate.graph"
     };
     std::string output;
     std::vector<int> seeds = {0};

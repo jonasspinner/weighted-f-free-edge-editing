@@ -6,7 +6,7 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_LB_UTILS_H
 
 
-#include "../Configuration.h"
+#include "../options.h"
 #include "../interfaces/LowerBoundI.h"
 #include "../Instance.h"
 #include "../consumer/SubgraphStats.h"

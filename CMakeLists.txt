@@ -36,7 +36,7 @@ set(TEST_SRC_FILES src/tests/EditorTests.cpp src/tests/GraphTests.cpp src/tests/
 set(FINDER_SRC_FILES src/finder/finder_utils.cpp src/finder/CenterC4P4.cpp src/finder/Center.cpp src/finder/SplitCluster.cpp src/finder/SplitGraph.cpp src/finder/CenterP3.cpp src/finder/NaiveP3.cpp)
 set(SELECTOR_SRC_FILES src/selector/selector_utils.cpp)
 set(LOWER_BOUND_SRC_FILES src/lower_bound/lower_bound_utils.cpp src/lower_bound/TrivialLowerBound.cpp src/lower_bound/SortedGreedyLowerBound.cpp src/lower_bound/GreedyLowerBound.cpp src/lower_bound/LocalSearchLowerBound.cpp)
-set(SRC_FILES ${FINDER_SRC_FILES} ${SELECTOR_SRC_FILES} ${LOWER_BOUND_SRC_FILES} src/Configuration.cpp src/graph/Subgraph.cpp)
+set(SRC_FILES ${FINDER_SRC_FILES} ${SELECTOR_SRC_FILES} ${LOWER_BOUND_SRC_FILES} src/Configuration.cpp src/graph/Subgraph.cpp src/options.cpp)
 
 
 add_executable(graphedit src/main.cpp ${SRC_FILES})

@@ -173,7 +173,7 @@ void LocalSearchLowerBound::local_search(State &state, Cost k) {
     constexpr static bool use_one_improvement = false;
     constexpr static bool use_two_improvement = true;
     constexpr static bool use_omega_improvement = true;
-#define stats
+// #define stats
 #ifdef stats
     Cost cost_before = state.cost();
     size_t num_rounds_one = 0; Cost improvement_one = 0;

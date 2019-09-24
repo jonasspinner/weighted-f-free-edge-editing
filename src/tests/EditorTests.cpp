@@ -6,7 +6,6 @@
 #include "EditorTests.h"
 #include "../graph/GraphIO.h"
 #include "../Solution.h"
-#include "../Permutation.h"
 #include "../Editor.h"
 #include "test_utils.h"
 
@@ -37,10 +36,12 @@ void EditorTests::configurations_have_same_output(Options::FSG fsg, const std::v
 
         for (auto selector : selectors) {
             for (auto lb : lower_bounds) {
+                auto config = Configuration(fsg, instance_path, multiplier, Options::SolverType::FPT, -1, selector, lb);
+                config.seed = seed;
                 std::vector<Solution> solutions;
 
-                Editor editor(instance, selector, fsg, lb);
-                editor.initialize(10 * multiplier);
+                Editor editor(instance, config);
+
                 editor.edit(10 * multiplier, [&](const std::vector<VertexPair> &edits) {
                     solutions.emplace_back(orig_instance, P_r[edits]);
                 }, [](Cost, Cost) {});
@@ -89,8 +90,9 @@ void EditorTests::output_is_independent_of_seed(const std::vector<int> &seeds) {
 
         std::vector<Solution> solutions;
 
-        Editor editor(instance, Options::Selector::FirstEditable, Options::FSG::P4C4, Options::LB::Greedy);
-        editor.initialize(1100);
+        auto config = Configuration(Options::FSG::P4C4, instance_path, -1, Options::SolverType::FPT, -1, Options::Selector::FirstEditable, Options::LB::Greedy);
+
+        Editor editor(instance, config);
         editor.edit(1100, [&](const std::vector<VertexPair> &edits) {
             solutions.emplace_back(orig_instance, P_r[edits]);
         }, [](Cost, Cost) {});

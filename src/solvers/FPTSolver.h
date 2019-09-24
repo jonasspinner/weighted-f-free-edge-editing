@@ -13,10 +13,9 @@
 class FPTSolver : public Solver {
 
     Configuration m_config;
-    Cost m_k;
-    Options::FSG m_fsg;
+    Statistics m_stats;
 public:
-    explicit FPTSolver(Configuration config) : m_config(std::move(config)), m_k(m_config.k_max), m_fsg(m_config.forbidden_subgraphs) {}
+    explicit FPTSolver(Configuration config) : m_config(std::move(config)), m_stats() {}
 
     /**
      * Search for a minimum cost which yields solutions.
@@ -25,10 +24,11 @@ public:
      * @return
      */
     std::vector<Solution> search(Instance instance) {
-        auto selector = m_config.selector;
-        auto lower_bound = m_config.lower_bound;
 
-        Cost k = 0;
+        Editor editor(instance, m_config);
+
+
+        Cost k = editor.initial_lower_bound();
         bool solved;
         std::vector<Solution> solutions;
 
@@ -42,8 +42,6 @@ public:
             std::cout << "edit(" << std::setw(10) << k << "):";
 
             auto handle_delta = [&](Cost pruned_k, Cost lb) { min_delta = std::min(min_delta, lb - pruned_k); deltas.push_back(lb - pruned_k); };
-
-            Editor editor(instance, selector, m_fsg, lower_bound);
 
             solved = editor.edit(k, append_solution, handle_delta);
 
@@ -65,22 +63,19 @@ public:
      * @return
      */
     Result solve(Instance instance) override {
-        auto selector = m_config.selector;
-        auto lower_bound = m_config.lower_bound;
-
         std::vector<Solution> solutions;
 
+        Editor editor(instance, m_config);
 
-        Editor editor(instance, selector, m_fsg, lower_bound);
-        auto k_min = editor.initialize(m_k);
-        if (k_min > m_k)
+        auto k_min = editor.initial_lower_bound();
+        if (k_min > m_config.k_max)
             return Result::Unsolved();
 
-        bool solved = editor.edit(m_k, [&](const std::vector<VertexPair> &edits) {
+        bool solved = editor.edit(m_config.k_max, [&](const std::vector<VertexPair> &edits) {
             solutions.emplace_back(instance, edits);
         }, [](Cost, Cost) {});
 
-        std::cout << editor.stats() << "\n";
+        m_stats = Statistics(editor.stats());
 
         if (solved) {
             std::sort(solutions.begin(), solutions.end());
@@ -89,6 +84,10 @@ public:
         } else {
             return Result::Unsolved();
         }
+    }
+
+    const Statistics &stats() {
+        return m_stats;
     }
 };
 

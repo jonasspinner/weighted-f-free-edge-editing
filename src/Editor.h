@@ -6,6 +6,7 @@
 #define CONCEPT_EDITOR_H
 
 #include <iostream>
+#include <utility>
 
 #include "graph/Graph.h"
 #include "graph/VertexPairMap.h"
@@ -94,27 +95,27 @@ private:
 
     Statistics m_stats;
 
-    bool m_find_all_solutions;
-
+    Configuration m_config;
 public:
-    explicit Editor(Instance instance, Options::Selector selector, Options::FSG forbidden, Options::LB lower_bound) :
+    explicit Editor(Instance instance, Configuration config) :
             m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_found_solution(false), /*m_ordered_vertex_pairs(m_instance.graph, m_instance.costs),*/
-            m_find_all_solutions(true) {
+            m_config(std::move(config)) {
 
-        m_finder = Finder::make(forbidden, m_instance.graph);
+        m_finder = Finder::make(m_config.forbidden_subgraphs, m_instance.graph);
         m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_marked);
         m_consumers.emplace_back(m_subgraph_stats.get());
 
-        m_selector = Selector::make(selector, m_finder, m_instance, m_marked, *m_subgraph_stats);
-        m_lower_bound = LowerBound::make(lower_bound, m_finder, m_instance, m_marked, *m_subgraph_stats);
+        m_selector = Selector::make(m_config.selector, m_finder, m_instance, m_marked, *m_subgraph_stats);
+        m_lower_bound = LowerBound::make(m_config.lower_bound, m_finder, m_instance, m_marked, *m_subgraph_stats);
 
         m_consumers.emplace_back(m_lower_bound.get());
         m_consumers.emplace_back(m_selector.get());
     }
 
-    Cost initialize(Cost k) {
+    Cost initial_lower_bound() {
+        auto k = std::numeric_limits<Cost>::max();
         for (auto &c : m_consumers) c->initialize(k);
-        return m_lower_bound->calculate_lower_bound(std::numeric_limits<Cost>::max());
+        return m_lower_bound->calculate_lower_bound(k);
     }
 
     /**
@@ -131,7 +132,9 @@ public:
         m_stats = Statistics(-k / 2, k, 100);
         m_found_solution = false;
 
-        edit_recursive(k, [&](const std::vector<VertexPair> &e) { result_cb(e); return !m_find_all_solutions; }, prune_cb);
+        for (auto &c : m_consumers) c->initialize(k);
+
+        edit_recursive(k, [&](const std::vector<VertexPair> &e) { result_cb(e); return !m_config.find_all_solutions; }, prune_cb);
         return m_found_solution;
     }
 
