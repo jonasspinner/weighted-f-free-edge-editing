@@ -57,15 +57,13 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    Configuration config(k_max, Options::Selector::FirstEditable, Options::FSG::P4C4, Options::LB::Greedy,
-                         input, "", multiplier, Options::SolverType::FPT, 0, 0, false);
+    Configuration config(Options::FSG::P4C4, input, multiplier, Options::SolverType::FPT, k_max, Options::Selector::FirstEditable, Options::LB::Greedy);
 
 
     // std::cout << config << "\n";
 
     auto instance = GraphIO::read_instance(config.input_path, config.multiplier);
-    Editor editor(instance, config.selector, config.forbidden_subgraphs, config.lower_bound);
-    editor.initial_lower_bound();
+    Editor editor(instance, config);
 
     std::vector<Cost> ks;
     std::vector<double> times;

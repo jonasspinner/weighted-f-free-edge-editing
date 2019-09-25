@@ -17,7 +17,8 @@ Configuration::options(const std::set<Options::SolverType> &types) {
     general.add_options()
             ("help", "produce help message")
             ("output", po::value<std::string>(&output_path)->default_value(output_path), "output file path")
-            ("seed", po::value<int>(&seed)->default_value(seed), "seed for instance permutation");
+            ("seed", po::value<int>(&seed)->default_value(seed), "seed for instance permutation")
+            ("verbosity", po::value<int>(&verbosity)->default_value(verbosity));
 
     if (types.size() > 1) {
         general.add_options()
