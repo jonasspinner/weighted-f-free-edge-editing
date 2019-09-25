@@ -2,13 +2,13 @@
 // Created by jonas on 18.09.19.
 //
 
-#ifndef WEIGHTED_F_FREE_EDGE_EDITING_MOST_ADAPTED_H
-#define WEIGHTED_F_FREE_EDGE_EDITING_MOST_ADAPTED_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_MOSTADJACENTSUBGRAPHS_ADAPTED_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_MOSTADJACENTSUBGRAPHS_ADAPTED_H
 
 
 #include "../consumer/SubgraphStats.h"
 
-class Most_adapted : public SelectorI {
+class MostAdjacentSubgraphs_adapted : public SelectorI {
 private:
     struct State {
         std::vector<Subgraph> one_left_subgraphs;
@@ -41,7 +41,7 @@ public:
     /**
      * This class is adapted from the fpt-editing repository.
      */
-    Most_adapted(std::shared_ptr <FinderI> finder_ptr, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) : SelectorI(
+    MostAdjacentSubgraphs_adapted(std::shared_ptr <FinderI> finder_ptr, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) : SelectorI(
             std::move(finder_ptr)), m_marked(marked), m_subgraph_stats(subgraph_stats) {
         m_states.push_back(std::make_unique<State>());
     }
@@ -89,23 +89,47 @@ public:
 
 
     void after_mark_and_edit(VertexPair uv) override {
-        State &state = current_state();
+        if (!re_structure) {
+            State &state = current_state();
 
-        finder->find_near(uv, [&](Subgraph &&subgraph) {
-            size_t free = 0;
+            finder->find_near(uv, [&](Subgraph &&subgraph) {
+                size_t free = 0;
 
-            for (VertexPair xy : subgraph.vertexPairs())
-                if (!m_marked[xy])
-                    ++free;
+                for (VertexPair xy : subgraph.vertexPairs())
+                    if (!m_marked[xy])
+                        ++free;
 
-            if (free == 1) {
-                state.one_left_subgraphs.push_back(std::move(subgraph));
-            } else if (free == 0) {
-                state.impossible_to_solve = true;
-            }
+                if (free == 1) {
+                    state.one_left_subgraphs.push_back(std::move(subgraph));
+                } else if (free == 0) {
+                    state.impossible_to_solve = true;
+                }
 
-            return false;
-        });
+                return false;
+            });
+        }
+    }
+
+    void after_edit(VertexPair uv) override {
+        if (re_structure) {
+            State &state = current_state();
+
+            finder->find_near(uv, [&](Subgraph &&subgraph) {
+                size_t free = 0;
+
+                for (VertexPair xy : subgraph.vertexPairs())
+                    if (!m_marked[xy])
+                        ++free;
+
+                if (free == 1) {
+                    state.one_left_subgraphs.push_back(std::move(subgraph));
+                } else if (free == 0) {
+                    state.impossible_to_solve = true;
+                }
+
+                return false;
+            });
+        }
     }
 
     void after_mark(VertexPair uv) override {
@@ -226,4 +250,4 @@ public:
 };
 
 
-#endif //WEIGHTED_F_FREE_EDGE_EDITING_MOST_ADAPTED_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_MOSTADJACENTSUBGRAPHS_ADAPTED_H

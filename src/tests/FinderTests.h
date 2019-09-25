@@ -96,7 +96,7 @@ public:
                     {28, 31},
                     {31, 32}, {31, 33}
             };
-            expect("Edits solve karate", true, Solution(instance, edits).is_valid(instance, Options::FSG::P4C4));
+            expect("Edits solve karate", true, Solution(instance, edits).is_valid(instance, Options::FSG::C4P4));
 
         } catch (const std::runtime_error &e) {
             std::cerr << e.what() << "\n";

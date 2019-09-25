@@ -57,7 +57,7 @@ namespace Finder {
         using namespace YAML;
         out << BeginMap;
         out << Key << "name" << Value << "CenterC4P4";
-        out << Key << "forbidden_subgraphs" << Value << Options::FSG::P4C4;
+        out << Key << "forbidden_subgraphs" << Value << Options::FSG::C4P4;
         out << EndMap;
     }
 

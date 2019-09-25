@@ -126,8 +126,8 @@ public:
      * @param prune_cb A callback which is called when a branch is pruned ((Cost, Cost) -> void).
      * @return Whether a solution was found.
      */
-    template<typename ResultCallback, typename PrunedCallback>
-    bool edit(Cost k, ResultCallback result_cb, PrunedCallback prune_cb) {
+    //template<typename ResultCallback, typename PrunedCallback>
+    bool edit(Cost k, std::function<void(const std::vector<VertexPair>&)> result_cb, std::function<void(Cost, Cost)> prune_cb) {
         // init stats
         m_stats = Statistics(-k / 2, k, 100);
         m_found_solution = false;
@@ -151,8 +151,8 @@ private:
      * @param prune_cb A callback which is called when a branch is pruned ((Cost, Cost) -> void).
      * @return Whether the execution was stopped early
      */
-    template<typename ResultCallback, typename PrunedCallback>
-    bool edit_recursive(Cost k, ResultCallback result_cb, PrunedCallback prune_cb) {
+    //template<typename ResultCallback, typename PrunedCallback>
+    bool edit_recursive(Cost k, std::function<bool(const std::vector<VertexPair>&)> result_cb, std::function<void(Cost, Cost)> prune_cb) {
         const VertexPairMap<Cost> &costs = m_instance.costs;
 
         m_stats.calls(k)++;
@@ -186,17 +186,35 @@ private:
         for (VertexPair uv : problem.pairs) {
             assert(!m_marked[uv]);
 
-            for (auto &c : m_consumers) c->push_state(k); // next_state(state)
+            if constexpr (re_structure) {
+                mark(uv);
 
-            mark_and_edit_edge(uv);
+                for (auto &c : m_consumers) c->push_state(k);
 
-            if (edit_recursive(k - costs[uv], result_cb, prune_cb)) return_value = true;
+                edit_edge(uv);
 
-            for (auto &c : m_consumers) c->pop_state(); // destroy next_state
+                if (edit_recursive(k - costs[uv], result_cb, prune_cb)) return_value = true;
 
-            unedit_edge(uv);
+                for (auto &c : m_consumers) c->pop_state();
 
-            if (return_value) break;
+                unedit_edge(uv);
+
+                if (return_value) break;
+            } else {
+
+                for (auto &c : m_consumers) c->push_state(k); // next_state(state)
+
+                mark_and_edit_edge(uv);
+
+                if (edit_recursive(k - costs[uv], result_cb, prune_cb)) return_value = true;
+
+                for (auto &c : m_consumers) c->pop_state(); // destroy next_state
+
+                unedit_edge(uv);
+
+                if (return_value) break;
+
+            }
         }
 
         // Iterating in reverse order because SubgraphStats keeps the history on a stack.
@@ -232,6 +250,27 @@ private:
 
         for (auto &c : m_consumers) c->after_edit(uv);            // subgraph_stats
         for (auto &c : m_consumers) c->after_mark_and_edit(uv);   // all - next_state
+    }
+
+    void mark(VertexPair uv) {
+        assert(!m_marked[uv]);
+        for (auto &c : m_consumers) c->before_mark(uv);
+
+        m_marked[uv] = true;
+
+        for (auto &c : m_consumers) c->after_mark(uv);
+    }
+
+    void edit_edge(VertexPair uv) {
+        assert(m_marked[uv]);
+        Graph &G = m_instance.graph;
+
+        for (auto &c : m_consumers) c->before_edit(uv);
+
+        G.toggleEdge(uv);
+        edits.push_back(uv);
+
+        for (auto &c : m_consumers) c->after_edit(uv);
     }
 
     /**

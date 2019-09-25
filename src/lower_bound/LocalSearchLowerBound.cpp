@@ -76,28 +76,37 @@ void LocalSearchLowerBound::initialize(Cost /*k*/) {
 }
 
 void LocalSearchLowerBound::remove_subgraphs_from_bound(State& state, VertexPair uv) {
-    assert(state.solvable());
+    if (re_structure) {
+        if (!state.solvable()) return;
+    } else {
+        assert(state.solvable());
+    }
     // state.assert_valid(m_marked, m_bound_graph, m_costs);
 
     for (size_t i = 0; i < state.bound().size();) {
         const auto &[cost, subgraph] = state.bound(i);
-        const auto vertices = subgraph.vertices();
-
-        bool has_u = std::any_of(vertices.begin(), vertices.end(), [&](Vertex x) { return x == uv.u; });
-        bool has_v = std::any_of(vertices.begin(), vertices.end(), [&](Vertex x) { return x == uv.v; });
-
-        if (has_u && has_v) {
-            // std::cout << "before_mark_and_edit remove " << subgraph;
+        if (subgraph.contains(uv)) {
+            if (re_structure)
+                remove_from_graph(subgraph, m_marked, m_bound_graph);
             state.remove(i);
-            // std::cout << "\t => " << state << "\n";
         } else {
             ++i;
         }
     }
+
+#ifndef NDEBUG
+    for (const auto &[cost, subgraph] : state.bound())
+        assert(!subgraph.contains(uv));
+#endif
 }
 
 void LocalSearchLowerBound::insert_subgraphs_into_bound(State& state, VertexPair uv) {
-    assert(state.solvable());
+    if (re_structure) {
+        if (!state.solvable()) return;
+    } else {
+        assert(state.solvable());
+    }
+
 
     // TODO: Check if needed
     state.initialize_bound_graph(m_marked, m_bound_graph);
@@ -136,6 +145,41 @@ void LocalSearchLowerBound::insert_subgraphs_into_bound(State& state, VertexPair
             // std::cout << "\t => " << state << "\n";
         }
     }
+
+#ifndef NDEBUG
+    // local
+    bool has_nearby_subgraph = finder->find_near(uv, m_bound_graph, [](Subgraph &&) { return true; });
+    assert(!has_nearby_subgraph);
+
+    if (re_structure) {
+        // global
+        bool has_global_subgraph = finder->find(m_bound_graph, [](Subgraph &&) { return true; });
+        assert(!has_global_subgraph);
+
+        // m_bound_graph
+        for (VertexPair xy : Graph::VertexPairs(m_marked.size())) {
+            if (m_marked[xy]) {
+                assert(!m_bound_graph.hasEdge(xy));
+            } else {
+                bool has_subgraph = false;
+                for (const auto &[cost, subgraph] : state.bound())
+                    if (subgraph.contains(xy)) {
+                        has_subgraph = true;
+                        break;
+                    }
+
+                if (m_bound_graph.hasEdge(xy))
+                    assert(has_subgraph);
+                else
+                    assert(!has_subgraph);
+            }
+        }
+        for (const auto &[cost, subgraph] : state.bound())
+            for (VertexPair xy : subgraph.vertexPairs())
+                if (!m_marked[xy])
+                    assert(m_bound_graph.hasEdge(xy));
+    }
+#endif
 }
 
 /**
@@ -144,13 +188,17 @@ void LocalSearchLowerBound::insert_subgraphs_into_bound(State& state, VertexPair
  * @param uv
  */
 void LocalSearchLowerBound::before_mark_and_edit(VertexPair uv) {
-    auto &state = current_state();
-    remove_subgraphs_from_bound(state, uv);
+    if constexpr (!re_structure) {
+        auto &state = current_state();
+        remove_subgraphs_from_bound(state, uv);
+    }
 }
 
 void LocalSearchLowerBound::before_mark(VertexPair uv) {
-    auto &state = parent_state();
-    remove_subgraphs_from_bound(state, uv);
+    if constexpr (!re_structure) {
+        auto &state = parent_state();
+        remove_subgraphs_from_bound(state, uv);
+    }
 }
 
 /**
@@ -159,8 +207,79 @@ void LocalSearchLowerBound::before_mark(VertexPair uv) {
  * @param uv
  */
 void LocalSearchLowerBound::after_mark_and_edit(VertexPair uv) {
-    auto &state = current_state();
-    insert_subgraphs_into_bound(state, uv);
+    if constexpr (!re_structure) {
+        auto &state = current_state();
+        insert_subgraphs_into_bound(state, uv);
+    }
+}
+
+void LocalSearchLowerBound::after_mark(VertexPair uv) {
+    if (re_structure) {
+        auto &state = current_state();
+        insert_subgraphs_into_bound(state, uv);
+#ifndef NDEBUG
+        // bound should be maximal
+        std::vector<Subgraph> subgraphs;
+        finder->find(m_bound_graph, [&](Subgraph&& subgraph) { subgraphs.push_back(std::move(subgraph)); return false; });
+        if (!subgraphs.empty()) {
+            std::cerr << "uv " << uv << ": ";
+            for (const auto &subgraph : subgraphs) {
+                std::cerr << subgraph << " ";
+                for (VertexPair xy : subgraph.vertexPairs())
+                    std::cerr << finder->graph_().hasEdge(xy);
+                std::cerr << " ";
+            }
+            std::cerr << "\n";
+        }
+        assert(subgraphs.empty());
+#endif
+    }
+}
+
+void LocalSearchLowerBound::after_edit(VertexPair uv) {
+    if (re_structure) {
+        auto &state = current_state();
+        state.initialize_bound_graph(m_marked, m_bound_graph);
+        remove_subgraphs_from_bound(state, uv);
+        insert_subgraphs_into_bound(state, uv);
+#ifndef NDEBUG
+        // bound should be maximal
+        std::vector<Subgraph> subgraphs;
+        finder->find(m_bound_graph, [&](Subgraph&& subgraph) { subgraphs.push_back(std::move(subgraph)); return false; });
+        if (!subgraphs.empty()) {
+            std::cerr << "uv " << uv << ": ";
+            for (const auto &subgraph : subgraphs) {
+                std::cerr << subgraph << " ";
+                for (VertexPair xy : subgraph.vertexPairs())
+                    std::cerr << finder->graph_().hasEdge(xy);
+                std::cerr << " ";
+            }
+            std::cerr << "\n";
+        }
+        assert(subgraphs.empty());
+#endif
+    }
+}
+
+void LocalSearchLowerBound::after_unedit(VertexPair uv) {
+    if (re_structure) {
+#ifndef NDEBUG
+        // bound should be maximal
+        std::vector<Subgraph> subgraphs;
+        finder->find(m_bound_graph, [&](Subgraph&& subgraph) { subgraphs.push_back(std::move(subgraph)); return false; });
+        if (!subgraphs.empty()) {
+            std::cerr << "uv " << uv << ": ";
+            for (const auto &subgraph : subgraphs) {
+                std::cerr << subgraph << " ";
+                for (VertexPair xy : subgraph.vertexPairs())
+                    std::cerr << finder->graph_().hasEdge(xy);
+                std::cerr << " ";
+            }
+            std::cerr << "\n";
+        }
+        assert(subgraphs.empty());
+#endif
+    }
 }
 
 /**
@@ -256,6 +375,14 @@ void LocalSearchLowerBound::local_search(State &state, Cost k) {
               << std::setw(6) << time_one << "\t " << std::setw(6) << time_two << "\t " << std::setw(6) << time_omega << "\n";
 #endif
 #undef stats
+
+#ifndef NDEBUG
+    if (re_structure) {
+        // bound should be maximal
+        bool found = finder->find(m_bound_graph, [](Subgraph&&) { return true; });
+        assert(!found);
+    }
+#endif
 }
 
 /**

@@ -9,5 +9,6 @@
 using Vertex = unsigned int;
 using Cost = int;
 
+static constexpr bool re_structure = false;
 
 #endif //CONCEPT_DEFINITIONS_H

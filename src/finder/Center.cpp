@@ -72,7 +72,7 @@ namespace Finder {
 
     template <>
     Options::FSG Center<4, true>::forbidden_subgraphs() const {
-        return Options::FSG::P4C4;
+        return Options::FSG::C4P4;
     }
 
     template <>

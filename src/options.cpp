@@ -10,12 +10,12 @@ namespace Options {
     std::istream& operator>>(std::istream& in, Selector& selector) {
         std::string token;
         in >> token;
-        if (token == "FirstEditable")
-            selector = Selector::FirstEditable;
+        if (token == "FirstFound")
+            selector = Selector::FirstFound;
         else if (token == "LeastWeight")
             selector = Selector::LeastWeight;
-        else if (token == "MostMarked")
-            selector = Selector::MostMarked;
+        else if (token == "MostMarkedPairs")
+            selector = Selector::MostMarkedPairs;
         else
             in.setstate(std::ios_base::failbit);
         return in;
@@ -23,12 +23,12 @@ namespace Options {
 
     std::ostream &operator<<(std::ostream &os, Selector selector) {
         switch (selector) {
-            case Selector::FirstEditable:
-                return os << "FirstEditable";
+            case Selector::FirstFound:
+                return os << "FirstFound";
             case Selector::LeastWeight:
                 return os << "LeastWeight";
-            case Selector::MostMarked:
-                return os << "MostMarked";
+            case Selector::MostMarkedPairs:
+                return os << "MostMarkedPairs";
             default:
                 return os;
         }
@@ -49,8 +49,8 @@ namespace Options {
         in >> token;
         if (token == "P3")
             fsg = FSG::P3;
-        else if (token == "P4C4")
-            fsg = FSG::P4C4;
+        else if (token == "C4P4")
+            fsg = FSG::C4P4;
         else if (token == "C4_C5_2K2")
             fsg = FSG::C4_C5_2K2;
         else if (token == "C4_C5_P5_Bowtie_Necktie")
@@ -64,8 +64,8 @@ namespace Options {
         switch (fsg) {
             case FSG::P3:
                 return os << "P3";
-            case FSG::P4C4:
-                return os << "P4C4";
+            case FSG::C4P4:
+                return os << "C4P4";
             case FSG::C4_C5_2K2:
                 return os << "C4_C5_2K2";
             case FSG::C4_C5_P5_Bowtie_Necktie:
@@ -88,14 +88,16 @@ namespace Options {
     std::istream& operator>>(std::istream& in, LB& lower_bound) {
         std::string token;
         in >> token;
-        if (token == "No")
-            lower_bound = LB::No;
+        if (token == "Trivial")
+            lower_bound = LB::Trivial;
         else if (token == "Greedy")
             lower_bound = LB::Greedy;
+        else if (token == "SortedGreedy")
+            lower_bound = LB::SortedGreedy;
         else if (token == "LocalSearch")
             lower_bound = LB::LocalSearch;
-        else if (token == "LinearProgram")
-            lower_bound = LB::LinearProgram;
+        else if (token == "LPRelaxation")
+            lower_bound = LB::LPRelaxation;
         else
             in.setstate(std::ios_base::failbit);
         return in;
@@ -103,14 +105,16 @@ namespace Options {
 
     std::ostream &operator<<(std::ostream &os, LB lower_bound) {
         switch (lower_bound) {
-            case LB::No:
-                return os << "No";
+            case LB::Trivial:
+                return os << "Trivial";
             case LB::Greedy:
                 return os << "Greedy";
+            case LB::SortedGreedy:
+                return os << "SortedGreedy";
             case LB::LocalSearch:
                 return os << "LocalSearch";
-            case LB::LinearProgram:
-                return os << "LinearProgram";
+            case LB::LPRelaxation:
+                return os << "LPRelaxation";
             default:
                 return os;
         }

@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
     using Options::LB;
 
     // std::vector<Options::LB> lower_bounds = {LB::Greedy, LB::No, LB::LocalSearch, LB::LinearProgram};
-    LB lower_bound = LB::LinearProgram;
+    LB lower_bound = LB::LPRelaxation;
     std::vector<std::string> inputs = {
         "../data/bio/bio-nr-3-size-16.graph",
         "../data/bio/bio-nr-4-size-39.graph",
@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
             Permutation P(orig_instance.graph.size(), seed);
             auto instance = P[orig_instance];
 
-            std::shared_ptr<FinderI> finder = Finder::make(Options::FSG::P4C4, instance.graph);
+            std::shared_ptr<FinderI> finder = Finder::make(Options::FSG::C4P4, instance.graph);
             SubgraphStats subgraph_stats(finder, instance, marked);
             subgraph_stats.initialize(max_k);
             auto lb = LowerBound::make(lower_bound, finder, instance, marked, subgraph_stats);

@@ -12,7 +12,7 @@
 
 namespace Options {
     enum class Selector {
-        FirstEditable, LeastWeight, MostMarked
+        FirstFound, LeastWeight, MostMarkedPairs
     };
 
     std::istream &operator>>(std::istream &in, Selector &selector);
@@ -23,7 +23,7 @@ namespace Options {
 
 
     enum class FSG {
-        P3, P4, P4C4, P5, P5C5, P6, P6C6, C4_C5_2K2, C4_C5_P5_Bowtie_Necktie
+        P3, P4, C4P4, P5, C5P5, P6, C6P6, C4_C5_2K2, C4_C5_P5_Bowtie_Necktie
     };
 
     std::istream &operator>>(std::istream &in, FSG &fsg);
@@ -34,7 +34,7 @@ namespace Options {
 
 
     enum class LB {
-        No, Greedy, LocalSearch, LinearProgram
+        Trivial, Greedy, SortedGreedy, LocalSearch, LPRelaxation
     };
 
     std::istream &operator>>(std::istream &in, LB &lower_bound);

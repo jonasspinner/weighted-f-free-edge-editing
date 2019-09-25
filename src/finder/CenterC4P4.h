@@ -27,7 +27,7 @@ namespace Finder {
 
         bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override;
 
-        [[nodiscard]] Options::FSG forbidden_subgraphs() const override { return Options::FSG::P4C4; }
+        [[nodiscard]] Options::FSG forbidden_subgraphs() const override { return Options::FSG::C4P4; }
 
         [[nodiscard]] std::string name() const override { return "CenterC4P4"; }
 

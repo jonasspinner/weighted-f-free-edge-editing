@@ -12,6 +12,8 @@
 #include "VertexPairMap.h"
 #include "../Instance.h"
 #include "../Permutation.h"
+#include "../Configuration.h"
+
 
 class GraphIO {
 public:
@@ -111,6 +113,10 @@ public:
         instance = P[instance];
 
         return instance;
+    }
+
+    static Instance read_instance(const Configuration &config) {
+        return read_instance(config.input_path, config.multiplier, config.permutation);
     }
 
     template<typename Weight>

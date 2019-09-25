@@ -5,10 +5,10 @@
 
 #include "selector_utils.h"
 
-#include "FirstEditable.h"
+#include "FirstFound.h"
 #include "LeastWeight.h"
 #include "MostMarkedPairs.h"
-#include "Most_adapted.h"
+#include "MostAdjacentSubgraphs_adapted.h"
 #include "Most.h"
 
 namespace Selector {
@@ -28,9 +28,9 @@ namespace Selector {
         switch (selector) {
             case Options::Selector::LeastWeight:
                 return std::make_unique<LeastWeight>(instance.costs, finder, marked);
-            case Options::Selector::FirstEditable:
-                return std::make_unique<FirstEditable>(finder, marked);
-            case Options::Selector::MostMarked:
+            case Options::Selector::FirstFound:
+                return std::make_unique<FirstFound>(finder, marked);
+            case Options::Selector::MostMarkedPairs:
                 return std::make_unique<MostMarkedPairs>(finder, marked, subgraph_stats);
             default:
                 assert(false);

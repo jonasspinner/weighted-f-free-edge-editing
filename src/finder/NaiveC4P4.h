@@ -58,7 +58,7 @@ namespace Finder {
             return find_near(uv, callback, valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
         }
 
-        [[nodiscard]] Options::FSG forbidden_subgraphs() const override { return Options::FSG::P4C4; }
+        [[nodiscard]] Options::FSG forbidden_subgraphs() const override { return Options::FSG::C4P4; }
 
         [[nodiscard]] std::string name() const override { return "NaiveC4P4"; }
 
@@ -66,7 +66,7 @@ namespace Finder {
             using namespace YAML;
             out << BeginMap;
             out << Key << "name" << Value << "NaiveC4P4";
-            out << Key << "forbidden_subgraphs" << Value << Options::FSG::P4C4;
+            out << Key << "forbidden_subgraphs" << Value << Options::FSG::C4P4;
             out << EndMap;
         }
 

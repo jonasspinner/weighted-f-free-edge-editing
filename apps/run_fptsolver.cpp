@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
     double multiplier = 100;
     Cost k_max = 6730;
 
-    Configuration config(Options::FSG::P4C4, input, multiplier, Options::SolverType::FPT, k_max, Options::Selector::MostMarked, Options::LB::LocalSearch);
+    Configuration config(Options::FSG::C4P4, input, multiplier, Options::SolverType::FPT, k_max, Options::Selector::MostMarkedPairs, Options::LB::LocalSearch);
 
     auto options = config.options({Options::SolverType::FPT});
 
@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
         outputFile.open(config.output_path);
 
 
-    auto instance = GraphIO::read_instance(config.input_path, config.multiplier);
+    auto instance = GraphIO::read_instance(config);
 
     FPTSolver solver(config);
 

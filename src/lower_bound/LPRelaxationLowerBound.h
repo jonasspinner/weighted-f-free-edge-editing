@@ -2,8 +2,8 @@
 // Created by jonas on 03.09.19.
 //
 
-#ifndef WEIGHTED_F_FREE_EDGE_EDITING_LINEARPROGRAMLOWERBOUND_H
-#define WEIGHTED_F_FREE_EDGE_EDITING_LINEARPROGRAMLOWERBOUND_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_LPRELAXATIONLOWERBOUND_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_LPRELAXATIONLOWERBOUND_H
 
 
 #include <gurobi_c++.h>
@@ -11,7 +11,7 @@
 #include "../finder/finder_utils.h"
 
 
-class LinearProgramLowerBound : public LowerBoundI {
+class LPRelaxationLowerBound : public LowerBoundI {
     const Graph &m_graph;
     const VertexPairMap<Cost> &m_costs;
     const VertexPairMap<bool> &m_marked;
@@ -31,8 +31,8 @@ public:
     /**
      * The code is adapted from Michael Hamann.
      */
-    LinearProgramLowerBound(const Instance &instance,
-                            const VertexPairMap<bool> &forbidden, std::shared_ptr<FinderI> finder_ref) :
+    LPRelaxationLowerBound(const Instance &instance,
+                           const VertexPairMap<bool> &forbidden, std::shared_ptr<FinderI> finder_ref) :
             LowerBoundI(std::move(finder_ref)), m_graph(instance.graph),
             m_costs(instance.costs), m_marked(forbidden), m_env(std::make_unique<GRBEnv>()),
             m_variables(m_graph.size()), m_fsg(finder->forbidden_subgraphs()), k_initial(0), m_edited(m_costs.size(), false) {}
@@ -83,17 +83,19 @@ public:
      * @param uv
      */
     void after_mark_and_edit(VertexPair uv) override {
-        if (variable_means_edit) {
-            assert(m_edited[uv]);
-            fixPair(uv, m_edited[uv]);
-        }
-        else
-            fixPair(uv, m_graph.hasEdge(uv));
+        if (!re_structure) {
+            if (variable_means_edit) {
+                assert(m_edited[uv]);
+                fixPair(uv, m_edited[uv]);
+            }
+            else
+                fixPair(uv, m_graph.hasEdge(uv));
 
-        finder->find_near(uv, [&](const Subgraph &subgraph) {
-            addConstraint(subgraph);
-            return false;
-        });
+            finder->find_near(uv, [&](const Subgraph &subgraph) {
+                addConstraint(subgraph);
+                return false;
+            });
+        }
     }
 
     /**
@@ -107,15 +109,41 @@ public:
     }
 
     void after_edit(VertexPair uv) override {
-        // toggle edited status
-        if (variable_means_edit) {
-            m_edited[uv] = !m_edited[uv];
-            fixPair(uv, m_edited[uv]);
+        if (re_structure) {
+            if (variable_means_edit) {
+                m_edited[uv] = !m_edited[uv];
+                fixPair(uv, m_edited[uv]);
+            }
+
+            if (variable_means_edit) {
+                assert(m_edited[uv]);
+                fixPair(uv, m_edited[uv]);
+            }
+            else
+                fixPair(uv, m_graph.hasEdge(uv));
+
+            finder->find_near(uv, [&](const Subgraph &subgraph) {
+                addConstraint(subgraph);
+                return false;
+            });
+        } else {
+            // toggle edited status
+            if (variable_means_edit) {
+                m_edited[uv] = !m_edited[uv];
+                fixPair(uv, m_edited[uv]);
+            }
         }
     }
 
     void after_unedit(VertexPair uv) override {
-        after_edit(uv);
+        if constexpr (re_structure) {
+            if (variable_means_edit) {
+                m_edited[uv] = !m_edited[uv];
+                fixPair(uv, m_edited[uv]);
+            }
+        } else {
+            after_edit(uv);
+        }
     }
 
     void after_unmark(VertexPair uv) override {
@@ -292,4 +320,4 @@ private:
 };
 
 
-#endif //WEIGHTED_F_FREE_EDGE_EDITING_LINEARPROGRAMLOWERBOUND_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_LPRELAXATIONLOWERBOUND_H

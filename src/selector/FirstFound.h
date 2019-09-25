@@ -12,13 +12,13 @@
 
 namespace Selector {
 
-    class FirstEditable : public SelectorI {
+    class FirstFound : public SelectorI {
     private:
         const VertexPairMap<bool> &m_forbidden;
 
     public:
-        explicit FirstEditable(std::shared_ptr<FinderI> finder_ptr,
-                               const VertexPairMap<bool> &forbidden) : SelectorI(std::move(finder_ptr)),
+        explicit FirstFound(std::shared_ptr<FinderI> finder_ptr,
+                            const VertexPairMap<bool> &forbidden) : SelectorI(std::move(finder_ptr)),
                                                                        m_forbidden(forbidden) {}
 
         /**

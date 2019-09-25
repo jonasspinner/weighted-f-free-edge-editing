@@ -27,7 +27,7 @@ namespace Finder {
         switch (forbidden) {
             case FSG::P3:
                 return std::make_unique<CenterP3>(graph);
-            case FSG::P4C4:
+            case FSG::C4P4:
                 return std::make_unique<CenterC4P4>(graph);
             case FSG::C4_C5_2K2:
                 return std::make_unique<SplitGraph>(graph);

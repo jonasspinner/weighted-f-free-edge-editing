@@ -168,6 +168,14 @@ public:
     bool operator<(const Subgraph &other) const {
         return std::lexicographical_compare(m_vertices.begin(), m_vertices.end(), other.m_vertices.begin(), other.m_vertices.end());
     }
+
+    [[nodiscard]] bool contains(Vertex u) const {
+        return std::any_of(m_vertices.begin(), m_vertices.end(), [&](Vertex y) { return y == u; });
+    }
+
+    [[nodiscard]] bool contains(VertexPair uv) const {
+        return contains(uv.u) && contains(uv.v);
+    }
 };
 
 constexpr Cost invalid_cost = std::numeric_limits<Cost>::max();

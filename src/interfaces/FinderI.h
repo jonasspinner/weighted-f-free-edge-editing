@@ -69,6 +69,10 @@ public:
 
     virtual void to_yaml(YAML::Emitter &out) const = 0;
 
+    const Graph &graph_() const {
+        return graph;
+    }
+
     friend YAML::Emitter &operator<<(YAML::Emitter &out, const FinderI &finder) {
         finder.to_yaml(out);
         return out;

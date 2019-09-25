@@ -16,7 +16,7 @@
 
 #include "version.h"
 
-#include "lower_bound/LinearProgramLowerBound.h"
+#include "lower_bound/LPRelaxationLowerBound.h"
 
 #include "graph/algorithms.h"
 
@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
     auto instance = GraphIO::read_instance(paths[0], 100);
     VertexPairMap<bool> marked(instance.graph.size());
     std::shared_ptr<FinderI> finder = std::make_shared<Finder::CenterC4P4>(instance.graph);
-    auto lb = LinearProgramLowerBound(instance, marked, finder);
+    auto lb = LPRelaxationLowerBound(instance, marked, finder);
     lb.initialize(1000);
     std::cout << lb.calculate_lower_bound(1000);
 

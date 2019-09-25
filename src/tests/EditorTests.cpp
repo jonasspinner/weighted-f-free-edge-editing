@@ -90,7 +90,7 @@ void EditorTests::output_is_independent_of_seed(const std::vector<int> &seeds) {
 
         std::vector<Solution> solutions;
 
-        auto config = Configuration(Options::FSG::P4C4, instance_path, -1, Options::SolverType::FPT, -1, Options::Selector::FirstEditable, Options::LB::Greedy);
+        auto config = Configuration(Options::FSG::C4P4, instance_path, -1, Options::SolverType::FPT, -1, Options::Selector::FirstFound, Options::LB::SortedGreedy);
 
         Editor editor(instance, config);
         editor.edit(1100, [&](const std::vector<VertexPair> &edits) {
@@ -127,11 +127,11 @@ void EditorTests::run() {
     using Options::LB;
     using Options::FSG;
 
-    auto all_selectors = {Selector::FirstEditable, Selector::LeastWeight, Selector::MostMarked};
-    auto all_lower_bounds = {LB::No, LB::Greedy, LB::LocalSearch, LB::LinearProgram};
+    auto all_selectors = {Selector::FirstFound, Selector::LeastWeight, Selector::MostMarkedPairs};
+    auto all_lower_bounds = {LB::Trivial, LB::Greedy, LB::SortedGreedy, LB::LocalSearch, LB::LPRelaxation};
 
-    configurations_have_same_output(FSG::P4C4, all_selectors, all_lower_bounds, {0, 1}, 100);
-    configurations_have_same_output(FSG::P4C4, all_selectors, all_lower_bounds, {0, 1}, 1);
+    configurations_have_same_output(FSG::C4P4, all_selectors, all_lower_bounds, {0, 1}, 100);
+    configurations_have_same_output(FSG::C4P4, all_selectors, all_lower_bounds, {0, 1}, 1);
 
     output_is_independent_of_seed({0, 1, 2, 3, 4});
 }

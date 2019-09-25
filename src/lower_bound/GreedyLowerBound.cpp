@@ -21,7 +21,7 @@ namespace LowerBound {
      * @param k Not used
      * @return A lower bound on the costs required to solve the current instance.
      */
-    Cost GreedyLowerBound::calculate_lower_bound(Cost /*k*/) {
+    Cost GreedyLowerBound::calculate_lower_bound(Cost k) {
         Cost bound_size = 0;
         m_used_in_bound.clear();
 
@@ -36,13 +36,18 @@ namespace LowerBound {
                 }
 
             if (!touches_bound) {
-                bound_size += get_subgraph_cost(subgraph, m_marked, m_costs);
+                Cost cost = get_subgraph_cost(subgraph, m_marked, m_costs);
+                if (cost == invalid_cost) {
+                    bound_size = invalid_cost;
+                    return true;
+                }
+                bound_size += cost;
 
                 for (VertexPair uv : subgraph.vertexPairs())
                     if (!m_marked[uv])
                         m_used_in_bound[uv] = true;
             }
-            return false;
+            return bound_size > k;
         });
 
         return bound_size;

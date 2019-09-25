@@ -242,13 +242,19 @@ public:
         return *m_states[m_states.size() - 2];
     }
 
-    static void remove_subgraphs_from_bound(State& state, VertexPair uv);
+    void remove_subgraphs_from_bound(State& state, VertexPair uv);
 
     void insert_subgraphs_into_bound(State& state, VertexPair uv);
 
     void before_mark_and_edit(VertexPair uv) override;
 
     void before_mark(VertexPair uv) override;
+
+    void after_mark(VertexPair uv) override;
+
+    void after_edit(VertexPair uv) override;
+
+    void after_unedit(VertexPair uv) override;
 
     void after_mark_and_edit(VertexPair uv) override;
 
