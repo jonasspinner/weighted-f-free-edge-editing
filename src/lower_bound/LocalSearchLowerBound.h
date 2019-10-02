@@ -201,9 +201,16 @@ private:
 
     static void initialize_bound_graph(const State &state, const VertexPairMap<bool> &marked, Graph &bound_graph);
 
-    static void remove_subgraphs_from_bound(State& state, VertexPair uv);
+    static void remove_near_subgraphs_from_bound(State& state, VertexPair uv);
 
-    static void insert_subgraphs_into_bound(State& state, VertexPair uv, FinderI &finder, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs, Graph &bounded_graph);
+    static void update_near_subgraphs(State& state, VertexPair uv, FinderI &finder,
+            const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs, Graph &bound_graph);
+
+    static void insert_near_subgraphs_into_bound(State& state, VertexPair uv, FinderI &finder,
+            const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs, Graph &bounded_graph);
+
+    static void insert_subgraphs_into_bound(std::vector<std::pair<Cost, Subgraph>> &&subgraphs,
+            const VertexPairMap<bool> &marked, State& state, Graph &bound_graph);
 
     void local_search(State &state, Cost k);
 

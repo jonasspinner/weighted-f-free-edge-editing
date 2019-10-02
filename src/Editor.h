@@ -41,57 +41,79 @@ private:
     std::vector<VertexPair> edits;
     bool m_found_solution;
 
-    /*
     // The idea was/is to mark all vertex pairs which editing cost is larger than the current available cost in advance
     // for each recursion call. This could potentially increase the quality of packing based lower bounds as more vertex
     // pairs are marked and therefore subgraphs which have these marked pairs are not considered adjacent.
-    class OrderedVertexPairs {
+    class VertexPairPreMarker {
         std::vector<VertexPair> m_vertex_pairs;
-        std::vector<std::vector<VertexPair>> m_stack;
         std::vector<size_t> m_indices;
+        std::vector<bool> m_needs_reset;
+
+        const VertexPairMap<Cost> &m_costs;
+        const std::vector<ConsumerI *> &m_consumers;
+
+        VertexPairMap<bool> &m_marked;
     public:
-        OrderedVertexPairs(const Graph &graph, const VertexPairMap<Cost> &costs) : m_indices({0}) {
+        VertexPairPreMarker(const Graph &graph, const VertexPairMap<Cost> &costs,
+                            const std::vector<ConsumerI *> &consumers, VertexPairMap<bool> &marked) :
+                                m_indices({0}), m_costs(costs), m_consumers(consumers), m_marked(marked) {
             m_vertex_pairs.reserve(graph.size() * (graph.size() - 1) / 2);
             for (VertexPair uv : graph.vertexPairs())
                 m_vertex_pairs.push_back(uv);
 
             std::sort(m_vertex_pairs.begin(), m_vertex_pairs.end(),
-                      [&](VertexPair uv, VertexPair xy) { return costs[uv] > costs[xy]; });
+                      [&](VertexPair uv, VertexPair xy) { return m_costs[uv] > m_costs[xy]; });
 
-            for (VertexPair uv : m_vertex_pairs) {
-                std::cerr << costs[uv] << " ";
-            }
-            std::cerr << "\n";
+            m_needs_reset.resize(m_vertex_pairs.size());
         }
 
-        void push(Cost k, const VertexPairMap<Cost> &costs, VertexPairMap<bool> &marked, std::vector<ConsumerI *> &consumers) {
+        void mark(Cost k) {
+            // All vertex pairs would be marked. Skip the work as only one selector call is necessary.
+            if (k < m_costs[m_vertex_pairs.back()]) {
+                m_indices.push_back(m_indices.back());
+                return;
+            };
+
             size_t index = m_indices.back();
-            m_stack.emplace_back();
-            while (costs[m_vertex_pairs[index]] > k) {
+            while (index < m_vertex_pairs.size() && m_costs[m_vertex_pairs[index]] > k) {
                 VertexPair uv = m_vertex_pairs[index];
-                if (!marked[uv]) {
-                    for (auto &c : consumers) c->before_mark(uv);
-                    marked[uv] = true;
-                    for (auto &c : consumers) c->after_mark(uv);
-                    m_stack.back().push_back(uv);
+                if (!m_marked[uv]) {
+                    for (auto &c : m_consumers) c->before_mark(uv);
+                    m_marked[uv] = true;
+                    for (auto &c : m_consumers) c->after_mark(uv);
+                    m_needs_reset[index] = true;
                 }
                 ++index;
             }
             m_indices.push_back(index);
         }
 
-        void pop(VertexPairMap<bool> &marked, std::vector<ConsumerI *> &consumers) {
+        void unmark() {
+            size_t end = m_indices.back();
             m_indices.pop_back();
-            for (auto it = m_stack.back().rbegin(); it != m_stack.back().rend(); ++it) {
-                VertexPair uv = *it;
-                assert(marked[uv]);
-                marked[uv] = false;
-                for (auto &c : consumers) c->after_unmark(uv);
+            size_t begin = m_indices.back();
+            for  (size_t index = end - 1; begin <= index && index < end; --index) {
+                if (m_needs_reset[index]) {
+                    auto uv = m_vertex_pairs[index];
+                    assert(m_marked[uv]);
+
+                    m_marked[uv] = false;
+                    for (auto &c : m_consumers) c->after_unmark(uv);
+
+                    m_needs_reset[index] = false;
+                }
             }
-            m_stack.pop_back();
         }
     } m_ordered_vertex_pairs;
-     */
+
+    class PreMarkerGuard {
+        VertexPairPreMarker &m_marker;
+        bool m_marked = false;
+    public:
+        explicit PreMarkerGuard(VertexPairPreMarker& marker) : m_marker(marker) {}
+        void mark(Cost k) { assert(!m_marked); m_marker.mark(k); m_marked = true; }
+        ~PreMarkerGuard() { if (m_marked) m_marker.unmark(); }
+    };
 
     Statistics m_stats;
 
@@ -99,7 +121,7 @@ private:
 public:
     explicit Editor(Instance instance, Configuration config) :
             m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_found_solution(false), /*m_ordered_vertex_pairs(m_instance.graph, m_instance.costs),*/
-            m_config(std::move(config)) {
+            m_ordered_vertex_pairs(m_instance.graph, m_instance.costs, m_consumers, m_marked), m_config(std::move(config)) {
 
         m_finder = Finder::make(m_config.forbidden_subgraphs, m_instance.graph);
         m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_marked);
@@ -160,7 +182,9 @@ private:
 
         m_stats.calls(k)++;
 
-        // m_ordered_vertex_pairs.push(k, costs, m_marked, m_consumers);
+        PreMarkerGuard guard(m_ordered_vertex_pairs);
+        if (m_config.pre_mark_vertex_pairs)
+            guard.mark(k);
 
         auto lb = m_lower_bound->calculate_lower_bound(k);
         if (k < lb) {
@@ -209,7 +233,6 @@ private:
             if (m_marked[*uv])
                 unmark_edge(*uv);
 
-        // m_ordered_vertex_pairs.pop(m_marked, m_consumers);
 
         return return_value;
     }

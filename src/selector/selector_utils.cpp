@@ -8,7 +8,7 @@
 #include "FirstFound.h"
 #include "LeastWeight.h"
 #include "MostMarkedPairs.h"
-#include "MostAdjacentSubgraphs_adapted.h"
+#include "MostAdjacentSubgraphs.h"
 #include "Most.h"
 
 namespace Selector {
@@ -32,6 +32,8 @@ namespace Selector {
                 return std::make_unique<FirstFound>(finder, marked);
             case Options::Selector::MostMarkedPairs:
                 return std::make_unique<MostMarkedPairs>(finder, marked, subgraph_stats);
+            case Options::Selector::MostAdjacentSubgraphs:
+                return std::make_unique<MostAdjacentSubgraphs>(finder, marked, subgraph_stats);
             default:
                 assert(false);
                 return nullptr;

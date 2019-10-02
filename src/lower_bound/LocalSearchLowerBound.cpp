@@ -152,7 +152,7 @@ bool LocalSearchLowerBound::bound_is_maximal(FinderI &finder, const Graph &bound
     return subgraphs.empty();
 }
 
-void LocalSearchLowerBound::remove_subgraphs_from_bound(State& state, VertexPair uv) {
+void LocalSearchLowerBound::remove_near_subgraphs_from_bound(State& state, VertexPair uv) {
     assert(state.solvable());
     for (size_t i = 0; i < state.bound().size();) {
         const auto &[cost, subgraph] = state.bound(i);
@@ -169,7 +169,84 @@ void LocalSearchLowerBound::remove_subgraphs_from_bound(State& state, VertexPair
 #endif
 }
 
-void LocalSearchLowerBound::insert_subgraphs_into_bound(State& state, VertexPair uv, FinderI &finder, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs, Graph &bound_graph) {
+
+/**
+ * Removes the subgraph from the bound containing u and v, if it exists.
+ *
+ * Finds forbidden subgraphs which share a vertex pair with the removed subgraph, but do not contain uv.
+ *
+ * @param state
+ * @param uv
+ */
+void LocalSearchLowerBound::update_near_subgraphs(State& state, VertexPair uv, FinderI &finder,
+        const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs, Graph &bound_graph) {
+    assert(state.solvable());
+
+    Subgraph removed_subgraph{};
+    for (size_t i = 0; i < state.bound().size(); ++i) {
+        const auto &[cost, subgraph] = state.bound(i);
+        if (subgraph.contains(uv)) {
+            removed_subgraph = subgraph;
+            state.remove(i);
+            break;
+        }
+    }
+
+    if (removed_subgraph.size() == 0)
+        return;
+
+    std::vector<std::pair<Cost, Subgraph>> subgraphs;
+
+
+    for (VertexPair xy : removed_subgraph.vertexPairs())
+        bound_graph.clearEdge(xy);
+    bound_graph.setEdge(uv);
+
+    for (VertexPair xy : removed_subgraph.vertexPairs()) {
+        if (xy == uv) continue;
+        assert(!bound_graph.hasEdge(xy));
+
+        bool unsolvable = finder.find_near(xy, bound_graph,[&](Subgraph &&subgraph) {
+            Cost min_cost = get_subgraph_cost(subgraph, marked, costs);
+            subgraphs.emplace_back(min_cost, std::move(subgraph));
+            return min_cost == invalid_cost;
+        });
+
+        if (unsolvable) {
+            state.set_unsolvable();
+            return;
+        }
+
+        bound_graph.setEdge(xy);
+    }
+
+    for (VertexPair xy : removed_subgraph.vertexPairs())
+        bound_graph.clearEdge(xy);
+
+#ifndef NDEBUG
+    for (const auto &[cost, subgraph] : subgraphs)
+        assert(!subgraph.contains(uv));
+#endif
+
+    std::sort(subgraphs.begin(), subgraphs.end(),
+            [](const auto& lhs, const auto &rhs) { return lhs.first > rhs.first; });
+
+    insert_subgraphs_into_bound(std::move(subgraphs), marked, state, bound_graph);
+
+#ifndef NDEBUG
+    for (const auto &[cost, subgraph] : state.bound())
+        assert(!subgraph.contains(uv));
+#endif
+}
+
+/**
+ * Finds forbidden subgraph containing u and v. Tries to insert them into the bound in descending order by minimum
+ * editing cost.
+ *
+ * If a fully marked subgraph is found, the state is marked as unsolvable.
+ */
+void LocalSearchLowerBound::insert_near_subgraphs_into_bound(State& state, VertexPair uv, FinderI &finder,
+        const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs, Graph &bound_graph) {
     assert(state.solvable());
 
     std::vector<std::pair<Cost, Subgraph>> subgraphs;
@@ -206,13 +283,34 @@ void LocalSearchLowerBound::insert_subgraphs_into_bound(State& state, VertexPair
 }
 
 /**
+ * Tries to insert the subgraphs into the lower bound by the given order.
+ *
+ * @param subgraphs
+ * @param marked
+ * @param state
+ * @param bound_graph
+ */
+void LocalSearchLowerBound::insert_subgraphs_into_bound(std::vector<std::pair<Cost, Subgraph>> &&subgraphs,
+        const VertexPairMap<bool> &marked, State& state, Graph &bound_graph) {
+    for (auto &&[cost, subgraph] : subgraphs) {
+        // In the for loop a subgraph can be invalidated when bound_graph is modified.
+        // Therefore it has to checked whether subgraph is still valid and does not share a vertex pair with bound_graph.
+        bool inserted = try_insert_into_graph(subgraph, marked, bound_graph);
+        if (inserted) {
+            state.insert({cost, std::move(subgraph)});
+        }
+    }
+}
+
+/**
  * Initializes the bound_graph. Every unmarked vertex pair of a subgraph in the bound becomes an edge in the graph.
  *
  * @param state
  * @param marked
  * @param bound_graph
  */
-void LocalSearchLowerBound::initialize_bound_graph(const State &state, const VertexPairMap<bool> &marked, Graph &bound_graph) {
+void LocalSearchLowerBound::initialize_bound_graph(const State &state, const VertexPairMap<bool> &marked,
+        Graph &bound_graph) {
     bound_graph.clearEdges();
     for (const auto &[cost, subgraph] : state.bound())
         for (VertexPair uv : subgraph.vertexPairs())
@@ -220,34 +318,55 @@ void LocalSearchLowerBound::initialize_bound_graph(const State &state, const Ver
                 bound_graph.setEdge(uv);
 }
 
+/**
+ * When a subgraph containing u and v exists, remove it from the lower bound.
+ *
+ * if \exists S \in B: u, v \in S then
+ *      remove S from B
+ *
+ * @param uv
+ */
 void LocalSearchLowerBound::before_mark(VertexPair uv) {
     auto &state = current_state();
-    if (!state.solvable()) return; // TODO: Check
-    remove_subgraphs_from_bound(state, uv);
+
+    if (!state.solvable()) return;
+
+    // Either only remove the subgraph at uv (I) or remove it and fill the "hole" with subgraphs not containing uv (II).
+    // remove_near_subgraphs_from_bound(state, uv); // I
+    update_near_subgraphs(state, uv, *finder, m_marked, m_costs, m_bound_graph); // II
 
     for (const auto &[cost, subgraph] : state.bound())
         assert(!subgraph.contains(uv));
 }
 
-void LocalSearchLowerBound::after_mark(VertexPair uv) {
+void LocalSearchLowerBound::after_mark(VertexPair /*uv*/) {
 }
 
+/**
+ * Update the state one recursion level higher up. Insert forbidden subgraphs which contain u and v.
+ *
+ * @param uv
+ */
 void LocalSearchLowerBound::before_edit(VertexPair uv) {
     auto& state = parent_state();
 
-    if (!state.solvable()) return; // TODO: Check
+    if (!state.solvable()) return;
 
     initialize_bound_graph(state, m_marked, m_bound_graph);
-    insert_subgraphs_into_bound(state, uv, *finder, m_marked, m_costs, m_bound_graph);
+    insert_near_subgraphs_into_bound(state, uv, *finder, m_marked, m_costs, m_bound_graph);
 }
 
+/**
+ * Update the current state. Insert the new created forbidden subgraphs. They contain u and v.
+ * @param uv
+ */
 void LocalSearchLowerBound::after_edit(VertexPair uv) {
     auto& state = current_state();
 
-    if (!state.solvable()) return; // TODO: Check
+    if (!state.solvable()) return;
 
     initialize_bound_graph(state, m_marked, m_bound_graph);
-    insert_subgraphs_into_bound(state, uv, *finder, m_marked, m_costs, m_bound_graph);
+    insert_near_subgraphs_into_bound(state, uv, *finder, m_marked, m_costs, m_bound_graph);
 }
 
 /**
@@ -260,7 +379,7 @@ void LocalSearchLowerBound::local_search(State &state, Cost k) {
     constexpr static bool use_one_improvement = false;
     constexpr static bool use_two_improvement = true;
     constexpr static bool use_omega_improvement = true;
-#define stats
+// #define stats
 #ifdef stats
     Cost cost_before = state.cost();
     size_t num_rounds_one = 0; Cost improvement_one = 0;
@@ -688,7 +807,6 @@ bool LocalSearchLowerBound::find_omega_improvement(State &state, Cost k) {
         if (subgraph_cost == invalid_cost) {
             found_improvement = true;
             state.set_unsolvable();
-            std::cerr << "unsolvable omega_improvement " << subgraph << "\n";
             return true;
         }
         assert(subgraph_cost != invalid_cost);

@@ -21,6 +21,8 @@ void write_output_file(const std::string &path, const Configuration &config, con
     out << Key << "k_max" << Value << config.k_max;
     out << Key << "selector" << Value << config.selector;
     out << Key << "lower_bound" << Value << config.lower_bound;
+    out << Key << "find_all_solutions" << Value << config.find_all_solutions;
+    out << Key << "pre_mark_vertex_pairs" << Value << config.pre_mark_vertex_pairs;
     out << EndMap;
     out << Key << "instance" << Value << instance;
     out << Key << "forbidden_subgraphs" << Value << config.forbidden_subgraphs;
@@ -68,6 +70,7 @@ int main(int argc, char* argv[]) {
 
     Configuration config(Options::FSG::C4P4, input, multiplier, Options::SolverType::FPT, k_max, Options::Selector::MostMarkedPairs, Options::LB::LocalSearch);
     config.find_all_solutions = false;
+    config.pre_mark_vertex_pairs = false;
 
     auto options = config.options({Options::SolverType::FPT});
 

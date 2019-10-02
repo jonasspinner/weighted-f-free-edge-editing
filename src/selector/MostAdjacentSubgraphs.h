@@ -2,13 +2,13 @@
 // Created by jonas on 18.09.19.
 //
 
-#ifndef WEIGHTED_F_FREE_EDGE_EDITING_MOSTADJACENTSUBGRAPHS_ADAPTED_H
-#define WEIGHTED_F_FREE_EDGE_EDITING_MOSTADJACENTSUBGRAPHS_ADAPTED_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_MOSTADJACENTSUBGRAPHS_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_MOSTADJACENTSUBGRAPHS_H
 
 
 #include "../consumer/SubgraphStats.h"
 
-class MostAdjacentSubgraphs_adapted : public SelectorI {
+class MostAdjacentSubgraphs : public SelectorI {
 private:
     struct State {
         std::vector<Subgraph> one_left_subgraphs;
@@ -41,9 +41,10 @@ public:
     /**
      * This class is adapted from the fpt-editing repository.
      */
-    MostAdjacentSubgraphs_adapted(std::shared_ptr <FinderI> finder_ptr, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) : SelectorI(
+    MostAdjacentSubgraphs(std::shared_ptr <FinderI> finder_ptr, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) : SelectorI(
             std::move(finder_ptr)), m_marked(marked), m_subgraph_stats(subgraph_stats) {
         m_states.push_back(std::make_unique<State>());
+        assert(false);
     }
 
 private:
@@ -225,4 +226,4 @@ public:
 };
 
 
-#endif //WEIGHTED_F_FREE_EDGE_EDITING_MOSTADJACENTSUBGRAPHS_ADAPTED_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_MOSTADJACENTSUBGRAPHS_H

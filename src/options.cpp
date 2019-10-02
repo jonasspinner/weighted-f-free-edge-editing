@@ -16,6 +16,8 @@ namespace Options {
             selector = Selector::LeastWeight;
         else if (token == "MostMarkedPairs")
             selector = Selector::MostMarkedPairs;
+        else if (token == "MostAdjacentSubgraphs")
+            selector = Selector::MostAdjacentSubgraphs;
         else
             in.setstate(std::ios_base::failbit);
         return in;
@@ -29,6 +31,8 @@ namespace Options {
                 return os << "LeastWeight";
             case Selector::MostMarkedPairs:
                 return os << "MostMarkedPairs";
+            case Selector::MostAdjacentSubgraphs:
+                return os << "MostAdjacentSubgraphs";
             default:
                 return os;
         }

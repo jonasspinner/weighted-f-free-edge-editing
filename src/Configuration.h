@@ -36,6 +36,7 @@ public:
     Options::Selector selector;
     Options::LB lower_bound;
     bool find_all_solutions = true;
+    bool pre_mark_vertex_pairs = false;
 
 
     // ILP parameters
