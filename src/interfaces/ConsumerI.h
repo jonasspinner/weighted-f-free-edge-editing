@@ -26,10 +26,6 @@ public:
 
     virtual void pop_state() {}; // pop state
 
-    virtual void before_mark_and_edit(VertexPair /*uv*/) {};    // all
-
-    virtual void after_mark_and_edit(VertexPair /*uv*/) {};     // all
-
     virtual void before_mark(VertexPair /*uv*/) {};             // all
 
     virtual void after_mark(VertexPair /*uv*/) {};              // subgraph_stats

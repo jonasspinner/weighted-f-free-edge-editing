@@ -19,6 +19,8 @@ private:
         struct Element {
             Cost cost;
             Subgraph subgraph;
+            bool operator==(const Element &other) const { return cost == other.cost && subgraph == other.subgraph; }
+            bool operator!=(const Element &other) const { return !(*this == other); }
         };
     private:
         std::vector<Element> m_bound;
@@ -46,9 +48,11 @@ private:
          * @param index
          */
         inline void remove(size_t index) {
+            assert(0 <= m_cost && m_cost < invalid_cost);
             m_cost -= m_bound[index].cost;
             m_bound[index] = std::move(m_bound.back());
             m_bound.pop_back();
+            assert(0 <= m_cost && m_cost < invalid_cost);
         }
 
         /**
@@ -58,14 +62,27 @@ private:
          * @param element
          */
         inline void replace(size_t index, Element &&element) {
+            assert(0 <= m_cost && m_cost < invalid_cost);
+#ifndef NDEBUG
+            if (m_bound[index] != element)
+                for (const auto &e : m_bound)
+                    assert(e != element);
+#endif
             m_cost -= m_bound[index].cost;
             m_cost += element.cost;
             m_bound[index] = std::move(element);
+            assert(0 <= m_cost && m_cost < invalid_cost);
         }
 
         inline void insert(Element &&element) {
+            assert(0 <= m_cost && m_cost < invalid_cost);
+#ifndef NDEBUG
+            for (const auto &e : m_bound)
+                assert(e != element);
+#endif
             m_cost += element.cost;
             m_bound.emplace_back(std::move(element));
+            assert(0 <= m_cost && m_cost < invalid_cost);
         }
 
         inline void set_unsolvable() {
@@ -84,7 +101,7 @@ private:
         void recalculate(const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs) {
             m_cost = 0;
             for (auto &e : m_bound) {
-                e.cost = ::get_subgraph_cost(e.subgraph, marked, costs);
+                e.cost = get_subgraph_cost(e.subgraph, marked, costs);
                 m_cost += e.cost;
                 if (e.cost == invalid_cost) {
                     set_unsolvable();
@@ -100,84 +117,6 @@ private:
                     sum += e.cost;
                 }
                 assert(m_cost == sum);
-            }
-#endif
-        }
-
-        /**
-         * Initializes the bound_graph. Every unmarked vertex pair of a subgraph in the bound becomes an edge in the graph.
-         *
-         * @param marked
-         * @param bound_graph
-         */
-        void initialize_bound_graph(const VertexPairMap<bool> &marked, Graph &bound_graph) {
-            bound_graph.clearEdges();
-
-            for (const auto &[cost, subgraph] : m_bound) {
-                for (VertexPair uv : subgraph.vertexPairs()) {
-                    if (!marked[uv]) {
-                        assert(!bound_graph.hasEdge(uv));
-                        bound_graph.setEdge(uv);
-                    }
-                }
-            }
-
-#ifndef NDEBUG
-            VertexPairMap<bool> debug(bound_graph.size());
-            for (const auto&[cost, subgraph] : m_bound)
-                for (VertexPair uv : subgraph.vertexPairs())
-                    if (!marked[uv]) {
-                        assert(bound_graph.hasEdge(uv));
-                        assert(!debug[uv]);
-                        debug[uv] = true;
-                    }
-
-            for (VertexPair uv : bound_graph.vertexPairs())
-                if (marked[uv]) {
-                    assert(!bound_graph.hasEdge(uv));
-                    assert(!debug[uv]);
-                } else {
-                    assert(bound_graph.hasEdge(uv) == static_cast<bool>(debug[uv]));
-                }
-#endif
-        }
-
-        void
-        assert_valid(const VertexPairMap<bool> &marked, const Graph &bound_graph, const VertexPairMap<Cost> &costs) {
-#ifndef NDEBUG
-            if (!solvable()) return;
-            // every subgraph is valid
-            //for (const auto &[_, subgraph] : bound) {
-            //    verify(subgraph, graph);
-            //}
-
-            // costs are matching
-            Cost sum = 0;
-            for (const auto &e : m_bound) {
-                assert(e.cost == get_subgraph_cost(e.subgraph, marked, costs));
-                sum += e.cost;
-            }
-            assert(m_cost == sum);
-
-            VertexPairMap<bool> debug(bound_graph.size());
-
-            for (const auto&[cost, subgraph] : m_bound) {
-                for (VertexPair uv : subgraph.vertexPairs()) {
-                    if (!marked[uv]) {
-                        assert(bound_graph.hasEdge(uv));
-                        assert(!debug[uv]);
-                        debug[uv] = true;
-                    }
-                }
-            }
-
-            for (VertexPair uv : bound_graph.vertexPairs()) {
-                if (marked[uv]) {
-                    assert(!bound_graph.hasEdge(uv));
-                    assert(!debug[uv]);
-                } else {
-                    assert(bound_graph.hasEdge(uv) == static_cast<bool>(debug[uv]));
-                }
             }
 #endif
         }
@@ -230,6 +169,9 @@ public:
     void pop_state() override {
         assert(!m_states.empty());
         m_states.pop_back();
+
+        // TODO: Check
+        initialize_bound_graph(current_state(), m_marked, m_bound_graph);
     }
 
     State &current_state() {
@@ -242,23 +184,26 @@ public:
         return *m_states[m_states.size() - 2];
     }
 
-    void remove_subgraphs_from_bound(State& state, VertexPair uv);
-
-    void insert_subgraphs_into_bound(State& state, VertexPair uv);
-
-    void before_mark_and_edit(VertexPair uv) override;
-
     void before_mark(VertexPair uv) override;
 
     void after_mark(VertexPair uv) override;
 
+    void before_edit(VertexPair uv) override;
+
     void after_edit(VertexPair uv) override;
 
-    void after_unedit(VertexPair uv) override;
-
-    void after_mark_and_edit(VertexPair uv) override;
-
 private:
+    static bool bound_graph_is_valid(State& state, const VertexPairMap<bool> &marked, const Graph &bound_graph);
+
+    static bool state_is_valid(State &state, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs);
+
+    static bool bound_is_maximal(FinderI &finder, const Graph &bound_graph);
+
+    static void initialize_bound_graph(const State &state, const VertexPairMap<bool> &marked, Graph &bound_graph);
+
+    static void remove_subgraphs_from_bound(State& state, VertexPair uv);
+
+    static void insert_subgraphs_into_bound(State& state, VertexPair uv, FinderI &finder, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs, Graph &bounded_graph);
 
     void local_search(State &state, Cost k);
 

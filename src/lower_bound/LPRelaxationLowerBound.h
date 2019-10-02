@@ -78,27 +78,6 @@ public:
     }
 
     /**
-     * Fixes the vertex pair and adds all nearby forbidden subgraphs as constraints.
-     *
-     * @param uv
-     */
-    void after_mark_and_edit(VertexPair uv) override {
-        if (!re_structure) {
-            if (variable_means_edit) {
-                assert(m_edited[uv]);
-                fixPair(uv, m_edited[uv]);
-            }
-            else
-                fixPair(uv, m_graph.hasEdge(uv));
-
-            finder->find_near(uv, [&](const Subgraph &subgraph) {
-                addConstraint(subgraph);
-                return false;
-            });
-        }
-    }
-
-    /**
      * Fixes the vertex pair to the current state.
      *
      * @param uv
@@ -109,40 +88,25 @@ public:
     }
 
     void after_edit(VertexPair uv) override {
-        if (re_structure) {
-            if (variable_means_edit) {
-                m_edited[uv] = !m_edited[uv];
-                fixPair(uv, m_edited[uv]);
-            }
-
-            if (variable_means_edit) {
-                assert(m_edited[uv]);
-                fixPair(uv, m_edited[uv]);
-            }
-            else
-                fixPair(uv, m_graph.hasEdge(uv));
-
-            finder->find_near(uv, [&](const Subgraph &subgraph) {
-                addConstraint(subgraph);
-                return false;
-            });
-        } else {
-            // toggle edited status
-            if (variable_means_edit) {
-                m_edited[uv] = !m_edited[uv];
-                fixPair(uv, m_edited[uv]);
-            }
+        if (variable_means_edit) {
+            m_edited[uv] = !m_edited[uv];
+            fixPair(uv, m_edited[uv]);
         }
+        if (variable_means_edit) {
+            assert(m_edited[uv]);
+            fixPair(uv, m_edited[uv]);
+        } else
+            fixPair(uv, m_graph.hasEdge(uv));
+        finder->find_near(uv, [&](const Subgraph &subgraph) {
+            addConstraint(subgraph);
+            return false;
+        });
     }
 
     void after_unedit(VertexPair uv) override {
-        if constexpr (re_structure) {
-            if (variable_means_edit) {
-                m_edited[uv] = !m_edited[uv];
-                fixPair(uv, m_edited[uv]);
-            }
-        } else {
-            after_edit(uv);
+        if (variable_means_edit) {
+            m_edited[uv] = !m_edited[uv];
+            fixPair(uv, m_edited[uv]);
         }
     }
 

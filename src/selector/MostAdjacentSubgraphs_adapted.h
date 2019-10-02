@@ -87,49 +87,24 @@ public:
         });
     }
 
-
-    void after_mark_and_edit(VertexPair uv) override {
-        if (!re_structure) {
-            State &state = current_state();
-
-            finder->find_near(uv, [&](Subgraph &&subgraph) {
-                size_t free = 0;
-
-                for (VertexPair xy : subgraph.vertexPairs())
-                    if (!m_marked[xy])
-                        ++free;
-
-                if (free == 1) {
-                    state.one_left_subgraphs.push_back(std::move(subgraph));
-                } else if (free == 0) {
-                    state.impossible_to_solve = true;
-                }
-
-                return false;
-            });
-        }
-    }
-
     void after_edit(VertexPair uv) override {
-        if (re_structure) {
-            State &state = current_state();
+        State &state = current_state();
 
-            finder->find_near(uv, [&](Subgraph &&subgraph) {
-                size_t free = 0;
+        finder->find_near(uv, [&](Subgraph &&subgraph) {
+            size_t free = 0;
 
-                for (VertexPair xy : subgraph.vertexPairs())
-                    if (!m_marked[xy])
-                        ++free;
+            for (VertexPair xy : subgraph.vertexPairs())
+                if (!m_marked[xy])
+                    ++free;
 
-                if (free == 1) {
-                    state.one_left_subgraphs.push_back(std::move(subgraph));
-                } else if (free == 0) {
-                    state.impossible_to_solve = true;
-                }
+            if (free == 1) {
+                state.one_left_subgraphs.push_back(std::move(subgraph));
+            } else if (free == 0) {
+                state.impossible_to_solve = true;
+            }
 
-                return false;
-            });
-        }
+            return false;
+        });
     }
 
     void after_mark(VertexPair uv) override {

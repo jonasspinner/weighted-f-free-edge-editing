@@ -112,7 +112,7 @@ public:
         m_consumers.emplace_back(m_selector.get());
     }
 
-    Cost initial_lower_bound() {
+    [[nodiscard]] Cost initial_lower_bound() const {
         auto k = std::numeric_limits<Cost>::max();
         for (auto &c : m_consumers) c->initialize(k);
         return m_lower_bound->calculate_lower_bound(k);
@@ -127,13 +127,14 @@ public:
      * @return Whether a solution was found.
      */
     //template<typename ResultCallback, typename PrunedCallback>
-    bool edit(Cost k, std::function<void(const std::vector<VertexPair>&)> result_cb, std::function<void(Cost, Cost)> prune_cb) {
+    bool edit(Cost k,
+            const std::function<void(const std::vector<VertexPair>&)>& result_cb,
+            const std::function<void(Cost, Cost)>& prune_cb) {
         // init stats
         m_stats = Statistics(-k / 2, k, 100);
         m_found_solution = false;
 
         for (auto &c : m_consumers) c->initialize(k);
-
         edit_recursive(k, [&](const std::vector<VertexPair> &e) { result_cb(e); return !m_config.find_all_solutions; }, prune_cb);
         return m_found_solution;
     }
@@ -152,7 +153,9 @@ private:
      * @return Whether the execution was stopped early
      */
     //template<typename ResultCallback, typename PrunedCallback>
-    bool edit_recursive(Cost k, std::function<bool(const std::vector<VertexPair>&)> result_cb, std::function<void(Cost, Cost)> prune_cb) {
+    bool edit_recursive(Cost k,
+            const std::function<bool(const std::vector<VertexPair>&)>& result_cb,
+            const std::function<void(Cost, Cost)>& prune_cb) {
         const VertexPairMap<Cost> &costs = m_instance.costs;
 
         m_stats.calls(k)++;
@@ -186,35 +189,19 @@ private:
         for (VertexPair uv : problem.pairs) {
             assert(!m_marked[uv]);
 
-            if constexpr (re_structure) {
-                mark(uv);
+            mark_edge(uv);
 
-                for (auto &c : m_consumers) c->push_state(k);
+            for (auto &c : m_consumers) c->push_state(k);
 
-                edit_edge(uv);
+            edit_edge(uv);
 
-                if (edit_recursive(k - costs[uv], result_cb, prune_cb)) return_value = true;
+            if (edit_recursive(k - costs[uv], result_cb, prune_cb)) return_value = true;
 
-                for (auto &c : m_consumers) c->pop_state();
+            for (auto &c : m_consumers) c->pop_state();
 
-                unedit_edge(uv);
+            unedit_edge(uv);
 
-                if (return_value) break;
-            } else {
-
-                for (auto &c : m_consumers) c->push_state(k); // next_state(state)
-
-                mark_and_edit_edge(uv);
-
-                if (edit_recursive(k - costs[uv], result_cb, prune_cb)) return_value = true;
-
-                for (auto &c : m_consumers) c->pop_state(); // destroy next_state
-
-                unedit_edge(uv);
-
-                if (return_value) break;
-
-            }
+            if (return_value) break;
         }
 
         // Iterating in reverse order because SubgraphStats keeps the history on a stack.
@@ -228,31 +215,11 @@ private:
     }
 
     /**
-     * Mark the vertex pair uv and make the edit in the graph.
-     * The consumers are informed before and after the actions are performed.
+     * Mark the vertex pair. Call before_mark and after_mark.
      *
      * @param uv
      */
-    void mark_and_edit_edge(VertexPair uv) {
-        assert(!m_marked[uv]);
-        Graph &G = m_instance.graph;
-
-        for (auto &c : m_consumers) c->before_mark_and_edit(uv);  // all - next_state
-        for (auto &c : m_consumers) c->before_mark(uv);           // all - state
-
-        m_marked[uv] = true;
-
-        for (auto &c : m_consumers) c->after_mark(uv);            // all - state
-        for (auto &c : m_consumers) c->before_edit(uv);           // subgraph_stats
-
-        G.toggleEdge(uv);
-        edits.push_back(uv);
-
-        for (auto &c : m_consumers) c->after_edit(uv);            // subgraph_stats
-        for (auto &c : m_consumers) c->after_mark_and_edit(uv);   // all - next_state
-    }
-
-    void mark(VertexPair uv) {
+    void mark_edge(VertexPair uv) {
         assert(!m_marked[uv]);
         for (auto &c : m_consumers) c->before_mark(uv);
 
@@ -261,6 +228,11 @@ private:
         for (auto &c : m_consumers) c->after_mark(uv);
     }
 
+    /**
+     * Edit the vertex pair. Call before_edit and after_edit.
+     *
+     * @param uv
+     */
     void edit_edge(VertexPair uv) {
         assert(m_marked[uv]);
         Graph &G = m_instance.graph;
@@ -274,7 +246,7 @@ private:
     }
 
     /**
-     * Undo the edit in the graph.
+     * Undo the edit in the graph. Call before_unedit and after_unedit.
      *
      * @param uv
      */
@@ -282,16 +254,16 @@ private:
         assert(m_marked[uv]);
         Graph &G = m_instance.graph;
 
-        for (auto &c : m_consumers) c->before_unedit(uv);           // subgraph_stats
+        for (auto &c : m_consumers) c->before_unedit(uv);
 
         G.toggleEdge(uv);
         edits.pop_back();
 
-        for (auto &c : m_consumers) c->after_unedit(uv);            // subgraph_stats
+        for (auto &c : m_consumers) c->after_unedit(uv);
     }
 
     /**
-     * Unmark the vertex pair.
+     * Unmark the vertex pair. Call after_unmark.
      *
      * @param uv
      */
@@ -299,7 +271,7 @@ private:
         assert(m_marked[uv]);
         m_marked[uv] = false;
 
-        for (auto &c : m_consumers) c->after_unmark(uv);          // subgraph_stats
+        for (auto &c : m_consumers) c->after_unmark(uv);
     }
 };
 
