@@ -133,6 +133,36 @@ public:
         return reference(*this, uv);
     }
 
+    friend std::ostream &operator<<(std::ostream &os, const VertexPairMap &map) {
+        for (Vertex u = 0; u < map.n; ++u) {
+            os << "[ ";
+            for (Vertex v = 0; v < map.n; ++v) {
+                bool value = u == v ? false : map[{u, v}];
+                os << value << " ";
+            }
+            os << "]\n";
+        }
+        return os;
+    }
+
+    friend YAML::Emitter &operator<<(YAML::Emitter &out, const VertexPairMap &map) {
+        using namespace YAML;
+        out << BeginMap;
+        out << Key << "size";
+        out << Value << map.n;
+        out << Key << "values";
+        out << Value << BeginSeq;
+        for (Vertex u = 0; u < map.n; ++u) {
+            out << Flow << BeginSeq;
+            for (Vertex v = u + 1; v < map.n; ++v) {
+                out << map[{u, v}];
+            }
+            out << EndSeq;
+        }
+        out << EndSeq << EndMap;
+        return out;
+    }
+
     [[nodiscard]] Vertex size() const { return n; }
 
     /**
