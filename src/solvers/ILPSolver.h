@@ -122,6 +122,7 @@ public:
 
             model.getEnv().set(GRB_IntParam_LogToConsole, (m_config.verbosity > 0) ? 1 : 0);
             model.set(GRB_IntParam_Threads, m_config.num_threads);
+            model.set(GRB_IntParam_LazyConstraints, 1);
             if (m_config.timelimit >= 0)
                 model.set(GRB_DoubleParam_TimeLimit, m_config.timelimit);
 

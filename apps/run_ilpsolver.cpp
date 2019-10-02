@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
 
     auto instance = GraphIO::read_instance(config);
 
-    write_output_file(config.output_path, config, instance, {}, -1, -1, true);
+    write_output_file(config.output_path, config, instance, {}, -1, -1);
 
     ILPSolver solver(config);
 
