@@ -39,11 +39,10 @@ public:
 
 
     // ILP parameters
-    bool extended_constraints = false;
     bool sparse_constraints = false;
+    bool single_constraints = false;
     int num_threads = 4;
     int timelimit = -1;
-    int lazy = 1;
 
 
     Configuration(Options::FSG forbidden_subgraphs_, std::string input_path_, double multiplier_,

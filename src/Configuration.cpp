@@ -56,7 +56,7 @@ Configuration::options(const std::set<Options::SolverType> &types) {
         po::options_description ilp_options("ILP algorithm options");
         ilp_options.add_options()
                 ("sparse-constraints", po::value<bool>(&sparse_constraints)->default_value(sparse_constraints), "only add O(n^2) constraints at once")
-                ("extended-constraints", po::value<bool>(&extended_constraints)->default_value(extended_constraints), "initialize constraints from graphs which are ")
+                ("single-constraints", po::value<bool>(&single_constraints)->default_value(single_constraints), "only add 1 constraints at once")
                 ("num-threads", po::value<int>(&num_threads)->default_value(num_threads))
                 ("timelimit", po::value<int>(&timelimit)->default_value(timelimit));
 
@@ -83,11 +83,10 @@ YAML::Emitter &operator<<(YAML::Emitter &out, const Configuration &config) {
         out << Key << "selector" << Value << config.selector;
         out << Key << "lower_bound" << Value << config.lower_bound;
     } else if (config.solver_type == Options::SolverType::ILP) {
-        out << Key << "extended_constraints" << Value << config.extended_constraints;
         out << Key << "sparse_constraints" << Value << config.sparse_constraints;
+        out << Key << "single_constraints" << Value << config.single_constraints;
         out << Key << "num_threads" << Value << config.num_threads;
         out << Key << "timelimit"<< Value << config.timelimit;
-        out << Key << "lazy" << Value << config.lazy;
     }
     out << EndMap;
     return out;

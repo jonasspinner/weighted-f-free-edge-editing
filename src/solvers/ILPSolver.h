@@ -121,7 +121,6 @@ public:
             GRBModel model = GRBModel(m_env);
 
             model.getEnv().set(GRB_IntParam_LogToConsole, (m_config.verbosity > 0) ? 1 : 0);
-            model.set(GRB_IntParam_LazyConstraints, 1);
             model.set(GRB_IntParam_Threads, m_config.num_threads);
             if (m_config.timelimit >= 0)
                 model.set(GRB_DoubleParam_TimeLimit, m_config.timelimit);
@@ -141,9 +140,6 @@ public:
             model.setObjective(obj, GRB_MINIMIZE);
 
             addConstraints(model, vars, graph);
-
-            //if (num_added >= 1'000'000)
-            //    return Result::Unsolved();
 
             // Register callback
             FSGCallback cb(m_config, graph, vars);
@@ -194,57 +190,15 @@ private:
         auto finder = Finder::make(m_config.forbidden_subgraphs, graph);
         size_t num_added = 0;
 
-        if (m_config.extended_constraints) {
-            VertexPairMap<bool> covered(graph.size());
+        finder->find([&](const Subgraph& subgraph) {
+            GRBLinExpr expr;
+            for (VertexPair xy : subgraph.vertexPairs())
+                expr += vars[xy];
+            model.addConstr(expr >= 1);
 
-            finder->find([&](Subgraph&& subgraph) {
-                for (VertexPair uv : subgraph.vertexPairs())
-                    covered[uv] = true;
-
-                GRBLinExpr expr;
-                for (VertexPair xy : subgraph.vertexPairs())
-                    expr += vars[xy];
-                auto constr = model.addConstr(expr >= 1);
-
-                constr.set(GRB_IntAttr_Lazy, m_config.lazy);
-                ++num_added;
-                return false;
-            });
-
-            for (VertexPair uv : graph.vertexPairs()) {
-                if (covered[uv]) {
-                    graph.toggleEdge(uv);
-
-                    finder->find_near(uv, [&](Subgraph&& subgraph) {
-
-                        GRBLinExpr expr;
-                        for (VertexPair xy : subgraph.vertexPairs())
-                            if (xy == uv) // xy is an edited pair of vertices
-                                expr += (1 - vars[xy]);
-                            else
-                                expr += vars[xy];
-                        auto constr = model.addConstr(expr >= 1);
-
-                        constr.set(GRB_IntAttr_Lazy, m_config.lazy);
-                        ++num_added;
-                        return false;
-                    });
-
-                    graph.toggleEdge(uv);
-                }
-            }
-        } else  {
-            finder->find([&](const Subgraph& subgraph) {
-                GRBLinExpr expr;
-                for (VertexPair xy : subgraph.vertexPairs())
-                    expr += vars[xy];
-                auto constr = model.addConstr(expr >= 1);
-
-                constr.set(GRB_IntAttr_Lazy, m_config.lazy);
-                ++num_added;
-                return false;
-            });
-        }
+            ++num_added;
+            return false;
+        });
 
         if (m_config.verbosity)
             std::cout << "Extended constraints: added " << num_added << " constraints.\n";
