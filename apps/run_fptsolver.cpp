@@ -10,6 +10,40 @@
 #include "../src/graph/GraphIO.h"
 
 
+void write_output_file(const std::string &path, const Configuration &config, const Instance &instance,
+                       const std::vector<Solution> &solutions, Cost solution_cost, long long solve_time,
+                       bool print_stdout = false) {
+    using namespace YAML;
+
+    Emitter out;
+    out << BeginDoc << BeginMap;
+    out << Key << "config" << Value << BeginMap;
+    out << Key << "k_max" << Value << config.k_max;
+    out << Key << "selector" << Value << config.selector;
+    out << Key << "lower_bound" << Value << config.lower_bound;
+    out << EndMap;
+    out << Key << "instance" << Value << instance;
+    out << Key << "forbidden_subgraphs" << Value << config.forbidden_subgraphs;
+    out << Key << "solutions" << Value << solutions;
+    out << Key << "solution_cost" << Value << solution_cost;
+    out << Key << "time" << Value << solve_time << Comment("ns");
+    out << EndMap << EndDoc;
+    
+    if (print_stdout)
+        std::cout << out.c_str() << "\n";
+
+    if (!path.empty()) {
+        std::ofstream file(path);
+        
+        if (!file)
+            throw std::runtime_error("could not open output file");
+        
+        file << out.c_str();
+        file.close();
+    }
+}
+
+
 int main(int argc, char* argv[]) {
     namespace po = boost::program_options;
     using namespace std::chrono;
@@ -33,6 +67,7 @@ int main(int argc, char* argv[]) {
     Cost k_max = 6730;
 
     Configuration config(Options::FSG::C4P4, input, multiplier, Options::SolverType::FPT, k_max, Options::Selector::MostMarkedPairs, Options::LB::LocalSearch);
+    config.find_all_solutions = false;
 
     auto options = config.options({Options::SolverType::FPT});
 
@@ -57,13 +92,12 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::ofstream outputFile;
-    if (!config.output_path.empty())
-        outputFile.open(config.output_path);
-
 
     auto instance = GraphIO::read_instance(config);
 
+    write_output_file(config.output_path, config, instance, {}, -1, -1);
+    
+    
     FPTSolver solver(config);
 
 
@@ -81,26 +115,9 @@ int main(int argc, char* argv[]) {
     Cost solution_cost = -1;
     if (!solutions.empty())
         solution_cost = solutions[0].cost;
+    
 
-
-    using namespace YAML;
-    Emitter out;
-    out << BeginDoc << BeginMap;
-    out << Key << "config" << Value << BeginMap;
-    out << Key << "k_max" << Value << config.k_max;
-    out << Key << "selector" << Value << config.selector;
-    out << Key << "lower_bound" << Value << config.lower_bound;
-    out << EndMap;
-    out << Key << "instance" << Value << instance;
-    out << Key << "forbidden_subgraphs" << Value << config.forbidden_subgraphs;
-    out << Key << "solutions" << Value << solutions;
-    out << Key << "solution_cost" << Value << solution_cost;
-    out << Key << "time" << Value << solve_time << Comment("ns");
-    out << EndMap << EndDoc;
-
-    std::cout << out.c_str() << "\n";
-    if (outputFile)
-        outputFile << out.c_str();
+    write_output_file(config.output_path, config, instance, solutions, solution_cost, solve_time, true);
 
     return 0;
 }
