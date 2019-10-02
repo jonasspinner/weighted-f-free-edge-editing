@@ -24,7 +24,7 @@ void EditorTests::configurations_have_same_output(Options::FSG fsg, const std::v
                                      double multiplier) {
 
     auto orig_instance = GraphIO::read_instance(instance_path, multiplier);
-    std::vector<std::tuple<Options::Selector, Options::FSG, Options::LB, int, std::vector<Solution>>> results;
+    std::vector<std::tuple<Options::Selector, Options::LB, int, std::vector<Solution>>> results;
 
     for (auto seed : seeds) {
 
@@ -42,29 +42,29 @@ void EditorTests::configurations_have_same_output(Options::FSG fsg, const std::v
 
                 Editor editor(instance, config);
 
-                editor.edit(10 * multiplier, [&](const std::vector<VertexPair> &edits) {
+                editor.edit(12 * multiplier, [&](const std::vector<VertexPair> &edits) {
                     solutions.emplace_back(orig_instance, P_r[edits]);
                 }, [](Cost, Cost) {});
 
-                results.emplace_back(selector, fsg, lb, seed, std::move(solutions));
+                results.emplace_back(selector, lb, seed, std::move(solutions));
             }
         }
     }
 
 
-    for (auto &[_0, _1, _2, _3, solutions] : results)
+    for (auto &[_0, _1, _2, solutions] : results)
         Solution::filter_inclusion_minimal(solutions);
 
 
     // Compare pairwise
     for (size_t i = 0; i < results.size(); ++i) {
         for (size_t j = i + 1; j < results.size(); ++j) {
-            const auto &[selector_i, fsg_i, lb_i, seed_i, solutions_i] = results[i];
-            const auto &[selector_j, fsg_j, lb_j, seed_j, solutions_j] = results[j];
+            const auto &[selector_i, lb_i, seed_i, solutions_i] = results[i];
+            const auto &[selector_j, lb_j, seed_j, solutions_j] = results[j];
 
             std::stringstream name;
-            name << "Editor(" << selector_i << ", " << fsg_i << ", " << lb_i << ") seed=" << seed_i << " and "
-                 << "Editor(" << selector_j << ", " << fsg_j << ", " << lb_j << ") seed=" << seed_j << " "
+            name << "Editor(" << selector_i << ", " << fsg << ", " << lb_i << ") seed=" << seed_i << " and "
+                 << "Editor(" << selector_j << ", " << fsg << ", " << lb_j << ") seed=" << seed_j << " "
                  << "have the same solutions";
             expect(name.str(), solutions_i, solutions_j);
         }
@@ -128,7 +128,7 @@ void EditorTests::run() {
     using Options::FSG;
 
     auto all_selectors = {Selector::FirstFound, Selector::LeastWeight, Selector::MostMarkedPairs};
-    auto all_lower_bounds = {LB::Trivial, LB::Greedy, LB::SortedGreedy, LB::LocalSearch, LB::LPRelaxation};
+    auto all_lower_bounds = {LB::LocalSearch, LB::Trivial, LB::Greedy, LB::SortedGreedy, LB::LPRelaxation};
 
     configurations_have_same_output(FSG::C4P4, all_selectors, all_lower_bounds, {0, 1}, 100);
     configurations_have_same_output(FSG::C4P4, all_selectors, all_lower_bounds, {0, 1}, 1);
