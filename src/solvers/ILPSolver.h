@@ -74,7 +74,13 @@ private:
                         }
                         return false;
                     });
-                } else {
+                } else if (m_config.single_constraints) {
+                     m_finder->find([&](const Subgraph& subgraph) {
+                         addSubgraphConstraint(subgraph);
+                         ++num_added;
+                         return true;
+                     });
+                 } else {
                     // Find forbidden subgraphs in current solution and add additional constraints.
                     m_finder->find([&](Subgraph &&subgraph) {
                         addSubgraphConstraint(subgraph);
@@ -112,7 +118,11 @@ private:
     GRBEnv m_env;
 
 public:
-    explicit ILPSolver(Configuration config) : m_config(std::move(config)), m_env() {}
+    explicit ILPSolver(Configuration config) : m_config(std::move(config)), m_env() {
+        if (m_config.sparse_constraints && m_config.single_constraints) {
+            throw std::runtime_error("Either sparse or single constraint options allowed, not both.");
+        }
+    }
 
     Result solve(Instance instance) override {
         auto &[graph, costs, _1, _2, _3] = instance;
@@ -175,19 +185,7 @@ private:
         return value > 0.5;
     }
 
-    static void coverVariables(VertexPairMap<bool> &covered, const Subgraph &subgraph) {
-        for (VertexPair uv : subgraph.vertexPairs())
-            covered[uv] = true;
-    }
-
-    static bool variablesAreCovered(const VertexPairMap<bool> &covered, const Subgraph &subgraph) {
-        for (VertexPair uv : subgraph.vertexPairs())
-            if (!covered[uv])
-                return false;
-        return true;
-    }
-
-    size_t addConstraints(GRBModel &model, VertexPairMap<GRBVar> &vars, Graph &graph) {
+    size_t addConstraints(GRBModel &model, const VertexPairMap<GRBVar> &vars, const Graph &graph) {
         auto finder = Finder::make(m_config.forbidden_subgraphs, graph);
         size_t num_added = 0;
 
@@ -200,9 +198,6 @@ private:
             ++num_added;
             return false;
         });
-
-        if (m_config.verbosity)
-            std::cout << "Extended constraints: added " << num_added << " constraints.\n";
 
         return num_added;
     }
