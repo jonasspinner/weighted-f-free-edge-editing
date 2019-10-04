@@ -12,25 +12,60 @@
 #include "../src/finder/CenterP3.h"
 #include "../src/finder/NaiveC4P4.h"
 #include "../src/finder/NaiveP3.h"
+#include "../src/finder/Endpoint.h"
 #include "../src/graph/GraphIO.h"
+#include "../src/version.h"
 
 
 std::unique_ptr<FinderI> make_finder(const std::string &name, const Graph &graph) {
-    if (name == "CenterRecC4P4") {
+    if (name == "CenterRecC5P5") {
+        return std::make_unique<Finder::CenterRecC5P5>(graph);
+    } else if (name == "CenterRecC4P4") {
         return std::make_unique<Finder::CenterRecC4P4>(graph);
-    } else if (name == "CenterC4P4") {
-        return std::make_unique<Finder::CenterC4P4>(graph);
-    } else if (name == "NaiveC4P4") {
-        return std::make_unique<Finder::NaiveC4P4>(graph);
     } else if (name == "CenterRecP3") {
         return std::make_unique<Finder::CenterRecP3>(graph);
+    } else if (name == "EndpointRecC5P5") {
+        return std::make_unique<Finder::EndpointRecC5P5>(graph);
+    } else if (name == "EndpointRecC4P4") {
+        return std::make_unique<Finder::EndpointRecC4P4 >(graph);
+    } else if (name == "EndpointRecP3") {
+        return std::make_unique<Finder::EndpointRecP3>(graph);
+    } else if (name == "CenterC4P4") {
+        return std::make_unique<Finder::CenterC4P4>(graph);
     } else if (name == "CenterP3") {
         return std::make_unique<Finder::CenterP3>(graph);
+    } else if (name == "NaiveC4P4") {
+        return std::make_unique<Finder::NaiveC4P4>(graph);
     } else if (name == "NaiveP3") {
         return std::make_unique<Finder::NaiveP3>(graph);
     } else {
         return nullptr;
     }
+}
+
+bool has_near(const std::string &name) {
+    if (name == "CenterRecC5P5") {
+        return false;
+    } else if (name == "CenterRecC4P4") {
+        return false;
+    } else if (name == "CenterRecP3") {
+        return false;
+    } else if (name == "EndpointRecC5P5") {
+        return false;
+    } else if (name == "EndpointRecC4P4") {
+        return false;
+    } else if (name == "EndpointRecP3") {
+        return false;
+    } else if (name == "CenterC4P4") {
+        return true;
+    } else if (name == "CenterP3") {
+        return true;
+    } else if (name == "NaiveC4P4") {
+        return true;
+    } else if (name == "NaiveP3") {
+        return true;
+    }
+    return false;
 }
 
 
@@ -52,8 +87,38 @@ double standard_deviation(const std::vector<double> &X) {
     return sqrt(sum / (X.size() - 1));
 }
 
+void write_output_file(const std::string &type, const std::string &path, const Instance &instance, int count, const std::vector<double> &times,
+                       bool print_stdout = false) {
+    using namespace YAML;
 
-void find_all_subgraphs_benchmark(YAML::Emitter &out, FinderI &finder, size_t iterations, int seed) {
+    Emitter out;
+    out << BeginDoc << BeginMap;
+    out << Key << "type" << Value << type;
+    out << Key << "commit_hash" << Value << GIT_COMMIT_HASH;
+    out << Key << "instance" << Value << instance;
+    out << Key << "count" << Value << count;
+    out << Key << "time" << Value << Flow << times << Comment("ns");
+    out << Key << "time_mean" << Value << mean(times) << Comment("ns");
+    out << Key << "time_std" << Value << standard_deviation(times)
+        << Comment("ns");
+    out << EndMap << EndDoc;
+
+    if (print_stdout)
+        std::cout << out.c_str() << "\n";
+
+    if (!path.empty()) {
+        std::ofstream file(path);
+
+        if (!file)
+            throw std::runtime_error("could not open output file");
+
+        file << out.c_str();
+        file.close();
+    }
+}
+
+
+std::pair<int, std::vector<double>> find_all_subgraphs_benchmark(FinderI &finder, size_t iterations) {
     std::vector<double> find_all_times(iterations);
     int count = 0;
 
@@ -70,18 +135,10 @@ void find_all_subgraphs_benchmark(YAML::Emitter &out, FinderI &finder, size_t it
         find_all_times[it] = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
     }
 
-    out << YAML::BeginMap;
-    out << YAML::Key << "name" << YAML::Value << "find all subgraphs";
-    out << YAML::Key << "seed" << YAML::Value << seed;
-    out << YAML::Key << "count" << YAML::Value << count;
-    out << YAML::Key << "time" << YAML::Value << YAML::Flow << find_all_times << YAML::Comment("ns");
-    out << YAML::Key << "time_mean" << YAML::Value << mean(find_all_times) << YAML::Comment("ns");
-    out << YAML::Key << "time_std" << YAML::Value << standard_deviation(find_all_times)
-        << YAML::Comment("ns");
-    out << YAML::EndMap;
+    return {count, find_all_times};
 }
 
-void find_one_subgraph_benchmark(YAML::Emitter &out, FinderI &finder, size_t iterations, int seed) {
+std::pair<int, std::vector<double>> find_one_subgraph_benchmark(FinderI &finder, size_t iterations) {
     std::vector<double> find_one_times(iterations);
     int count = 0;
 
@@ -98,19 +155,11 @@ void find_one_subgraph_benchmark(YAML::Emitter &out, FinderI &finder, size_t ite
         find_one_times[it] = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
     }
 
-    out << YAML::BeginMap;
-    out << YAML::Key << "name" << YAML::Value << "find one subgraphs";
-    out << YAML::Key << "seed" << YAML::Value << seed;
-    out << YAML::Key << "count" << YAML::Value << count;
-    out << YAML::Key << "time" << YAML::Value << YAML::Flow << find_one_times << YAML::Comment("ns");
-    out << YAML::Key << "time_mean" << YAML::Value << mean(find_one_times) << YAML::Comment("ns");
-    out << YAML::Key << "time_std" << YAML::Value << standard_deviation(find_one_times)
-        << YAML::Comment("ns");
-    out << YAML::EndMap;
+    return {count, find_one_times};
 }
 
 
-void find_all_near_subgraphs(YAML::Emitter &out, FinderI &finder, const Graph &graph, size_t iterations, int seed) {
+std::pair<int, std::vector<double>> find_all_near_subgraphs(FinderI &finder, const Graph &graph, size_t iterations) {
     std::vector<double> find_all_near_times(iterations);
     int count = 0;
 
@@ -129,19 +178,11 @@ void find_all_near_subgraphs(YAML::Emitter &out, FinderI &finder, const Graph &g
         find_all_near_times[it] = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
     }
 
-    out << YAML::BeginMap;
-    out << YAML::Key << "name" << YAML::Value << "find all near subgraphs";
-    out << YAML::Key << "seed" << YAML::Value << seed;
-    out << YAML::Key << "count" << YAML::Value << count;
-    out << YAML::Key << "time" << YAML::Value << YAML::Flow << find_all_near_times << YAML::Comment("ns");
-    out << YAML::Key << "time_mean" << YAML::Value << mean(find_all_near_times) << YAML::Comment("ns");
-    out << YAML::Key << "time_std" << YAML::Value << standard_deviation(find_all_near_times)
-        << YAML::Comment("ns");
-    out << YAML::EndMap;
+    return {count, find_all_near_times};
 }
 
 
-void find_one_near_subgraph(YAML::Emitter &out, FinderI &finder, const Graph &graph, size_t iterations, int seed) {
+std::pair<int, std::vector<double>> find_one_near_subgraph(FinderI &finder, const Graph &graph, size_t iterations) {
     std::vector<double> find_one_near_times(iterations);
     int count = 0;
 
@@ -160,15 +201,7 @@ void find_one_near_subgraph(YAML::Emitter &out, FinderI &finder, const Graph &gr
         find_one_near_times[it] = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
     }
 
-    out << YAML::BeginMap;
-    out << YAML::Key << "name" << YAML::Value << "find one near subgraphs";
-    out << YAML::Key << "seed" << YAML::Value << seed;
-    out << YAML::Key << "count" << YAML::Value << count;
-    out << YAML::Key << "time" << YAML::Value << YAML::Flow << find_one_near_times << YAML::Comment("ns");
-    out << YAML::Key << "time_mean" << YAML::Value << mean(find_one_near_times) << YAML::Comment("ns");
-    out << YAML::Key << "time_std" << YAML::Value << standard_deviation(find_one_near_times)
-        << YAML::Comment("ns");
-    out << YAML::EndMap;
+    return {count, find_one_near_times};
 }
 
 
@@ -185,7 +218,8 @@ int main(int argc, char* argv[]) {
     po::options_description desc("Allowed options");
     desc.add_options()
             ("help", "produce help message")
-            ("finder_name", po::value<std::string>(&finder_name)->default_value(finder_name))
+            ("finder", po::value<std::string>(&finder_name)->default_value(finder_name))
+            // ("near", po::value<bool>(&with_near)->default_value(with_near))
             ("inputs", po::value<std::vector<std::string>>()->multitoken(), "path to input instances")
             ("iterations", po::value<size_t>(&iterations)->default_value(iterations), "number of repetitions")
             ("seeds", po::value<std::vector<int>>()->multitoken(), "seeds for permutation of instances")
@@ -209,32 +243,29 @@ int main(int argc, char* argv[]) {
         seeds = vm["seeds"].as<std::vector<int>>();
 
 
+    bool with_near = has_near(finder_name);
+
 
     for (const auto &input : inputs) {
-        auto instance = GraphIO::read_instance(input, multiplier);
-
-        YAML::Emitter out;
-        out << YAML::BeginDoc << YAML::BeginMap;
-        out << YAML::Key << "instance" << YAML::Value << instance.name;
-        out << YAML::Key << "finder" << YAML::Value << finder_name;
-        out << YAML::Key << "iterations" << YAML::Value << iterations;
-        out << YAML::Key << "experiments" << YAML::Value << YAML::BeginSeq;
+        auto original_instance = GraphIO::read_instance(input, multiplier);
 
         for (auto seed : seeds) {
-            Permutation P(instance.graph.size(), seed);
-            auto graph = P[instance.graph];
+            Permutation P(original_instance.graph.size(), seed);
+            auto instance = P[original_instance];
 
-            auto finder = make_finder(finder_name, graph);
+            auto finder = make_finder(finder_name, instance.graph);
 
-            find_all_subgraphs_benchmark(out, *finder, iterations, seed);
-            find_one_subgraph_benchmark(out, *finder, iterations, seed);
+            auto [c1, t1] = find_all_subgraphs_benchmark(*finder, iterations);
+            write_output_file("find_all_subgraphs", "", instance, c1, t1, true);
 
-            // find_all_near_subgraphs(out, *finder, graph, iterations, seed);
-            // find_one_near_subgraph(out, *finder, graph, iterations, seed);
+            auto [c2, t2] = find_one_subgraph_benchmark(*finder, iterations);
+            write_output_file("find_one_subgraph", "", instance, c2, t2, true);
+
+            if (with_near) {
+                // find_all_near_subgraphs(out, *finder, graph, iterations, seed);
+                // find_one_near_subgraph(out, *finder, graph, iterations, seed);
+            }
         }
-
-        out << YAML::EndSeq << YAML::EndMap << YAML::EndDoc;
-        std::cout << out.c_str() << "\n";
     }
 
     return 0;
