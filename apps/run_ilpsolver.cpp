@@ -11,6 +11,7 @@
 
 #include "../src/solvers/ILPSolver.h"
 #include "../src/graph/GraphIO.h"
+#include "../src/version.h"
 
 
 void write_output_file(const std::string &path, const Configuration &config, const Instance &instance,
@@ -26,6 +27,7 @@ void write_output_file(const std::string &path, const Configuration &config, con
     out << Key << "num_threads" << Value << config.num_threads;
     out << Key << "timelimit"<< Value << config.timelimit;
     out << EndMap;
+    out << Key << "commit_hash" << Value << GIT_COMMIT_HASH;
     out << Key << "instance" << Value << instance;
     out << Key << "forbidden_subgraphs" << Value << config.forbidden_subgraphs;
     out << Key << "solutions" << Value << solutions;

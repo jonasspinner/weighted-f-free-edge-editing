@@ -8,6 +8,7 @@
 
 #include "../src/solvers/FPTSolver.h"
 #include "../src/graph/GraphIO.h"
+#include "../src/version.h"
 
 
 void write_output_file(const std::string &path, const Configuration &config, const Instance &instance,
@@ -24,6 +25,7 @@ void write_output_file(const std::string &path, const Configuration &config, con
     out << Key << "find_all_solutions" << Value << config.find_all_solutions;
     out << Key << "pre_mark_vertex_pairs" << Value << config.pre_mark_vertex_pairs;
     out << EndMap;
+    out << Key << "commit_hash" << Value << GIT_COMMIT_HASH;
     out << Key << "instance" << Value << instance;
     out << Key << "forbidden_subgraphs" << Value << config.forbidden_subgraphs;
     out << Key << "solutions" << Value << solutions;
@@ -68,7 +70,7 @@ int main(int argc, char* argv[]) {
     double multiplier = 100;
     Cost k_max = 6730;
 
-    Configuration config(Options::FSG::C4P4, input, multiplier, Options::SolverType::FPT, k_max, Options::Selector::MostMarkedPairs, Options::LB::LocalSearch);
+    Configuration config(Options::FSG::C4P4, input, multiplier, Options::SolverType::FPT, k_max, Options::Selector::MostAdjacentSubgraphs, Options::LB::LocalSearch);
     config.find_all_solutions = false;
     config.pre_mark_vertex_pairs = false;
 
