@@ -6,36 +6,42 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_ENDPOINT_H
 
 
-#include "detail/EndpointFindImpl.h"
+#include "../interfaces/FinderI.h"
 
 
 namespace Finder {
-    template <size_t length>
+    template <int length, bool with_cycles>
     class Endpoint : public FinderI {
-        constexpr static bool with_cycles = length > 3;
+        static_assert(length > 1);
+
     public:
-        explicit Endpoint(const Graph &graph_ref) : FinderI(graph_ref) {};
+        /**
+         * A finder class for paths and cycles with a given length.
+         * The implementation details can be found in the FindImpl and FindNearImpl classes.
+         *
+         * @param graph_ref A reference to the graph.
+         */
+        explicit Endpoint(const Graph &graph_ref) : FinderI(graph_ref) {}
 
-        bool find(SubgraphCallback callback) override {
-            return detail::EndpointFindImpl<length, with_cycles>::find(graph, callback,
-                    neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
-        }
+        bool find(SubgraphCallback callback) override;
 
-        bool find(const Graph& forbidden, SubgraphCallback callback) override {
-            return detail::EndpointFindImpl<length, with_cycles>::find(graph, callback,
-                    neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
-        }
+        bool find(const Graph &forbidden, SubgraphCallback callback) override;
 
-        bool find_near(VertexPair /*uv*/, SubgraphCallback /*callback*/) override {
-            assert(false);
-            return false;
-        }
+        bool find_near(VertexPair uv, SubgraphCallback callback) override;
 
-        bool find_near(VertexPair /*uv*/, const Graph& /*forbidden*/, SubgraphCallback /*callback*/) override  {
-            assert(false);
-            return false;
-        }
+        bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override;
+
+        [[nodiscard]] Options::FSG forbidden_subgraphs() const override;
+
+        [[nodiscard]] std::string name() const override;
+
+        void to_yaml(YAML::Emitter &out) const override;
+
     };
+
+    using EndpointRecC5P5 = Endpoint<5, true>;
+    using EndpointRecC4P4 = Endpoint<4, true>;
+    using EndpointRecP3 = Endpoint<3, false>;
 }
 
 

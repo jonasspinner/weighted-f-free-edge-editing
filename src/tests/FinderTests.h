@@ -20,6 +20,7 @@
 #include "../finder/Center.h"
 #include "../finder/finder_utils.h"
 #include "../Permutation.h"
+#include "../finder/Endpoint.h"
 
 
 bool is_p4(const Graph &graph, const Subgraph &subgraph) {
@@ -357,30 +358,46 @@ public:
         Finder_finds_C4<Finder::NaiveC4P4>("NaiveC4P4");
         Finder_finds_C4<Finder::CenterC4P4>("CenterC4P4");
         Finder_finds_C4<Finder::CenterRecC4P4>("CenterRecC4P4");
+        Finder_finds_C4<Finder::EndpointRecC4P4>("EndpointRecC4P4");
 
         Finder_finds_P4<Finder::NaiveC4P4>("NaiveC4P4");
         Finder_finds_P4<Finder::CenterC4P4>("CenterC4P4");
         Finder_finds_P4<Finder::CenterRecC4P4>("CenterRecC4P4");
+        Finder_finds_P4<Finder::EndpointRecC4P4>("EndpointRecC4P4");
 
         Finder_is_seed_independent<Finder::NaiveC4P4>("NaiveC4P4", {0, 1});
         Finder_is_seed_independent<Finder::CenterC4P4>("CenterC4P4", {0, 1});
         Finder_is_seed_independent<Finder::CenterRecC4P4>("CenterRecC4P4", {0, 1});
+        Finder_is_seed_independent<Finder::EndpointRecC4P4>("EndpointRecC4P4", {0, 1});
 
         C4P4_Finders_are_consistent<Finder::NaiveC4P4, Finder::CenterC4P4>("NaiveC4P4", "CenterC4P4");
         C4P4_Finders_are_consistent<Finder::NaiveC4P4, Finder::CenterRecC4P4>("NaiveC4P4", "CenterRecC4P4");
+        C4P4_Finders_are_consistent<Finder::NaiveC4P4, Finder::EndpointRecC4P4>("NaiveC4P4", "EndpointRecC4P4");
         C4P4_Finders_are_consistent<Finder::CenterC4P4, Finder::CenterRecC4P4>("CenterC4P4", "CenterRecC4P4");
+        C4P4_Finders_are_consistent<Finder::CenterC4P4, Finder::EndpointRecC4P4>("CenterC4P4", "EndpointRecC4P4");
+        C4P4_Finders_are_consistent<Finder::CenterRecC4P4, Finder::EndpointRecC4P4>("CenterRecC4P4", "EndpointRecC4P4");
+
 
         Finder_finds_P3<Finder::NaiveP3>("NaiveP3");
         Finder_finds_P3<Finder::CenterP3>("CenterP3");
         Finder_finds_P3<Finder::CenterRecP3>("CenterRecP3");
+        Finder_finds_P3<Finder::EndpointRecP3>("EndpointRecP3");
 
         Finder_is_seed_independent<Finder::NaiveP3>("NaiveP3", {0, 1});
         Finder_is_seed_independent<Finder::CenterP3>("CenterP3", {0, 1});
         Finder_is_seed_independent<Finder::CenterRecP3>("CenterRecP3", {0, 1});
+        Finder_is_seed_independent<Finder::EndpointRecP3>("EndpointRecP3", {0, 1});
 
         P3_Finders_are_consistent<Finder::NaiveP3, Finder::CenterP3>("NaiveP3", "CenterP3");
         P3_Finders_are_consistent<Finder::NaiveP3, Finder::CenterRecP3 >("NaiveP3", "CenterRecP3");
+        P3_Finders_are_consistent<Finder::NaiveP3, Finder::EndpointRecP3 >("NaiveP3", "EndpointRecP3");
         P3_Finders_are_consistent<Finder::CenterP3, Finder::CenterRecP3 >("CenterP3", "CenterRecP3");
+        P3_Finders_are_consistent<Finder::CenterP3, Finder::EndpointRecP3 >("CenterP3", "EndpointRecP3");
+        P3_Finders_are_consistent<Finder::CenterRecP3, Finder::EndpointRecP3 >("CenterRecP3", "EndpointRecP3");
+
+
+        Finder_is_seed_independent<Finder::CenterRecC5P5>("CenterRecC5P5", {0, 1});
+        Finder_is_seed_independent<Finder::EndpointRecC5P5>("EndpointRecC5P5", {0, 1});
 
         EditsSolveKarate();
     }
