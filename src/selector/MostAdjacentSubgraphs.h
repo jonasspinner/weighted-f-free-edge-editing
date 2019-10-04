@@ -108,7 +108,7 @@ public:
         });
     }
 
-    void after_mark(VertexPair uv) override {
+    void before_edit(VertexPair uv) override {
         State &state = parent_state();
         assert(m_marked[uv]);
 
@@ -197,19 +197,14 @@ public:
                     if (best_pairs.empty()) {
                         best_pairs = std::move(current_pairs);
                     } else {
-                        size_t bi = 0, ci = 0;
+                        auto bend = best_pairs.end();
+                        auto cend = current_pairs.end();
 
-                        while (bi + 1 < best_pairs.size() && ci + 1 < current_pairs.size() &&
-                               best_pairs[bi].num_forbidden == current_pairs[ci].num_forbidden) {
-                            ++bi;
-                            ++ci;
-                        }
+                        auto [bit, cit] = std::mismatch(best_pairs.begin(), bend, current_pairs.begin(), cend,
+                                                        [](const auto &a, const auto &b) { return a.num_forbidden == b.num_forbidden; });
 
-                        if (ci + 1 == current_pairs.size() || (bi + 1 != best_pairs.size() &&
-                                                               best_pairs[bi].num_forbidden <
-                                                               current_pairs[ci].num_forbidden)) {
+                        if (cit == cend || (bit != bend && *bit < *cit))
                             best_pairs = std::move(current_pairs);
-                        }
                     }
 
                     return false;

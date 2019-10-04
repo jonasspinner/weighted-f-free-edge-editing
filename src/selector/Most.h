@@ -39,6 +39,7 @@ public:
         std::vector<std::pair<size_t, VertexPair>> best_pairs, current_pairs;
         for (VertexPair uv : pairs) {
             finder->find_near(uv, m_used, [&](Subgraph &&subgraph) {
+                current_pairs.clear();
 
                 for (VertexPair xy : subgraph.vertexPairs())
                     if (!m_marked[xy])
@@ -71,6 +72,18 @@ public:
 
         Problem problem;
         problem.solved = (m_subgraph_stats.subgraphCount() == 0);
+
+#ifndef NDEBUG
+        if (problem.solved) {
+            assert(!finder->find([](Subgraph&&){ return true; }));
+        }
+
+        std::cerr << "select_problem()";
+        for (auto [count, uv] : best_pairs) {
+            std::cerr << " " <<count << " " << uv;
+        }
+        std::cerr << "\n";
+#endif
 
         for (auto [_, uv] : best_pairs) {
             assert(!m_marked[uv]);

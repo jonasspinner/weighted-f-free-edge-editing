@@ -127,7 +127,7 @@ void EditorTests::run() {
     using Options::LB;
     using Options::FSG;
 
-    auto all_selectors = {Selector::FirstFound, Selector::LeastWeight, Selector::MostMarkedPairs};
+    auto all_selectors = {Selector::FirstFound, Selector::LeastWeight, Selector::MostMarkedPairs, Selector::MostAdjacentSubgraphs};
     auto all_lower_bounds = {LB::LocalSearch, LB::Trivial, LB::Greedy, LB::SortedGreedy, LB::LPRelaxation};
 
     configurations_have_same_output(FSG::C4P4, all_selectors, all_lower_bounds, {0, 1}, 100);

@@ -33,7 +33,7 @@ namespace Selector {
             case Options::Selector::MostMarkedPairs:
                 return std::make_unique<MostMarkedPairs>(finder, marked, subgraph_stats);
             case Options::Selector::MostAdjacentSubgraphs:
-                return std::make_unique<MostAdjacentSubgraphs>(finder, marked, subgraph_stats);
+                return std::make_unique<Most>(finder, marked, subgraph_stats);
             default:
                 assert(false);
                 return nullptr;
