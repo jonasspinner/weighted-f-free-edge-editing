@@ -87,8 +87,8 @@ double standard_deviation(const std::vector<double> &X) {
     return sqrt(sum / (X.size() - 1));
 }
 
-void write_output_file(const FinderI &finder, const std::string &type, const std::string &path, const Instance &instance, int count, const std::vector<double> &times,
-                       bool print_stdout = false) {
+void write_output_doc(std::ostream &file, const FinderI &finder, const std::string &type, const Instance &instance,
+        int count, const std::vector<double> &times, bool print_stdout = false) {
     using namespace YAML;
 
     Emitter out;
@@ -108,15 +108,8 @@ void write_output_file(const FinderI &finder, const std::string &type, const std
     if (print_stdout)
         std::cout << out.c_str() << "\n";
 
-    if (!path.empty()) {
-        std::ofstream file(path);
-
-        if (!file)
-            throw std::runtime_error("could not open output file");
-
+    if (file)
         file << out.c_str();
-        file.close();
-    }
 }
 
 
@@ -211,8 +204,9 @@ int main(int argc, char* argv[]) {
     namespace po = boost::program_options;
 
     std::string finder_name = "CenterC4P4";
-    std::vector<std::string> inputs = {"../data/bio/bio-nr-3-size-16.graph"};
-    std::vector<int> seeds = {0, 1};
+    std::string input = "../data/bio/bio-nr-3-size-16.graph";
+    std::string output_path;
+    int seed = 0;
     size_t iterations = 100;
     double multiplier = 100;
 
@@ -221,10 +215,10 @@ int main(int argc, char* argv[]) {
     desc.add_options()
             ("help", "produce help message")
             ("finder", po::value<std::string>(&finder_name)->default_value(finder_name))
-            // ("near", po::value<bool>(&with_near)->default_value(with_near))
-            ("inputs", po::value<std::vector<std::string>>()->multitoken(), "path to input instances")
+            ("input", po::value<std::string>(&input)->default_value(input), "path to input instance")
+            ("output", po::value<std::string>(&output_path)->default_value(output_path))
             ("iterations", po::value<size_t>(&iterations)->default_value(iterations), "number of repetitions")
-            ("seeds", po::value<std::vector<int>>()->multitoken(), "seeds for permutation of instances")
+            ("seed", po::value<int>(&seed)->default_value(seed), "seed for permutation of the instance")
             ("multiplier", po::value<double>(&multiplier)->default_value(multiplier), "multiplier for discretization of input instances")
             ;
 
@@ -238,40 +232,53 @@ int main(int argc, char* argv[]) {
     }
 
 
-    if (vm.count("inputs"))
-        inputs = vm["inputs"].as<std::vector<std::string>>();
-
-    if (vm.count("seeds"))
-        seeds = vm["seeds"].as<std::vector<int>>();
-
-
     bool with_near = has_near(finder_name);
 
 
-    for (const auto &input : inputs) {
-        auto original_instance = GraphIO::read_instance(input, multiplier);
+    std::ofstream file;
+    if (!output_path.empty()) {
+        file.open(output_path);
 
-        for (auto seed : seeds) {
-            Permutation P(original_instance.graph.size(), seed);
-            auto instance = P[original_instance];
-
-            auto finder = make_finder(finder_name, instance.graph);
-
-            auto [c1, t1] = find_all_subgraphs_benchmark(*finder, iterations);
-            write_output_file(*finder, "find_all_subgraphs", "", instance, c1, t1, true);
-
-            auto [c2, t2] = find_one_subgraph_benchmark(*finder, iterations);
-            write_output_file(*finder, "find_one_subgraph", "", instance, c2, t2, true);
-
-            if (with_near) {
-                auto [c3, t3] = find_all_near_subgraphs_benchmark(*finder, instance.graph, iterations);
-                write_output_file(*finder, "find_all_near_subgraphs", "", instance, c3, t3, true);
-
-                auto [c4, t4] = find_one_near_subgraph_benchmark(*finder, instance.graph, iterations);
-                write_output_file(*finder, "find_one_near_subgraph", "", instance, c4, t4, true);
-            }
-        }
+        if (!file)
+            throw std::runtime_error("could not open output file");
     }
 
+    auto original_instance = GraphIO::read_instance(input, multiplier);
+    Permutation P(original_instance.graph.size(), seed);
+    auto instance = P[original_instance];
+
+
+    auto finder = make_finder(finder_name, instance.graph);
+
+    write_output_doc(file, *finder, "find_all_subgraphs", instance, -1, {});
+    write_output_doc(file, *finder, "find_one_subgraphs", instance, -1, {});
+    if (with_near) {
+        write_output_doc(file, *finder, "find_all_near_subgraphs", instance, -1, {});
+        write_output_doc(file, *finder, "find_one_near_subgraphs", instance, -1, {});
+    }
+    file.close();
+
+
+    int c1 = -1, c2 = -1, c3 = -1, c4 = -1;
+    std::vector<double> t1, t2, t3, t4;
+
+    std::tie(c1, t1) = find_all_subgraphs_benchmark(*finder, iterations);
+    std::tie(c2, t2) = find_one_subgraph_benchmark(*finder, iterations);
+
+    if (with_near) {
+        std::tie(c3, t3) = find_all_near_subgraphs_benchmark(*finder, instance.graph, iterations);
+        std::tie(c4, t4) = find_one_near_subgraph_benchmark(*finder, instance.graph, iterations);
+    }
+
+
+    if (!output_path.empty())
+        file.open(output_path);
+
+    write_output_doc(file, *finder, "find_all_subgraphs", instance, c1, t1, true);
+    write_output_doc(file, *finder, "find_one_subgraph", instance, c2, t2, true);
+    if (with_near) {
+        write_output_doc(file, *finder, "find_all_near_subgraphs", instance, c3, t3, true);
+        write_output_doc(file, *finder, "find_one_near_subgraph", instance, c4, t4, true);
+    }
     return 0;
 }
