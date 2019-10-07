@@ -71,8 +71,23 @@ namespace Finder {
     }
 
     template <>
+    Options::FSG Center<5, true>::forbidden_subgraphs() const {
+        return Options::FSG::C5P5;
+    }
+
+    template <>
+    Options::FSG Center<5, false>::forbidden_subgraphs() const {
+        return Options::FSG::P5;
+    }
+
+    template <>
     Options::FSG Center<4, true>::forbidden_subgraphs() const {
         return Options::FSG::C4P4;
+    }
+
+    template <>
+    Options::FSG Center<4, false>::forbidden_subgraphs() const {
+        return Options::FSG::P4;
     }
 
     template <>

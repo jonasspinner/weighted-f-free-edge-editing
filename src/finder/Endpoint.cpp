@@ -48,10 +48,25 @@ namespace Finder {
     Options::FSG Endpoint<length, with_cycles>::forbidden_subgraphs() const {
         throw std::runtime_error("No forbidden subgraph available");
     }
-    
+
+    template <>
+    Options::FSG Endpoint<5, true>::forbidden_subgraphs() const {
+        return Options::FSG::C5P5;
+    }
+
+    template <>
+    Options::FSG Endpoint<5, false>::forbidden_subgraphs() const {
+        return Options::FSG::P5;
+    }
+
     template <>
     Options::FSG Endpoint<4, true>::forbidden_subgraphs() const {
         return Options::FSG::C4P4;
+    }
+
+    template <>
+    Options::FSG Endpoint<4, false>::forbidden_subgraphs() const {
+        return Options::FSG::P4;
     }
     
     template <>
