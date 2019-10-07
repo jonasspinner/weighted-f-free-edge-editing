@@ -87,13 +87,15 @@ double standard_deviation(const std::vector<double> &X) {
     return sqrt(sum / (X.size() - 1));
 }
 
-void write_output_file(const std::string &type, const std::string &path, const Instance &instance, int count, const std::vector<double> &times,
+void write_output_file(const FinderI &finder, const std::string &type, const std::string &path, const Instance &instance, int count, const std::vector<double> &times,
                        bool print_stdout = false) {
     using namespace YAML;
 
     Emitter out;
     out << BeginDoc << BeginMap;
     out << Key << "type" << Value << type;
+    out << Key << "finder" << Value << finder.name();
+    out << Key << "forbidden_subgraphs" << Value << finder.forbidden_subgraphs();
     out << Key << "commit_hash" << Value << GIT_COMMIT_HASH;
     out << Key << "instance" << Value << instance;
     out << Key << "count" << Value << count;
@@ -159,7 +161,7 @@ std::pair<int, std::vector<double>> find_one_subgraph_benchmark(FinderI &finder,
 }
 
 
-std::pair<int, std::vector<double>> find_all_near_subgraphs(FinderI &finder, const Graph &graph, size_t iterations) {
+std::pair<int, std::vector<double>> find_all_near_subgraphs_benchmark(FinderI &finder, const Graph &graph, size_t iterations) {
     std::vector<double> find_all_near_times(iterations);
     int count = 0;
 
@@ -182,7 +184,7 @@ std::pair<int, std::vector<double>> find_all_near_subgraphs(FinderI &finder, con
 }
 
 
-std::pair<int, std::vector<double>> find_one_near_subgraph(FinderI &finder, const Graph &graph, size_t iterations) {
+std::pair<int, std::vector<double>> find_one_near_subgraph_benchmark(FinderI &finder, const Graph &graph, size_t iterations) {
     std::vector<double> find_one_near_times(iterations);
     int count = 0;
 
@@ -256,14 +258,17 @@ int main(int argc, char* argv[]) {
             auto finder = make_finder(finder_name, instance.graph);
 
             auto [c1, t1] = find_all_subgraphs_benchmark(*finder, iterations);
-            write_output_file("find_all_subgraphs", "", instance, c1, t1, true);
+            write_output_file(*finder, "find_all_subgraphs", "", instance, c1, t1, true);
 
             auto [c2, t2] = find_one_subgraph_benchmark(*finder, iterations);
-            write_output_file("find_one_subgraph", "", instance, c2, t2, true);
+            write_output_file(*finder, "find_one_subgraph", "", instance, c2, t2, true);
 
             if (with_near) {
-                // find_all_near_subgraphs(out, *finder, graph, iterations, seed);
-                // find_one_near_subgraph(out, *finder, graph, iterations, seed);
+                auto [c3, t3] = find_all_near_subgraphs_benchmark(*finder, instance.graph, iterations);
+                write_output_file(*finder, "find_all_near_subgraphs", "", instance, c3, t3, true);
+
+                auto [c4, t4] = find_one_near_subgraph_benchmark(*finder, instance.graph, iterations);
+                write_output_file(*finder, "find_one_near_subgraph", "", instance, c4, t4, true);
             }
         }
     }

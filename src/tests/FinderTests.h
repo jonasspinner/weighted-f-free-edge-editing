@@ -78,6 +78,32 @@ class FinderTests {
 public:
     explicit FinderTests(int seed=0) : gen(seed) {}
 
+    static std::unique_ptr<FinderI> make_finder(const std::string &name, const Graph &graph) {
+        if (name == "CenterRecC5P5") {
+            return std::make_unique<Finder::CenterRecC5P5>(graph);
+        } else if (name == "CenterRecC4P4") {
+            return std::make_unique<Finder::CenterRecC4P4>(graph);
+        } else if (name == "CenterRecP3") {
+            return std::make_unique<Finder::CenterRecP3>(graph);
+        } else if (name == "EndpointRecC5P5") {
+            return std::make_unique<Finder::EndpointRecC5P5>(graph);
+        } else if (name == "EndpointRecC4P4") {
+            return std::make_unique<Finder::EndpointRecC4P4 >(graph);
+        } else if (name == "EndpointRecP3") {
+            return std::make_unique<Finder::EndpointRecP3>(graph);
+        } else if (name == "CenterC4P4") {
+            return std::make_unique<Finder::CenterC4P4>(graph);
+        } else if (name == "CenterP3") {
+            return std::make_unique<Finder::CenterP3>(graph);
+        } else if (name == "NaiveC4P4") {
+            return std::make_unique<Finder::NaiveC4P4>(graph);
+        } else if (name == "NaiveP3") {
+            return std::make_unique<Finder::NaiveP3>(graph);
+        } else {
+            return nullptr;
+        }
+    }
+
     void EditsSolveKarate() {
         try {
             auto instance = GraphIO::read_instance("../data/misc/karate.graph");
@@ -255,57 +281,6 @@ public:
         expect(name + " recognizes P4", normalize(expected), normalize(actual));
     }
 
-
-    template <typename A, typename B>
-    void P3_Finders_are_consistent(const std::string& a_name, const std::string& b_name) {
-        Graph G = random_graph(10, 40, gen);
-
-        A a_finder(G); B b_finder(G);
-        auto a_subgraphs = find_all_subgraphs(a_finder);
-        auto b_subgraphs = find_all_subgraphs(b_finder);
-
-        // expect(a_name + " only produces P3", true, all_p3(G, a_subgraphs));
-        // expect(b_name + " only produces P3", true, all_p3(G, b_subgraphs));
-
-        auto a_normalized = normalize(a_subgraphs);
-        auto b_normalized = normalize(b_subgraphs);
-
-        expect(a_name + " and " + b_name + " P3 Finder have same output", a_normalized, b_normalized);
-
-        a_normalized.erase(std::unique(a_normalized.begin(), a_normalized.end()), a_normalized.end());
-        b_normalized.erase(std::unique(b_normalized.begin(), b_normalized.end()), b_normalized.end());
-        expect(a_name + " and " + b_name + " P3 Finder have same output ignoring duplicates", a_normalized, b_normalized);
-
-
-        std::vector<std::vector<Subgraph>> a_near_subgraphs, b_near_subgraphs;
-        for (VertexPair uv : G.vertexPairs()) {
-            std::vector<Subgraph> a, b;
-
-            a_finder.find_near(uv, [&](Subgraph &&subgraph){
-                a.emplace_back(std::move(subgraph));
-                return false;
-            });
-            a_near_subgraphs.emplace_back(normalize(a));
-
-            b_finder.find_near(uv, [&](Subgraph &&subgraph){
-                b.emplace_back(std::move(subgraph));
-                return false;
-            });
-            b_near_subgraphs.emplace_back(normalize(b));
-        }
-
-        expect(a_name + " and " + b_name + " P3 Finder have same find_near output", a_near_subgraphs, b_near_subgraphs);
-
-        for (auto &subgraphs : a_near_subgraphs) {
-            subgraphs.erase(std::unique(subgraphs.begin(), subgraphs.end()), subgraphs.end());
-        }
-        for (auto &subgraphs : b_near_subgraphs) {
-            subgraphs.erase(std::unique(subgraphs.begin(), subgraphs.end()), subgraphs.end());
-        }
-
-        expect(a_name + " and " + b_name + " P3 Finder have same find_near output ignoring duplicates", a_near_subgraphs, b_near_subgraphs);
-    }
-
     template <typename Finder>
     void Finder_finds_P3(const std::string& name) {
         Graph G(3);
@@ -351,6 +326,86 @@ public:
         }
     }
 
+    void finders_have_same_output(const std::vector<std::string> &finders, const std::vector<int> &seeds = {0}) {
+        Graph G_original = random_graph(10, 50, gen);
+        Graph F_original = random_graph(10, 10, gen);
+
+        std::vector<std::tuple<std::string, int,
+                    std::vector<Subgraph>, std::vector<Subgraph>,
+                    std::vector<std::vector<Subgraph>>, std::vector<std::vector<Subgraph>>>> results;
+
+        for (auto seed : seeds) {
+            Permutation P(G_original.size(), seed);
+            auto G = P[G_original];
+            auto F = P[F_original];
+            for (const auto &name : finders) {
+                auto finder = make_finder(name, G);
+
+                std::vector<Subgraph> find;
+                finder->find([&](Subgraph &&subgraph) {
+                    find.push_back(std::move(subgraph));
+                    return false;
+                });
+
+                std::vector<Subgraph> find_forbidden;
+                finder->find(F, [&](Subgraph &&subgraph) {
+                    find_forbidden.push_back(std::move(subgraph));
+                    return false;
+                });
+
+                std::vector<std::vector<Subgraph>> find_near;
+                for (VertexPair uv : G.vertexPairs()) {
+                    std::vector<Subgraph> find_near_uv;
+                    finder->find_near(uv, [&](Subgraph &&subgraph) {
+                        find_near_uv.push_back(std::move(subgraph));
+                        return false;
+                    });
+                    find_near.push_back(normalize(find_near_uv));
+                }
+
+                std::vector<std::vector<Subgraph>> find_near_forbidden;
+                for (VertexPair uv : G.vertexPairs()) {
+                    std::vector<Subgraph> find_near_uv;
+                    finder->find_near(uv, F, [&](Subgraph &&subgraph) {
+                        find_near_uv.push_back(std::move(subgraph));
+                        return false;
+                    });
+                    find_near_forbidden.push_back(normalize(find_near_uv));
+                }
+
+                results.emplace_back(name, seed, normalize(find), normalize(find_forbidden), find_near, find_near_forbidden);
+            }
+        }
+
+        for (size_t i = 0; i < results.size(); ++i) {
+            for (size_t j = i + 1; j < results.size(); ++j) {
+                const auto &[name_i, seed_i, find_i, find_forbidden_i, find_near_i, find_near_forbidden_i] = results[i];
+                const auto &[name_j, seed_j, find_j, find_forbidden_j, find_near_j, find_near_forbidden_j] = results[j];
+                if (seed_i != seed_j) continue;
+                {
+                    std::stringstream ss;
+                    ss << name_i << " and " << name_j << "have the same find output, seed=" << seed_i;
+                    expect(ss.str(), find_i, find_j);
+                }
+                {
+                    std::stringstream ss;
+                    ss << name_i << " and " << name_j << "have the same find output with forbidden vertex pairs, seed=" << seed_i;
+                    expect(ss.str(), find_forbidden_i, find_forbidden_j);
+                }
+                {
+                    std::stringstream ss;
+                    ss << name_i << " and " << name_j << "have the same find_near output, seed=" << seed_i;
+                    expect(ss.str(), find_near_i, find_near_j);
+                }
+                {
+                    std::stringstream ss;
+                    ss << name_i << " and " << name_j << "have the same find_near output with forbidden vertex pairs, seed=" << seed_i;
+                    expect(ss.str(), find_near_forbidden_i, find_near_forbidden_j);
+                }
+            }
+        }
+    }
+
     void run() {
         std::cout << "\nFinderTests"
                      "\n-----------" << std::endl;
@@ -359,45 +414,20 @@ public:
         Finder_finds_C4<Finder::CenterC4P4>("CenterC4P4");
         Finder_finds_C4<Finder::CenterRecC4P4>("CenterRecC4P4");
         Finder_finds_C4<Finder::EndpointRecC4P4>("EndpointRecC4P4");
-
         Finder_finds_P4<Finder::NaiveC4P4>("NaiveC4P4");
         Finder_finds_P4<Finder::CenterC4P4>("CenterC4P4");
         Finder_finds_P4<Finder::CenterRecC4P4>("CenterRecC4P4");
         Finder_finds_P4<Finder::EndpointRecC4P4>("EndpointRecC4P4");
-
-        Finder_is_seed_independent<Finder::NaiveC4P4>("NaiveC4P4", {0, 1});
-        Finder_is_seed_independent<Finder::CenterC4P4>("CenterC4P4", {0, 1});
-        Finder_is_seed_independent<Finder::CenterRecC4P4>("CenterRecC4P4", {0, 1});
-        Finder_is_seed_independent<Finder::EndpointRecC4P4>("EndpointRecC4P4", {0, 1});
-
-        C4P4_Finders_are_consistent<Finder::NaiveC4P4, Finder::CenterC4P4>("NaiveC4P4", "CenterC4P4");
-        C4P4_Finders_are_consistent<Finder::NaiveC4P4, Finder::CenterRecC4P4>("NaiveC4P4", "CenterRecC4P4");
-        C4P4_Finders_are_consistent<Finder::NaiveC4P4, Finder::EndpointRecC4P4>("NaiveC4P4", "EndpointRecC4P4");
-        C4P4_Finders_are_consistent<Finder::CenterC4P4, Finder::CenterRecC4P4>("CenterC4P4", "CenterRecC4P4");
-        C4P4_Finders_are_consistent<Finder::CenterC4P4, Finder::EndpointRecC4P4>("CenterC4P4", "EndpointRecC4P4");
-        C4P4_Finders_are_consistent<Finder::CenterRecC4P4, Finder::EndpointRecC4P4>("CenterRecC4P4", "EndpointRecC4P4");
+        finders_have_same_output({"NaiveC4P4", "CenterC4P4", "CenterRecC4P4", "EndpointRecC4P4"}, {0, 1});
 
 
         Finder_finds_P3<Finder::NaiveP3>("NaiveP3");
         Finder_finds_P3<Finder::CenterP3>("CenterP3");
         Finder_finds_P3<Finder::CenterRecP3>("CenterRecP3");
         Finder_finds_P3<Finder::EndpointRecP3>("EndpointRecP3");
+        finders_have_same_output({"NaiveP3", "CenterP3", "CenterRecP3", "EndpointRecP3"}, {0, 1});
 
-        Finder_is_seed_independent<Finder::NaiveP3>("NaiveP3", {0, 1});
-        Finder_is_seed_independent<Finder::CenterP3>("CenterP3", {0, 1});
-        Finder_is_seed_independent<Finder::CenterRecP3>("CenterRecP3", {0, 1});
-        Finder_is_seed_independent<Finder::EndpointRecP3>("EndpointRecP3", {0, 1});
-
-        P3_Finders_are_consistent<Finder::NaiveP3, Finder::CenterP3>("NaiveP3", "CenterP3");
-        P3_Finders_are_consistent<Finder::NaiveP3, Finder::CenterRecP3 >("NaiveP3", "CenterRecP3");
-        P3_Finders_are_consistent<Finder::NaiveP3, Finder::EndpointRecP3 >("NaiveP3", "EndpointRecP3");
-        P3_Finders_are_consistent<Finder::CenterP3, Finder::CenterRecP3 >("CenterP3", "CenterRecP3");
-        P3_Finders_are_consistent<Finder::CenterP3, Finder::EndpointRecP3 >("CenterP3", "EndpointRecP3");
-        P3_Finders_are_consistent<Finder::CenterRecP3, Finder::EndpointRecP3 >("CenterRecP3", "EndpointRecP3");
-
-
-        Finder_is_seed_independent<Finder::CenterRecC5P5>("CenterRecC5P5", {0, 1});
-        Finder_is_seed_independent<Finder::EndpointRecC5P5>("EndpointRecC5P5", {0, 1});
+        finders_have_same_output({"CenterRecC5P5", "EndpointRecC5P5"}, {0, 1});
 
         EditsSolveKarate();
     }

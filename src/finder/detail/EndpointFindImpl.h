@@ -77,15 +77,19 @@ namespace detail {
     class EndpointFindImpl<3, false, false> {
     public:
         template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
-        static bool find(const Graph& graph, SubgraphCallback callback, F neighbors, G non_neighbors, H valid_edge, I /*valid_non_edge*/) {
-            Graph::AdjRow W(graph.size());
-            for (auto [u, v] : graph.edges()) {
-                if (valid_edge({u, v})) {
+        static bool find(const Graph& graph, SubgraphCallback callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+            Graph::AdjRow V(graph.size()), W(graph.size());
+            for (Vertex u : graph.vertices()) {
+                V = neighbors(u);
+                for (Vertex v : Graph::iterate(V)) {
                     W = neighbors(v) & non_neighbors(u);
                     for (Vertex w : Graph::iterate(W))
-                        if (u < w)
-                            if (callback(Subgraph{u, v, w}, u))
+                        if (u < w) {
+                            assert(valid_edge({u, v})); assert(valid_edge({v, w})); assert(valid_non_edge({w, u}));
+                            assert(u < w);
+                            if (callback(Subgraph{u, v, w}, std::min(u, v)))
                                 return true;
+                        }
                 }
             }
             return false;
