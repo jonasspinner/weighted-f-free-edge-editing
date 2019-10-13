@@ -67,8 +67,10 @@ int main(int argc, char* argv[]) {
 
 
     std::string input = "../data/bio/bio-nr-1020-size-44.graph";
+    input = "../data/bio/bio-nr-1000-size-31.graph";
     double multiplier = 100;
     Cost k_max = 6730;
+    k_max = 0;
 
     Configuration config(Options::FSG::C4P4, input, multiplier, Options::SolverType::FPT, k_max, Options::Selector::MostAdjacentSubgraphs, Options::LB::LocalSearch);
     config.find_all_solutions = false;
@@ -102,7 +104,9 @@ int main(int argc, char* argv[]) {
 
     write_output_file(config.output_path, config, instance, {}, -1, -1);
     
-    
+    if (config.k_max < 0)
+        return 0;
+
     FPTSolver solver(config);
 
 

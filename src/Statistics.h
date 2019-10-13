@@ -43,6 +43,12 @@ public:
             m_seperators[i] = m_min + static_cast<Cost>(i) * (m_max - m_min) / static_cast<Cost>(m_num_buckets - 1);
         }
 
+        if (m_num_buckets == 0) {
+            m_seperators.push_back(m_max);
+            m_prunes.push_back(0);
+            m_calls.push_back(0);
+        }
+
         /*
         for (size_t i = 0; i < m_seperators.size() - 1; ++i) {
             auto x = m_seperators[i];
@@ -56,10 +62,12 @@ public:
     }
 
     int &calls(Cost cost) {
+        assert(!m_calls.empty());
         return m_calls[bucket(cost)];
     }
 
     int &prunes(Cost cost) {
+        assert(!m_prunes.empty());
         return m_prunes[bucket(cost)];
     }
 
@@ -99,6 +107,7 @@ public:
 
 private:
     [[nodiscard]] size_t bucket(Cost cost) const {
+        assert(cost <= m_max);
         if (cost <= m_min) {
             return 0;
         } else if (cost > m_max) {

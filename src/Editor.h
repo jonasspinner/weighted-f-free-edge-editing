@@ -120,7 +120,7 @@ private:
     Configuration m_config;
 public:
     explicit Editor(Instance instance, Configuration config) :
-            m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_found_solution(false), /*m_ordered_vertex_pairs(m_instance.graph, m_instance.costs),*/
+            m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_found_solution(false),
             m_ordered_vertex_pairs(m_instance.graph, m_instance.costs, m_consumers, m_marked), m_config(std::move(config)) {
 
         m_finder = Finder::make(m_config.forbidden_subgraphs, m_instance.graph);
