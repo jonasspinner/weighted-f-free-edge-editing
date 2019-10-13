@@ -158,4 +158,29 @@ namespace Options {
         ss << type;
         return out << ss.str();
     }
+
+    std::istream &operator>>(std::istream &in, FPTSearchStrategy &strategy) {
+        std::string token;
+        in >> token;
+        if (token == "Fixed")
+            strategy = FPTSearchStrategy::Fixed;
+        else
+            in.setstate(std::ios_base::failbit);
+        return in;
+    }
+
+    std::ostream &operator<<(std::ostream &os, FPTSearchStrategy strategy) {
+        switch (strategy) {
+            case FPTSearchStrategy::Fixed:
+                return os << "Fixed";
+            default:
+                return os << "Unknown";
+        }
+    }
+
+    YAML::Emitter &operator<<(YAML::Emitter &out, FPTSearchStrategy strategy) {
+        std::ostringstream ss;
+        ss << strategy;
+        return out << ss.str();
+    }
 }

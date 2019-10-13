@@ -37,6 +37,7 @@ public:
     Options::LB lower_bound;
     bool find_all_solutions = true;
     bool pre_mark_vertex_pairs = false;
+    Options::FPTSearchStrategy search_strategy = Options::FPTSearchStrategy::Fixed;
 
 
     // ILP parameters

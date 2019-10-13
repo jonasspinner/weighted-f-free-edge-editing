@@ -48,7 +48,8 @@ Configuration::options(const std::set<Options::SolverType> &types) {
                 ("selector", po::value<Options::Selector>(&selector)->default_value(selector))
                 ("lower-bound", po::value<Options::LB>(&lower_bound)->default_value(lower_bound))
                 ("all", po::value<bool>(&find_all_solutions)->default_value(find_all_solutions))
-                ("pre-mark", po::value<bool>(&pre_mark_vertex_pairs)->default_value(pre_mark_vertex_pairs));
+                ("pre-mark", po::value<bool>(&pre_mark_vertex_pairs)->default_value(pre_mark_vertex_pairs))
+                ("search-strategy", po::value<Options::FPTSearchStrategy>(&search_strategy)->default_value(search_strategy));
 
         cmdline_options.add(fpt_options);
     }
@@ -85,6 +86,7 @@ YAML::Emitter &operator<<(YAML::Emitter &out, const Configuration &config) {
         out << Key << "lower_bound" << Value << config.lower_bound;
         out << Key << "find_all_solutions" << Value << config.find_all_solutions;
         out << Key << "pre_mark_vertex_pairs" << Value << config.pre_mark_vertex_pairs;
+        out << Key << "search_strategy" << Value << config.search_strategy;
     } else if (config.solver_type == Options::SolverType::ILP) {
         out << Key << "sparse_constraints" << Value << config.sparse_constraints;
         out << Key << "single_constraints" << Value << config.single_constraints;

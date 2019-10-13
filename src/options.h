@@ -48,11 +48,22 @@ namespace Options {
         FPT, ILP
     };
 
-    std::istream &operator>>(std::istream &os, SolverType &type);
+    std::istream &operator>>(std::istream &in, SolverType &type);
 
     std::ostream &operator<<(std::ostream &os, SolverType type);
 
     YAML::Emitter &operator<<(YAML::Emitter &out, SolverType type);
+
+
+    enum class FPTSearchStrategy {
+        Fixed
+    };
+
+    std::istream &operator>>(std::istream &in, FPTSearchStrategy &strategy);
+
+    std::ostream &operator<<(std::ostream &os, FPTSearchStrategy strategy);
+
+    YAML::Emitter &operator<<(YAML::Emitter &out, FPTSearchStrategy strategy);
 }
 
 
