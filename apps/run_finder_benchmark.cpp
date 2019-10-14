@@ -208,8 +208,6 @@ int main(int argc, char* argv[]) {
     std::string output_path;
     int seed = 0;
     size_t iterations = 100;
-    double multiplier = 100;
-
 
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -219,7 +217,6 @@ int main(int argc, char* argv[]) {
             ("output", po::value<std::string>(&output_path)->default_value(output_path))
             ("iterations", po::value<size_t>(&iterations)->default_value(iterations), "number of repetitions")
             ("seed", po::value<int>(&seed)->default_value(seed), "seed for permutation of the instance")
-            ("multiplier", po::value<double>(&multiplier)->default_value(multiplier), "multiplier for discretization of input instances")
             ;
 
     po::variables_map vm;
@@ -243,7 +240,7 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("could not open output file");
     }
 
-    auto original_instance = GraphIO::read_instance(input, multiplier);
+    auto original_instance = GraphIO::read_instance(input);
     Permutation P(original_instance.graph.size(), seed);
     auto instance = P[original_instance];
 
@@ -251,10 +248,10 @@ int main(int argc, char* argv[]) {
     auto finder = make_finder(finder_name, instance.graph);
 
     write_output_doc(file, *finder, "find_all_subgraphs", instance, -1, {});
-    write_output_doc(file, *finder, "find_one_subgraphs", instance, -1, {});
+    write_output_doc(file, *finder, "find_one_subgraph", instance, -1, {});
     if (with_near) {
         write_output_doc(file, *finder, "find_all_near_subgraphs", instance, -1, {});
-        write_output_doc(file, *finder, "find_one_near_subgraphs", instance, -1, {});
+        write_output_doc(file, *finder, "find_one_near_subgraph", instance, -1, {});
     }
     file.close();
 

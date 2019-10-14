@@ -164,6 +164,14 @@ namespace Options {
         in >> token;
         if (token == "Fixed")
             strategy = FPTSearchStrategy::Fixed;
+        else if (token == "PrunedDelta")
+            strategy = FPTSearchStrategy::PrunedDelta;
+        else if (token == "Exponential")
+            strategy = FPTSearchStrategy::Exponential;
+        else if (token == "IncrementByMinCost")
+            strategy = FPTSearchStrategy::IncrementByMinCost;
+        else if (token == "IncrementByMultiplier")
+            strategy = FPTSearchStrategy::IncrementByMultiplier;
         else
             in.setstate(std::ios_base::failbit);
         return in;
@@ -173,8 +181,17 @@ namespace Options {
         switch (strategy) {
             case FPTSearchStrategy::Fixed:
                 return os << "Fixed";
+            case FPTSearchStrategy::PrunedDelta:
+                return os << "PrunedDelta";
+            case FPTSearchStrategy::Exponential:
+                return os << "Exponential";
+            case FPTSearchStrategy::IncrementByMinCost:
+                return os << "IncrementByMinCost";
+            case FPTSearchStrategy::IncrementByMultiplier:
+                return os << "IncrementByMultiplier";
             default:
-                return os << "Unknown";
+                os.setstate(std::ios_base::failbit);
+                return os;
         }
     }
 

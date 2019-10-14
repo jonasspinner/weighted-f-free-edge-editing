@@ -29,7 +29,7 @@ public:
 
     Options::SolverType solver_type;
 
-    Cost k_max;
+    Cost k_max = -1;
     Options::FSG forbidden_subgraphs;
 
     // FPT parameters
@@ -47,12 +47,10 @@ public:
     int timelimit = -1;
 
 
-    Configuration(Options::FSG forbidden_subgraphs_, std::string input_path_, double multiplier_,
-                  Options::SolverType solver_type_, Cost k_max_, Options::Selector selector_, Options::LB lower_bound_) :
-            input_path(std::move(input_path_)),
+    Configuration(Options::FSG forbidden_subgraphs_, double multiplier_,
+                  Options::SolverType solver_type_, Options::Selector selector_, Options::LB lower_bound_) :
             multiplier(multiplier_),
             solver_type(solver_type_),
-            k_max(k_max_),
             forbidden_subgraphs(forbidden_subgraphs_),
             selector(selector_),
             lower_bound(lower_bound_) {}

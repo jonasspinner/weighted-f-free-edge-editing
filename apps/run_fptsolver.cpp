@@ -24,6 +24,7 @@ void write_output_file(const std::string &path, const Configuration &config, con
     out << Key << "lower_bound" << Value << config.lower_bound;
     out << Key << "find_all_solutions" << Value << config.find_all_solutions;
     out << Key << "pre_mark_vertex_pairs" << Value << config.pre_mark_vertex_pairs;
+    out << Key << "search_strategy" << Value << config.search_strategy;
     out << EndMap;
     out << Key << "commit_hash" << Value << GIT_COMMIT_HASH;
     out << Key << "instance" << Value << instance;
@@ -66,15 +67,16 @@ int main(int argc, char* argv[]) {
             "../data/misc/grass_web.graph"};
 
 
-    std::string input = "../data/bio/bio-nr-1020-size-44.graph";
-    input = "../data/bio/bio-nr-1000-size-31.graph";
     double multiplier = 100;
-    Cost k_max = 6730;
-    k_max = 0;
 
-    Configuration config(Options::FSG::C4P4, input, multiplier, Options::SolverType::FPT, k_max, Options::Selector::MostAdjacentSubgraphs, Options::LB::LocalSearch);
+    Configuration config(Options::FSG::P3, multiplier, Options::SolverType::FPT, Options::Selector::MostAdjacentSubgraphs, Options::LB::SortedGreedy);
+
+    config.input_path = "../data/bio/bio-nr-4-size-39.graph";
+    // config.k_max = 6730;
+    
     config.find_all_solutions = false;
     config.pre_mark_vertex_pairs = false;
+    config.search_strategy = Options::FPTSearchStrategy::IncrementByMinCost;
 
     auto options = config.options({Options::SolverType::FPT});
 
@@ -103,9 +105,6 @@ int main(int argc, char* argv[]) {
     auto instance = GraphIO::read_instance(config);
 
     write_output_file(config.output_path, config, instance, {}, -1, -1);
-    
-    if (config.k_max < 0)
-        return 0;
 
     FPTSolver solver(config);
 

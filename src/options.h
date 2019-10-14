@@ -56,7 +56,7 @@ namespace Options {
 
 
     enum class FPTSearchStrategy {
-        Fixed
+        Fixed, PrunedDelta, Exponential, IncrementByMinCost, IncrementByMultiplier
     };
 
     std::istream &operator>>(std::istream &in, FPTSearchStrategy &strategy);
