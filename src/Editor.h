@@ -151,13 +151,16 @@ public:
     //template<typename ResultCallback, typename PrunedCallback>
     bool edit(Cost k,
             const std::function<void(const std::vector<VertexPair>&)>& result_cb,
-            const std::function<void(Cost, Cost)>& prune_cb) {
+            const std::function<void(Cost, Cost)>& prune_cb = [](Cost, Cost) {},
+            const std::function<bool(Cost)> &call_cb = [](Cost) { return false; }) {
+        auto result_cb2 = [&](const std::vector<VertexPair> &e) { result_cb(e); return !m_config.find_all_solutions; };
+
         // init stats
         m_stats = Statistics(-k / 2, k, 100);
         m_found_solution = false;
 
         for (auto &c : m_consumers) c->initialize(k);
-        edit_recursive(k, [&](const std::vector<VertexPair> &e) { result_cb(e); return !m_config.find_all_solutions; }, prune_cb);
+        edit_recursive(k, result_cb2, prune_cb, call_cb);
         return m_found_solution;
     }
 
@@ -176,11 +179,13 @@ private:
      */
     //template<typename ResultCallback, typename PrunedCallback>
     bool edit_recursive(Cost k,
-            const std::function<bool(const std::vector<VertexPair>&)>& result_cb,
-            const std::function<void(Cost, Cost)>& prune_cb) {
+            const std::function<bool(const std::vector<VertexPair>&)> &result_cb,
+            const std::function<void(Cost, Cost)> &prune_cb,
+            const std::function<bool(Cost)> &call_cb) {
         const VertexPairMap<Cost> &costs = m_instance.costs;
 
         m_stats.calls(k)++;
+        if (call_cb(k)) return false;
 
         PreMarkerGuard guard(m_ordered_vertex_pairs);
         if (m_config.pre_mark_vertex_pairs)
@@ -219,7 +224,7 @@ private:
 
             edit_edge(uv);
 
-            if (edit_recursive(k - costs[uv], result_cb, prune_cb)) return_value = true;
+            if (edit_recursive(k - costs[uv], result_cb, prune_cb, call_cb)) return_value = true;
 
             for (auto &c : m_consumers) c->pop_state();
 
