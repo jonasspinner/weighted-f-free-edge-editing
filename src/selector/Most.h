@@ -77,12 +77,6 @@ public:
         if (problem.solved) {
             assert(!finder->find([](Subgraph&&){ return true; }));
         }
-
-        std::cerr << "select_problem()";
-        for (auto [count, uv] : best_pairs) {
-            std::cerr << " " <<count << " " << uv;
-        }
-        std::cerr << "\n";
 #endif
 
         for (auto [_, uv] : best_pairs) {
