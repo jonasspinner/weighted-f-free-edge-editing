@@ -40,8 +40,12 @@ namespace Finder {
 
     };
 
+    using CenterRecC6P6 = Center<6, true>;
     using CenterRecC5P5 = Center<5, true>;
     using CenterRecC4P4 = Center<4, true>;
+    using CenterRecP6 = Center<6, false>;
+    using CenterRecP5 = Center<5, false>;
+    using CenterRecP4 = Center<4, false>;
     using CenterRecP3 = Center<3, false>;
 }
 

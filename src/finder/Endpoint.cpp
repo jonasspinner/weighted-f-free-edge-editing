@@ -50,6 +50,16 @@ namespace Finder {
     }
 
     template <>
+    Options::FSG Endpoint<6, true>::forbidden_subgraphs() const {
+        return Options::FSG::C6P6;
+    }
+
+    template <>
+    Options::FSG Endpoint<6, false>::forbidden_subgraphs() const {
+        return Options::FSG::P6;
+    }
+
+    template <>
     Options::FSG Endpoint<5, true>::forbidden_subgraphs() const {
         return Options::FSG::C5P5;
     }
@@ -95,7 +105,11 @@ namespace Finder {
         out << EndMap;
     }
 
+    template class Endpoint<6, true>;
     template class Endpoint<5, true>;
     template class Endpoint<4, true>;
+    template class Endpoint<6, false>;
+    template class Endpoint<5, false>;
+    template class Endpoint<4, false>;
     template class Endpoint<3, false>;
 }

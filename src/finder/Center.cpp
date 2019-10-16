@@ -116,8 +116,11 @@ namespace Finder {
         out << EndMap;
     }
 
-
+    template class Center<6, true>;
     template class Center<5, true>;
     template class Center<4, true>;
+    template class Center<6, false>;
+    template class Center<5, false>;
+    template class Center<4, false>;
     template class Center<3, false>;
 }

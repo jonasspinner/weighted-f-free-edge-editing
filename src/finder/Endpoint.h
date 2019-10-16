@@ -39,8 +39,12 @@ namespace Finder {
 
     };
 
+    using EndpointRecC6P6 = Endpoint<6, true>;
     using EndpointRecC5P5 = Endpoint<5, true>;
     using EndpointRecC4P4 = Endpoint<4, true>;
+    using EndpointRecP6 = Endpoint<6, false>;
+    using EndpointRecP5 = Endpoint<5, false>;
+    using EndpointRecP4 = Endpoint<4, false>;
     using EndpointRecP3 = Endpoint<3, false>;
 }
 

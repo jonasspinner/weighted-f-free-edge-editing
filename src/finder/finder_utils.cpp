@@ -33,6 +33,8 @@ namespace Finder {
                 return std::make_unique<SplitGraph>(graph);
             case FSG::C4_C5_P5_Bowtie_Necktie:
                 return std::make_unique<SplitCluster>(graph);
+            case FSG::C5P5:
+                return std::make_unique<CenterRecC5P5>(graph);
             default:
                 assert(false);
                 return nullptr;
