@@ -106,6 +106,9 @@ int main(int argc, char* argv[]) {
 
     write_output_file(config.output_path, config, instance, {}, -1, -1);
 
+    if (config.search_strategy == Options::FPTSearchStrategy::Fixed && config.k_max == -1)
+        return 0;
+
     FPTSolver solver(config);
 
 
