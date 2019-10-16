@@ -6,6 +6,8 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_FPTSOLVER_H
 
 
+#include <deque>
+
 #include "Solver.h"
 #include "../Configuration.h"
 #include "../Editor.h"
