@@ -6,9 +6,10 @@ GRAPHS = [path.split("/")[-1][:-6] for path in glob("data/bio/*.graph")]
 # GRAPHS = GRAPHS[:10]
 MULTIPLIERS = [100]
 PERMUTATIONS = [0]
-TIMELIMITS = [20]
+TIMELIMITS = [100]
 FSG = ["P4C4"]
-ILP_SPARSE_CONSTRAINTS = [0]
+ILP_CONSTRAINTS = ["basic", "sparse", "single"]
+ILP_SINGLE_CONSTRAINTS = [0]
 ILP_NUM_THREADS = [1]
 
 
@@ -18,7 +19,7 @@ FINDERS = ["CenterRecC4P4", "CenterRecP3", "EndpointRecC4P4", "EndpointRecP3", "
 
 rule all:
         input:
-                expand("experiments/{fsg}/ilp.timelimit={timelimit}.threads={threads}.sparse={sparse}/bio/{graph}.{multiplier}.{permutation}.solution.yaml", fsg=FSG, timelimit=TIMELIMITS, threads=ILP_NUM_THREADS, sparse=ILP_SPARSE_CONSTRAINTS, graph=GRAPHS, multiplier=MULTIPLIERS, permutation=PERMUTATIONS),
+                expand("experiments/{fsg}/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio/{graph}.{multiplier}.{permutation}.solution.yaml", fsg=FSG, timelimit=TIMELIMITS, threads=ILP_NUM_THREADS, constraints=ILP_CONSTRAINTS, graph=GRAPHS, multiplier=MULTIPLIERS, permutation=PERMUTATIONS),
                 # expand("experiments/{fsg}/fpt/bio/{graph}.{multiplier}.{permutation}.solution.yaml", fsg=FSG, timelimit=TIMELIMITS, threads=ILP_NUM_THREADS, sparse=ILP_SPARSE_CONSTRAINTS, graph=GRAPHS, multiplier=MULTIPLIERS, permutation=PERMUTATIONS),
                 expand("experiments/finder-benchmark.finder={finder}/all.benchmark.yaml", finder=FINDERS)
                 "data/bio/bio.metadata.yaml"
@@ -27,18 +28,24 @@ rule ilp:
         input:
                 "data/{dataset}/{graph}.graph"
         output:
-                "experiments/{fsg}/ilp.timelimit={timelimit}.threads={threads}.sparse={sparse}/{dataset}/{graph}.{multiplier}.{permutation}.solution.yaml"
+                "experiments/{fsg}/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/{dataset}/{graph}.{multiplier}.{permutation}.solution.yaml"
         params:
                 soft_timeout=lambda wildcards, output: int(1.1 * int(wildcards.timelimit))
         run:
+                constraint_args = dict(basic=[], sparse=["--sparse-constraints", "1"], single=["--single-constraints", "1"])
                 try:
-                    subprocess.run(f"cmake-build-release/ilp --input {input} --multiplier {wildcards.multiplier} --permutation {wildcards.permutation} --output {output} --timelimit {wildcards.timelimit} --num-threads {wildcards.threads} --sparse-constraints {wildcards.sparse}".split(" "), timeout=params.soft_timeout)
+                    subprocess.run(f"cmake-build-release/ilp --input {input}"
+                                    "--multiplier {wildcards.multiplier}"
+                                    "--permutation {wildcards.permutation}"
+                                    "--output {output}"
+                                    "--timelimit {wildcards.timelimit}"
+                                    "--num-threads {wildcards.threads}".split(" ") + constraint_args[wildcards.constraints], timeout=params.soft_timeout)
                 except subprocess.TimeoutExpired:
                     pass
 
 rule copy_instance_solution:
         input:
-                f"experiments/{{fsg}}/ilp.timelimit={TIMELIMITS[0]}.threads={ILP_NUM_THREADS[0]}.sparse={ILP_SPARSE_CONSTRAINTS[0]}/{{dataset}}/{{graph}}.{{multiplier}}.{PERMUTATIONS[0]}.solution.yaml"
+                f"experiments/{{fsg}}/ilp.timelimit={TIMELIMITS[0]}.threads={ILP_NUM_THREADS[0]}.constraints={ILP_CONSTRAINTS[0]}/{{dataset}}/{{graph}}.{{multiplier}}.{PERMUTATIONS[0]}.solution.yaml"
         output:
                 "experiments/solutions/{fsg}/{dataset}/{graph}.{multiplier}.solution.yaml"
         shell:
