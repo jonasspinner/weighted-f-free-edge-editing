@@ -229,8 +229,8 @@ int main(int argc, char* argv[]) {
     }
 
 
-    bool with_near = has_near(finder_name);
-
+    // bool with_near = has_near(finder_name);
+    bool with_near = false;
 
     std::ofstream file;
     if (!output_path.empty()) {
