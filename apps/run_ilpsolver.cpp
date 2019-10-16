@@ -70,7 +70,8 @@ int main(int argc, char* argv[]) {
     std::string input = paths[2];
     double multiplier = 100;
 
-    Configuration config(Options::FSG::C4P4, input, multiplier, Options::SolverType::ILP, 0, Options::Selector::MostMarkedPairs, Options::LB::LocalSearch);
+    Configuration config(Options::FSG::C4P4, multiplier, Options::SolverType::ILP, Options::Selector::MostMarkedPairs, Options::LB::LocalSearch);
+    config.input_path = input;
 
     auto options = config.options({Options::SolverType::ILP});
 

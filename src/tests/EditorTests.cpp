@@ -36,7 +36,8 @@ void EditorTests::configurations_have_same_output(Options::FSG fsg, const std::v
 
         for (auto selector : selectors) {
             for (auto lb : lower_bounds) {
-                auto config = Configuration(fsg, instance_path, multiplier, Options::SolverType::FPT, -1, selector, lb);
+                auto config = Configuration(fsg, multiplier, Options::SolverType::FPT, selector, lb);
+                config.input_path = instance_path;
                 config.seed = seed;
                 std::vector<Solution> solutions;
 
@@ -90,7 +91,7 @@ void EditorTests::output_is_independent_of_seed(const std::vector<int> &seeds) {
 
         std::vector<Solution> solutions;
 
-        auto config = Configuration(Options::FSG::C4P4, instance_path, -1, Options::SolverType::FPT, -1, Options::Selector::FirstFound, Options::LB::SortedGreedy);
+        auto config = Configuration(Options::FSG::C4P4, -1, Options::SolverType::FPT, Options::Selector::FirstFound, Options::LB::SortedGreedy);
 
         Editor editor(instance, config);
         editor.edit(1100, [&](const std::vector<VertexPair> &edits) {

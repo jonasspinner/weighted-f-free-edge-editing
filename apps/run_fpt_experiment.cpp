@@ -60,8 +60,10 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    Configuration config(Options::FSG::C4P4, input, multiplier, Options::SolverType::FPT, k_max, Options::Selector::FirstFound, Options::LB::LocalSearch);
+    Configuration config(Options::FSG::C4P4, multiplier, Options::SolverType::FPT, Options::Selector::FirstFound, Options::LB::LocalSearch);
     config.find_all_solutions = false;
+    config.input_path = input;
+    config.k_max = k_max;
 
     // std::cout << config << "\n";
 
