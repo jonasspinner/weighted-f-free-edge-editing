@@ -7,7 +7,7 @@ BIO_GRAPHS = [path.split("/")[-1][:-6] for path in glob("data/bio/*.graph")]
 MULTIPLIER = [100]
 PERMUTATION = [0]
 TIMELIMITS = [100]
-FSG = ["P4C4"]
+FSG = ["C4P4"]
 ILP_CONSTRAINTS = ["basic", "sparse", "single"]
 ILP_NUM_THREADS = [1]
 
@@ -16,7 +16,7 @@ FPT_LOWER_BOUND = ["Trivial", "LocalSearch", "SortedGreedy"] # + ["Greedy", "LPR
 FPT_PRE_MARK = [0]
 FPT_SEARCH_STRATEGY = ["IncrementByMultiplier"] # + ["PrunedDelta", "Exponential", "IncrementByMinCost"]
 
-FINDERS = ["CenterRecC4P4", "CenterRecP3", "EndpointRecC4P4", "EndpointRecP3", "CenterC4P4", "CenterP3"] # + ["NaiveC4P4", "NaiveP3"] + ["CenterRecC5P5", "EndpointRecC5P5"]
+FINDERS = ["CenterRecC4P4", "CenterRecP3", "EndpointRecC4P4", "EndpointRecP3", "CenterC4P4", "CenterP3"] + ["NaiveC4P4", "NaiveP3"] # + ["CenterRecC5P5", "EndpointRecC5P5"]
 
 
 rule all:
@@ -24,10 +24,10 @@ rule all:
                 expand("experiments/{fsg}/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio/{graph}.{multiplier}.{permutation}.solution.yaml",
                        fsg=FSG, timelimit=TIMELIMITS, threads=ILP_NUM_THREADS, constraints=ILP_CONSTRAINTS, graph=BIO_GRAPHS, multiplier=MULTIPLIER, permutation=PERMUTATION),
                 expand("experiments/finder-benchmark.finder={finder}/all.benchmark.yaml", finder=FINDERS),
-                expand("experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=0.pre-mark={pre_mark}.search-strategy=Fixed/bio/{graph}.{multiplier}.{permutation}.solution.yaml",
-                       fsg=FSG, timelimit=TIMELIMITS, selector=FPT_SELECTOR, lower_bound=FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK, graph=BIO_GRAPHS, multiplier=MULTIPLIER, permutation=PERMUTATION),
-                expand("experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio/{graph}.{multiplier}.{permutation}.solution.yaml",
-                       fsg=FSG, timelimit=TIMELIMITS, selector=FPT_SELECTOR, lower_bound=FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK, search_strategy=FPT_SEARCH_STRATEGY, graph=BIO_GRAPHS, multiplier=MULTIPLIER, permutation=PERMUTATION),
+                expand("experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=0.pre-mark={pre_mark}.search-strategy=Fixed/all.solutions.yaml",
+                       fsg=FSG, timelimit=TIMELIMITS, selector=FPT_SELECTOR, lower_bound=FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK),
+                expand("experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/all.solutions.yaml",
+                       fsg=FSG, timelimit=TIMELIMITS, selector=FPT_SELECTOR, lower_bound=FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK, search_strategy=FPT_SEARCH_STRATEGY),
                 "data/bio/bio.metadata.yaml"
 
 rule ilp:
@@ -46,6 +46,19 @@ rule ilp:
                                    f"--num-threads {wildcards.threads}".split(" ") + constraint_args[wildcards.constraints], timeout=params.hard_timeout)
                 except subprocess.TimeoutExpired:
                     pass
+
+rule collect_ilp:
+        input:
+                expand("experiments/{{fsg}}/ilp.timelimit={{timelimit}}.threads={{threads}}.constraints={{constraints}}/bio/{graph}.{multiplier}.{permutation}.solution.yaml",
+                       graph=BIO_GRAPHS, multiplier=MULTIPLIER, permutation=PERMUTATION)
+        output:
+                "experiments/{fsg}/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/all.solutions.yaml"
+        run:
+                with open(output[0], "w") as out_file:
+                    for path in input:
+                        with open(path) as in_file:
+                            out_file.write(in_file.read())
+
 
 rule copy_instance_solution:
         input:
@@ -93,20 +106,46 @@ rule fpt:
                     pass
 
 
+rule collect_fpt_fixed:
+        input:
+                expand("experiments/{{fsg}}/fpt.timelimit={{timelimit}}.selector={{selector}}.lower-bound={{lower_bound}}.all=0.pre-mark={{pre_mark}}.search-strategy=Fixed/bio/{graph}.{multiplier}.{permutation}.solution.yaml",
+                       graph=BIO_GRAPHS, multiplier=MULTIPLIER, permutation=PERMUTATION)
+        output:
+                "experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=0.pre-mark={pre_mark}.search-strategy=Fixed/all.solutions.yaml"
+        run:
+                with open(output[0], "w") as out_file:
+                    for path in input:
+                        with open(path) as in_file:
+                            out_file.write(in_file.read())
+
+rule collect_fpt:
+        input:
+                expand("experiments/{{fsg}}/fpt.timelimit={{timelimit}}.selector={{selector}}.lower-bound={{lower_bound}}.all=1.pre-mark={{pre_mark}}.search-strategy={{search_strategy}}/bio/{graph}.{multiplier}.{permutation}.solution.yaml",
+                       graph=BIO_GRAPHS, multiplier=MULTIPLIER, permutation=PERMUTATION)
+        output:
+                "experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/all.solutions.yaml"
+        run:
+                with open(output[0], "w") as out_file:
+                    for path in input:
+                        with open(path) as in_file:
+                            out_file.write(in_file.read())
+
 rule finder_experiment:
         input:
                 instance = "data/{dataset}/{graph}.graph"
         output:
                 "experiments/finder-benchmark.finder={finder}/{dataset}/{graph}.{permutation}.benchmark.yaml"
+        params:
+                iterations=10
         run:
                 try:
-                    subprocess.run(f"cmake-build-release/finder_benchmark --input {input.instance} --output {output} --finder {wildcards.finder} --iterations 10".split(" "), timeout=10)
+                    subprocess.run(f"cmake-build-release/finder_benchmark --input {input.instance} --output {output} --finder {wildcards.finder} --iterations {params.iterations}".split(" "), timeout=2 * iterations + 2)
                 except subprocess.TimeoutExpired:
                     pass
 
 rule collect_finder_experiment:
         input:
-                expand("experiments/finder-benchmark.finder={finder}/bio/{graph}.{permutation}.benchmark.yaml", fsg=FSG, finder=FINDERS, graph=BIO_GRAPHS, permutation=PERMUTATION)
+                expand("experiments/finder-benchmark.finder={{finder}}/bio/{graph}.{permutation}.benchmark.yaml", graph=BIO_GRAPHS, permutation=PERMUTATION)
         output:
                 "experiments/finder-benchmark.finder={finder}/all.benchmark.yaml"
         run:
