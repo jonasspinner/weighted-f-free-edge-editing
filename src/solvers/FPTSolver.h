@@ -13,9 +13,17 @@
 #include "../Editor.h"
 
 class FPTSolver : public Solver {
+public:
+    struct Stat {
+        Cost k;
+        int calls;
+        int time;
+        Stat(Cost k_, int calls_, int time_) : k(k_), calls(calls_), time(time_) {}
+    };
 
+private:
     Configuration m_config;
-    std::vector<std::pair<Cost, int>> m_num_calls;
+    std::vector<Stat> m_stats;
 public:
     explicit FPTSolver(Configuration config) : m_config(std::move(config)) {}
 
@@ -42,11 +50,11 @@ public:
         }
         switch (m_config.search_strategy) {
             case Options::FPTSearchStrategy::Fixed:
-                return edit_fixed(m_config.k_max, instance, m_config, m_num_calls);
+                return edit_fixed(m_config.k_max, instance, m_config, m_stats);
             case Options::FPTSearchStrategy::PrunedDelta:
-                return search_delta(instance, m_config, m_num_calls);
+                return search_delta(instance, m_config, m_stats);
             case Options::FPTSearchStrategy::Exponential:
-                return search_exponential(instance, m_config, m_num_calls);
+                return search_exponential(instance, m_config, m_stats);
             case Options::FPTSearchStrategy::IncrementByMinCost:
             {
                 Cost delta = std::numeric_limits<Cost>::max();
@@ -55,17 +63,17 @@ public:
                         delta = instance.costs[uv];
                     }
                 }
-                return search_incremental(instance, m_config, m_num_calls, delta);
+                return search_incremental(instance, m_config, m_stats, delta);
             }
             case Options::FPTSearchStrategy::IncrementByMultiplier:
-                return search_incremental(instance, m_config, m_num_calls, std::ceil(m_config.multiplier));
+                return search_incremental(instance, m_config, m_stats, std::ceil(m_config.multiplier));
             default:
                 return Result::Unsolved();
         }
     }
 
-    [[nodiscard]] const std::vector<std::pair<Cost, int>> &calls() const {
-        return m_num_calls;
+    [[nodiscard]] const std::vector<Stat> &stats() const {
+        return m_stats;
     }
 
 private:
@@ -78,7 +86,7 @@ private:
      * @param stats
      * @return
      */
-    static Result edit_fixed(Cost k, const Instance &instance, const Configuration &config, std::vector<std::pair<Cost, int>> &calls) {
+    static Result edit_fixed(Cost k, const Instance &instance, const Configuration &config, std::vector<Stat> &stats) {
         if (k < 0)
             return Result::Unsolved();
         std::vector<Solution> solutions;
@@ -89,11 +97,15 @@ private:
         if (k_min > k)
             return Result::Unsolved();
 
+        auto start = std::chrono::steady_clock::now();
+
         bool solved = editor.edit(k, [&](const std::vector<VertexPair> &edits) {
             solutions.emplace_back(instance, edits);
         }, [](Cost, Cost) {});
 
-        calls.emplace_back(k, editor.stats().allCalls());
+        auto end = std::chrono::steady_clock::now();
+
+        stats.emplace_back(k, editor.stats().allCalls(), std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count());
 
         if (solved) {
             std::sort(solutions.begin(), solutions.end());
@@ -123,15 +135,18 @@ private:
      * @return
      */
     static Result search_delta(const Instance &instance, const Configuration &config,
-            std::vector<std::pair<Cost, int>> &calls, double quantile = 0.5) {
+            std::vector<Stat> &stats, double quantile = 0.5) {
         Editor editor(instance, config);
 
+        std::chrono::seconds timelimit(config.timelimit);
 
         Cost k = editor.initial_lower_bound();
         bool solved;
         std::vector<Solution> solutions;
 
         do {
+            auto start = std::chrono::steady_clock::now();
+
             Cost min_delta = std::numeric_limits<Cost>::max();
             std::vector<Cost> deltas;
             size_t num_calls = 0;
@@ -159,8 +174,6 @@ private:
 
             solved = editor.edit(k, result_cb, prune_cb, call_cb);
 
-            calls.emplace_back(k, editor.stats().allCalls());
-
             assert(!deltas.empty());
             std::sort(deltas.begin(), deltas.end(), [](Cost lhs, Cost rhs) { return lhs < rhs; });
             size_t index = std::clamp<size_t>(quantile * (deltas.size() - 1.), 0, deltas.size() - 1);
@@ -177,18 +190,29 @@ private:
                 std::cout << "\n";
             }
 
+
+            auto end = std::chrono::steady_clock::now();
+            auto duration = end - start;
+
+            stats.emplace_back(k, editor.stats().allCalls(), std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count());
+
+            if (std::chrono::seconds(0) <= timelimit && duration > timelimit)
+                return Result::Unsolved();
+
             k += quantile_delta;
         } while (!solved);
 
         return Result::Solved(solutions);
     }
 
-    static Result search_incremental(const Instance &instance, const Configuration &config, std::vector<std::pair<Cost, int>> &calls, Cost delta) {
+    static Result search_incremental(const Instance &instance, const Configuration &config, std::vector<Stat> &stats, Cost delta) {
         if (delta < 1) {
             std::cerr << "delta must be at least 1" << std::endl;
             abort();
         }
         Editor editor(instance, config);
+
+        std::chrono::seconds timelimit(config.timelimit);
 
         Cost k = editor.initial_lower_bound();
         Cost min_remaining_cost = 0;
@@ -196,6 +220,8 @@ private:
         std::vector<Solution> solutions;
 
         do {
+            auto start = std::chrono::steady_clock::now();
+
             size_t num_calls = 0;
             auto result_cb = [&](const std::vector<VertexPair> &edits) {
                 solutions.emplace_back(instance, edits);
@@ -211,14 +237,18 @@ private:
 
             solved = editor.edit(k, result_cb, prune_cb, call_cb);
 
-            calls.emplace_back(k, editor.stats().allCalls());
-
-
             if (config.verbosity) {
                 std::cout << "edit(" << std::setw(10) << k << "):";
                 std::cout << " delta = " << std::setw(6) << delta;
                 std::cout << " num_calls = " << num_calls << "\n";
             }
+
+            auto end = std::chrono::steady_clock::now();
+            auto duration = end - start;
+
+            stats.emplace_back(k, editor.stats().allCalls(), std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count());
+            if (std::chrono::seconds(0) <= timelimit && duration > timelimit)
+                return Result::Unsolved();
 
             k += delta;
         } while (!solved);
@@ -232,8 +262,10 @@ private:
      * @param config
      * @return
      */
-    static Result search_exponential(const Instance &instance, const Configuration &config, std::vector<std::pair<Cost, int>> &calls) {
+    static Result search_exponential(const Instance &instance, const Configuration &config, std::vector<Stat> &stats) {
         Editor editor(instance, config);
+
+        std::chrono::seconds timelimit(config.timelimit);
 
         Cost k_init = editor.initial_lower_bound();
         Cost delta = 0;
@@ -244,6 +276,8 @@ private:
         std::deque<size_t> num_calls;
 
         do {
+            auto start = std::chrono::steady_clock::now();
+
             Cost k = k_init + delta;
 
             Cost min_delta = std::numeric_limits<Cost>::max();
@@ -266,8 +300,6 @@ private:
 
             solved = editor.edit(k, result_cb, prune_cb, call_cb);
 
-            calls.emplace_back(k, editor.stats().allCalls());
-
             if (ks.size() > 3) {
                 ks.pop_front();
                 num_calls.pop_front();
@@ -288,6 +320,15 @@ private:
                 std::cout << " delta = " << std::setw(6) << delta;
                 std::cout << " num_calls = " << num_calls.back() << "\n";
             }
+
+            auto end = std::chrono::steady_clock::now();
+            auto duration = end - start;
+
+            stats.emplace_back(k, editor.stats().allCalls(), std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count());
+
+            if (std::chrono::seconds(0) <= timelimit && duration > timelimit)
+                return Result::Unsolved();
+
         } while (!solved);
 
         return Result::Solved(solutions);

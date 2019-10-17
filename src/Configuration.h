@@ -21,6 +21,7 @@ public:
     std::string output_path;
 
     int verbosity = 0;
+    int timelimit = -1;
 
     // seed and multiplier for input instances
     int seed = 0;
@@ -44,7 +45,6 @@ public:
     bool sparse_constraints = false;
     bool single_constraints = false;
     int num_threads = 4;
-    int timelimit = -1;
 
 
     Configuration(Options::FSG forbidden_subgraphs_, double multiplier_,

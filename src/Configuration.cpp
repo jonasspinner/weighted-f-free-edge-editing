@@ -18,7 +18,8 @@ Configuration::options(const std::set<Options::SolverType> &types) {
             ("help", "produce help message")
             ("output", po::value<std::string>(&output_path)->default_value(output_path), "output file path")
             ("seed", po::value<int>(&seed)->default_value(seed), "seed for instance permutation")
-            ("verbosity", po::value<int>(&verbosity)->default_value(verbosity));
+            ("verbosity", po::value<int>(&verbosity)->default_value(verbosity))
+            ("timelimit", po::value<int>(&timelimit)->default_value(timelimit));
 
     if (types.size() > 1) {
         general.add_options()
@@ -59,8 +60,7 @@ Configuration::options(const std::set<Options::SolverType> &types) {
         ilp_options.add_options()
                 ("sparse-constraints", po::value<bool>(&sparse_constraints)->default_value(sparse_constraints), "only add O(n^2) constraints at once")
                 ("single-constraints", po::value<bool>(&single_constraints)->default_value(single_constraints), "only add 1 constraints at once")
-                ("num-threads", po::value<int>(&num_threads)->default_value(num_threads))
-                ("timelimit", po::value<int>(&timelimit)->default_value(timelimit));
+                ("num-threads", po::value<int>(&num_threads)->default_value(num_threads));
 
         cmdline_options.add(ilp_options);
     }
@@ -74,6 +74,7 @@ YAML::Emitter &operator<<(YAML::Emitter &out, const Configuration &config) {
     out << Key << "output" << Value << config.output_path;
     out << Key << "seed" << Value << config.seed;
     out << Key << "solver" << Value << config.solver_type;
+    out << Key << "timelimit"<< Value << config.timelimit;
 
     out << Key << "input" << Value << config.input_path;
     out << Key << "permutation" << Value << config.permutation;
@@ -91,7 +92,6 @@ YAML::Emitter &operator<<(YAML::Emitter &out, const Configuration &config) {
         out << Key << "sparse_constraints" << Value << config.sparse_constraints;
         out << Key << "single_constraints" << Value << config.single_constraints;
         out << Key << "num_threads" << Value << config.num_threads;
-        out << Key << "timelimit"<< Value << config.timelimit;
     }
     out << EndMap;
     return out;

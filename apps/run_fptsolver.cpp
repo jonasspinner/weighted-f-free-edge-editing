@@ -13,15 +13,17 @@
 
 void write_output_file(const std::string &path, const Configuration &config, const Instance &instance,
                        const std::vector<Solution> &solutions, Cost solution_cost, long long solve_time,
-                       const std::vector<std::pair<Cost, int>> &calls, bool print_stdout = false) {
+                       const std::vector<FPTSolver::Stat> &stats, bool print_stdout = false) {
     using namespace YAML;
 
     std::vector<Cost> stats_k;
     std::vector<int> stats_calls;
+    std::vector<int> stats_time;
 
-    for (const auto &[k, c] : calls) {
+    for (const auto &[k, c, t] : stats) {
         stats_k.push_back(k);
         stats_calls.push_back(c);
+        stats_time.push_back(t);
     }
 
     Emitter out;
@@ -37,6 +39,7 @@ void write_output_file(const std::string &path, const Configuration &config, con
     out << Key << "stats" << Value << BeginMap;
     out << Key << "k" << Value << Flow << stats_k;
     out << Key << "calls" << Value << Flow << stats_calls;
+    out << Key << "time" << Value << Flow << stats_time << Comment("ns");
     out << EndMap;
     out << Key << "commit_hash" << Value << GIT_COMMIT_HASH;
     out << Key << "instance" << Value << instance;
@@ -44,6 +47,7 @@ void write_output_file(const std::string &path, const Configuration &config, con
     out << Key << "solutions" << Value << solutions;
     out << Key << "solution_cost" << Value << solution_cost;
     out << Key << "time" << Value << solve_time << Comment("ns");
+    out << Key << "timelimit" << Value << config.timelimit << Comment("s");
     out << EndMap << EndDoc;
     
     if (print_stdout)
@@ -140,7 +144,7 @@ int main(int argc, char* argv[]) {
         solution_cost = solutions[0].cost;
     
 
-    write_output_file(config.output_path, config, instance, solutions, solution_cost, solve_time, solver.calls(), true);
+    write_output_file(config.output_path, config, instance, solutions, solution_cost, solve_time, solver.stats(), true);
 
     return 0;
 }

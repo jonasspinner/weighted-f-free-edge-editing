@@ -94,14 +94,15 @@ rule fpt:
         output:
                 "experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/{dataset}/{graph}.{multiplier}.{permutation}.solution.yaml"
         params:
-                hard_timeout=lambda wildcards, output: int(1.1 * int(wildcards.timelimit))
+                hard_timeout=lambda wildcards, output: int(4 * int(wildcards.timelimit))
         run:
                 try:
                     subprocess.run(f"cmake-build-release/fpt "
                                    f"--input {input} --permutation {wildcards.permutation} --multiplier {wildcards.multiplier} --F {wildcards.fsg} --output {output} "
                                    f"--selector {wildcards.selector} --lower-bound {wildcards.lower_bound} "
                                    f"--all 1 --pre-mark {wildcards.pre_mark} "
-                                   f"--search-strategy {wildcards.search_strategy}".split(" "), timeout=params.hard_timeout)
+                                   f"--search-strategy {wildcards.search_strategy} "
+                                   f"--timelimit {wildcards.timelimit}".split(" "), timeout=params.hard_timeout)
                 except subprocess.TimeoutExpired:
                     pass
 
