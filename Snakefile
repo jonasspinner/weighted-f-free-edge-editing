@@ -139,7 +139,7 @@ rule finder_experiment:
                 iterations=10
         run:
                 try:
-                    subprocess.run(f"cmake-build-release/finder_benchmark --input {input.instance} --output {output} --finder {wildcards.finder} --iterations {params.iterations}".split(" "), timeout=2 * iterations + 2)
+                    subprocess.run(f"cmake-build-release/finder_benchmark --input {input.instance} --output {output} --finder {wildcards.finder} --iterations {params.iterations}".split(" "), timeout=2 * params.iterations + 2)
                 except subprocess.TimeoutExpired:
                     pass
 
