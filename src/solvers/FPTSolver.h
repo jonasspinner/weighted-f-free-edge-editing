@@ -165,7 +165,7 @@ private:
             std::sort(deltas.begin(), deltas.end(), [](Cost lhs, Cost rhs) { return lhs < rhs; });
             size_t index = std::clamp<size_t>(quantile * (deltas.size() - 1.), 0, deltas.size() - 1);
             assert(index < deltas.size());
-            Cost quantile_delta = deltas[index];
+            Cost quantile_delta = std::max(deltas[index], 1);
             assert(quantile_delta > 0);
 
             if (config.verbosity) {
@@ -184,6 +184,10 @@ private:
     }
 
     static Result search_incremental(const Instance &instance, const Configuration &config, std::vector<std::pair<Cost, int>> &calls, Cost delta) {
+        if (delta < 1) {
+            std::cerr << "delta must be at least 1" << std::endl;
+            abort();
+        }
         Editor editor(instance, config);
 
         Cost k = editor.initial_lower_bound();
