@@ -36,14 +36,14 @@ public:
      * @param num_buckets
      */
     Statistics(Cost min, Cost max, size_t num_buckets) : m_min(min), m_max(max),
-            m_num_buckets(std::min(num_buckets, static_cast<size_t>(m_max - m_min))), m_seperators(m_num_buckets),
+            m_num_buckets(std::min(num_buckets, static_cast<size_t>(m_max - m_min + 1))), m_seperators(m_num_buckets),
             m_prunes(m_num_buckets), m_calls(m_num_buckets) {
 
-        for (size_t i = 0; i < m_seperators.size(); ++i) {
-            m_seperators[i] = m_min + static_cast<Cost>(i) * (m_max - m_min) / static_cast<Cost>(m_num_buckets - 1);
-        }
-
-        if (m_num_buckets == 0) {
+        if (m_num_buckets > 1) {
+            for (size_t i = 0; i < m_seperators.size(); ++i) {
+                m_seperators[i] = m_min + static_cast<Cost>(i) * (m_max - m_min) / static_cast<Cost>(m_num_buckets - 1);
+            }
+        } else {
             m_seperators.push_back(m_max);
             m_prunes.push_back(0);
             m_calls.push_back(0);
@@ -60,6 +60,23 @@ public:
         std::cout << m_seperators.back() << " " << bucket(m_seperators.back()) << "\n";
         */
     }
+
+    [[nodiscard]] const std::vector<int> &calls() const {
+        return m_calls;
+    }
+
+    [[nodiscard]] const std::vector<int> &prunes() const {
+        return m_prunes;
+    }
+
+    [[nodiscard]] int allCalls() const {
+        return std::accumulate(m_calls.begin(), m_calls.end(), 0);
+    }
+
+    [[nodiscard]] int allPrunes() const {
+        return std::accumulate(m_prunes.begin(), m_prunes.end(), 0);
+    }
+
 
     int &calls(Cost cost) {
         assert(!m_calls.empty());

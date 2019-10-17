@@ -13,8 +13,16 @@
 
 void write_output_file(const std::string &path, const Configuration &config, const Instance &instance,
                        const std::vector<Solution> &solutions, Cost solution_cost, long long solve_time,
-                       bool print_stdout = false) {
+                       const std::vector<std::pair<Cost, int>> &calls, bool print_stdout = false) {
     using namespace YAML;
+
+    std::vector<Cost> stats_k;
+    std::vector<int> stats_calls;
+
+    for (const auto &[k, c] : calls) {
+        stats_k.push_back(k);
+        stats_calls.push_back(c);
+    }
 
     Emitter out;
     out << BeginDoc << BeginMap;
@@ -25,6 +33,10 @@ void write_output_file(const std::string &path, const Configuration &config, con
     out << Key << "find_all_solutions" << Value << config.find_all_solutions;
     out << Key << "pre_mark_vertex_pairs" << Value << config.pre_mark_vertex_pairs;
     out << Key << "search_strategy" << Value << config.search_strategy;
+    out << EndMap;
+    out << Key << "stats" << Value << BeginMap;
+    out << Key << "k" << Value << Flow << stats_k;
+    out << Key << "calls" << Value << Flow << stats_calls;
     out << EndMap;
     out << Key << "commit_hash" << Value << GIT_COMMIT_HASH;
     out << Key << "instance" << Value << instance;
@@ -69,14 +81,14 @@ int main(int argc, char* argv[]) {
 
     double multiplier = 100;
 
-    Configuration config(Options::FSG::P3, multiplier, Options::SolverType::FPT, Options::Selector::MostAdjacentSubgraphs, Options::LB::SortedGreedy);
+    Configuration config(Options::FSG::P3, multiplier, Options::SolverType::FPT, Options::Selector::MostAdjacentSubgraphs, Options::LB::Trivial);
 
-    config.input_path = "../data/bio/bio-nr-4-size-39.graph";
-    // config.k_max = 6730;
-    
-    config.find_all_solutions = false;
+    config.input_path = "../data/bio/bio-nr-405-size-10.graph";
+    config.multiplier = 1;
+
+    config.find_all_solutions = true;
     config.pre_mark_vertex_pairs = false;
-    config.search_strategy = Options::FPTSearchStrategy::IncrementByMinCost;
+    config.search_strategy = Options::FPTSearchStrategy::PrunedDelta;
 
     auto options = config.options({Options::SolverType::FPT});
 
@@ -104,7 +116,7 @@ int main(int argc, char* argv[]) {
 
     auto instance = GraphIO::read_instance(config);
 
-    write_output_file(config.output_path, config, instance, {}, -1, -1);
+    write_output_file(config.output_path, config, instance, {}, -1, -1, {});
 
     if (config.search_strategy == Options::FPTSearchStrategy::Fixed && config.k_max == -1)
         return 0;
@@ -128,7 +140,7 @@ int main(int argc, char* argv[]) {
         solution_cost = solutions[0].cost;
     
 
-    write_output_file(config.output_path, config, instance, solutions, solution_cost, solve_time, true);
+    write_output_file(config.output_path, config, instance, solutions, solution_cost, solve_time, solver.calls(), true);
 
     return 0;
 }
