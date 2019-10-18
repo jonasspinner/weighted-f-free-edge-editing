@@ -5,7 +5,7 @@ import yaml
 
 BIO_GRAPHS = [path.split("/")[-1][:-6] for path in glob("data/bio/*.graph")]
 with open("data/bio/C4P4-selected.txt") as file:
-    BIO_GRAPHS_C4P4_SUBSET = ["data/bio/" + name for name in file.read().splitlines()]
+    BIO_GRAPHS_C4P4_SUBSET = ["data/bio/" + name[:-6] for name in file.read().splitlines()]
 
 def get_dataset_files(name):
     if name == "bio":
@@ -30,11 +30,18 @@ FPT_SEARCH_STRATEGY = ["IncrementByMultiplier"] + ["PrunedDelta", "IncrementByMi
 FINDERS = ["CenterRecC4P4", "CenterRecP3", "EndpointRecC4P4", "EndpointRecP3", "CenterC4P4", "CenterP3"] + ["NaiveC4P4", "NaiveP3"] # + ["CenterRecC5P5", "EndpointRecC5P5"]
 
 
+PRELIM_TIMELIMITS = [100]
+PRELIM_ILP_CONSTRAINTS = ILP_CONSTRAINTS
+PRELIM_FPT_LOWER_BOUND = ["Trivial", "LocalSearch", "SortedGreedy"]
+PRELIM_FPT_FPT_SELECTOR = ["FirstFound", "MostMarkedPairs", "MostAdjacentSubgraphs"]
+PRELIM_FPT_SEARCH_STRATEGY = ["IncrementByMultiplier"]
+
+
 rule all:
         input:
                 expand("experiments/C4P4/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio-C4P4-subset.solutions.yaml",
                        fsg=FSG, timelimit=TIMELIMITS, threads=ILP_NUM_THREADS, constraints=ILP_CONSTRAINTS),
-                expand("experiments/finder-benchmark.finder={finder}/bio.benchmark.yaml", finder=FINDERS),
+                expand("experiments/finder-benchmark.finder={finder}/bio.benchmarks.yaml", finder=FINDERS),
                 expand("experiments/C4P4/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio-C4P4-subset.solutions.yaml",
                        timelimit=TIMELIMITS, selector=FPT_SELECTOR, lower_bound=FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK, search_strategy=FPT_SEARCH_STRATEGY),
                 "data/bio/bio.metadata.yaml"
@@ -42,19 +49,13 @@ rule all:
 rule preliminary:
         input:
                 expand("experiments/{fsg}/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio.solutions.yaml",
-                       fsg=FSG, timelimit=params.timelimits, threads=ILP_NUM_THREADS, constraints=params.constraints),
+                       fsg=FSG, timelimit=PRELIM_TIMELIMITS, threads=[1], constraints=PRELIM_ILP_CONSTRAINTS),
                 expand("experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=0.pre-mark={pre_mark}.search-strategy=Fixed/bio.solutions.yaml",
-                       fsg=FSG, timelimit=params.timelimits, selector=params.selectors, lower_bound=params.lower_bounds, pre_mark=FPT_PRE_MARK),
+                       fsg=FSG, timelimit=PRELIM_TIMELIMITS, selector=PRELIM_FPT_FPT_SELECTOR, lower_bound=PRELIM_FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK),
                 expand("experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio.solutions.yaml",
-                       fsg=FSG, timelimit=params.timelimits, selector=params.selectors, lower_bound=params.lower_bounds, pre_mark=FPT_PRE_MARK, search_strategy=params.search_strategies)
+                       fsg=FSG, timelimit=PRELIM_TIMELIMITS, selector=PRELIM_FPT_FPT_SELECTOR, lower_bound=PRELIM_FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK, search_strategy=PRELIM_FPT_SEARCH_STRATEGY)
         output:
                 "experiments/preliminary_rule"
-        params:
-                timelimits = [100]
-                lower_bounds = ["Trivial", "LocalSearch", "SortedGreedy"]
-                selectors = ["FirstFound", "MostMarkedPairs", "MostAdjacentSubgraphs"]
-                search_strategies = ["IncrementByMultiplier"]
-                constraints = ILP_CONSTRAINTS
         shell: "touch {output}"
 
 
@@ -77,8 +78,10 @@ rule ilp:
 
 rule collect_ilp:
         input:
-                expand("experiments/{{fsg}}/ilp.timelimit={{timelimit}}.threads={{threads}}.constraints={{constraints}}/{dataset}/{graph}.{multiplier}.{permutation}.solution.yaml",
-                       graph=BIO_GRAPHS, multiplier=MULTIPLIER, permutation=PERMUTATION)
+                lambda wildcards: expand("experiments/{{fsg}}/"
+                                          "ilp.timelimit={{timelimit}}.threads={{threads}}.constraints={{constraints}}/"
+                                          "{{dataset}}/{graph}.{multiplier}.{permutation}.solution.yaml",
+                       graph=get_dataset_files(wildcards.dataset), multiplier=MULTIPLIER, permutation=PERMUTATION)
         output:
                 "experiments/{fsg}/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/{dataset}.solutions.yaml"
         run:
@@ -137,10 +140,10 @@ rule fpt:
 
 rule collect_fpt_fixed:
         input:
-                expand("experiments/{{fsg}}/fpt.timelimit={{timelimit}}.selector={{selector}}.lower-bound={{lower_bound}}.all=0.pre-mark={{pre_mark}}.search-strategy=Fixed/{dataset}/{graph}.{multiplier}.{permutation}.solution.yaml",
-                       graph=params.graphs, multiplier=MULTIPLIER, permutation=PERMUTATION)
-        params:
-                graphs = lambda wildcards, output: get_dataset_files(wildcards.dataset)
+                lambda wildcards: expand("experiments/{{fsg}}/"
+                                         "fpt.timelimit={{timelimit}}.selector={{selector}}.lower-bound={{lower_bound}}.all=0.pre-mark={{pre_mark}}.search-strategy=Fixed/"
+                                         "{{dataset}}/{graph}.{multiplier}.{permutation}.solution.yaml",
+                       graph=get_dataset_files(wildcards.dataset), multiplier=MULTIPLIER, permutation=PERMUTATION)
         output:
                 "experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=0.pre-mark={pre_mark}.search-strategy=Fixed/{dataset}.solutions.yaml"
         run:
@@ -151,10 +154,10 @@ rule collect_fpt_fixed:
 
 rule collect_fpt:
         input:
-                expand("experiments/{{fsg}}/fpt.timelimit={{timelimit}}.selector={{selector}}.lower-bound={{lower_bound}}.all=1.pre-mark={{pre_mark}}.search-strategy={{search_strategy}}/{dataset}/{graph}.{multiplier}.{permutation}.solution.yaml",
-                       graph=params.graphs, multiplier=MULTIPLIER, permutation=PERMUTATION)
-        params:
-                graphs = lambda wildcards, output: get_dataset_files(wildcards.dataset)
+                lambda wildcards: expand("experiments/{{fsg}}/"
+                                         "fpt.timelimit={{timelimit}}.selector={{selector}}.lower-bound={{lower_bound}}.all=1.pre-mark={{pre_mark}}.search-strategy={{search_strategy}}/"
+                                         "{{dataset}}/{graph}.{multiplier}.{permutation}.solution.yaml",
+                       graph=get_dataset_files(wildcards.dataset), multiplier=MULTIPLIER, permutation=PERMUTATION)
         output:
                 "experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/{dataset}.solutions.yaml"
         run:
@@ -178,11 +181,11 @@ rule finder_experiment:
 
 rule collect_finder_experiment:
         input:
-                expand("experiments/finder-benchmark.finder={{finder}}/{dataset}/{graph}.{permutation}.benchmark.yaml", graph=params.graphs, permutation=PERMUTATION)
-        params:
-                graphs = lambda wildcards, output: get_dataset_files(wildcards.dataset)
+                lambda wildcards: expand("experiments/"
+                                         "finder-benchmark.finder={{finder}}/"
+                                         "{{dataset}}/{graph}.{permutation}.benchmark.yaml", graph=get_dataset_files(wildcards.dataset), permutation=PERMUTATION)
         output:
-                "experiments/finder-benchmark.finder={finder}/{dataset}.benchmark.yaml"
+                "experiments/finder-benchmark.finder={finder}/{dataset}.benchmarks.yaml"
         run:
                 with open(output[0], "w") as out_file:
                     for path in input:
