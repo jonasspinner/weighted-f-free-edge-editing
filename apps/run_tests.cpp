@@ -33,10 +33,10 @@ int main(int argc, char* argv[]) {
     }
 
     FinderTests(seed).run();
-    //GraphTests(seed).run();
-    //SubgraphTests(seed).run();
-    //EditorTests(seed).run();
-    //PermutationTest(seed).run();
+    GraphTests(seed).run();
+    SubgraphTests(seed).run();
+    EditorTests(seed).run();
+    PermutationTest(seed).run();
 
 
     return 0;
