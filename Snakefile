@@ -1,11 +1,11 @@
 from glob import glob
+from pathlib import Path
 import subprocess
 import yaml
 
 
-BIO_GRAPHS = [path.split("/")[-1][:-6] for path in glob("data/bio/*.graph")]
-with open("data/bio/C4P4-selected.txt") as file:
-    BIO_GRAPHS_C4P4_SUBSET = ["data/bio/" + name[:-6] for name in file.read().splitlines()]
+BIO_GRAPHS = [path.stem for path in Path("data/bio").glob("*.graph")]
+BIO_GRAPHS_C4P4_SUBSET = [path.stem for path in Path("data/bio-C4P4-subset").glob("*.graph")]
 
 def get_dataset_files(name):
     if name == "bio":
@@ -17,7 +17,7 @@ def get_dataset_files(name):
 
 MULTIPLIER = [100]
 PERMUTATION = [0]
-TIMELIMITS = [1000]
+TIMELIMITS = [100]
 FSG = ["P3", "C4P4"]
 ILP_CONSTRAINTS = ["basic", "sparse", "single"]
 ILP_NUM_THREADS = [1]
