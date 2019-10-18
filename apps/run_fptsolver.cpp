@@ -18,7 +18,7 @@ void write_output_file(const std::string &path, const Configuration &config, con
 
     std::vector<Cost> stats_k;
     std::vector<int> stats_calls;
-    std::vector<long long> stats_time;
+    std::vector<double> stats_time;
 
     for (const auto &[k, c, t] : stats) {
         stats_k.push_back(k);
