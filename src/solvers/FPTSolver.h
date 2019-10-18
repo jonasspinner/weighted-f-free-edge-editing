@@ -17,7 +17,7 @@ public:
     struct Stat {
         Cost k;
         int calls;
-        int time;
+        long long time;
         Stat(Cost k_, int calls_, int time_) : k(k_), calls(calls_), time(time_) {}
     };
 
