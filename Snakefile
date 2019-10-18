@@ -7,7 +7,7 @@ BIO_GRAPHS = [path.split("/")[-1][:-6] for path in glob("data/bio/*.graph")]
 MULTIPLIER = [100]
 PERMUTATION = [0]
 TIMELIMITS = [100]
-FSG = ["C4P4"]
+FSG = ["P3", "C4P4"]
 ILP_CONSTRAINTS = ["basic", "sparse", "single"]
 ILP_NUM_THREADS = [1]
 
