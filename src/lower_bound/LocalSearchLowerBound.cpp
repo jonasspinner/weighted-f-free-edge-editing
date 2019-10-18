@@ -335,11 +335,10 @@ void LocalSearchLowerBound::before_mark(VertexPair uv) {
     // remove_near_subgraphs_from_bound(state, uv); // I
     update_near_subgraphs(state, uv, *finder, m_marked, m_costs, m_bound_graph); // II
 
+#ifndef NDEBUG
     for (const auto &[cost, subgraph] : state.bound())
         assert(!subgraph.contains(uv));
-}
-
-void LocalSearchLowerBound::after_mark(VertexPair /*uv*/) {
+#endif
 }
 
 /**
@@ -379,6 +378,8 @@ void LocalSearchLowerBound::local_search(State &state, Cost k) {
     constexpr static bool use_one_improvement = false;
     constexpr static bool use_two_improvement = true;
     constexpr static bool use_omega_improvement = true;
+
+    // TODO: Remove ugly debug output
 // #define stats
 #ifdef stats
     Cost cost_before = state.cost();

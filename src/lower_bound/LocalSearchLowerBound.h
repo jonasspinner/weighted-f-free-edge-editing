@@ -186,8 +186,6 @@ public:
 
     void before_mark(VertexPair uv) override;
 
-    void after_mark(VertexPair uv) override;
-
     void before_edit(VertexPair uv) override;
 
     void after_edit(VertexPair uv) override;
