@@ -27,7 +27,7 @@ FPT_LOWER_BOUND = ["Trivial", "LocalSearch", "SortedGreedy"] + ["Greedy"] # + ["
 FPT_PRE_MARK = [0]
 FPT_SEARCH_STRATEGY = ["IncrementByMultiplier"] + ["PrunedDelta", "IncrementByMinCost"] # + ["Exponential"]
 
-FINDERS = ["CenterRecC4P4", "CenterRecP3", "EndpointRecC4P4", "EndpointRecP3", "CenterC4P4", "CenterP3"] + ["NaiveC4P4", "NaiveP3"] # + ["CenterRecC5P5", "EndpointRecC5P5"]
+FINDERS = ["CenterRecC4P4", "CenterRecP3", "EndpointRecC4P4", "EndpointRecP3", "CenterC4P4", "CenterP3"] + ["NaiveC4P4", "NaiveP3"] + ["CenterRecC5P5", "EndpointRecC5P5"]
 
 
 PRELIM_TIMELIMITS = [100]
@@ -39,11 +39,18 @@ PRELIM_FPT_SEARCH_STRATEGY = ["IncrementByMultiplier"]
 
 rule all:
         input:
-                expand("experiments/C4P4/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio-C4P4-subset.solutions.yaml",
-                       fsg=FSG, timelimit=TIMELIMITS, threads=ILP_NUM_THREADS, constraints=ILP_CONSTRAINTS),
                 expand("experiments/finder-benchmark.finder={finder}/bio.benchmarks.yaml", finder=FINDERS),
+
+                expand("experiments/C4P4/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio-C4P4-subset.solutions.yaml",
+                       timelimit=TIMELIMITS, threads=ILP_NUM_THREADS, constraints=ILP_CONSTRAINTS),
                 expand("experiments/C4P4/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio-C4P4-subset.solutions.yaml",
                        timelimit=TIMELIMITS, selector=FPT_SELECTOR, lower_bound=FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK, search_strategy=FPT_SEARCH_STRATEGY),
+
+                expand("experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio.solutions.yaml",
+                       fsg=FSG, timelimit=[1000], selector=["MostAdjacentSubgraphs"], lower_bound=["SortedGreedy"], pre_mark=FPT_PRE_MARK, search_strategy=["PrunedDelta"]),
+                expand("experiments/{fsg}/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio.solutions.yaml",
+                       fsg=FSG, timelimit=[1000], threads=ILP_NUM_THREADS, constraints=["sparse"]),
+
                 "data/bio/bio.metadata.yaml"
 
 rule preliminary:
@@ -173,9 +180,10 @@ rule finder_experiment:
                 "experiments/finder-benchmark.finder={finder}/{dataset}/{graph}.{permutation}.benchmark.yaml"
         params:
                 iterations = 10
+                hard_timeout = 100
         run:
                 try:
-                    subprocess.run(f"cmake-build-release/finder_benchmark --input {input.instance} --output {output} --finder {wildcards.finder} --iterations {params.iterations}".split(" "), timeout=2 * params.iterations + 2)
+                    subprocess.run(f"cmake-build-release/finder_benchmark --input {input.instance} --output {output} --finder {wildcards.finder} --iterations {params.iterations}".split(" "), timeout=params.hard_timeout)
                 except subprocess.TimeoutExpired:
                     pass
 
