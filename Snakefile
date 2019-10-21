@@ -179,7 +179,7 @@ rule finder_experiment:
         output:
                 "experiments/finder-benchmark.finder={finder}/{dataset}/{graph}.{permutation}.benchmark.yaml"
         params:
-                iterations = 10
+                iterations = 10,
                 hard_timeout = 100
         run:
                 try:
