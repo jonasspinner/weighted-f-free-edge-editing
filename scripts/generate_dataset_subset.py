@@ -3,6 +3,7 @@ import yaml
 from pathlib import Path
 import shutil
 
+
 def generate_dataset_subset(config_path: Path, input_dir: Path, output_dir: Path):
     with config_path.open() as file:
         config = yaml.safe_load(file)
@@ -28,7 +29,8 @@ def main():
     parser.add_argument("--input-dir", type=str,
                         help="Path for input directory. Default is the directory of the config file.")
     parser.add_argument("--output-dir", type=str,
-                        help="Path for output directory. Default is the directory with the same name as the config file.")
+                        help="Path for output directory. "
+                             "Default is the directory with the same name as the config file.")
 
     options = parser.parse_args()
 
