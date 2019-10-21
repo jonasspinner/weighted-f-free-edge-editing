@@ -53,8 +53,18 @@ namespace Options {
         in >> token;
         if (token == "P3")
             fsg = FSG::P3;
+        else if (token == "P4")
+            fsg = FSG::P4;
+        else if (token == "P5")
+            fsg = FSG::P5;
+        else if (token == "P6")
+            fsg = FSG::P6;
         else if (token == "C4P4")
             fsg = FSG::C4P4;
+        else if (token == "C5P5")
+            fsg = FSG::C5P5;
+        else if (token == "C6P6")
+            fsg = FSG::C6P6;
         else if (token == "C4_C5_2K2")
             fsg = FSG::C4_C5_2K2;
         else if (token == "C4_C5_P5_Bowtie_Necktie")
@@ -68,13 +78,24 @@ namespace Options {
         switch (fsg) {
             case FSG::P3:
                 return os << "P3";
+            case FSG::P4:
+                return os << "P4";
+            case FSG::P5:
+                return os << "P5";
+            case FSG::P6:
+                return os << "P6";
             case FSG::C4P4:
                 return os << "C4P4";
+            case FSG::C5P5:
+                return os << "C5P5";
+            case FSG::C6P6:
+                return os << "C6P6";
             case FSG::C4_C5_2K2:
                 return os << "C4_C5_2K2";
             case FSG::C4_C5_P5_Bowtie_Necktie:
                 return os << "C4_C5_P5_Bowtie_Necktie";
             default:
+                os.setstate(std::ios_base::failbit);
                 return os;
         }
     }
