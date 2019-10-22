@@ -6,12 +6,16 @@ import yaml
 
 BIO_GRAPHS = [path.stem for path in Path("data/bio").glob("*.graph")]
 BIO_GRAPHS_C4P4_SUBSET = [path.stem for path in Path("data/bio-C4P4-subset").glob("*.graph")]
+BIO_GRAPHS_SUBSET_A = [path.stem for path in Path("data/bio-subset-A").glob("*.graph")]
+
 
 def get_dataset_files(name):
     if name == "bio":
         return BIO_GRAPHS
     elif name == "bio-C4P4-subset":
         return BIO_GRAPHS_C4P4_SUBSET
+    elif name == "bio-subset-A":
+        return BIO_GRAPHS_SUBSET_A
     else:
         return []
 
@@ -51,7 +55,11 @@ rule all:
                 # expand("experiments/{fsg}/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio.solutions.yaml",
                 #        fsg=FSG, timelimit=[1000], threads=ILP_NUM_THREADS, constraints=["sparse"]),
 
-                "data/bio/bio.metadata.yaml"
+                expand("experiments/calls-experiment/C4P4/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio-subset-A.yaml",
+                       timelimit=[10], selector=["MostAdjacentSubgraphs"], lower_bound=FPT_LOWER_BOUND, pre_mark=[0], search_strategy=["IncrementByMultiplier"]),
+
+                expand("data/{dataset}/{dataset}.metadata.yaml", dataset=["bio", "bio-C4P4-subset", "bio-subset-A"])
+
 
 rule preliminary:
         input:
@@ -100,7 +108,7 @@ rule collect_ilp:
 
 rule copy_instance_solution:
         input:
-                f"experiments/{{fsg}}/ilp.timelimit={PRELIM_TIMELIMITS[0]}.threads={ILP_NUM_THREADS[0]}.constraints={ILP_CONSTRAINTS[0]}/{{dataset}}/{{graph}}.{{multiplier}}.{PERMUTATION[0]}.solution.yaml"
+                f"experiments/{{fsg}}/ilp.timelimit={PRELIM_TIMELIMITS[0]}.threads={ILP_NUM_THREADS[0]}.constraints={ILP_CONSTRAINTS[1]}/{{dataset}}/{{graph}}.{{multiplier}}.{PERMUTATION[0]}.solution.yaml"
         output:
                 "experiments/{fsg}/solutions/{dataset}/{graph}.{multiplier}.solution.yaml"
         shell:
@@ -208,3 +216,29 @@ rule metadata:
                 "data/{dataset}/{dataset}.metadata.yaml"
         shell:
                 "python3 scripts/compute_metadata.py {input}"
+
+
+rule calls_experiment:
+        input:
+                "data/{dataset}/{graph}.graph"
+        output:
+                "experiments/calls-experiment/{fs}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/{dataset}/{graph}.{multiplier}.{permutation}.result.yaml"
+        run:
+                subprocess.run(f"cmake-build-release/fpt "
+                               f"--input {input} --permutation {wildcards.permutation} --multiplier {wildcards.multiplier} --F {wildcards.fsg} --output {output} "
+                               f"--selector {wildcards.selector} --lower-bound {wildcards.lower_bound} "
+                               f"--all 1 --pre-mark {wildcards.pre_mark} "
+                               f"--search-strategy {wildcards.search_strategy} "
+                               f"--timelimit {wildcards.timelimit}".split(" "))
+
+rule collect_calls_experiment:
+        input:
+                lambda wildcards: expand("experiments/calls-experiment/{{fsg}}/fpt.timelimit={{timelimit}}.selector={{selector}}.lower-bound={{lower_bound}}.all=1.pre-mark={{pre_mark}}.search-strategy={{search_strategy}}/"
+                                          "{{dataset}}/{graph}.{permutation}.result.yaml", graph=get_dataset_files(wildcards.dataset), permutation=PERMUTATION)
+        output:
+                "experiments/calls-experiment/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/{dataset}.yaml"
+        run:
+                with open(output[0], "w") as out_file:
+                    for path in input:
+                        with open(path) as in_file:
+                            out_file.write(in_file.read())

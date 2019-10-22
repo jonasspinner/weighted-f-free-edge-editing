@@ -1,0 +1,30 @@
+name: biological (subset A)
+description: |-
+  Weighted graphs derived from COG protein similarity data.
+
+  A subset of the bio dataset. This only includes a few instances.
+url: https://bio.informatik.uni-jena.de/data/#cluster_editing_data
+superset: bio
+instances:
+  - bio-nr-58-size-25.graph
+  - bio-nr-99-size-31.graph
+  - bio-nr-161-size-47.graph
+  - bio-nr-187-size-76.graph
+  - bio-nr-302-size-15.graph
+  - bio-nr-382-size-28.graph
+  - bio-nr-417-size-66.graph
+  - bio-nr-495-size-62.graph
+  - bio-nr-518-size-68.graph
+  - bio-nr-526-size-26.graph
+  - bio-nr-544-size-45.graph
+  - bio-nr-660-size-46.graph
+  - bio-nr-664-size-87.graph
+  - bio-nr-702-size-42.graph
+  - bio-nr-908-size-32.graph
+  - bio-nr-988-size-49.graph
+  - bio-nr-1027-size-48.graph
+  - bio-nr-1396-size-47.graph
+  - bio-nr-1580-size-30.graph
+  - bio-nr-1853-size-47.graph
+  - bio-nr-2331-size-22.graph
+
