@@ -222,7 +222,7 @@ rule calls_experiment:
         input:
                 "data/{dataset}/{graph}.graph"
         output:
-                "experiments/calls-experiment/{fs}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/{dataset}/{graph}.{multiplier}.{permutation}.result.yaml"
+                "experiments/calls-experiment/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/{dataset}/{graph}.{multiplier}.{permutation}.result.yaml"
         run:
                 subprocess.run(f"cmake-build-release/fpt "
                                f"--input {input} --permutation {wildcards.permutation} --multiplier {wildcards.multiplier} --F {wildcards.fsg} --output {output} "
@@ -234,9 +234,10 @@ rule calls_experiment:
 rule collect_calls_experiment:
         input:
                 lambda wildcards: expand("experiments/calls-experiment/{{fsg}}/fpt.timelimit={{timelimit}}.selector={{selector}}.lower-bound={{lower_bound}}.all=1.pre-mark={{pre_mark}}.search-strategy={{search_strategy}}/"
-                                          "{{dataset}}/{graph}.{permutation}.result.yaml", graph=get_dataset_files(wildcards.dataset), permutation=PERMUTATION)
+                                          "{{dataset}}/{graph}.{multiplier}.{permutation}.result.yaml",
+                                          graph=get_dataset_files(wildcards.dataset), multiplier=MULTIPLIER, permutation=PERMUTATION)
         output:
-                "experiments/calls-experiment/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/{dataset}.yaml"
+                "experiments/calls-experiment/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/{dataset}.results.yaml"
         run:
                 with open(output[0], "w") as out_file:
                     for path in input:
