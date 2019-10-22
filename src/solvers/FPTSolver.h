@@ -145,8 +145,6 @@ private:
         std::vector<Solution> solutions;
 
         do {
-            auto start = std::chrono::steady_clock::now();
-
             Cost min_delta = std::numeric_limits<Cost>::max();
             std::vector<Cost> deltas;
             size_t num_calls = 0;
@@ -172,12 +170,30 @@ private:
                 return false;
             };
 
+
+            auto start = std::chrono::steady_clock::now();
+
+
             solved = editor.edit(k, result_cb, prune_cb, call_cb);
 
+
+            auto end = std::chrono::steady_clock::now();
+            auto duration = end - start;
+
+            stats.emplace_back(k, editor.stats().allCalls(), std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count());
+
+            if (std::chrono::seconds(0) <= timelimit && duration > timelimit)
+                return Result::Unsolved();
+
+
+            if (solved)
+                continue;
+
+
             assert(!deltas.empty());
-            std::sort(deltas.begin(), deltas.end(), [](Cost lhs, Cost rhs) { return lhs < rhs; });
-            size_t index = std::clamp<size_t>(quantile * (deltas.size() - 1.), 0, deltas.size() - 1);
+            size_t index = std::clamp<size_t>(quantile * deltas.size(), 0, deltas.size() - 1);
             assert(index < deltas.size());
+            std::nth_element(deltas.begin(), deltas.begin() + static_cast<long>(index), deltas.end(), std::less<>());
             Cost quantile_delta = std::max(deltas[index], 1);
             assert(quantile_delta > 0);
 
@@ -189,15 +205,6 @@ private:
                 std::cout << " num_calls = " << num_calls;
                 std::cout << "\n";
             }
-
-
-            auto end = std::chrono::steady_clock::now();
-            auto duration = end - start;
-
-            stats.emplace_back(k, editor.stats().allCalls(), std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count());
-
-            if (std::chrono::seconds(0) <= timelimit && duration > timelimit)
-                return Result::Unsolved();
 
             k += quantile_delta;
         } while (!solved);
@@ -220,8 +227,6 @@ private:
         std::vector<Solution> solutions;
 
         do {
-            auto start = std::chrono::steady_clock::now();
-
             size_t num_calls = 0;
             auto result_cb = [&](const std::vector<VertexPair> &edits) {
                 solutions.emplace_back(instance, edits);
@@ -235,13 +240,12 @@ private:
                 return current_k < min_remaining_cost;
             };
 
+
+            auto start = std::chrono::steady_clock::now();
+
+
             solved = editor.edit(k, result_cb, prune_cb, call_cb);
 
-            if (config.verbosity) {
-                std::cout << "edit(" << std::setw(10) << k << "):";
-                std::cout << " delta = " << std::setw(6) << delta;
-                std::cout << " num_calls = " << num_calls << "\n";
-            }
 
             auto end = std::chrono::steady_clock::now();
             auto duration = end - start;
@@ -250,6 +254,14 @@ private:
             if (std::chrono::seconds(0) <= timelimit && duration > timelimit)
                 return Result::Unsolved();
 
+
+            if (config.verbosity) {
+                std::cout << "edit(" << std::setw(10) << k << "):";
+                std::cout << " delta = " << std::setw(6) << delta;
+                std::cout << " num_calls = " << num_calls << "\n";
+            }
+
+
             k += delta;
         } while (!solved);
 
@@ -257,12 +269,23 @@ private:
     }
 
     /**
+     * This search strategy makes the assumption that the number of calls grows exponentially with the parameter k.
+     * We want to increment the paramter k in such a way that each step the number of calls doubles. If we can achieve
+     * that, then the overall amount of work (=number of calls) is dominated by the last step.
+     *
+     *  We try to estimate the relationship between k and the number of calls and fit a log linear model with the
+     *  information of the last calls (max_history_length).
+     *
+     *  In early steps with not enough information the result of the model is very unstable. We fix that by clamping the
+     *  size of the step between search_delta estimate (quantile) and a multiple of the last step size (max_step_factor).
      *
      * @param instance
      * @param config
      * @return
      */
-    static Result search_exponential(const Instance &instance, const Configuration &config, std::vector<Stat> &stats) {
+    static Result search_exponential(const Instance &instance, const Configuration &config, std::vector<Stat> &stats,
+            size_t max_history_length = 3, double desired_calls_factor = 2, double max_step_factor = 4,
+            double quantile = 0.5) {
         Editor editor(instance, config);
 
         std::chrono::seconds timelimit(config.timelimit);
@@ -276,11 +299,10 @@ private:
         std::deque<size_t> num_calls;
 
         do {
-            auto start = std::chrono::steady_clock::now();
-
             Cost k = k_init + delta;
 
             Cost min_delta = std::numeric_limits<Cost>::max();
+            std::vector<Cost> deltas;
             ks.push_back(k);
             num_calls.push_back(0);
 
@@ -291,35 +313,23 @@ private:
 
             auto prune_cb = [&](Cost pruned_k, Cost lb) {
                 min_delta = std::min(min_delta, lb - pruned_k);
+                deltas.push_back(lb - pruned_k);
             };
 
             auto call_cb = [&](Cost current_k) {
                 ++num_calls.back();
-                return current_k < min_remaining_cost;
+                if (current_k < min_remaining_cost) {
+                    deltas.push_back(min_remaining_cost - current_k);
+                    return true;
+                }
+                return false;
             };
+
+            auto start = std::chrono::steady_clock::now();
+
 
             solved = editor.edit(k, result_cb, prune_cb, call_cb);
 
-            if (ks.size() > 3) {
-                ks.pop_front();
-                num_calls.pop_front();
-            }
-
-            //delta = std::max(min_delta, static_cast<Cost>(1.5* delta));
-            Cost prev_delta = delta;
-            Cost lo = std::max(1, prev_delta + min_delta);
-            Cost hi = std::max(lo, 4 * delta);
-            Cost next_delta = find_next_k(ks, num_calls) - k_init;
-            delta = std::clamp(next_delta, lo, hi);
-
-            if (config.verbosity) {
-                std::cout << "edit(" << std::setw(10) << k << "):";
-                std::cout << " min_delta = " << std::setw(6) << min_delta;
-                std::cout << " next_delta = " << std::setw(6) << next_delta;
-                std::cout << " hi = " << std::setw(6) << hi;
-                std::cout << " delta = " << std::setw(6) << delta;
-                std::cout << " num_calls = " << num_calls.back() << "\n";
-            }
 
             auto end = std::chrono::steady_clock::now();
             auto duration = end - start;
@@ -328,6 +338,38 @@ private:
 
             if (std::chrono::seconds(0) <= timelimit && duration > timelimit)
                 return Result::Unsolved();
+
+            if (solved)
+                break;
+
+
+            if (ks.size() > max_history_length) {
+                ks.pop_front();
+                num_calls.pop_front();
+            }
+
+
+            assert(!deltas.empty());
+            size_t index = std::clamp<size_t>(quantile * deltas.size(), 0, deltas.size() - 1);
+            assert(index < deltas.size());
+            std::nth_element(deltas.begin(), deltas.begin() + static_cast<long>(index), deltas.end(), std::less<>());
+            Cost quantile_delta = std::max(deltas[index], 1);
+            assert(quantile_delta > 0);
+
+            Cost prev_delta = delta;
+            Cost lo = std::max(1, prev_delta + quantile_delta);
+            Cost hi = std::max<Cost>(lo, std::floor(max_step_factor * delta));
+            Cost next_delta = find_next_k(ks, num_calls, desired_calls_factor) - k_init;
+            delta = std::clamp(next_delta, lo, hi);
+
+            if (config.verbosity) {
+                std::cout << "edit(" << std::setw(10) << k << "):";
+                std::cout << " lo = " << std::setw(6) << lo;
+                std::cout << " next_delta = " << std::setw(6) << next_delta;
+                std::cout << " hi = " << std::setw(6) << hi;
+                std::cout << " delta = " << std::setw(6) << delta;
+                std::cout << " num_calls = " << num_calls.back() << "\n";
+            }
 
         } while (!solved);
 
@@ -341,7 +383,7 @@ private:
      * @param factor
      * @return
      */
-    static Cost find_next_k(const std::deque<Cost> &ks, const std::deque<size_t> &calls, double factor = 2) {
+    static Cost find_next_k(const std::deque<Cost> &ks, const std::deque<size_t> &calls, double factor) {
         std::vector<double> xs;
         for (auto k : ks)
             xs.push_back(k);
