@@ -1,14 +1,33 @@
 name: misc
 description: |-
   Popular benchmark graphs. All graphs are unweighted. lesmis has weights for edges, but none for non edges.
-
-  * celegans_metabolic.graph
-  * dolphins.graph
-  * email.graph
-  * football.graph
-  * grass_web.metis.graph
-  * jazz.graph
-  * karate.graph
-  * lesmis.graph
-  * PGPgiantcompo.graph
-  * presentation.graph
+references:
+  - |- # karate.graph
+    Wayne W. Zachary. An Information Flow Model for Conflict and Fission in
+    Small Groups. Journal of Anthropological Research, 33:452–473, 1977.
+  - |- # lesmis.graph
+    Donald E. Knuth. The Stanford GraphBase : a platform for combinatorial
+    computing. Addison-Wesley, 1993.
+  - |- # dolphins.graph
+    David Lusseau. The emergent properties of a dolphin social network. Proceedings
+    of the Royal Society of London B: Biological Sciences, 270(Suppl 2):S186–S188,
+    2003.
+  - |- # grass_web.metis.graph
+    Hassan Ali Dawah, Bradford A Hawkins, and Michael F Claridge. Structure of
+    the parasitoid communities of grass-feeding chalcid wasps. Journal of animal
+    ecology, pages 708–720, 1995.
+  - |- # football.graph
+    Michelle Girvan and Mark E. J. Newman. Community structure in social and
+    biological networks. Proceedings of the National Academy of Science of the
+    United States of America, 99(12):7821–7826, 2002.
+instances:
+  - celegans_metabolic.graph
+  - dolphins.graph
+  - email.graph
+  - football.graph
+  - grass_web.metis.graph
+  - jazz.graph
+  - karate.graph
+  - lesmis.graph
+  - PGPgiantcompo.graph
+  - presentation.graph
