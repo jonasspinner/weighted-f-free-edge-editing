@@ -16,8 +16,8 @@ namespace Selector {
                 std::move(finder_ptr)), m_marked(marked), m_subgraph_stats(subgraph_stats) {}
 
         Problem select_problem(Cost /*k*/) override {
-            Subgraph min_subgraph{};
-            size_t min_num_marked_pairs = std::numeric_limits<size_t>::max();
+            Subgraph max_subgraph{};
+            int max_num_marked_pairs = std::numeric_limits<int>::min();
 
 
             bool solved = true;
@@ -25,21 +25,21 @@ namespace Selector {
             finder->find([&](Subgraph &&subgraph) {
                 solved = false;
 
-                size_t num_marked_pairs = 0;
+                int num_marked_pairs = 0;
                 for (VertexPair uv : subgraph.vertexPairs())
                     if (m_marked[uv])
                         ++num_marked_pairs;
 
-                if (num_marked_pairs < min_num_marked_pairs) {
-                    min_num_marked_pairs = num_marked_pairs;
-                    min_subgraph = std::move(subgraph);
+                if (num_marked_pairs > max_num_marked_pairs) {
+                    max_num_marked_pairs = num_marked_pairs;
+                    max_subgraph = std::move(subgraph);
                 }
                 return false;
             });
 
 
             std::vector<VertexPair> pairs;
-            for (VertexPair uv : min_subgraph.vertexPairs())
+            for (VertexPair uv : max_subgraph.vertexPairs())
                 if (!m_marked[uv])
                     pairs.push_back(uv);
 
