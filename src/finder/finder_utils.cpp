@@ -27,16 +27,24 @@ namespace Finder {
         switch (forbidden) {
             case FSG::P3:
                 return std::make_unique<CenterP3>(graph);
+            case FSG::P4:
+                return std::make_unique<CenterRecP4>(graph);
+            case FSG::P5:
+                return std::make_unique<CenterRecP5>(graph);
+            case FSG::P6:
+                return std::make_unique<CenterRecP6>(graph);
             case FSG::C4P4:
                 return std::make_unique<CenterC4P4>(graph);
+            case FSG::C5P5:
+                return std::make_unique<CenterRecC5P5>(graph);
+            case FSG::C6P6:
+                return std::make_unique<CenterRecC6P6>(graph);
             case FSG::C4_C5_2K2:
                 return std::make_unique<SplitGraph>(graph);
             case FSG::C4_C5_P5_Bowtie_Necktie:
                 return std::make_unique<SplitCluster>(graph);
-            case FSG::C5P5:
-                return std::make_unique<CenterRecC5P5>(graph);
             default:
-                assert(false);
+                throw std::runtime_error("Finder not supported");
                 return nullptr;
         }
     }

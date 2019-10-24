@@ -36,7 +36,7 @@ namespace Finder {
      * @return
      */
     bool SplitGraph::find_near(VertexPair /*uv*/, SubgraphCallback /*callback*/) {
-        assert(false);
+        throw std::runtime_error("SplitGraph does not support find_near");
         return false;
     }
 
@@ -46,7 +46,7 @@ namespace Finder {
      * @return
      */
     bool SplitGraph::find_near(VertexPair /*uv*/, const Graph& /*forbidden*/, SubgraphCallback /*callback*/)  {
-        assert(false);
+        throw std::runtime_error("SplitGraph does not support find_near");
         return false;
     }
 
