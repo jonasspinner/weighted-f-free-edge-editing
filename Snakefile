@@ -50,12 +50,17 @@ rule all:
                 expand("experiments/C4P4/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio-C4P4-subset.solutions.yaml",
                        timelimit=TIMELIMITS, selector=FPT_SELECTOR, lower_bound=FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK, search_strategy=["Exponential"]),
 
+                expand("experiments/P3/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio.solutions.yaml",
+                       timelimit=TIMELIMITS, threads=ILP_NUM_THREADS, constraints=ILP_CONSTRAINTS),
+                expand("experiments/P3/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio.solutions.yaml",
+                       timelimit=TIMELIMITS, selector=FPT_SELECTOR, lower_bound=FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK, search_strategy=["Exponential"]),
+
                 # expand("experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio.solutions.yaml",
                 #        fsg=FSG, timelimit=[1000], selector=["MostAdjacentSubgraphs"], lower_bound=["SortedGreedy"], pre_mark=FPT_PRE_MARK, search_strategy=["PrunedDelta"]),
                 # expand("experiments/{fsg}/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio.solutions.yaml",
                 #        fsg=FSG, timelimit=[1000], threads=ILP_NUM_THREADS, constraints=["sparse"]),
 
-                expand("experiments/calls-experiment/C4P4/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio-subset-A.yaml",
+                expand("experiments/calls-experiment/C4P4/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio-subset-A.results.yaml",
                        timelimit=[10], selector=["MostAdjacentSubgraphs"], lower_bound=FPT_LOWER_BOUND, pre_mark=[0], search_strategy=["IncrementByMultiplier"]),
 
                 expand("data/{dataset}/{dataset}.metadata.yaml", dataset=["bio", "bio-C4P4-subset", "bio-subset-A"])
