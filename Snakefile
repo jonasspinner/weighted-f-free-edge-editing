@@ -48,7 +48,7 @@ rule all:
                 expand("experiments/C4P4/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio-C4P4-subset.solutions.yaml",
                        timelimit=TIMELIMITS, threads=ILP_NUM_THREADS, constraints=ILP_CONSTRAINTS),
                 expand("experiments/C4P4/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio-C4P4-subset.solutions.yaml",
-                       timelimit=TIMELIMITS, selector=FPT_SELECTOR, lower_bound=FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK, search_strategy=["Exponential"]),
+                       timelimit=TIMELIMITS, selector=FPT_SELECTOR, lower_bound=FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK, search_strategy=FPT_SEARCH_STRATEGY),
 
                 expand("experiments/P3/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio.solutions.yaml",
                        timelimit=TIMELIMITS, threads=ILP_NUM_THREADS, constraints=ILP_CONSTRAINTS),
@@ -60,10 +60,11 @@ rule all:
                 # expand("experiments/{fsg}/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio.solutions.yaml",
                 #        fsg=FSG, timelimit=[1000], threads=ILP_NUM_THREADS, constraints=["sparse"]),
 
-                expand("experiments/calls-experiment/C4P4/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio-subset-A.results.yaml",
-                       timelimit=[10], selector=["MostAdjacentSubgraphs"], lower_bound=FPT_LOWER_BOUND, pre_mark=[0], search_strategy=["IncrementByMultiplier"]),
+                expand("experiments/calls-experiment/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio-subset-A.results.yaml",
+                       fsg=["P3", "C4P4", "C5P5", "C6P6"], timelimit=[10], selector=["MostAdjacentSubgraphs"], lower_bound=FPT_LOWER_BOUND, pre_mark=[0], search_strategy=["IncrementByMultiplier"]),
 
-                expand("data/{dataset}/{dataset}.metadata.yaml", dataset=["bio", "bio-C4P4-subset", "bio-subset-A"])
+                expand("data/{dataset}/{dataset}.metadata.yaml", dataset=["bio", "bio-C4P4-subset", "bio-subset-A"]),
+                "experiments/preliminary_rule"
 
 
 rule preliminary:
@@ -240,7 +241,7 @@ rule collect_calls_experiment:
         input:
                 lambda wildcards: expand("experiments/calls-experiment/{{fsg}}/fpt.timelimit={{timelimit}}.selector={{selector}}.lower-bound={{lower_bound}}.all=1.pre-mark={{pre_mark}}.search-strategy={{search_strategy}}/"
                                           "{{dataset}}/{graph}.{multiplier}.{permutation}.result.yaml",
-                                          graph=get_dataset_files(wildcards.dataset), multiplier=MULTIPLIER, permutation=PERMUTATION)
+                                          graph=get_dataset_files(wildcards.dataset), multiplier=MULTIPLIER, permutation=[0, 1, 2, 3])
         output:
                 "experiments/calls-experiment/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/{dataset}.results.yaml"
         run:
