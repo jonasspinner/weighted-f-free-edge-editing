@@ -62,6 +62,12 @@ rule all:
                 expand("experiments/P3/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio.solutions.yaml",
                        timelimit=[100], selector=FPT_SELECTOR, lower_bound=FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK, search_strategy=["Exponential"]),
 
+                # C5P5 ILP vs FPT for 100 s
+                expand("experiments/C5P5/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio.solutions.yaml",
+                       timelimit=[100], threads=ILP_NUM_THREADS, constraints=ILP_CONSTRAINTS),
+                expand("experiments/C5P5/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio.solutions.yaml",
+                       timelimit=[100], selector=FPT_SELECTOR, lower_bound=FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK, search_strategy=["Exponential"]),
+
                 # ILP vs FPT for 1000 s
                 # algorithms
                 # expand("experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio.solutions.yaml",
@@ -77,7 +83,7 @@ rule all:
                 # quality of search strategies
                 # search strategy
                 expand("experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio.solutions.yaml",
-                       fsg=["C4P4"], timelimit=[100], selector=["MostAdjacentSubgraphs"], lower_bound=["SortedGreedy"], pre_mark=[0], search_strategy=FPT_SEARCH_STRATEGY),
+                       fsg=["P3", "C4P4"], timelimit=[100], selector=["MostAdjacentSubgraphs"], lower_bound=["SortedGreedy"], pre_mark=[0], search_strategy=FPT_SEARCH_STRATEGY),
 
                 expand("data/{dataset}/{dataset}.metadata.yaml", dataset=["bio", "bio-C4P4-subset", "bio-subset-A"]),
                 "experiments/preliminary_rule"
