@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
+from matplotlib.colors import LogNorm, Normalize
 
 from typing import Tuple, List, Optional
 from itertools import islice
@@ -32,9 +33,11 @@ def plot_atlas(paths: List[Path], output: Path, *, max_size: int = None, number_
     if max_size is not None:
         graphs = (G for G in graphs if G.number_of_nodes() < max_size)
 
-    UU = nx.disjoint_union_all(list(islice(graphs, number_of_graphs)))
+    graphs = list(islice(graphs, number_of_graphs))
+    ns = [G.number_of_nodes() for G in graphs]
+    UU = nx.disjoint_union_all(graphs)
 
-    fig, ax = plt.subplots(figsize=(10, 10))
+    fig, ax = plt.subplots(figsize=(8, 8.8))
 
     ax.axis("off")
     ax.set_aspect("equal")
@@ -42,12 +45,20 @@ def plot_atlas(paths: List[Path], output: Path, *, max_size: int = None, number_
     # ‘dot’, ‘twopi’, ‘fdp’, ‘sfdp’, ‘circo’
     pos = graphviz_layout(UU, prog="neato")
 
-    edge_color = np.array([c for (u, v, c) in UU.edges.data('cost')])
-    edge_color = np.log1p(edge_color)
+    edge_color = np.array([c for (u, v, c) in UU.edges.data('cost')]) + 0.1
+    min_cost, max_cost = edge_color.min(), edge_color.max()
+    edge_color = np.log(edge_color)
 
-    nx.draw_networkx_nodes(UU, pos, ax=ax, node_size=30)
-    nx.draw_networkx_edges(UU, pos, ax=ax, edge_color=edge_color, edge_cmap=cm.Blues)
+    nx.draw_networkx_nodes(UU, pos, ax=ax, node_size=40)
+    lines = nx.draw_networkx_edges(UU, pos, ax=ax, edge_color=edge_color, edge_cmap=cm.Blues, width=2)
 
+    # nx.draw_networkx_labels(UU, pos, {n: i for i, n in enumerate(np.cumsum(ns, dtype=int) - 1)})
+
+    fig.colorbar(cm.ScalarMappable(norm=LogNorm(min_cost, max_cost), cmap=cm.Blues),
+                 ax=ax, fraction=0.1, shrink=0.2, orientation="horizontal", anchor=(0.5, 1), pad=0.025, extend="max",
+                 aspect=30)
+    print(f"{output}")
+    fig.tight_layout()
     plt.savefig(output)
 
 
@@ -55,7 +66,7 @@ def main():
     ROOT = Path("../..")
     OUTPUT_DIR = ROOT / "scripts" / "figures"
 
-    BIO_GRAPHS = list((ROOT / "data" / "bio").glob("*size-??.graph"))
+    BIO_GRAPHS = sorted(list((ROOT / "data" / "bio").glob("*size-??.graph")))
     plot_atlas(BIO_GRAPHS, OUTPUT_DIR / "bio-atlas-15-50.pdf", max_size=15, number_of_graphs=50)
     plot_atlas(BIO_GRAPHS, OUTPUT_DIR / "bio-atlas-15-30.pdf", max_size=15, number_of_graphs=30)
     plot_atlas(BIO_GRAPHS, OUTPUT_DIR / "bio-atlas-15-10.pdf", max_size=15, number_of_graphs=10)
