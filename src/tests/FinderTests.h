@@ -21,6 +21,7 @@
 #include "../finder/finder_utils.h"
 #include "../Permutation.h"
 #include "../finder/Endpoint.h"
+#include "../finder/Naive.h"
 
 
 bool is_p4(const Graph &graph, const Subgraph &subgraph) {
@@ -99,8 +100,15 @@ public:
             return std::make_unique<Finder::NaiveC4P4>(graph);
         } else if (name == "NaiveP3") {
             return std::make_unique<Finder::NaiveP3>(graph);
+        } else if (name == "NaiveRecC5P5") {
+            return std::make_unique<Finder::NaiveRecC5P5>(graph);
+        } else if (name == "NaiveRecC4P4") {
+            return std::make_unique<Finder::NaiveRecC4P4>(graph);
+        } else if (name == "NaiveRecP3") {
+            return std::make_unique<Finder::NaiveRecP3>(graph);
         } else {
-            return nullptr;
+            std::cerr << "name = " << name << "\n";
+            throw std::runtime_error("Finder name not valid.");
         }
     }
 
@@ -327,8 +335,8 @@ public:
     }
 
     void finders_have_same_output(const std::vector<std::string> &finders, const std::vector<int> &seeds = {0}) {
-        Graph G_original = random_graph(10, 50, gen);
-        Graph F_original = random_graph(10, 10, gen);
+        Graph G_original = random_graph(20, 200, gen);
+        Graph F_original = random_graph(20, 50, gen);
 
         std::vector<std::tuple<std::string, int,
                     std::vector<Subgraph>, std::vector<Subgraph>,
@@ -414,20 +422,23 @@ public:
         Finder_finds_C4<Finder::CenterC4P4>("CenterC4P4");
         Finder_finds_C4<Finder::CenterRecC4P4>("CenterRecC4P4");
         Finder_finds_C4<Finder::EndpointRecC4P4>("EndpointRecC4P4");
+        Finder_finds_C4<Finder::NaiveRecC4P4>("NaiveRecC4P4");
         Finder_finds_P4<Finder::NaiveC4P4>("NaiveC4P4");
         Finder_finds_P4<Finder::CenterC4P4>("CenterC4P4");
         Finder_finds_P4<Finder::CenterRecC4P4>("CenterRecC4P4");
         Finder_finds_P4<Finder::EndpointRecC4P4>("EndpointRecC4P4");
-        finders_have_same_output({"NaiveC4P4", "CenterC4P4", "CenterRecC4P4", "EndpointRecC4P4"}, {0, 1});
+        Finder_finds_P4<Finder::NaiveRecC4P4>("NaiveRecC4P4");
+        finders_have_same_output({"NaiveC4P4", "CenterC4P4", "CenterRecC4P4", "EndpointRecC4P4", "NaiveRecC4P4"}, {0, 1});
 
 
         Finder_finds_P3<Finder::NaiveP3>("NaiveP3");
         Finder_finds_P3<Finder::CenterP3>("CenterP3");
         Finder_finds_P3<Finder::CenterRecP3>("CenterRecP3");
         Finder_finds_P3<Finder::EndpointRecP3>("EndpointRecP3");
-        finders_have_same_output({"NaiveP3", "CenterP3", "CenterRecP3", "EndpointRecP3"}, {0, 1});
+        Finder_finds_P3<Finder::NaiveRecP3>("NaiveRecP3");
+        finders_have_same_output({"NaiveP3", "CenterP3", "CenterRecP3", "EndpointRecP3", "NaiveRecP3"}, {0, 1});
 
-        finders_have_same_output({"CenterRecC5P5", "EndpointRecC5P5"}, {0, 1});
+        finders_have_same_output({"CenterRecC5P5", "EndpointRecC5P5", "NaiveRecC5P5"}, {0, 1});
 
         EditsSolveKarate();
     }

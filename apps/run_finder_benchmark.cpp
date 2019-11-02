@@ -15,19 +15,36 @@
 #include "../src/finder/Endpoint.h"
 #include "../src/graph/GraphIO.h"
 #include "../src/version.h"
+#include "../src/finder/Naive.h"
 
 
 std::unique_ptr<FinderI> make_finder(const std::string &name, const Graph &graph) {
-    if (name == "CenterRecC5P5") {
+    if (name == "CenterRecC6P6") {
+        return std::make_unique<Finder::CenterRecC6P6>(graph);
+    } if (name == "CenterRecC5P5") {
         return std::make_unique<Finder::CenterRecC5P5>(graph);
     } else if (name == "CenterRecC4P4") {
         return std::make_unique<Finder::CenterRecC4P4>(graph);
+    } else if (name == "CenterRecP6") {
+        return std::make_unique<Finder::CenterRecP6>(graph);
+    } else if (name == "CenterRecP5") {
+        return std::make_unique<Finder::CenterRecP5>(graph);
+    } else if (name == "CenterRecP4") {
+        return std::make_unique<Finder::CenterRecP4>(graph);
     } else if (name == "CenterRecP3") {
         return std::make_unique<Finder::CenterRecP3>(graph);
+    } else if (name == "EndpointRecC6P6") {
+        return std::make_unique<Finder::EndpointRecC6P6>(graph);
     } else if (name == "EndpointRecC5P5") {
         return std::make_unique<Finder::EndpointRecC5P5>(graph);
     } else if (name == "EndpointRecC4P4") {
         return std::make_unique<Finder::EndpointRecC4P4 >(graph);
+    } else if (name == "EndpointRecP6") {
+        return std::make_unique<Finder::EndpointRecP6>(graph);
+    } else if (name == "EndpointRecP5") {
+        return std::make_unique<Finder::EndpointRecP5>(graph);
+    } else if (name == "EndpointRecP4") {
+        return std::make_unique<Finder::EndpointRecP4>(graph);
     } else if (name == "EndpointRecP3") {
         return std::make_unique<Finder::EndpointRecP3>(graph);
     } else if (name == "CenterC4P4") {
@@ -38,8 +55,23 @@ std::unique_ptr<FinderI> make_finder(const std::string &name, const Graph &graph
         return std::make_unique<Finder::NaiveC4P4>(graph);
     } else if (name == "NaiveP3") {
         return std::make_unique<Finder::NaiveP3>(graph);
+    } else if (name == "NaiveRecC6P6") {
+        return std::make_unique<Finder::NaiveRecC6P6>(graph);
+    } else if (name == "NaiveRecC5P5") {
+        return std::make_unique<Finder::NaiveRecC5P5>(graph);
+    } else if (name == "NaiveRecC4P4") {
+        return std::make_unique<Finder::NaiveRecC4P4>(graph);
+    } else if (name == "NaiveRecP6") {
+        return std::make_unique<Finder::NaiveRecP6>(graph);
+    } else if (name == "NaiveRecP5") {
+        return std::make_unique<Finder::NaiveRecP4>(graph);
+    } else if (name == "NaiveRecP4") {
+        return std::make_unique<Finder::NaiveRecP3>(graph);
+    } else if (name == "NaiveRecP3") {
+        return std::make_unique<Finder::NaiveRecP3>(graph);
     } else {
-        return nullptr;
+        std::cerr << "name = " << name << "\n";
+        throw std::runtime_error("Finder name not valid.");
     }
 }
 
@@ -84,7 +116,7 @@ double standard_deviation(const std::vector<double> &X) {
     for (auto x : X)
         sum += (x - m) * (x - m);
 
-    return sqrt(sum / (X.size() - 1));
+    return sqrt(sum / static_cast<double>(X.size() - 1));
 }
 
 void write_output_doc(std::ostream &file, const FinderI &finder, const std::string &type, const Instance &instance,
