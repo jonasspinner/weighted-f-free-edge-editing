@@ -16,6 +16,7 @@
 #include "../src/graph/GraphIO.h"
 #include "../src/version.h"
 #include "../src/finder/Naive.h"
+#include "../src/finder/OuterP3.h"
 
 
 std::unique_ptr<FinderI> make_finder(const std::string &name, const Graph &graph) {
@@ -69,6 +70,8 @@ std::unique_ptr<FinderI> make_finder(const std::string &name, const Graph &graph
         return std::make_unique<Finder::NaiveRecP3>(graph);
     } else if (name == "NaiveRecP3") {
         return std::make_unique<Finder::NaiveRecP3>(graph);
+    } else if (name == "OuterP3") {
+        return std::make_unique<Finder::OuterP3>(graph);
     } else {
         std::cerr << "name = " << name << "\n";
         throw std::runtime_error("Finder name not valid.");

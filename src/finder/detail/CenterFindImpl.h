@@ -281,24 +281,24 @@ namespace detail {
          * @return
          */
         template <typename SubgraphCallback, typename F, typename G, typename H, typename I>
-        static bool find(const Graph& graph, SubgraphCallback callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+        static bool find(const Graph& graph, SubgraphCallback callback, F neighbors, G /*non_neighbors*/, H valid_edge, I valid_non_edge) {
 #pragma GCC diagnostic pop
-            Graph::AdjRow Y(graph.size()), Z(graph.size());
+            Graph::AdjRow W(graph.size());
 
-            /** P_3: <x, y, z> **/
+            /** P_3, C_3: <y, x, z> **/
             for (Vertex x : graph.vertices()) {
-                // V - N(x) - {x}
-                Y = non_neighbors(x);
-                for (Vertex y : Graph::iterate(Y)) {
-                    if (y >= x) continue;
-
-                    Z = neighbors(y) & neighbors(x);
-                    for (Vertex z : Graph::iterate(Z)) {
+                W = neighbors(x);
+                for (Vertex y : Graph::iterate(W)) {
+                    for (Vertex z : Graph::iterate(W)) {
+                        if (y >= z) continue;
                         assert(y != z); assert(y != x); assert(z != x);
 
-                        assert(valid_edge({y, z})); assert(valid_non_edge({y, x})); assert(valid_edge({z, x}));
-                        Vertex min_vertex = y < z ? y : z;
-                        if (callback(Subgraph{y, z, x}, min_vertex)) return true;
+                        if (valid_non_edge({y, z}) && y < z) {
+                            // P_3
+                            assert(valid_edge({y, x})); assert(valid_non_edge({y, z})); assert(valid_edge({x, z}));
+                            Vertex min_vertex = y < x ? y : x;
+                            if (callback(Subgraph{y, x, z}, min_vertex)) return true;
+                        }
                     }
                 }
             }

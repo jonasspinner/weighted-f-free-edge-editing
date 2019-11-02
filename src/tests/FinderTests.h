@@ -22,6 +22,7 @@
 #include "../Permutation.h"
 #include "../finder/Endpoint.h"
 #include "../finder/Naive.h"
+#include "../finder/OuterP3.h"
 
 
 bool is_p4(const Graph &graph, const Subgraph &subgraph) {
@@ -106,6 +107,8 @@ public:
             return std::make_unique<Finder::NaiveRecC4P4>(graph);
         } else if (name == "NaiveRecP3") {
             return std::make_unique<Finder::NaiveRecP3>(graph);
+        } else if (name == "OuterP3") {
+            return std::make_unique<Finder::OuterP3>(graph);
         } else {
             std::cerr << "name = " << name << "\n";
             throw std::runtime_error("Finder name not valid.");
@@ -418,6 +421,14 @@ public:
         std::cout << "\nFinderTests"
                      "\n-----------" << std::endl;
 
+        Finder_finds_P3<Finder::NaiveP3>("NaiveP3");
+        Finder_finds_P3<Finder::CenterP3>("CenterP3");
+        Finder_finds_P3<Finder::CenterRecP3>("CenterRecP3");
+        Finder_finds_P3<Finder::EndpointRecP3>("EndpointRecP3");
+        Finder_finds_P3<Finder::NaiveRecP3>("NaiveRecP3");
+        Finder_finds_P3<Finder::NaiveRecP3>("OuterP3");
+        finders_have_same_output({"NaiveP3", "CenterP3", "CenterRecP3", "EndpointRecP3", "NaiveRecP3", "OuterP3"}, {0, 1});
+
         Finder_finds_C4<Finder::NaiveC4P4>("NaiveC4P4");
         Finder_finds_C4<Finder::CenterC4P4>("CenterC4P4");
         Finder_finds_C4<Finder::CenterRecC4P4>("CenterRecC4P4");
@@ -429,14 +440,6 @@ public:
         Finder_finds_P4<Finder::EndpointRecC4P4>("EndpointRecC4P4");
         Finder_finds_P4<Finder::NaiveRecC4P4>("NaiveRecC4P4");
         finders_have_same_output({"NaiveC4P4", "CenterC4P4", "CenterRecC4P4", "EndpointRecC4P4", "NaiveRecC4P4"}, {0, 1});
-
-
-        Finder_finds_P3<Finder::NaiveP3>("NaiveP3");
-        Finder_finds_P3<Finder::CenterP3>("CenterP3");
-        Finder_finds_P3<Finder::CenterRecP3>("CenterRecP3");
-        Finder_finds_P3<Finder::EndpointRecP3>("EndpointRecP3");
-        Finder_finds_P3<Finder::NaiveRecP3>("NaiveRecP3");
-        finders_have_same_output({"NaiveP3", "CenterP3", "CenterRecP3", "EndpointRecP3", "NaiveRecP3"}, {0, 1});
 
         finders_have_same_output({"CenterRecC5P5", "EndpointRecC5P5", "NaiveRecC5P5"}, {0, 1});
 

@@ -12,6 +12,7 @@
 #include "NaiveP3.h"
 #include "SplitCluster.h"
 #include "SplitGraph.h"
+#include "OuterP3.h"
 
 
 namespace Finder {
@@ -26,7 +27,7 @@ namespace Finder {
         using Options::FSG;
         switch (forbidden) {
             case FSG::P3:
-                return std::make_unique<CenterP3>(graph);
+                return std::make_unique<OuterP3>(graph);
             case FSG::P4:
                 return std::make_unique<CenterRecP4>(graph);
             case FSG::P5:

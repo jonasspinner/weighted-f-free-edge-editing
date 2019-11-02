@@ -68,15 +68,16 @@ namespace Finder {
     template<typename F, typename G, typename H, typename I>
     bool CenterP3::find(const SubgraphCallback& callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
 #pragma GCC diagnostic pop
-        for (Vertex u : graph.vertices()) {
-            for (Vertex v : graph.neighbors(u)) {
-                if (!valid_edge({u, v})) continue;
+        for (Vertex x : graph.vertices()) {
+            W = neighbors(x);
+            for (Vertex y : Graph::iterate(W)) {
+                for (Vertex z : Graph::iterate(W)) {
+                    if (y >= z) continue;
+                    assert(y != z); assert(y != x); assert(z != x);
 
-                W = neighbors(v) & non_neighbors(u);
-                for (Vertex w : Graph::iterate(W)) {
-                    assert(valid_edge({u, v})); assert(valid_non_edge({u, w})); assert(valid_edge({v, w}));
-                    if (u < w) {
-                        if (callback(Subgraph{u, v, w})) return true;
+                    if (valid_non_edge({y, z}) && y < z) {
+                        assert(valid_edge({y, x})); assert(valid_non_edge({y, z})); assert(valid_edge({x, z}));
+                        if (callback(Subgraph{y, x, z})) return true;
                     }
                 }
             }
