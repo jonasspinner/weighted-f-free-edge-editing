@@ -227,7 +227,7 @@ rule collect_finder_experiment:
         input:
                 lambda wildcards: expand("experiments/"
                                          "finder-benchmark.finder={{finder}}/"
-                                         "{{dataset}}/{graph}.{permutation}.benchmark.yaml", graph=get_dataset_files(wildcards.dataset), permutation=PERMUTATION)
+                                         "{{dataset}}/{graph}.{permutation}.benchmark.yaml", graph=get_dataset_files(wildcards.dataset), permutation=range(4))
         output:
                 "experiments/finder-benchmark.finder={finder}/{dataset}.benchmarks.yaml"
         run:
@@ -263,7 +263,7 @@ rule collect_calls_experiment:
         input:
                 lambda wildcards: expand("experiments/calls-experiment/{{fsg}}/fpt.timelimit={{timelimit}}.selector={{selector}}.lower-bound={{lower_bound}}.all=1.pre-mark={{pre_mark}}.search-strategy={{search_strategy}}/"
                                           "{{dataset}}/{graph}.{multiplier}.{permutation}.result.yaml",
-                                          graph=get_dataset_files(wildcards.dataset), multiplier=MULTIPLIER, permutation=[0, 1, 2, 3])
+                                          graph=get_dataset_files(wildcards.dataset), multiplier=MULTIPLIER, permutation=range(16))
         output:
                 "experiments/calls-experiment/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/{dataset}.results.yaml"
         run:
