@@ -31,9 +31,9 @@ FPT_LOWER_BOUND = ["Trivial", "LocalSearch", "SortedGreedy"] + ["Greedy"] # + ["
 FPT_PRE_MARK = [0]
 FPT_SEARCH_STRATEGY = ["IncrementByMultiplier"] + ["PrunedDelta", "IncrementByMinCost"] + ["Exponential"]
 
-FINDERS = ["CenterRecP3", "EndpointRecP3", "CenterP3", "NaiveP3", "OuterP3"] +
-    ["CenterRecC4P4", "EndpointRecC4P4", "CenterC4P4", "NaiveC4P4"] +
-    ["CenterRecC5P5", "EndpointRecC5P5", "NaiveRecC5P5"] +
+FINDERS = ["CenterRecP3", "EndpointRecP3", "CenterP3", "NaiveP3", "OuterP3"] +\
+    ["CenterRecC4P4", "EndpointRecC4P4", "CenterC4P4", "NaiveC4P4"] +\
+    ["CenterRecC5P5", "EndpointRecC5P5", "NaiveRecC5P5"] +\
     ["CenterRecC6P6", "EndpointRecC6P6", "NaiveRecC6P6"]
 
 
