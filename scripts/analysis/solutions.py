@@ -1,97 +1,88 @@
-import yaml
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from hashlib import sha1
+from typing import List
 
 plt.rcParams['axes.axisbelow'] = True
 
 
-def read_data(paths) -> pd.DataFrame:
+def read_data(ilp_paths, fpt_paths) -> pd.DataFrame:
+    ilp_df = pd.concat(map(pd.read_pickle, ilp_paths))
+    fpt_df = pd.concat(map(pd.read_pickle, fpt_paths))
 
-    dfs = []
-    for path in paths:
-        with open(path) as file:
-            docs = list(yaml.safe_load_all(file))
-        dfs += [pd.DataFrame(docs)]
+    ilp_df["name"] = "Basic"
+    ilp_df.loc[ilp_df["single_constraints"], "name"] = "Single"
+    ilp_df.loc[ilp_df["sparse_constraints"], "name"] = "Sparse"
 
-    df = pd.concat(dfs, ignore_index=True, sort=True)
+    fpt_df["name"] = fpt_df.apply(lambda row: f"{row['selector']} {row['lower_bound']} {row['search_strategy']}", axis=1)
 
-    df = pd.concat([df, df["instance"].apply(pd.Series), df["config"].apply(pd.Series)], axis=1)
-    df.drop(["instance", "config"], axis=1, inplace=True)
+    headers = list(set(ilp_df.columns) & set(fpt_df.columns))
 
-    df = df.astype({k: "category" for k in ["commit_hash", "selector", "lower_bound", "search_strategy", "forbidden_subgraphs"]})
-
-    df.loc[df["time"] != -1, "time"] = df.loc[df["time"] != -1, "time"] / 10**9  # convert to seconds
-
+    df = pd.concat([ilp_df[headers], fpt_df[headers]])
     return df
 
 
-def plot_solved_by_time_curve(df, *, selectors=None, lower_bounds=None, search_strategies=None, min_number_of_solutions=10):
+def plot_solved_by_time_curve(df, output_path: Path, *, names : List[str] = None, labels : List[str] = None,
+                              min_number_of_solutions: int = None):
     if min_number_of_solutions is None:
         min_number_of_solutions = 0
+    if names is None:
+        names = list(df["name"].unique())
+    if labels is None:
+        labels = names
 
     d = dict()
-    for (k, g) in df.groupby(["selector", "lower_bound", "search_strategy"]):
-        t = pd.Series(g.loc[g["solutions"].apply(lambda x: len(x[0]["edits"]) >= min_number_of_solutions if len(x) != 0 else True), "time"])
-        t[t == -1] = t.max() * 1.5
-        d[k] = t.values
+    for name in names:
+        g = df.loc[df["name"] == name]
+        g = g.loc[g["solutions"].apply(lambda x: len(x[0]["edits"]) >= min_number_of_solutions if len(x) != 0 else True)]
+        solved = g["solution_cost"] != -1
+        t = pd.Series(g["total_time"])
+        t[~solved] = t.max() * 1.5
+        d[name] = t.values
 
-    fig, ax = plt.subplots(figsize=(15, 10))
+    fig, ax = plt.subplots(figsize=(6, 4))
     ax.set_xscale("log")
     ax.grid(True)
 
-    for k in d:
-        if all(b is None or a in b for a, b in zip(k, [selectors, lower_bounds, search_strategies])):
-            ax.plot(np.sort(d[k]), range(len(d[k])), label="{0} {1} {2}".format(*k))
+    for name, label in zip(names, labels):
+        ax.plot(np.sort(d[name]) / 10**9, range(len(d[name])), label=label)
 
-    ax.axhline(y=len(list(d.values())[0]), c="black")
+    for y in (0, len(list(d.values())[0])):
+        ax.axhline(y=y, c="darkgrey")
     ax.set_ylim((-50, None))
-    ax.set_xlim((None, 100))
+    ax.set_xlim((10**-3, 10**2))
     ax.set_ylabel("Number of solved instances")
     ax.set_xlabel("Total Time [s]")
 
-    fig.legend(loc="lower right")
-    plt.show()
-
-
-def plot_lower_bound_quality(df):
-    fig, ax = plt.subplots()
-    ax.grid(True)
-
-    df = df[~df["stats"].isnull() & (df["search_strategy"] != "Fixed")]
-
-    fmts = iter(list(".1234+x_") + [4, 5])
-
-    for lb, lb_group in df.groupby("lower_bound"):
-        lb_group = lb_group.sort_values(by="solution_cost")
-        init_k = lb_group["stats"].apply(lambda s: s["k"][0] if len(s["k"]) != 0 else 0)
-        init_time = lb_group["stats"].apply(lambda s: s["time"][0] if "time" in s and len(s["time"]) != 0 else 0)
-        num_vertices = lb_group["name"].str.replace(".*/", "").apply(lambda x: int(x[:-6].split("-")[-1]))
-
-        ax.scatter(init_time, 1 - init_k / lb_group["solution_cost"], label=lb, marker=next(fmts), s=100)
-
-    fig.legend()
-    fig.tight_layout()
-    plt.show()
+    ax.legend(loc="upper left")
+    # fig.legend(loc="upper left", bbox_to_anchor=(0.9, 0.9))
+    plt.savefig(output_path)
 
 
 def main():
-    solution_paths = (Path.home() / "experiments/experiments/C4P4/").glob("fpt*/all.solutions.yaml")
-    solution_paths = list(solution_paths)
-    h = sha1("#".join(str(path.absolute()) for path in sorted(solution_paths)).encode("utf8")).hexdigest()[:10]
+    ilp_paths = list((Path.cwd() / "../../experiments/C4P4/").glob("ilp*/*.solutions.df.gzip"))
+    fpt_paths = list((Path.cwd() / "../../experiments/C4P4/").glob("fpt*/*.solutions.df.gzip"))
 
-    df_path = Path(f"{h}.df")
-    if df_path.exists():
-        df = pd.read_pickle(str(df_path))
-    else:
-        df = read_data(solution_paths)
-        df.to_pickle(str(df_path))
+    df = read_data(ilp_paths, fpt_paths)
 
-    plot_solved_by_time_curve(df, search_strategies=["IncrementByMultiplier"], min_number_of_solutions=0)
+    subset_df = df[df["dataset"] == "bio-C4P4-subset"]
+    bio_df = df[df["dataset"] == "bio"]
 
-    plot_lower_bound_quality(df)
+    plot_solved_by_time_curve(subset_df, Path("solved-curve-ilp-vs-fpt.pdf"),
+                              names=["Basic", "Single", "Sparse", "MostAdjacentSubgraphs SortedGreedy Exponential"],
+                              labels=["ILP", "ILP Single", "ILP Sparse", "FPT"], min_number_of_solutions=10)
+    plot_solved_by_time_curve(bio_df, Path("solved-curve-search-strategies.pdf"),
+                              names=["MostAdjacentSubgraphs SortedGreedy Exponential", "MostAdjacentSubgraphs SortedGreedy PrunedDelta", "MostAdjacentSubgraphs SortedGreedy IncrementByMinCost", "MostAdjacentSubgraphs SortedGreedy IncrementByMultiplier"],
+                              labels=["Exponential", "PrunedDelta", "Increment by mininum cost", "Increment by 1"], min_number_of_solutions=10)
+    plot_solved_by_time_curve(subset_df, Path("solved-curve-lower-bounds.pdf"),
+                              names=["MostAdjacentSubgraphs Greedy Exponential", "MostAdjacentSubgraphs LocalSearch Exponential", "MostAdjacentSubgraphs SortedGreedy Exponential", "MostAdjacentSubgraphs Trivial Exponential"],
+                              labels=["Greedy", "LocalSearch", "SortedGreedy", "No lower bound"], min_number_of_solutions=10)
+    plot_solved_by_time_curve(subset_df, Path("solved-curve-selectors.pdf"),
+                              names=["MostAdjacentSubgraphs SortedGreedy Exponential", "FirstFound SortedGreedy Exponential", "MostMarkedPairs SortedGreedy Exponential"],
+                              labels=["MostAdjacentSubgraphs", "FirstFound", "MostMarkedPairs"], min_number_of_solutions=10)
+
+    # plot_lower_bound_quality(df)
 
 
 if __name__ == "__main__":
