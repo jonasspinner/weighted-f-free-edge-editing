@@ -144,7 +144,7 @@ void write_output_doc(std::ostream &file, const FinderI &finder, const std::stri
         std::cout << out.c_str() << "\n";
 
     if (file)
-        file << out.c_str();
+        file << out.c_str() << "\n";
 }
 
 
@@ -241,17 +241,17 @@ int main(int argc, char* argv[]) {
     std::string finder_name = "CenterC4P4";
     std::string input = "../data/bio/bio-nr-3-size-16.graph";
     std::string output_path;
-    int seed = 0;
     size_t iterations = 100;
+    int permutation = 0;
 
     po::options_description desc("Allowed options");
     desc.add_options()
             ("help", "produce help message")
             ("finder", po::value<std::string>(&finder_name)->default_value(finder_name))
             ("input", po::value<std::string>(&input)->default_value(input), "path to input instance")
+            ("permutation", po::value<int>(&permutation)->default_value(permutation))
             ("output", po::value<std::string>(&output_path)->default_value(output_path))
             ("iterations", po::value<size_t>(&iterations)->default_value(iterations), "number of repetitions")
-            ("seed", po::value<int>(&seed)->default_value(seed), "seed for permutation of the instance")
             ;
 
     po::variables_map vm;
@@ -276,7 +276,7 @@ int main(int argc, char* argv[]) {
     }
 
     auto original_instance = GraphIO::read_instance(input);
-    Permutation P(original_instance.graph.size(), seed);
+    Permutation P(original_instance.graph.size(), permutation);
     auto instance = P[original_instance];
 
 
