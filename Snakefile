@@ -33,8 +33,8 @@ FPT_SEARCH_STRATEGY = ["IncrementByMultiplier"] + ["PrunedDelta", "IncrementByMi
 
 FINDERS = ["CenterRecP3", "EndpointRecP3", "CenterP3", "NaiveP3", "OuterP3"] +\
     ["CenterRecC4P4", "EndpointRecC4P4", "CenterC4P4", "NaiveC4P4"] +\
-    ["CenterRecC5P5", "EndpointRecC5P5", "NaiveRecC5P5"] +\
-    ["CenterRecC6P6", "EndpointRecC6P6", "NaiveRecC6P6"]
+    ["CenterRecC5P5", "EndpointRecC5P5", "NaiveRecC5P5"] #+\
+#    ["CenterRecC6P6", "EndpointRecC6P6", "NaiveRecC6P6"]
 
 
 PRELIM_FSG = ["C4P4"]
@@ -222,7 +222,10 @@ rule finder_experiment:
                 hard_timeout = 100
         run:
                 try:
-                    subprocess.run(f"cmake-build-release/finder_benchmark --input {input.instance} --output {output} --finder {wildcards.finder} --iterations {params.iterations}".split(" "), timeout=params.hard_timeout)
+                    subprocess.run(f"cmake-build-release/finder_benchmark "
+                                   f"--input {input.instance} --permutation {wildcards.permutation} --output {output} "
+                                   f"--finder {wildcards.finder} "
+                                   f"--iterations {params.iterations}".split(" "), timeout=params.hard_timeout)
                 except subprocess.TimeoutExpired:
                     pass
 
@@ -266,7 +269,7 @@ rule collect_calls_experiment:
         input:
                 lambda wildcards: expand("experiments/calls-experiment/{{fsg}}/fpt.timelimit={{timelimit}}.selector={{selector}}.lower-bound={{lower_bound}}.all=1.pre-mark={{pre_mark}}.search-strategy={{search_strategy}}/"
                                           "{{dataset}}/{graph}.{multiplier}.{permutation}.result.yaml",
-                                          graph=get_dataset_files(wildcards.dataset), multiplier=MULTIPLIER, permutation=range(16))
+                                          graph=get_dataset_files(wildcards.dataset), multiplier=MULTIPLIER, permutation=range(8))
         output:
                 "experiments/calls-experiment/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/{dataset}.results.yaml"
         run:
