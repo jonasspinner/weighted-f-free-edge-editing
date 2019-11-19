@@ -5,7 +5,7 @@ import numpy as np
 from pathlib import Path
 import argparse
 
-from typing import Sequence
+from typing import Sequence, Tuple, Optional
 
 plt.rcParams['axes.axisbelow'] = True
 
@@ -26,70 +26,81 @@ def read_data(benchmark_paths: Sequence[Path], meta_path: Path) -> pd.DataFrame:
     return df
 
 
+BBox = Tuple[Tuple[float, float], Tuple[float, float]]
+
+
 def plot_time_to_find_all(df: pd.DataFrame, output_dir: Path, *, forbidden_subgraphs: str = "C4P4",
-                          plot_timeout: bool = False, max_number_of_vertices: int = None):
-    if max_number_of_vertices is None:
-        max_number_of_vertices = np.inf
+                          plot_timeout: bool = False, bboxes: Tuple[Tuple[BBox, BBox], Tuple[BBox, BBox]],
+                          finders: Sequence[str] = [], labels: Sequence[str] = []):
     fsg_df = df[
         (df["forbidden_subgraphs"] == forbidden_subgraphs) &
-        (df["finder_benchmark_type"] == "find_all_subgraphs") &
-        (df["number_of_vertices"] <= max_number_of_vertices)].copy()
+        (df["finder_benchmark_type"] == "find_all_subgraphs")].copy()
     fsg_df["timedout"] = fsg_df["time_mean"].isnull()
 
-    fig, (ax1, ax2) = plt.subplots(ncols=2, sharey="all", figsize=(8, 4))
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(10, 6))
 
-    ax1.grid(True)
-    ax2.grid(True)
-    ax2.ticklabel_format(axis="x", scilimits=(3, 5))
+    for (ax1, ax2), (bbox_n, bbox_count) in zip(axes, bboxes):
 
-    if plot_timeout:
-        not_finished = fsg_df["time_mean"].max() * 1.1
-        fsg_df.loc[fsg_df["time_mean"].isnull(), "time_mean"] = not_finished
-        fsg_df.loc[fsg_df["time_std"].isnull(), "time_std"] = 0
+        for ax in (ax1, ax2):
+            ax.grid(True)
+            #ax.ticklabel_format(axis="y", scilimits=(-1, 1))
+        ax2.ticklabel_format(axis="x", scilimits=(3, 5))
 
-        d = df.groupby("instance")["count"].max()
-        fsg_df.loc[fsg_df["count"] == -1, "count"] = fsg_df.loc[fsg_df["count"] == -1, "instance"].apply(lambda n: d[n])
+        if plot_timeout:
+            not_finished = fsg_df["time_mean"].max() * 1.1
+            fsg_df.loc[fsg_df["time_mean"].isnull(), "time_mean"] = not_finished
+            fsg_df.loc[fsg_df["time_std"].isnull(), "time_std"] = 0
 
-        ax1.axhline(y=not_finished, c="black", zorder=-1)
-        ax2.axhline(y=not_finished, c="black", zorder=-1)
+            d = df.groupby("instance")["count"].max()
+            fsg_df.loc[fsg_df["count"] == -1, "count"] = fsg_df.loc[fsg_df["count"] == -1, "instance"].apply(lambda n: d[n])
 
-    s = 10
-    colors = [f"C{i}" for i in range(10)]
+            ax1.axhline(y=not_finished, c="black", zorder=-1)
+            ax2.axhline(y=not_finished, c="black", zorder=-1)
 
-    for color, (finder, group_df) in zip(colors, [x for x in fsg_df.groupby("finder") if len(x[1]) != 0]):
+        s = 10
+        colors = [f"C{i}" for i in range(10)]
 
-        x1 = group_df["number_of_vertices"]
-        x2 = group_df["count"]
-        y = group_df["time_mean"]
+        for color, finder, label in zip(colors, finders, labels):
+            group_df = fsg_df[fsg_df["finder"] == finder]
 
-        ax1.scatter(x1, y, label=finder, s=s, c=color)
-        ax2.scatter(x2, y, label=finder, s=s, c=color)
+            x1 = group_df["number_of_vertices"]
+            x2 = group_df["count"]
+            y = group_df["time_mean"]
 
-        for ax, x, d in zip([ax1, ax2], [x1, x2], [(int(forbidden_subgraphs[-1]),), (1,)]):
-            p, *_ = np.linalg.lstsq(np.vstack([x[~group_df["timedout"]]**i for i in d]).T, y[~group_df["timedout"]], rcond=None)
+            ax1.scatter(x1, y, label=label, s=s, c=color)
+            ax2.scatter(x2, y, label=label, s=s, c=color)
 
-            x_pred = np.linspace(x.min(), 2 * x.max(), 20)
-            y_pred = np.vstack([x_pred**i for i in d]).T @ p
+            for ax, x, d, bbox in zip([ax1, ax2], [x1, x2], [(int(forbidden_subgraphs[-1]),), (1,)], [bbox_n, bbox_count]):
+                x_train, y_train = x[~group_df["timedout"] & (x < 1.5 * bbox[0][1])], y[~group_df["timedout"] & (x < 1.5 * bbox[0][1])]
+                p, *_ = np.linalg.lstsq(np.vstack([x_train**i for i in d]).T, y_train, rcond=None)
 
-            ax.plot(x_pred, y_pred, "k--", alpha=0.25, c=color)
+                x_pred = np.linspace(0, 1.5 * bbox[0][1], 40)
+                y_pred = np.vstack([x_pred**i for i in d]).T @ p
 
-    ax1.set_xlabel("Number of vertices")
-    ax2.set_xlabel("Number of forbidden subgraphs")
-    ax1.set_ylabel("Time [s]")
+                ax.plot(x_pred, y_pred, "k--", alpha=0.25, c=color)
 
-    for ax in (ax1, ax2):
-        y = fsg_df["time_mean"]
-        eps = y.max() / 20
-        ax.set_ylim((0, y.max() + eps))
-    for ax, col in zip((ax1, ax2), ("number_of_vertices", "count")):
-        x = fsg_df[col]
-        eps = (x.max() - x.min()) / 20
-        ax.set_xlim((x.min() - eps, x.max() + eps))
+            print(f"{finder} {np.isnan(y).sum()} / {y.shape[0]}")
 
-    ax2.legend(loc="best", fancybox=False)  # frameon=False
+        ax1.set_xlabel("Number of vertices")
+        ax2.set_xlabel("Number of forbidden subgraphs")
+        ax1.set_ylabel("Time [s]")
+
+        def expand(lim: Tuple[float, float], epsilon: float = 1/20) -> Optional[Tuple[float, float]]:
+            if lim is None: return None
+            if None in lim: return lim
+            d = (lim[1] - lim[0]) * epsilon
+            return lim[0] - d, lim[1] + d
+
+        for ax, bbox in [(ax1, bbox_n), (ax2, bbox_count)]:
+            if bbox is not None:
+                xlim, ylim = bbox
+                ax.set_xlim(expand(xlim))
+                ax.set_ylim(expand(ylim))
+
+    axes[0][1].legend(loc="best", fancybox=False)  # frameon=False
     fig.tight_layout()
 
-    plt.savefig(output_dir / f"finder-benchmark-{forbidden_subgraphs}-n_max={max_number_of_vertices}.pdf")
+    plt.savefig(output_dir / f"finder-benchmark-{forbidden_subgraphs}.pdf")
     # plt.show()
 
 
@@ -122,11 +133,16 @@ def main():
 
     df = read_data(benchmarks_paths, meta_path)
 
-    for fsg in df["forbidden_subgraphs"].unique():
-        for n in [100, 800]:
-            if (df["forbidden_subgraphs"] == fsg).any():
-                plot_time_to_find_all(df, output_dir, forbidden_subgraphs=fsg, plot_timeout=False,
-                                      max_number_of_vertices=n)
+    for fsg, bboxes, finders, labels in [
+        ("P3",   ((((0, 600), (0, 0.25)),  ((0, 0.5 * 10**7), (0, 0.25))),
+                  (((0, 200), (0, 0.025)), ((0, 0.4 * 10**6), (0, 0.025)))), ["NaiveP3", "OuterP3", "CenterP3"], ["Naive", "Fill from outer vertices", "Edge expansion"]),
+        ("C4P4", ((((0, 600), (0, 10)),    ((0, 0.4 * 10**8), (0, 10))),
+                  (((0, 200), (0, 0.15)),  ((0, 0.6 * 10**7), (0, 0.5)))),   ["NaiveC4P4", "CenterC4P4", "EndpointRecC4P4"], ["Naive", "Midpoint", "Endpoint"]),
+        ("C5P5", ((((0, 600), (0, 10)),    ((0, 2 * 10**8),   (0, 10))),
+                  (((0, 200), (0, 0.5)),   ((0, 0.2 * 10**6), (0, 0.5)))),   ["NaiveRecC5P5", "CenterRecC5P5", "EndpointRecC5P5"], ["Naive", "Midpoint", "Endpoint"])
+    ]:
+        plot_time_to_find_all(df, output_dir, forbidden_subgraphs=fsg, plot_timeout=False,
+                              bboxes=bboxes, finders=finders, labels=labels)
 
 
 if __name__ == '__main__':

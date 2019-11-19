@@ -63,23 +63,28 @@ def plot_small_graphs():
     bowtie = nx.from_edgelist([(0, 1), (0, 2), (1, 2), (2, 3), (2, 4), (3, 4)])
 
     graphs = [
-        ("P3", nx.path_graph(3), [(0, 0), (1, 0), (0.5, 0.5**(1/3))]),
-        ("P4", nx.path_graph(4), [(0, 0), (1, 0), (1, 1), (0, 1)]),
-        ("C4", nx.cycle_graph(4), [(0, 0), (1, 0), (1, 1), (0, 1)]),
-        ("2K2", nx.from_edgelist([(0, 1), (2, 3)]), [(0, 0), (0, 1), (1, 1), (1, 0)]),
-        ("P5", P5, _5),
-        ("C5", C5, _5),
-        ("necktie", necktie, [(0, -1.5), (0, -0.75), (0, 0), (-0.5, 0.5**(1/3)), (0.5, 0.5**(1/3))]),
-        ("bowtie", bowtie, [(-0.5**(1/3), 0.5), (-0.5**(1/3), -0.5), (0, 0), (0.5**(1/3), -0.5), (0.5**(1/3), 0.5)])
+        ("P3", nx.path_graph(3), [(0, 0), (1, 0), (0.5, 0.5**(1/3))], None),
+        ("C3", nx.cycle_graph(3), [(0, 0), (1, 0), (0.5, 0.5**(1/3))], None),
+        ("P3-uvw", nx.path_graph(3), [(0, 0), (0.5, 0.5**(1/3)), (1, 0)], {u: l for u, l in enumerate("uvw")}),
+        ("C3-uvw", nx.cycle_graph(3), [(0, 0), (0.5, 0.5**(1/3)), (1, 0)], {u: l for u, l in enumerate("uvw")}),
+        ("P4", nx.path_graph(4), [(0, 0), (1, 0), (1, 1), (0, 1)], None),
+        ("C4", nx.cycle_graph(4), [(0, 0), (1, 0), (1, 1), (0, 1)], None),
+        ("2K2", nx.from_edgelist([(0, 1), (2, 3)]), [(0, 0), (0, 1), (1, 1), (1, 0)], None),
+        ("P5", P5, _5, None),
+        ("C5", C5, _5, None),
+        ("necktie", necktie, [(0, -1.5), (0, -0.75), (0, 0), (-0.5, 0.5**(1/3)), (0.5, 0.5**(1/3))], None),
+        ("bowtie", bowtie, [(-0.5**(1/3), 0.5), (-0.5**(1/3), -0.5), (0, 0), (0.5**(1/3), -0.5), (0.5**(1/3), 0.5)], None)
     ]
 
-    for name, G, pos in graphs:
+    for name, G, pos, names in graphs:
         fig, ax = plt.subplots(figsize=(2, 2))
         ax.set_aspect("equal")
         ax.axis(False)
         ax.margins(0.15)
 
         nx.draw_networkx(G, pos, with_labels=False, node_color="lightgrey", node_size=300, width=1, ax=ax)
+        if names is not None:
+            nx.draw_networkx_labels(G, pos, labels=names)
 
         fig.tight_layout()
         plt.savefig(f"{name}.pdf", bbox_inches="tight", pad_inches=0)
