@@ -1,6 +1,11 @@
+cmake-build-release/
+cmake-build-debug/
+.snakemake/
+
 # Python
 */__pycache__/
 */.ipynb_checkpoints/
+*/venv/
 
 
 # Clion
