@@ -205,13 +205,7 @@ private:
             // solved
             m_found_solution = true;
             return result_cb(edits); // output graph
-        } else if (k == 0) {
-            // unsolved, no edits remaining
-            prune_cb(0, 0);
-            m_stats.prunes(k)++;
-            return false;
         }
-
 
         // recurse on problem pairs. keep vertex pairs marked between calls.
         bool return_value = false;
