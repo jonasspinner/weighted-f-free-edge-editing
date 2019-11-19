@@ -20,9 +20,11 @@ CATEGORIES = defaultdict(DEFAULT_CATEGORY,
                          dataset=CategoricalDtype([
                              "barabasi-albert", "bio", "bio-C4P4-subset", "bio-subset-A", "duplication-divergence",
                              "misc", "powerlaw-cluster"]),
-                         finder=CategoricalDtype([
-                             "CenterRecC4P4", "CenterRecP3", "EndpointRecC4P4", "EndpointRecP3", "CenterC4P4",
-                             "CenterP3", "NaiveC4P4", "NaiveP3", "CenterRecC5P5", "EndpointRecC5P5"]),
+                         finder=CategoricalDtype(
+                             ["OuterP3", "CenterP3", "CenterRecP3", "EndpointRecP3", "NaiveRecP3", "NaiveP3"] +
+                             ["CenterC4P4", "CenterRecC4P4", "EndpointRecC4P4", "NaiveRecC4P4", "NaiveC4P4"] +
+                             ["CenterRecC5P5", "EndpointRecC5P5", "NaiveRecC5P5"] +
+                             ["CenterRecC6P6", "EndpointRecC6P6", "NaiveRecC6P6"]),
                          finder_benchmark_type=CategoricalDtype([
                              "find_all_subgraphs", "find_one_subgraph"])
                          )
@@ -48,6 +50,8 @@ def build_fpt_dataframe(docs: List[Dict[str, Any]]) -> pd.DataFrame:
     df = df.astype({k: CATEGORIES[k] for k in
                     ["commit_hash", "forbidden_subgraphs", "selector", "lower_bound", "search_strategy", "dataset"]})
 
+    df["n"] = df["instance"].str[:-6].str.split("-").str[-1].astype(int)
+
     return df
 
 
@@ -63,6 +67,8 @@ def build_ilp_dataframe(docs: List[Dict[str, Any]]) -> pd.DataFrame:
     df[["dataset", "instance"]] = df["name"].str.split("/", expand=True)[[1, 2]]
 
     df = df.astype({k: CATEGORIES[k] for k in ["commit_hash", "forbidden_subgraphs", "dataset"]})
+
+    df["n"] = df["instance"].str[:-6].str.split("-").str[-1].astype(int)
 
     return df
 
@@ -81,6 +87,8 @@ def build_finder_dataframe(docs: List[Dict[str, Any]]) -> pd.DataFrame:
 
     df["time_mean"] = df["raw_time"].apply(lambda x: np.nan if len(x) == 0 else np.mean(x[1:]) / 10**9)
     df["time_std"] = df["raw_time"].apply(lambda x: np.nan if len(x) == 0 else np.std(x[1:]) / 10**9)
+
+    df["n"] = df["instance"].str[:-6].str.split("-").str[-1].astype(int)
 
     return df
 
