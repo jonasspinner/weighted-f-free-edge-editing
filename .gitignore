@@ -5,7 +5,7 @@ cmake-build-debug/
 # Python
 */__pycache__/
 */.ipynb_checkpoints/
-*/venv/
+venv/
 
 
 # Clion
