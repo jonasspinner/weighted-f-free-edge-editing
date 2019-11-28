@@ -23,7 +23,7 @@ def plot_small_p3_editing_example():
 
     graphs = [
         ("P3-editing-example-G", G, set(G.edges()) - set(edits), inserts, deletions, [("b", "e")],
-         [("b", "e"), ("b", "g"), ("e", "g"), ("d", "e")]),
+         [("b", "e"), ("b", "g"), ("e", "g")]), # ("d", "e"), ("e", "f"), ("d", "f")
         ("P3-editing-example-G-edited", G_edited, G_edited.edges(), (), (), (), ())
     ]
 
@@ -34,7 +34,7 @@ def plot_small_p3_editing_example():
         ax.axis(False)
 
         def width(edges):
-            return [3 if e in fat else 1 for e in edges]
+            return [3 if e in fat else 2 if e in inserted else 1 for e in edges]
 
         pos = graphviz_layout(G, prog="neato")
         nx.draw_networkx_nodes(G, pos, node_color="lightgrey", node_size=400, ax=ax)
@@ -42,7 +42,7 @@ def plot_small_p3_editing_example():
 
         edge_lists = [
             (unedited,  "black", "solid"),
-            (inserted,  "green", "solid"),
+            (inserted,  "limegreen", "dashed"),
             (deleted,   "red",   "solid"),
             (non_edges, "grey", "dashed")
         ]

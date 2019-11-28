@@ -74,6 +74,8 @@ def plot_time_to_find_all(df: pd.DataFrame, output_dir: Path, *, forbidden_subgr
                 x_train, y_train = x[~group_df["timedout"] & (x < 1.5 * bbox[0][1])], y[~group_df["timedout"] & (x < 1.5 * bbox[0][1])]
                 p, *_ = np.linalg.lstsq(np.vstack([x_train**i for i in d]).T, y_train, rcond=None)
 
+                print(f"{finder} d = {d} p = {p}")
+
                 x_pred = np.linspace(0, 1.5 * bbox[0][1], 40)
                 y_pred = np.vstack([x_pred**i for i in d]).T @ p
 
@@ -100,6 +102,7 @@ def plot_time_to_find_all(df: pd.DataFrame, output_dir: Path, *, forbidden_subgr
     axes[0][1].legend(loc="best", fancybox=False)  # frameon=False
     fig.tight_layout()
 
+    plt.savefig(output_dir / f"finder-benchmark-{forbidden_subgraphs}.png", dpi=600)
     plt.savefig(output_dir / f"finder-benchmark-{forbidden_subgraphs}.pdf")
     # plt.show()
 
@@ -139,7 +142,7 @@ def main():
         ("C4P4", ((((0, 600), (0, 10)),    ((0, 0.4 * 10**8), (0, 10))),
                   (((0, 200), (0, 0.15)),  ((0, 0.6 * 10**7), (0, 0.5)))),   ["NaiveC4P4", "CenterC4P4", "EndpointRecC4P4"], ["Naive", "Midpoint", "Endpoint"]),
         ("C5P5", ((((0, 600), (0, 10)),    ((0, 2 * 10**8),   (0, 10))),
-                  (((0, 200), (0, 0.5)),   ((0, 0.2 * 10**6), (0, 0.5)))),   ["NaiveRecC5P5", "CenterRecC5P5", "EndpointRecC5P5"], ["Naive", "Midpoint", "Endpoint"])
+                  (((0, 200), (0, 0.5)),   ((0, 2 * 10**5), (0, 0.05)))),   ["NaiveRecC5P5", "CenterRecC5P5", "EndpointRecC5P5"], ["Naive", "Midpoint", "Endpoint"])
     ]:
         plot_time_to_find_all(df, output_dir, forbidden_subgraphs=fsg, plot_timeout=False,
                               bboxes=bboxes, finders=finders, labels=labels)
