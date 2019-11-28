@@ -7,6 +7,8 @@ Lars Gottesbüren, Michael Hamann, Philipp Schoch, Ben Strasser, Dorothea Wagner
 Engineering Exact F-free  Edge Editing. Unpublished, 2019.
 ```
 
+The license of their work can be found under `external/GHSSWZ_LICENSE`.
+
 A detailed introduction to the problem and a description of the algorithms are given in the thesis.
 
 ## How to run
