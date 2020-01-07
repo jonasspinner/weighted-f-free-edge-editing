@@ -26,17 +26,10 @@ make
 
 ### [GUROBI](https://www.gurobi.com/) *(optional)*
 
-Gurobi is needed for the ILP algorithm. For only 
-
 ### [YAML CPP](https://github.com/jbeder/yaml-cpp/)
 
-Installation from source:
 ```bash
-git clone https://github.com/jbeder/yaml-cpp.git
-cd yaml-cpp
-mkdir build && cd build
-cmake .. -DBUILD_SHARED_LIBS=ON
-cmake --build .. --target install/local
+sudo apt install libyaml-cpp-dev
 ```
 
 
