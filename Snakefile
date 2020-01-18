@@ -29,7 +29,7 @@ ILP_NUM_THREADS = [1]
 FPT_SELECTOR = ["FirstFound", "MostMarkedPairs", "MostAdjacentSubgraphs"] # + ["LeastWeight"]
 FPT_LOWER_BOUND = ["Trivial", "LocalSearch", "SortedGreedy"] + ["Greedy"] # + ["LPRelaxation"]
 FPT_PRE_MARK = [0]
-FPT_SEARCH_STRATEGY = ["IncrementByMultiplier"] + ["PrunedDelta", "IncrementByMinCost"] + ["Exponential"]
+FPT_SEARCH_STRATEGY = ["IncrementByMultiplier"] + ["PrunedDelta", "IncrementByMinCost"] + ["Exponential"] + ["Fixed"]
 
 FINDERS = ["CenterRecP3", "EndpointRecP3", "CenterP3", "NaiveP3", "OuterP3"] +\
     ["CenterRecC4P4", "EndpointRecC4P4", "CenterC4P4", "NaiveC4P4"] +\
