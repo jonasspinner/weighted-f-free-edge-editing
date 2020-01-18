@@ -45,6 +45,8 @@ PRELIM_FPT_FPT_SELECTOR = ["FirstFound", "MostMarkedPairs", "MostAdjacentSubgrap
 PRELIM_FPT_SEARCH_STRATEGY = ["IncrementByMultiplier"]
 
 
+ruleorder: fpt_fixed_k_from_solution > fpt
+
 rule all:
         input:
                 # Finders
@@ -96,7 +98,7 @@ rule preliminary:
         input:
                 expand("experiments/{fsg}/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio.solutions.yaml",
                        fsg=PRELIM_FSG, timelimit=PRELIM_TIMELIMITS, threads=[1], constraints=PRELIM_ILP_CONSTRAINTS),
-                expand("experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy=Fixed/bio.solutions.yaml",
+                expand("experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=0.pre-mark={pre_mark}.search-strategy=Fixed/bio.solutions.yaml",
                        fsg=PRELIM_FSG, timelimit=PRELIM_TIMELIMITS, selector=PRELIM_FPT_FPT_SELECTOR, lower_bound=PRELIM_FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK),
                 expand("experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/bio.solutions.yaml",
                        fsg=PRELIM_FSG, timelimit=PRELIM_TIMELIMITS, selector=PRELIM_FPT_FPT_SELECTOR, lower_bound=PRELIM_FPT_LOWER_BOUND, pre_mark=FPT_PRE_MARK, search_strategy=PRELIM_FPT_SEARCH_STRATEGY)
@@ -151,7 +153,7 @@ rule fpt_fixed_k_from_solution:
                 instance = "data/{dataset}/{graph}.graph",
                 solution = "experiments/{fsg}/solutions/{dataset}/{graph}.{multiplier}.solution.yaml"
         output:
-                "experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy=Fixed/{dataset}/{graph}.{multiplier}.{permutation}.solution.yaml"
+                "experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all={all}.pre-mark={pre_mark}.search-strategy=Fixed/{dataset}/{graph}.{multiplier}.{permutation}.solution.yaml"
         params:
                 hard_timeout = lambda wildcards, output: int(1.1 * int(wildcards.timelimit))
         run:
@@ -160,7 +162,7 @@ rule fpt_fixed_k_from_solution:
                     subprocess.run(f"cmake-build-release/fpt "
                                    f"--input {input} --permutation {wildcards.permutation} --multiplier {wildcards.multiplier} --F {wildcards.fsg} --output {output} "
                                    f"--selector {wildcards.selector} --lower-bound {wildcards.lower_bound} "
-                                   f"--all 1 --pre-mark {wildcards.pre_mark} "
+                                   f"--all {wildcards.all} --pre-mark {wildcards.pre_mark} "
                                    f"--search-strategy Fixed --k {k}".split(" "), timeout=params.hard_timeout)
                 except subprocess.TimeoutExpired:
                     pass
@@ -169,7 +171,7 @@ rule fpt:
         input:
                 "data/{dataset}/{graph}.graph"
         output:
-                "experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/{dataset}/{graph}.{multiplier}.{permutation}.solution.yaml"
+                "experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all={all}.pre-mark={pre_mark}.search-strategy={search_strategy}/{dataset}/{graph}.{multiplier}.{permutation}.solution.yaml"
         params:
                 hard_timeout = lambda wildcards, output: int(4 * int(wildcards.timelimit))
         run:
@@ -177,7 +179,7 @@ rule fpt:
                     subprocess.run(f"cmake-build-release/fpt "
                                    f"--input {input} --permutation {wildcards.permutation} --multiplier {wildcards.multiplier} --F {wildcards.fsg} --output {output} "
                                    f"--selector {wildcards.selector} --lower-bound {wildcards.lower_bound} "
-                                   f"--all 1 --pre-mark {wildcards.pre_mark} "
+                                   f"--all {wildcards.all} --pre-mark {wildcards.pre_mark} "
                                    f"--search-strategy {wildcards.search_strategy} "
                                    f"--timelimit {wildcards.timelimit}".split(" "), timeout=params.hard_timeout)
                 except subprocess.TimeoutExpired:
@@ -187,11 +189,11 @@ rule fpt:
 rule collect_fpt_fixed:
         input:
                 lambda wildcards: expand("experiments/{{fsg}}/"
-                                         "fpt.timelimit={{timelimit}}.selector={{selector}}.lower-bound={{lower_bound}}.all=1.pre-mark={{pre_mark}}.search-strategy=Fixed/"
+                                         "fpt.timelimit={{timelimit}}.selector={{selector}}.lower-bound={{lower_bound}}.all={{all}}.pre-mark={{pre_mark}}.search-strategy=Fixed/"
                                          "{{dataset}}/{graph}.{multiplier}.{permutation}.solution.yaml",
                        graph=get_dataset_files(wildcards.dataset), multiplier=MULTIPLIER, permutation=PERMUTATION)
         output:
-                "experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy=Fixed/{dataset}.solutions.yaml"
+                "experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all={all}.pre-mark={pre_mark}.search-strategy=Fixed/{dataset}.solutions.yaml"
         run:
                 with open(output[0], "w") as out_file:
                     for path in input:
