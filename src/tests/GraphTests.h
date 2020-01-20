@@ -17,7 +17,7 @@ public:
      * Tests for checking consistency between range iteration and templated loops with lambda functions and tests for edge cases for graphs.
      * @param seed
      */
-    explicit GraphTests(int seed = 0) : gen(seed) {}
+    explicit GraphTests(int seed = 0) : gen(static_cast<unsigned long>(seed)) {}
 
     void vertices_and_for_loop_are_consistent();
 

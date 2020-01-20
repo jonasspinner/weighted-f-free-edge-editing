@@ -14,7 +14,7 @@
 class SubgraphTests {
     std::mt19937 gen;
 public:
-    explicit SubgraphTests(int seed = 0) : gen(seed) {}
+    explicit SubgraphTests(int seed = 0) : gen(static_cast<unsigned long>(seed)) {}
 
     void vertices_and_for_loop_are_consistent() {
         Subgraph subgraph = random_subgraph(10, 20, gen);

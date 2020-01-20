@@ -10,7 +10,7 @@ class PermutationTest {
 public:
     int seed;
     std::mt19937 gen;
-    explicit PermutationTest(int seed_) : seed(seed_), gen(seed) {}
+    explicit PermutationTest(int seed_) : seed(seed_), gen(static_cast<unsigned long>(seed)) {}
 
     void default_is_identity() {
         Permutation P(100);

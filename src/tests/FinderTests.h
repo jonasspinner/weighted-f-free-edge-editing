@@ -78,7 +78,7 @@ std::vector<Subgraph> find_all_non_marked_subgraphs(FinderI &finder, const Graph
 class FinderTests {
     std::mt19937 gen;
 public:
-    explicit FinderTests(int seed=0) : gen(seed) {}
+    explicit FinderTests(int seed=0) : gen(static_cast<unsigned long>(seed)) {}
 
     static std::unique_ptr<FinderI> make_finder(const std::string &name, const Graph &graph) {
         if (name == "CenterRecC5P5") {

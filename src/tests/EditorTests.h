@@ -16,7 +16,7 @@ class EditorTests {
     std::mt19937 gen;
     std::string instance_path = "../data/bio/bio-nr-3-size-16.graph";
 public:
-    explicit EditorTests(int seed = 0) : gen(seed) {}
+    explicit EditorTests(int seed = 0) : gen(static_cast<unsigned long>(seed)) {}
 
     void configurations_have_same_output(Options::FSG fsg, const std::vector<Options::Selector> &selectors,
                                          const std::vector<Options::LB> &lower_bounds, const std::vector<int> &seeds,
