@@ -51,12 +51,14 @@ else (GUROBI_INCLUDE_DIR)
             gurobi75
             gurobi80
             gurobi81
+            gurobi90
             PATHS "$ENV{GUROBI_HOME}/lib"
             )
 
     find_library( GUROBI_CXX_LIBRARY
             NAMES
             gurobi_g++5.2
+            gurobi_g++8.1
             #gurobi_c++
             PATHS "$ENV{GUROBI_HOME}/lib"
             )
