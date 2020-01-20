@@ -24,7 +24,7 @@ public:
     Permutation(size_t size, int seed) : Permutation(size) {
         m_seed = seed;
         if (seed != 0)
-            std::shuffle(P.begin(), P.end(), std::mt19937_64(seed));
+            std::shuffle(P.begin(), P.end(), std::mt19937_64(static_cast<unsigned long>(seed)));
     }
 
     inline Vertex operator[](Vertex u) const {

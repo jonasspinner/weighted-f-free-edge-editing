@@ -19,9 +19,12 @@ private:
         struct Element {
             Cost cost;
             Subgraph subgraph;
+
             bool operator==(const Element &other) const { return cost == other.cost && subgraph == other.subgraph; }
+
             bool operator!=(const Element &other) const { return !(*this == other); }
         };
+
     private:
         std::vector<Element> m_bound;
         Cost m_cost = 0;
@@ -147,7 +150,8 @@ public:
                                    const SubgraphStats &subgraph_stats, std::shared_ptr<FinderI> finder_ref,
                                    int seed = 0) :
             LowerBoundI(std::move(finder_ref)), m_costs(instance.costs), m_marked(marked),
-            m_subgraph_stats(subgraph_stats), m_bound_graph(instance.graph.size()), m_gen(seed) {}
+            m_subgraph_stats(subgraph_stats), m_bound_graph(instance.graph.size()),
+            m_gen(static_cast<unsigned long>(seed)) {}
 
     Cost calculate_lower_bound(Cost k) override;
 
@@ -191,7 +195,7 @@ public:
     void after_edit(VertexPair uv) override;
 
 private:
-    static bool bound_graph_is_valid(State& state, const VertexPairMap<bool> &marked, const Graph &bound_graph);
+    static bool bound_graph_is_valid(State &state, const VertexPairMap<bool> &marked, const Graph &bound_graph);
 
     static bool state_is_valid(State &state, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs);
 
@@ -199,16 +203,18 @@ private:
 
     static void initialize_bound_graph(const State &state, const VertexPairMap<bool> &marked, Graph &bound_graph);
 
-    static void remove_near_subgraphs_from_bound(State& state, VertexPair uv);
+    static void remove_near_subgraphs_from_bound(State &state, VertexPair uv);
 
-    static void update_near_subgraphs(State& state, VertexPair uv, FinderI &finder,
-            const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs, Graph &bound_graph);
+    static void update_near_subgraphs(State &state, VertexPair uv, FinderI &finder,
+                                      const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs,
+                                      Graph &bound_graph);
 
-    static void insert_near_subgraphs_into_bound(State& state, VertexPair uv, FinderI &finder,
-            const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs, Graph &bounded_graph);
+    static void insert_near_subgraphs_into_bound(State &state, VertexPair uv, FinderI &finder,
+                                                 const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs,
+                                                 Graph &bounded_graph);
 
     static void insert_subgraphs_into_bound(std::vector<std::pair<Cost, Subgraph>> &&subgraphs,
-            const VertexPairMap<bool> &marked, State& state, Graph &bound_graph);
+                                            const VertexPairMap<bool> &marked, State &state, Graph &bound_graph);
 
     void local_search(State &state, Cost k);
 
@@ -225,12 +231,14 @@ private:
     static bool try_insert_into_graph(const Subgraph &subgraph, const VertexPairMap<bool> &marked, Graph &graph);
 
     static std::pair<std::vector<Subgraph>, std::vector<size_t>> get_candidates(FinderI &finder,
-            const std::vector<VertexPair> &pairs, Graph &bound_graph, const SubgraphStats &subgraph_stats);
+                                                                                const std::vector<VertexPair> &pairs,
+                                                                                Graph &bound_graph,
+                                                                                const SubgraphStats &subgraph_stats);
 
     static std::vector<VertexPair> get_pairs(const Subgraph &subgraph, const VertexPairMap<bool> &marked);
 
-    static std::tuple<size_t, size_t> count_neighbors(const SubgraphStats& subgraph_stats,
-            const VertexPairMap<bool> &marked, const Subgraph& subgraph);
+    static std::tuple<size_t, size_t> count_neighbors(const SubgraphStats &subgraph_stats,
+                                                      const VertexPairMap<bool> &marked, const Subgraph &subgraph);
 };
 
 
