@@ -20,6 +20,8 @@ class LPRelaxationLowerBound : public LowerBoundI {
     VertexPairMap<GRBVar> m_variables;
     Options::FSG m_fsg;
     Cost k_initial;
+    bool m_shall_solve;
+    std::vector<std::vector<GRBConstr>> m_constraint_stack;
 
     int verbosity = 0;
 
@@ -30,18 +32,38 @@ class LPRelaxationLowerBound : public LowerBoundI {
 public:
     /**
      * The code is adapted from Michael Hamann.
+     *
+     * This lower bound algorithm is based on the following linear program relaxation of the original problem:
+     *
+     *      \min \sum_{uv} c(uv) \cdot x_{uv}
+     *      s.t.   (1 - x_{uv}) + (1 - x_{va}) + (1 - x_{ab}) + x_{ua} + x_{vb} >= 1     \forall (u, v, a, b) \in \mathcal{F}
+     *
+     *      \forall u, v \in V: x_{uv} = 1 \iff uv \in E'
      */
     LPRelaxationLowerBound(const Instance &instance,
                            const VertexPairMap<bool> &forbidden, std::shared_ptr<FinderI> finder_ref) :
-            LowerBoundI(std::move(finder_ref)), m_graph(instance.graph),
-            m_costs(instance.costs), m_marked(forbidden), m_env(std::make_unique<GRBEnv>()),
-            m_variables(m_graph.size()), m_fsg(finder->forbidden_subgraphs()), k_initial(0), m_edited(m_costs.size(), false) {}
+            LowerBoundI(std::move(finder_ref)),
+            m_graph(instance.graph),
+            m_costs(instance.costs),
+            m_marked(forbidden),
+            m_env(std::make_unique<GRBEnv>()),
+            m_variables(m_graph.size()),
+            m_fsg(finder->forbidden_subgraphs()),
+            k_initial(0),
+            m_shall_solve(true),
+            m_edited(m_costs.size(), false) {
+        if (finder->forbidden_subgraphs() != Options::FSG::C4P4) {
+            throw std::runtime_error("Only C4P4 allowed as forbidden subgraphs.");
+        }
+    }
 
     /**
      * Initializes the model.
      */
     void initialize(Cost k) override {
         k_initial = k;
+        m_shall_solve = true;
+
         try {
             m_model = std::make_unique<GRBModel>(*m_env);
             m_model->set(GRB_IntParam_Threads, 1);
@@ -64,7 +86,7 @@ public:
 
             m_model->setObjective(objective, GRB_MINIMIZE);
 
-            addForbiddenSubgraphs();
+            add_constraints_for_all_forbidden_subgraphs();
 
             if (variable_means_edit)
                 m_model->addConstr(objective <= k_initial);
@@ -84,21 +106,35 @@ public:
      */
     void after_mark(VertexPair uv) override {
         if (!variable_means_edit)
-            fixPair(uv, m_graph.hasEdge(uv));
+            fix_pair(uv, m_graph.hasEdge(uv));
     }
 
     void after_edit(VertexPair uv) override {
         if (variable_means_edit) {
             m_edited[uv] = !m_edited[uv];
-            fixPair(uv, m_edited[uv]);
+            fix_pair(uv, m_edited[uv]);
         }
         if (variable_means_edit) {
             assert(m_edited[uv]);
-            fixPair(uv, m_edited[uv]);
-        } else
-            fixPair(uv, m_graph.hasEdge(uv));
+            fix_pair(uv, m_edited[uv]);
+        } else {
+            fix_pair(uv, m_graph.hasEdge(uv));
+        }
+
+        m_constraint_stack.emplace_back();
+
+        if (m_shall_solve) {
+            assert(k_initial > 0);
+            if (solve() > k_initial) return;
+            m_shall_solve = false;
+        }
+
         finder->find_near(uv, [&](const Subgraph &subgraph) {
-            addConstraint(subgraph);
+            m_constraint_stack.back().push_back(add_constraint(subgraph));
+            if (!m_shall_solve && get_constraint_value(subgraph) < 0.999) {
+                m_shall_solve = true;
+            }
+
             return false;
         });
     }
@@ -106,15 +142,25 @@ public:
     void after_unedit(VertexPair uv) override {
         if (variable_means_edit) {
             m_edited[uv] = !m_edited[uv];
-            fixPair(uv, m_edited[uv]);
+            fix_pair(uv, m_edited[uv]);
         }
+
+        fix_pair(uv, m_graph.hasEdge(uv));
+
+        for (auto constr : m_constraint_stack.back()) {
+            m_model->remove(constr);
+        }
+
+        m_constraint_stack.pop_back();
     }
 
     void after_unmark(VertexPair uv) override {
+        assert(!m_edited[uv]);
         if (variable_means_edit) {
             assert(!m_edited[uv]);
-            relaxPair(uv);
+            relax_pair(uv);
         }
+        relax_pair(uv);
     }
 
     /**
@@ -124,17 +170,18 @@ public:
      * @return
      */
     Cost calculate_lower_bound(Cost k) override {
+        // /*
         GRBLinExpr objective = 0;
 
         for (VertexPair uv : m_graph.vertexPairs()) {
             // TODO: overwrites changes made by after_mark and after_mark_and_edit
             if (m_marked[uv]) {
                 if (variable_means_edit)
-                    fixPair(uv, m_edited[uv]);
+                    fix_pair(uv, m_edited[uv]);
                 else
-                    fixPair(uv, m_graph.hasEdge(uv));
+                    fix_pair(uv, m_graph.hasEdge(uv));
             } else {
-                relaxPair(uv);
+                relax_pair(uv);
             }
 
             if (!variable_means_edit) {
@@ -153,6 +200,16 @@ public:
             return solve() - k;
         else
             return solve();
+        //*/
+
+        if (m_shall_solve) {
+            auto result = solve();
+            if (result > k_initial) {
+                return result;
+            }
+            m_shall_solve = false;
+        }
+        return 0;
     }
 
 private:
@@ -206,24 +263,16 @@ private:
      * Adds a subgraph as a contraint. Assumes that the subgraph is either a P_4 or a C_4.
      * @param fs
      */
-    void addConstraint(const Subgraph &fs) {
-        GRBLinExpr expr;
-        if (variable_means_edit) {
-            for (VertexPair uv : fs.vertexPairs())
-                if (m_marked[uv])
-                    expr += (1 - m_variables[uv]);
-                else
-                    expr += m_variables[uv];
-        } else {
-            expr += 3;
-            expr -= m_variables[{fs[0], fs[1]}];
-            expr -= m_variables[{fs[1], fs[2]}];
-            expr -= m_variables[{fs[2], fs[3]}];
-            expr += m_variables[{fs[0], fs[2]}];
-            expr += m_variables[{fs[1], fs[3]}];
-        }
+    GRBConstr add_constraint(const Subgraph &subgraph) {
+        /*
+        Vertex u = subgraph[0], v = subgraph[1], a = subgraph[2], b = subgraph[3];
+        auto x = [&](VertexPair e) { return m_variables[e]; };
 
-        m_model->addConstr(expr >= 1);
+        GRBLinExpr expr = 3.0 - x({u, v}) - x({v, a}) - x({a, b}) + x({u, a}) + x({v, b});
+
+        return m_model->addConstr(expr >= 1);
+         */
+        return m_model->addConstr(alpha(subgraph) >= 1);
     }
 
     /**
@@ -232,8 +281,18 @@ private:
      * @param uv
      * @param exists
      */
-    void fixPair(VertexPair uv, bool exists) {
+    void fix_pair(VertexPair uv, bool exists) {
+        const double epsilon = 0.001;
         double value = exists ? 1.0 : 0.0;
+
+        if (!m_shall_solve) {
+            if (exists) {
+                m_shall_solve = m_variables[uv].get(GRB_DoubleAttr_X) < 1 - epsilon;
+            } else {
+                m_shall_solve = m_variables[uv].get(GRB_DoubleAttr_X) > epsilon;
+            }
+        }
+
         m_variables[uv].set(GRB_DoubleAttr_UB, value);
         m_variables[uv].set(GRB_DoubleAttr_LB, value);
     }
@@ -243,7 +302,7 @@ private:
      *
      * @param uv
      */
-    void relaxPair(VertexPair uv) {
+    void relax_pair(VertexPair uv) {
         m_variables[uv].set(GRB_DoubleAttr_LB, 0.0);
         m_variables[uv].set(GRB_DoubleAttr_UB, 1.0);
     }
@@ -253,12 +312,12 @@ private:
      *
      * @return
      */
-    size_t addForbiddenSubgraphs() {
+    size_t add_constraints_for_all_forbidden_subgraphs() {
         size_t num_found = 0;
 
-        finder->find([&](const Subgraph &fs) {
+        finder->find([&](const Subgraph &subgraph) {
             ++num_found;
-            addConstraint(fs);
+            add_constraint(subgraph);
             return false;
         });
 
@@ -267,19 +326,56 @@ private:
         return num_found;
     }
 
-    void addDistanceOneGraphForbiddenSubgraphs() {
-        Graph G(m_graph);
-        auto G_finder = Finder::make(m_fsg, G);
-        for (VertexPair uv : G.vertexPairs()) {
-            G.toggleEdge(uv);
+    /**
+     * The linear program has constraints of the form
+     *
+     *      $\alpha \cdot x \geq 1$.
+     *
+     *  This function calculates $\alpha \cdot x$ for a given $x$.
+     */
+    double get_constraint_value(const Subgraph &subgraph) {
+        assertC4orP4(subgraph);
+        /*
+        auto x = [&](VertexPair e) {
+            if (m_edited[e]) {
+                return m_graph.hasEdge(e) ? 1.0 : 0.0;
+            }
+            return m_variables[e].get(GRB_DoubleAttr_X);
+        };
 
-            G_finder->find_near(uv, [&](Subgraph &&subgraph) {
-                addConstraint(subgraph);
-                return false;
-            });
+        // v---a
+        // |   |
+        // u-?-b
+        Vertex u = subgraph[0], v = subgraph[1], a = subgraph[2], b = subgraph[3];
+        return 3.0 - x({u, v}) - x({v, a}) - x({a, b}) + x({u, a}) + x({v, b});
+         */
+        return alpha(subgraph, true).getValue();
+    }
 
-            G.toggleEdge(uv);
-        }
+
+    GRBLinExpr alpha(const Subgraph &subgraph, bool fixed_var_is_constant = false) {
+        assertC4orP4(subgraph);
+        Vertex u = subgraph[0], v = subgraph[1], a = subgraph[2], b = subgraph[3];
+
+        auto x = [&](VertexPair e) -> GRBLinExpr {
+            if (fixed_var_is_constant && m_edited[e]) {
+                return m_graph.hasEdge(e) ? 1.0 : 0.0;
+            } else {
+                return m_variables[e];
+            }
+        };
+
+        return 3.0 - x({u, v}) - x({v, a}) - x({a, b}) + x({u, a}) + x({v, b});
+    }
+
+    void assertC4orP4(const Subgraph &subgraph) {
+        assert(subgraph.size() == 4);
+        Vertex u = subgraph[0], v = subgraph[1], a = subgraph[2], b = subgraph[3];
+        assert(m_graph.hasEdge({u, v}));
+        assert(m_graph.hasEdge({v, a}));
+        assert(m_graph.hasEdge({a, b}));
+        assert(!m_graph.hasEdge({u, a}));
+        assert(!m_graph.hasEdge({v, b}));
     }
 };
 
