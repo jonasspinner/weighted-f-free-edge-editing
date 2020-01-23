@@ -8,6 +8,8 @@
 
 #include <gurobi_c++.h>
 
+#include <utility>
+
 #include "../finder/finder_utils.h"
 
 
@@ -23,7 +25,7 @@ class LPRelaxationLowerBound : public LowerBoundI {
     bool m_shall_solve;
     std::vector<std::vector<GRBConstr>> m_constraint_stack;
 
-    int verbosity = 0;
+    Configuration m_config;
 
     constexpr static bool variable_means_edit = false;
 
@@ -40,8 +42,8 @@ public:
      *
      *      \forall u, v \in V: x_{uv} = 1 \iff uv \in E'
      */
-    LPRelaxationLowerBound(const Instance &instance,
-                           const VertexPairMap<bool> &forbidden, std::shared_ptr<FinderI> finder_ref) :
+    LPRelaxationLowerBound(const Instance &instance, const VertexPairMap<bool> &forbidden,
+                           Configuration config, std::shared_ptr<FinderI> finder_ref) :
             LowerBoundI(std::move(finder_ref)),
             m_graph(instance.graph),
             m_costs(instance.costs),
@@ -51,6 +53,7 @@ public:
             m_fsg(finder->forbidden_subgraphs()),
             k_initial(0),
             m_shall_solve(true),
+            m_config(std::move(config)),
             m_edited(m_costs.size(), false) {
         if (finder->forbidden_subgraphs() != Options::FSG::C4P4) {
             throw std::runtime_error("Only C4P4 allowed as forbidden subgraphs.");
@@ -68,7 +71,9 @@ public:
             m_model = std::make_unique<GRBModel>(*m_env);
             m_model->set(GRB_IntParam_Threads, 1);
             m_model->getEnv().set(GRB_IntParam_OutputFlag, 1);
-            m_model->getEnv().set(GRB_IntParam_LogToConsole, (verbosity > 0) ? 1 : 0);
+            m_model->getEnv().set(GRB_IntParam_LogToConsole, (m_config.verbosity > 0) ? 1 : 0);
+            if (m_config.timelimit >= 0)
+                m_model->set(GRB_DoubleParam_TimeLimit, m_config.timelimit);
 
             GRBLinExpr objective = 0;
             for (VertexPair uv : m_graph.vertexPairs()) {
@@ -229,7 +234,7 @@ private:
         Cost result = std::ceil(found_objective);
 
         if (result - found_objective > 0.99) {
-            if (verbosity)
+            if (m_config.verbosity)
                 std::cout << "found_objective: " << found_objective << " rounded result: " << result << std::endl;
             result = std::floor(found_objective);
         }
@@ -248,7 +253,7 @@ private:
         Cost sum = 0;
         for (VertexPair uv : edits)
             sum += m_costs[uv];
-        if (verbosity) {
+        if (m_config.verbosity) {
             std::cout << "lower bound ";
             for (VertexPair uv : edits)
                 std::cout << uv << " " << m_costs[uv] << "  ";
@@ -321,7 +326,7 @@ private:
             return false;
         });
 
-        if (verbosity)
+        if (m_config.verbosity)
             std::cout << "added " << num_found << " constraints" << std::endl;
         return num_found;
     }

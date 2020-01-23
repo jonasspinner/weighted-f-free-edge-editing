@@ -67,20 +67,26 @@ int main(int argc, char* argv[]) {
     constexpr Cost max_k = std::numeric_limits<Cost>::max();
 
 
+    Configuration config(Options::FSG::C4P4, multiplier, Options::SolverType::FPT, Options::Selector::FirstFound, lower_bound);
+
+
     for (const auto &input : inputs) {
+        config.input_path = input;
     
-        auto orig_instance = GraphIO::read_instance(input, 100);
+        auto orig_instance = GraphIO::read_instance(input, config.multiplier);
         VertexPairMap<bool> marked(orig_instance.graph.size());
     
         
         for (auto seed : seeds) {
-            Permutation P(orig_instance.graph.size(), seed);
+            config.seed = seed;
+
+            Permutation P(orig_instance.graph.size(), config.seed);
             auto instance = P[orig_instance];
 
-            std::shared_ptr<FinderI> finder = Finder::make(Options::FSG::C4P4, instance.graph);
+            std::shared_ptr<FinderI> finder = Finder::make(config.forbidden_subgraphs, instance.graph);
             SubgraphStats subgraph_stats(finder, instance, marked);
             subgraph_stats.initialize(max_k);
-            auto lb = LowerBound::make(lower_bound, finder, instance, marked, subgraph_stats);
+            auto lb = LowerBound::make(config.lower_bound, finder, instance, marked, subgraph_stats, config);
 
 
             std::vector<double> initialization_times, result_times, complete_times;

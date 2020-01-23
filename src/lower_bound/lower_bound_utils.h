@@ -15,7 +15,7 @@
 namespace LowerBound {
     std::unique_ptr<LowerBoundI>
     make(Options::LB lower_bound, const std::shared_ptr<FinderI> &finder, const Instance &instance,
-         const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats);
+         const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats, Configuration config);
 }
 
 #endif //WEIGHTED_F_FREE_EDGE_EDITING_LB_UTILS_H

@@ -29,7 +29,7 @@ namespace LowerBound {
      */
     std::unique_ptr<LowerBoundI>
     make(Options::LB lower_bound, const std::shared_ptr<FinderI> &finder, const Instance &instance,
-         const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) {
+         const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats, Configuration config) {
         using Options::LB;
         switch (lower_bound) {
             case LB::Trivial:
@@ -42,7 +42,7 @@ namespace LowerBound {
                 return std::make_unique<SortedGreedyLowerBound>(instance, marked, finder);
             case LB::LPRelaxation:
 #ifdef GUROBI_FOUND
-                return std::make_unique<LPRelaxationLowerBound>(instance, marked, finder);
+            return std::make_unique<LPRelaxationLowerBound>(instance, marked, std::move(config), finder);
 #else
             std::cerr << "gurobi has to be installed to use LB::LinearProgram.";
                 abort();
