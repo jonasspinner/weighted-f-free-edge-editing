@@ -10,4 +10,6 @@ curl -L -o $ILS_MWIS_DOWNLOAD_DIR/ils-mwis.tar.gz https://sites.google.com/site/
 tar -C $ILS_MWIS_DIR -xf $ILS_MWIS_DOWNLOAD_DIR/ils-mwis.tar.gz
 rm $ILS_MWIS_DOWNLOAD_DIR/ils-mwis.tar.gz
 
-patch -p1 -i ./*.patch
+for file in $ILS_MWIS_DIR/patches/*.patch; do
+    patch -p1 -i $file
+done

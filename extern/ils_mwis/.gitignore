@@ -2,5 +2,6 @@
 *
 # Except these files
 !get.sh
-!ils_mwis.patch
+!patches
+!patches/*
 !.gitignore
