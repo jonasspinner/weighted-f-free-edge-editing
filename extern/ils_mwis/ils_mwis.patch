@@ -1,0 +1,434 @@
+From 9d679319e1f35fc524357b1ba1d81148ce8c083a Mon Sep 17 00:00:00 2001
+From: Jonas Spinner <jonas.spinner@student.kit.edu>
+Date: Tue, 28 Jan 2020 13:36:24 +0100
+Subject: [PATCH] Refactored algorithm into function
+
+---
+ src/ArgPack.cpp  |   4 +-
+ src/ArgPack.h    |   2 +-
+ src/Graph.cpp    |   4 +-
+ src/Graph.h      |   4 +-
+ src/InitError.h  |   4 +-
+ src/Solution.cpp |   4 +-
+ src/Solution.h   |   4 +-
+ src/algorithm.h  | 111 ++++++++++++++++++++++++++++++++++++++++++++
+ src/main.cpp     | 117 +++--------------------------------------------
+ 9 files changed, 131 insertions(+), 123 deletions(-)
+ create mode 100644 src/algorithm.h
+
+diff --git a/src/ArgPack.cpp b/src/ArgPack.cpp
+index e7ad476..ddcae1f 100644
+--- a/src/ArgPack.cpp
++++ b/src/ArgPack.cpp
+@@ -17,7 +17,7 @@ extern int optind;
+ 
+ using namespace std;
+ 
+-namespace opt
++namespace ils_mwis
+ {
+ 
+ ArgPack *ArgPack::def_ap_ = 0;
+@@ -110,4 +110,4 @@ ArgPack::ArgPack(int argc, char * const argv []) :
+ 	}
+ }
+ 
+-} // namespace opt
+\ No newline at end of file
++} // namespace ils_mwis
+\ No newline at end of file
+diff --git a/src/ArgPack.h b/src/ArgPack.h
+index 6ac9c91..45e56d5 100644
+--- a/src/ArgPack.h
++++ b/src/ArgPack.h
+@@ -12,7 +12,7 @@
+ #include <string>
+ #include <assert.h>
+ 
+-namespace opt {
++namespace ils_mwis {
+ 
+ class ArgPack {
+ 
+diff --git a/src/Graph.cpp b/src/Graph.cpp
+index 04e7a3a..abe47e6 100644
+--- a/src/Graph.cpp
++++ b/src/Graph.cpp
+@@ -6,7 +6,7 @@
+ 
+ using namespace std;
+ 
+-namespace opt
++namespace ils_mwis
+ {
+ 
+ Graph::Graph(const int n, const int m) :
+@@ -43,4 +43,4 @@ void Graph::sort()
+ 	}
+ }
+ 
+-} // namespace opt
+\ No newline at end of file
++} // namespace ils_mwis
+\ No newline at end of file
+diff --git a/src/Graph.h b/src/Graph.h
+index ac358dd..268dc20 100644
+--- a/src/Graph.h
++++ b/src/Graph.h
+@@ -14,7 +14,7 @@
+ #include <assert.h>
+ #include <algorithm>
+ 
+-namespace opt {
++namespace ils_mwis {
+ 
+ class Graph
+ {
+@@ -74,6 +74,6 @@ private:
+ 
+ }; // class Graph
+ 
+-} // namespace opt
++} // namespace ils_mwis
+ 
+ #endif // #ifndef GRAPH_H_
+\ No newline at end of file
+diff --git a/src/InitError.h b/src/InitError.h
+index 45a90c2..71f7cf6 100644
+--- a/src/InitError.h
++++ b/src/InitError.h
+@@ -7,7 +7,7 @@
+  */
+ 
+ 
+-namespace opt
++namespace ils_mwis
+ {
+ 
+ class InitError : public std::exception
+@@ -27,4 +27,4 @@ private:
+ 
+ };
+ 
+-} // namespace opt
++} // namespace ils_mwis
+diff --git a/src/Solution.cpp b/src/Solution.cpp
+index 4a655fc..c17e3cd 100644
+--- a/src/Solution.cpp
++++ b/src/Solution.cpp
+@@ -15,7 +15,7 @@
+ 
+ using namespace std;
+ 
+-namespace opt
++namespace ils_mwis
+ {
+ 
+ extern mt19937 generator; // Mersenne Twister 19937 generator
+@@ -399,4 +399,4 @@ void Solution::force(int k)
+ 	}
+ } // void Solution::force()
+ 
+-} // namespace opt
+\ No newline at end of file
++} // namespace ils_mwis
+\ No newline at end of file
+diff --git a/src/Solution.h b/src/Solution.h
+index 9bc8a62..b8357e0 100644
+--- a/src/Solution.h
++++ b/src/Solution.h
+@@ -15,7 +15,7 @@
+ #include <vector>
+ #include <string>
+ 
+-namespace opt
++namespace ils_mwis
+ {
+ 
+ class Solution
+@@ -163,6 +163,6 @@ private:
+ 
+ }; // class Solution
+ 
+-} // namespace opt
++} // namespace ils_mwis
+ 
+ #endif // #ifndef SOLUTION_H_
+\ No newline at end of file
+diff --git a/src/algorithm.h b/src/algorithm.h
+new file mode 100644
+index 0000000..872766c
+--- /dev/null
++++ b/src/algorithm.h
+@@ -0,0 +1,111 @@
++#ifndef ILS_MWIS_ALGORITHM_H
++#define ILS_MWIS_ALGORITHM_H
++
++#include <random>
++#include <iostream>
++#include "bossa_timer.h"
++
++namespace ils_mwis {
++
++Solution solve(Graph *graph_instance, const ArgPack &ap) {
++    BossaTimer proc_timer;
++    double target_time = -1;
++    int target_iterations = -1;
++
++    Solution s(graph_instance);
++
++    // randomly initialize a solution
++
++    while (!s.isMaximal()) {
++        s.addRandomVertex();
++        assert(s.integrityCheck());
++    }
++
++    do {
++        while (!s.isMaximal()) {
++            s.addRandomVertex();
++        }
++    } while (s.omegaImprovement() || s.twoImprovement() /*|| s.threeImprovement() */);
++
++    Solution best_s(s);
++    if (ap.verbose)
++        std::cout << "best weight: " << best_s.weight() << "\n";
++
++    // run ILS iterations
++
++    int k = 1;
++    int local_best = s.weight();
++    int iter;
++    for (iter = 0; iter < ap.iterations; iter++) {
++        Solution next_s(s);
++
++        // shake
++        next_s.force(ap.p[0]);
++
++        assert(next_s.integrityCheck());
++
++        do {
++            while (!next_s.isMaximal()) {
++                next_s.addRandomVertex();
++            }
++        } while (next_s.omegaImprovement() || next_s.twoImprovement());
++
++        assert(best_s.integrityCheck());
++
++        if (next_s.weight() > s.weight()) {
++            k = 1;
++            s = next_s;
++
++            if (local_best < next_s.weight()) {
++                k -= s.size() / ap.p[1];
++                local_best = next_s.weight();
++            }
++
++            if (best_s.weight() < s.weight()) {
++                best_s = s;
++                k -= s.size() * ap.p[2];
++
++                target_iterations = iter;
++
++                if (ap.target != 0 && best_s.weight() >= ap.target) {
++                    goto exit;
++                }
++
++                if (ap.verbose)
++                    std::cout << "new best weight: " << best_s.weight() << " / iteration: "<<  iter <<" / time (s): " << proc_timer.getTime() << "\n";
++            }
++        } else if (k <= s.size() / ap.p[1]) {
++            k++;
++        } else {
++            local_best = s.weight();
++            s.force(ap.p[3]);
++            k = 1;
++        }
++    }
++
++    exit:
++    proc_timer.pause();
++    assert(best_s.integrityCheck());
++
++    if (ap.verbose) {
++        std::cout << "\n\n- best weight: " << best_s.weight() << "\n";
++        std::cout << "- size: " << best_s.size() << "\n";
++        std::cout << "- solution: ";
++        for(int v : best_s.i_set()) {
++            std::cout << v << " ";
++        }
++        std::cout << "\n";
++        std::cout << "- iterations to find the best: " << target_iterations << "\n";
++        std::cout << "- time to find the best (s): " << target_time << "\n";
++        std::cout << "- total iterations: " << iter << "\n";
++        std::cout << "- total processing time (s): " << proc_timer.getTime() << "\n";
++    } else {
++        std::cout << best_s.weight() << " " << target_time << " " << proc_timer.getTime() << "\n";
++    }
++
++    return best_s;
++}
++
++} // namespace ils_mwis
++
++#endif //ILS_MWIS_ALGORITHM_H
+diff --git a/src/main.cpp b/src/main.cpp
+index a5b077d..d61e4af 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -10,7 +10,7 @@
+ #include "ArgPack.h"
+ #include "InitError.h"
+ #include "Solution.h"
+-#include "bossa_timer.h"
++#include "algorithm.h"
+ 
+ #include <fstream>
+ #include <iostream>
+@@ -18,9 +18,8 @@
+ #include <string>
+ 
+ using namespace std;
+-using namespace opt;
+ 
+-namespace opt
++namespace ils_mwis
+ {
+ 
+ // Mersenne Twister 19937 generator
+@@ -97,7 +96,7 @@ Graph *readInstance (const string &filename, bool complement)
+ 	return graph;
+ } // Graph *readInstance (const string &filename)
+ 
+-} // namespace opt
++} // namespace ils_mwis
+ 
+ /****************
+  *
+@@ -108,119 +107,17 @@ Graph *readInstance (const string &filename, bool complement)
+ int main(int argc, char *argv[])
+ {
+ 	try {
+-
+-		BossaTimer input_timer, proc_timer;
+-		double target_time = -1;
+-		int target_iterations = -1;
+-		input_timer.start();
+-
+ 		// read input parameters
+-
+-		ArgPack single_ap(argc, argv);
++		ils_mwis::ArgPack single_ap(argc, argv);
+ 
+ 		// set the random seed
+ 
+-		generator.seed(ArgPack::ap().rand_seed);
++		ils_mwis::generator.seed(ils_mwis::ArgPack::ap().rand_seed);
+ 
+ 		// read instance
++		ils_mwis::Graph *graph_instance = ils_mwis::readInstance(ils_mwis::ArgPack::ap().input_name, ils_mwis::ArgPack::ap().complement);
+ 
+-		Graph *graph_instance = readInstance(ArgPack::ap().input_name, ArgPack::ap().complement);
+-		input_timer.pause();
+-
+-		proc_timer.start();
+-		graph_instance->sort();
+-
+-		Solution s(graph_instance);
+-
+-		// randomly initialize a solution
+-
+-		while (!s.isMaximal()) {
+-			s.addRandomVertex();
+-			assert(s.integrityCheck());
+-		}
+-
+-		do {
+-			while (!s.isMaximal()) {
+-				s.addRandomVertex();
+-			}
+-		} while (s.omegaImprovement() || s.twoImprovement() /*|| s.threeImprovement() */);
+-
+-		Solution best_s(s);
+-		if (ArgPack::ap().verbose)
+-			cout << "best weight: " << best_s.weight() << "\n";
+-
+-		// run ILS iterations
+-
+-		int k = 1;
+-		int local_best = s.weight();
+-		int iter;
+-		for (iter = 0; iter < ArgPack::ap().iterations; iter++) {
+-			Solution next_s(s);
+-
+-			// shake
+-			next_s.force(ArgPack::ap().p[0]);
+-
+-			assert(next_s.integrityCheck());
+-
+-			do {
+-				while (!next_s.isMaximal()) {
+-					next_s.addRandomVertex();
+-				}
+-			} while (next_s.omegaImprovement() || next_s.twoImprovement());
+-
+-			assert(best_s.integrityCheck());
+-
+-			if (next_s.weight() > s.weight()) {
+-				k = 1;
+-				s = next_s;
+-
+-				if (local_best < next_s.weight()) {
+-					k -= s.size() / ArgPack::ap().p[1];
+-					local_best = next_s.weight();
+-				}
+-
+-				if (best_s.weight() < s.weight()) {
+-					best_s = s;
+-					k -= s.size() * ArgPack::ap().p[2];
+-
+-					target_time = proc_timer.getTime();
+-					target_iterations = iter;
+-
+-					if (ArgPack::ap().target != 0 && best_s.weight() >= ArgPack::ap().target) {
+-						goto exit;
+-					}
+-
+-					if (ArgPack::ap().verbose)
+-						cout << "new best weight: " << best_s.weight() << " / iteration: "<<  iter <<" / time (s): " << proc_timer.getTime() << "\n";
+-				}
+-			} else if (k <= s.size() / ArgPack::ap().p[1]) {
+-				k++;
+-			} else {
+-				local_best = s.weight();
+-				s.force(ArgPack::ap().p[3]);
+-				k = 1;
+-			}
+-		}
+-
+-exit:
+-		proc_timer.pause();
+-		assert(best_s.integrityCheck());
+-
+-		if (ArgPack::ap().verbose) {
+-			cout << "\n\n- best weight: " << best_s.weight() << "\n";
+-			cout << "- size: " << best_s.size() << "\n";
+-			cout << "- solution: ";
+-			for(int v : best_s.i_set()) {
+-				cout << v << " ";
+-			}
+-			cout << "\n- input time: " << input_timer.getTime() << "\n";
+-			cout << "- iterations to find the best: " << target_iterations << "\n";
+-			cout << "- time to find the best (s): " << target_time << "\n";
+-			cout << "- total iterations: " << iter << "\n";
+-			cout << "- total processing time (s): " << proc_timer.getTime() << "\n";
+-		} else {
+-			cout << best_s.weight() << " " << target_time << " " << proc_timer.getTime() << "\n";
+-		}
++		ils_mwis::Solution s = solve(graph_instance, ils_mwis::ArgPack::ap());
+ 
+ 		delete(graph_instance);
+ 
+-- 
+2.20.1
+
