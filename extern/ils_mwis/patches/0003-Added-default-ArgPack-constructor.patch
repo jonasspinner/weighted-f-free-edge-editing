@@ -1,0 +1,64 @@
+From b1842457d4231a943c73358f792ac3b0d9b4fd6e Mon Sep 17 00:00:00 2001
+From: Jonas Spinner <jonas.spinner@student.kit.edu>
+Date: Wed, 29 Jan 2020 11:57:05 +0100
+Subject: [PATCH 3/3] Added default ArgPack constructor
+
+---
+ src/ArgPack.cpp | 10 +++++++++-
+ src/ArgPack.h   |  4 +++-
+ src/algorithm.h |  3 +++
+ 3 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/src/ArgPack.cpp b/src/ArgPack.cpp
+index 6851b5e..0ebaa9f 100644
+--- a/src/ArgPack.cpp
++++ b/src/ArgPack.cpp
+@@ -22,7 +22,15 @@ namespace ils_mwis
+ 
+ ArgPack *ArgPack::def_ap_ = 0;
+ 
+-ArgPack::ArgPack(int argc, const char * const argv []) :
++ArgPack::ArgPack() :
++        verbose(true),
++        rand_seed(1),
++        target(0),
++        complement(0),
++        iterations(2000000),
++        p{2,4,4,1} {}
++
++ArgPack::ArgPack(int argc, char * const argv []) :
+ 	verbose(true),
+ 	rand_seed(1),
+ 	target(0),
+diff --git a/src/ArgPack.h b/src/ArgPack.h
+index 96b1ba7..cf5fc9a 100644
+--- a/src/ArgPack.h
++++ b/src/ArgPack.h
+@@ -44,7 +44,9 @@ public:
+ 
+ //	static ArgPack &write_ap() { assert(def_ap_); return *def_ap_; }
+ 
+-	ArgPack(int argc, const char * const argv []);
++	ArgPack();
++
++	ArgPack(int argc, char * const argv []);
+ 
+ 	~ArgPack() { assert(def_ap_); def_ap_ = 0; }
+ 
+diff --git a/src/algorithm.h b/src/algorithm.h
+index 872766c..eb9dc30 100644
+--- a/src/algorithm.h
++++ b/src/algorithm.h
+@@ -4,6 +4,9 @@
+ #include <random>
+ #include <iostream>
+ #include "bossa_timer.h"
++#include "ArgPack.h"
++#include "Solution.h"
++#include "Graph.h"
+ 
+ namespace ils_mwis {
+ 
+-- 
+2.20.1
+
