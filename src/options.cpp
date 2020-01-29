@@ -123,6 +123,8 @@ namespace Options {
             lower_bound = LB::LocalSearch;
         else if (token == "LPRelaxation")
             lower_bound = LB::LPRelaxation;
+        else if (token == "ILSMWISSolver")
+            lower_bound = LB::ILSMWISSolver;
         else
             in.setstate(std::ios_base::failbit);
         return in;
@@ -140,6 +142,8 @@ namespace Options {
                 return os << "LocalSearch";
             case LB::LPRelaxation:
                 return os << "LPRelaxation";
+            case LB::ILSMWISSolver:
+                return os << "ILSMWISSOlver";
             default:
                 return os;
         }

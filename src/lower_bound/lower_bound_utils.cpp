@@ -16,6 +16,7 @@
 
 #endif
 
+#include "ILSMWISSolverLowerBound.h"
 
 namespace LowerBound {
     /**
@@ -47,6 +48,8 @@ namespace LowerBound {
             std::cerr << "gurobi has to be installed to use LB::LinearProgram.";
                 abort();
 #endif
+            case LB::ILSMWISSolver:
+                return std::make_unique<ILSMWISSolverLowerBound>(instance, marked, finder);
             default:
                 assert(false);
                 return nullptr;

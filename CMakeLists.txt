@@ -7,7 +7,8 @@ project(Weighted_F-free_Edge_Editing)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Wunused -Woverloaded-virtual -Wpedantic -Wsign-conversion -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wuseless-cast -Wdouble-promotion -Wformat=2")
+# Compiler flags
+add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Wunused -Woverloaded-virtual -Wpedantic -Wsign-conversion -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wuseless-cast -Wdouble-promotion -Wformat=2)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -Wno-comment")
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
@@ -15,29 +16,38 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wno-unused-par
 
 
 
+# Include directories
 
-
+# Boost
 find_package(Boost COMPONENTS program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
-find_package(GUROBI)
-if(GUROBI_FOUND)
-    include_directories(SYSTEM ${GUROBI_INCLUDE_DIRS})
-    # set(LIBS ${LIBS} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
-    add_definitions("-DGUROBI_FOUND")
-endif(GUROBI_FOUND)
-
-
+# YAML
 find_package(YAML-CPP REQUIRED)
 include_directories(${YAML_CPP_INCLUDE_DIR})
 
+# Gurobi
+find_package(GUROBI)
+if(GUROBI_FOUND)
+    include_directories(SYSTEM ${GUROBI_INCLUDE_DIRS})
+    add_definitions("-DGUROBI_FOUND")
+endif(GUROBI_FOUND)
+
+# ILS MWIS
+# TODO: Refactor as optional dependency
+# TODO: Refactor as CMAKE subfolder
+set(ILS_MWIS_SRC_FILES extern/ils_mwis/src/ArgPack.cpp extern/ils_mwis/src/bossa_timer.cpp extern/ils_mwis/src/Graph.cpp extern/ils_mwis/src/Solution.cpp)
+set_source_files_properties(${ILS_MWIS_SRC_FILES} PROPERTIES COMPILE_FLAGS "-w")
+
+
+
+# Source files
 
 set(TEST_SRC_FILES src/tests/EditorTests.cpp src/tests/GraphTests.cpp src/tests/test_utils.cpp)
 set(FINDER_SRC_FILES src/finder/finder_utils.cpp src/finder/CenterC4P4.cpp src/finder/Center.cpp src/finder/SplitCluster.cpp src/finder/SplitGraph.cpp src/finder/CenterP3.cpp src/finder/NaiveP3.cpp src/finder/Endpoint.cpp src/finder/Naive.cpp src/finder/OuterP3.cpp)
 set(SELECTOR_SRC_FILES src/selector/selector_utils.cpp)
-set(LOWER_BOUND_SRC_FILES src/lower_bound/lower_bound_utils.cpp src/lower_bound/TrivialLowerBound.cpp src/lower_bound/SortedGreedyLowerBound.cpp src/lower_bound/GreedyLowerBound.cpp src/lower_bound/LocalSearchLowerBound.cpp)
-set(SRC_FILES ${FINDER_SRC_FILES} ${SELECTOR_SRC_FILES} ${LOWER_BOUND_SRC_FILES} src/Configuration.cpp src/graph/Subgraph.cpp src/options.cpp)
-
+set(LOWER_BOUND_SRC_FILES src/lower_bound/lower_bound_utils.cpp src/lower_bound/TrivialLowerBound.cpp src/lower_bound/SortedGreedyLowerBound.cpp src/lower_bound/GreedyLowerBound.cpp src/lower_bound/LocalSearchLowerBound.cpp src/lower_bound/ILSMWISSolverLowerBound.cpp)
+set(SRC_FILES ${FINDER_SRC_FILES} ${SELECTOR_SRC_FILES} ${LOWER_BOUND_SRC_FILES} src/Configuration.cpp src/graph/Subgraph.cpp src/options.cpp ${ILS_MWIS_SRC_FILES})
 
 add_executable(graphedit src/main.cpp ${SRC_FILES})
 add_executable(fpt apps/run_fptsolver.cpp ${SRC_FILES})
@@ -51,6 +61,7 @@ if(GUROBI_FOUND)
     target_link_libraries(ilp LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 endif(GUROBI_FOUND)
 
+# Boost, YAML
 target_link_libraries(graphedit LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(fpt LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(tests LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
@@ -58,6 +69,7 @@ target_link_libraries(finder_benchmark LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP
 target_link_libraries(lower_bound_benchmark LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(fpt_experiment LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 
+# Gurobi
 if(GUROBI_FOUND)
     target_link_libraries(graphedit LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
     target_link_libraries(fpt LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
@@ -69,6 +81,8 @@ if(GUROBI_FOUND)
 endif(GUROBI_FOUND)
 
 
+
+# Add version command
 add_custom_command(TARGET graphedit PRE_BUILD COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_LIST_DIR}/cmake/FillVersionH.cmake")
 add_custom_command(TARGET fpt PRE_BUILD COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_LIST_DIR}/cmake/FillVersionH.cmake")
 add_custom_command(TARGET ilp PRE_BUILD COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_LIST_DIR}/cmake/FillVersionH.cmake")
