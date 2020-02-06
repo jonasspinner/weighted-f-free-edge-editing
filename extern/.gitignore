@@ -1,0 +1,13 @@
+# ILS MWIS
+
+# Ignore everything in this directory
+ils_mwis/*
+# Except these files
+!ils_mwis/get.sh
+!ils_mwis/patches
+!ils_mwis/patches/*
+!ils_mwis/.gitignore
+!ils_mwis/LICENSE
+
+
+lsswz_exact_mwis/*
