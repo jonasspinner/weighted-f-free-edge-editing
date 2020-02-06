@@ -16,7 +16,7 @@
 
 #endif
 
-#include "ILSMWISSolverLowerBound.h"
+#include "NPS_MWIS_SolverLowerBound.h"
 
 namespace LowerBound {
     /**
@@ -43,13 +43,18 @@ namespace LowerBound {
                 return std::make_unique<SortedGreedyLowerBound>(instance, marked, finder);
             case LB::LPRelaxation:
 #ifdef GUROBI_FOUND
-            return std::make_unique<LPRelaxationLowerBound>(instance, marked, std::move(config), finder);
+                return std::make_unique<LPRelaxationLowerBound>(instance, marked, std::move(config), finder);
 #else
-            std::cerr << "gurobi has to be installed to use LB::LinearProgram.";
+                std::cerr << "gurobi has to be installed to use LB::LinearProgram.";
                 abort();
 #endif
             case LB::ILSMWISSolver:
-                return std::make_unique<ILSMWISSolverLowerBound>(instance, marked, finder);
+#ifdef NPS_MWIS_FOUND
+                return std::make_unique<NPS_MWIS_SolverLowerBound>(instance, marked, finder);
+#else
+                std::cerr << "ils_mwis has to be installed to use LB::ILSMWISSolver.";
+                abort();
+#endif
             default:
                 assert(false);
                 return nullptr;

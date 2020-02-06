@@ -4,9 +4,9 @@
 
 #include <random>
 
-#include "ILSMWISSolverLowerBound.h"
-#include "../../extern/ils_mwis/src/algorithm.h"
-#include "../../extern/ils_mwis/src/ArgPack.h"
+#include "NPSMWISSolverLowerBound.h"
+#include "../../extern/nps_mwis/src/algorithm.h"
+#include "../../extern/nps_mwis/src/ArgPack.h"
 
 
 namespace ils_mwis {
@@ -15,7 +15,7 @@ namespace ils_mwis {
     std::mt19937 generator;
 }
 
-Cost ILSMWISSolverLowerBound::calculate_lower_bound(Cost k) {
+Cost NPSMWISSolverLowerBound::calculate_lower_bound(Cost k) {
 
     // Configuration
     ils_mwis::ArgPack ap;
@@ -41,7 +41,7 @@ Cost ILSMWISSolverLowerBound::calculate_lower_bound(Cost k) {
  *
  * @return
  */
-ils_mwis::Graph ILSMWISSolverLowerBound::build_instance() {
+ils_mwis::Graph NPSMWISSolverLowerBound::build_instance() {
     VertexPairMap<std::vector<Vertex>> cliques(m_graph.size());
 
     std::vector<int> weights;
