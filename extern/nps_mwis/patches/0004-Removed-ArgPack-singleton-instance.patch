@@ -1,7 +1,7 @@
 From f6fb5a05006840b0e2dcbeb3a30c961f06a9cfc7 Mon Sep 17 00:00:00 2001
 From: Jonas Spinner <jonas.spinner@student.kit.edu>
 Date: Wed, 29 Jan 2020 15:12:04 +0100
-Subject: [PATCH 4/4] Removed ArgPack singleton instance
+Subject: [PATCH 4/5] Removed ArgPack singleton instance
 
 ---
  src/ArgPack.cpp |  8 ++------

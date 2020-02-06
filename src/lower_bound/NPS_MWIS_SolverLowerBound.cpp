@@ -4,21 +4,21 @@
 
 #include <random>
 
-#include "NPSMWISSolverLowerBound.h"
+#include "NPS_MWIS_SolverLowerBound.h"
 #include "../../extern/nps_mwis/src/algorithm.h"
 #include "../../extern/nps_mwis/src/ArgPack.h"
 
 
-namespace ils_mwis {
-    // ils_mwis::Solution relies on std::mt19937 generator in the ils_mwis namespace.
+namespace nps_mwis {
+    // nps_mwis::Solution relies on std::mt19937 generator in the nps_mwis namespace.
     // TODO: Refactor ils_mwis to eliminate global variables
-    std::mt19937 generator;
+    std::mt19937 generator(0);
 }
 
-Cost NPSMWISSolverLowerBound::calculate_lower_bound(Cost k) {
+Cost NPS_MWIS_SolverLowerBound::calculate_lower_bound(Cost k) {
 
     // Configuration
-    ils_mwis::ArgPack ap;
+    nps_mwis::ArgPack ap;
 
     ap.complement = false;
     ap.p[0] = 2, ap.p[1] = 4, ap.p[2] = 4, ap.p[3] = 1;
@@ -27,9 +27,9 @@ Cost NPSMWISSolverLowerBound::calculate_lower_bound(Cost k) {
     ap.target = k + 1;
     ap.iterations = 500;
 
-    ils_mwis::Graph graph_instance = build_instance();
+    nps_mwis::Graph graph_instance = build_instance();
 
-    auto solution = ils_mwis::solve(&graph_instance, ap);
+    auto solution = nps_mwis::solve(&graph_instance, ap);
 
     return solution.weight();
 }
@@ -41,7 +41,7 @@ Cost NPSMWISSolverLowerBound::calculate_lower_bound(Cost k) {
  *
  * @return
  */
-ils_mwis::Graph NPSMWISSolverLowerBound::build_instance() {
+nps_mwis::Graph NPS_MWIS_SolverLowerBound::build_instance() {
     VertexPairMap<std::vector<Vertex>> cliques(m_graph.size());
 
     std::vector<int> weights;
@@ -81,13 +81,13 @@ ils_mwis::Graph NPSMWISSolverLowerBound::build_instance() {
     m /= 2;
 
     // Transform the Graph into a ils_mwis::Graph.
-    ils_mwis::Graph ils_mwis_instance_graph(n, m);
+    nps_mwis::Graph ils_mwis_instance_graph(n, m);
 
     for (size_t u = 0; u < n; ++u) {
         ils_mwis_instance_graph.weight(u) = weights[u];
     }
     for (auto [u, v] : instance_graph.edges()) {
-        ils_mwis_instance_graph.addEdge(static_cast<int>(u), static_cast<int>(v));
+        ils_mwis_instance_graph.addEdge(u, v);
     }
 
     return ils_mwis_instance_graph;

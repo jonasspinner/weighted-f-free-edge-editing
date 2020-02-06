@@ -1,0 +1,829 @@
+From 81217959b6b202020c59120e549d1af5e8c8078f Mon Sep 17 00:00:00 2001
+From: Jonas Spinner <jonas.spinner@student.kit.edu>
+Date: Thu, 6 Feb 2020 17:21:18 +0100
+Subject: [PATCH 5/5] Modified namespace to nps_mwis and removed warnings
+
+---
+ src/ArgPack.cpp     |  14 +++---
+ src/ArgPack.h       |   2 +-
+ src/Graph.cpp       |  22 ++++-----
+ src/Graph.h         |  34 +++++++-------
+ src/InitError.h     |   2 +-
+ src/Solution.cpp    | 110 ++++++++++++++++++++++----------------------
+ src/Solution.h      |  32 ++++++-------
+ src/algorithm.h     |  10 ++--
+ src/bossa_timer.cpp |  20 ++++----
+ src/main.cpp        |  22 ++++-----
+ 10 files changed, 134 insertions(+), 134 deletions(-)
+
+diff --git a/src/ArgPack.cpp b/src/ArgPack.cpp
+index c6a53c8..a57451d 100644
+--- a/src/ArgPack.cpp
++++ b/src/ArgPack.cpp
+@@ -17,7 +17,7 @@
+ 
+ using namespace std;
+ 
+-namespace ils_mwis
++namespace nps_mwis
+ {
+ 
+ ArgPack::ArgPack() :
+@@ -67,25 +67,25 @@ ArgPack::ArgPack(int argc, char * const argv []) :
+ 			complement = 1;
+ 			break;
+ 		case 't':
+-			target = strtoul(optarg, NULL, 10);
++			target = static_cast<int>(strtoul(optarg, nullptr, 10));
+ 			break;
+ 		case 'i':
+-			iterations = strtoul(optarg, NULL, 10);
++			iterations = static_cast<int>(strtoul(optarg, nullptr, 10));
+ 			break;
+ 		case 's':
+-			rand_seed = strtoul(optarg, NULL, 10);
++			rand_seed = strtoul(optarg, nullptr, 10);
+ 			break;
+ 		case 'v':
+ 			verbose = false;
+ 			break;
+ 		case 'p':
+ 		{
+-			char* token = NULL;
++			char* token = nullptr;
+ 			int i = 0;
+ 			token = strtok(optarg, ":");
+ 			while (token) {
+-				p[i] = strtoul(token, NULL, 10);
+-				token = strtok(NULL, ":");
++				p[i] = static_cast<double>(strtoul(token, nullptr, 10));
++				token = strtok(nullptr, ":");
+ 				i++;
+ 			}
+ 
+diff --git a/src/ArgPack.h b/src/ArgPack.h
+index ff2e9d3..5ba2554 100644
+--- a/src/ArgPack.h
++++ b/src/ArgPack.h
+@@ -11,7 +11,7 @@
+ 
+ #include <string>
+ 
+-namespace ils_mwis {
++namespace nps_mwis {
+ 
+ class ArgPack {
+ 
+diff --git a/src/Graph.cpp b/src/Graph.cpp
+index e17353f..907be1a 100644
+--- a/src/Graph.cpp
++++ b/src/Graph.cpp
+@@ -1,37 +1,37 @@
+ #include "Graph.h"
+ 
+ #include <list>
+-#include <assert.h>
++#include <cassert>
+ #include <algorithm>
+ 
+ using namespace std;
+ 
+-namespace ils_mwis
++namespace nps_mwis
+ {
+ 
+-Graph::Graph(const int n, const int m, WeightsFromIndex) :
++Graph::Graph(const size_t n, const size_t m, WeightsFromIndex) :
+ 	weights_(n, 0),
+ 	n_(n),
+ 	m_(m),
+-	adj_l_(n, std::vector<int>())
++	adj_l_(n, std::vector<size_t>())
+ {
+-	for(int idx = 0; idx < n; idx++) {
++	for(size_t idx = 0; idx < n; idx++) {
+ 		weights_[idx] = (idx + 1) % 200 + 1;
+ 	}
+ }
+ 
+-Graph::Graph(const int n, const int m) :
++Graph::Graph(const size_t n, const size_t m) :
+         weights_(n, 0),
+         n_(n),
+         m_(m),
+-        adj_l_(n, std::vector<int>())
++        adj_l_(n, std::vector<size_t>())
+ {
+-    for(int idx = 0; idx < n; idx++) {
++    for(size_t idx = 0; idx < n; idx++) {
+         weights_[idx] = (idx + 1) % 200 + 1;
+     }
+ }
+ 
+-void Graph::removeEdge(const int i, const int j)
++void Graph::removeEdge(const size_t i, const size_t j)
+ {
+ 	assert(i < n_ && j < n_);
+ 
+@@ -39,7 +39,7 @@ void Graph::removeEdge(const int i, const int j)
+ 	removeNeighbor(j, i);
+ }
+ 
+-void Graph::addEdge(const int i, const int j)
++void Graph::addEdge(const size_t i, const size_t j)
+ {
+ 	assert(i < n_ && j < n_);
+ 
+@@ -49,7 +49,7 @@ void Graph::addEdge(const int i, const int j)
+ 
+ void Graph::sort()
+ {
+-	for (int v = 0; v < n_; v++) {
++	for (size_t v = 0; v < n_; v++) {
+ 		std::sort(adj_l_[v].begin(), adj_l_[v].end());
+ 	}
+ }
+diff --git a/src/Graph.h b/src/Graph.h
+index baff46d..2c420d1 100644
+--- a/src/Graph.h
++++ b/src/Graph.h
+@@ -11,10 +11,10 @@
+ 
+ #include <vector>
+ #include <string>
+-#include <assert.h>
++#include <cassert>
+ #include <algorithm>
+ 
+-namespace ils_mwis {
++namespace nps_mwis {
+ 
+ class Graph
+ {
+@@ -23,21 +23,21 @@ public:
+ 
+ 	// return the number of edges
+ 
+-	int m() const { return m_; }
++    unsigned int m() const { return m_; }
+ 
+ 	// return the number of vertices
+ 
+-	int n() const { return n_; }
++	unsigned int n() const { return n_; }
+ 
+ 	// return the weight of vertice v
+ 
+-	int weight(const int v) const { return weights_[v]; }
++	int weight(const size_t v) const { return weights_[v]; }
+ 
+-    int &weight(const int v) { return weights_[v]; }
++    int &weight(const size_t v) { return weights_[v]; }
+ 
+-	// return the adjency list of vertex i
++	// return the adjacency list of vertex i
+ 
+-	const std::vector<int>& adj_l(const int i) const
++	const std::vector<size_t>& adj_l(const size_t i) const
+ 	{
+ 		assert(i < n_);
+ 
+@@ -46,13 +46,13 @@ public:
+ 
+     struct WeightsFromIndex {};
+ 
+-    Graph(const int n, const int m, WeightsFromIndex);
++    Graph(size_t n, size_t m, WeightsFromIndex);
+ 
+-    Graph(const int n, const int m);
++    Graph(size_t n, size_t m);
+ 
+-	void addEdge(const int i, const int j);
++	void addEdge(size_t i, size_t j);
+ 
+-	void removeEdge(const int i, const int j);
++	void removeEdge(size_t i, size_t j);
+ 
+ 	// sort the adjacency lists
+ 
+@@ -62,18 +62,18 @@ private:
+ 
+ 	std::vector<int> weights_; // vertices weight
+ 
+-	int n_; // number of vertices
++    size_t n_; // number of vertices
+ 
+-	int m_; // number of edges
++    size_t m_; // number of edges
+ 
+-	std::vector< std::vector<int> > adj_l_; // adjaceny list
++	std::vector< std::vector<size_t> > adj_l_; // adjaceny list
+ 
+-	void addNeighbor(const int i, const int j)
++	void addNeighbor(const size_t i, const size_t j)
+ 	{
+ 		adj_l_[i].push_back(j);
+ 	}
+ 
+-	void removeNeighbor(const int i, const int j) 
++	void removeNeighbor(const size_t i, const size_t j)
+ 	{		
+ 		adj_l_[i].erase(std::remove(adj_l_[i].begin(), adj_l_[i].end(), j), adj_l_[i].end());
+ 	}
+diff --git a/src/InitError.h b/src/InitError.h
+index 3b052a2..f3fc33f 100644
+--- a/src/InitError.h
++++ b/src/InitError.h
+@@ -9,7 +9,7 @@
+  */
+ 
+ 
+-namespace ils_mwis
++namespace nps_mwis
+ {
+ 
+ class InitError : public std::exception
+diff --git a/src/Solution.cpp b/src/Solution.cpp
+index c17e3cd..b24b21d 100644
+--- a/src/Solution.cpp
++++ b/src/Solution.cpp
+@@ -15,7 +15,7 @@
+ 
+ using namespace std;
+ 
+-namespace ils_mwis
++namespace nps_mwis
+ {
+ 
+ extern mt19937 generator; // Mersenne Twister 19937 generator
+@@ -30,25 +30,25 @@ Solution::Solution(const Graph *g) :
+ 	mu_(g_->n()),
+ 	weight_(0)
+ {
+-	for (int idx = 0; idx < g_->n(); idx++) {
++	for (size_t idx = 0; idx < g_->n(); idx++) {
+ 		position_[idx] = idx;
+ 		solution_[idx] = idx;
+ 		mu_[idx] = g_->weight(idx);
+ 	}
+ } // Solution::Solution(const Graph *g)
+ 
+-void Solution::moveFreeToSolutionPartition(const int v)
++void Solution::moveFreeToSolutionPartition(const size_t v)
+ {
+ 	assert(v < g_->n());
+ 
+ 	// current position of v in the solution_ vector
+-	int pos_v = position_[v];
++	size_t pos_v = position_[v];
+ 
+ 	// new position of v in the solution_ vector
+-	int new_pos_v = solution_size_;
++	size_t new_pos_v = solution_size_;
+ 
+ 	// first vertex of the second partition
+-	int j = solution_[solution_size_];
++    size_t j = solution_[solution_size_];
+ 
+ 	// ensures v is in the free partition of the solution vector
+ 	assert((solution_size_ <= pos_v) && (solution_size_ + free_size_ > pos_v));
+@@ -64,18 +64,18 @@ void Solution::moveFreeToSolutionPartition(const int v)
+ 	free_size_--;
+ } // void Solution::moveFreeToSolutionPartition(const int v)
+ 
+-void Solution::moveFreeToNonFreePartition(const int v)
++void Solution::moveFreeToNonFreePartition(const size_t v)
+ {
+ 	assert(v < g_->n());
+ 
+ 	// current position of v in the solution vector
+-	int pos_v = position_[v];
++    size_t pos_v = position_[v];
+ 
+ 	// new position of v in the solution vector
+-	int new_pos_v = solution_size_ + free_size_ - 1;
++    size_t new_pos_v = solution_size_ + free_size_ - 1;
+ 
+ 	// last vertex of the second partition
+-	int j = solution_[solution_size_ + free_size_ - 1];
++    size_t j = solution_[solution_size_ + free_size_ - 1];
+ 
+ 	// ensures v is in the free partition of the solution vector
+ 	assert((solution_size_ <= pos_v) && (solution_size_ + free_size_ > pos_v));
+@@ -90,18 +90,18 @@ void Solution::moveFreeToNonFreePartition(const int v)
+ 	free_size_--;
+ } // void Solution::moveFreeToNonFreePartition(const int v)
+ 
+-void Solution::moveSolutionToFreePartition(const int v)
++void Solution::moveSolutionToFreePartition(const size_t v)
+ {
+ 	assert(v < g_->n());
+ 
+ 	// current position of v in the solution vector
+-	int pos_v = position_[v];
++    size_t pos_v = position_[v];
+ 
+ 	// new position of v in the solution vector
+-	int new_pos_v = solution_size_ - 1;
++    size_t new_pos_v = solution_size_ - 1;
+ 
+ 	// last vertex of the first partition
+-	int j = solution_[solution_size_ - 1];
++    size_t j = solution_[solution_size_ - 1];
+ 
+ 	// ensures v is in the solution partition of the solution vector
+ 	assert(pos_v < solution_size_);
+@@ -117,18 +117,18 @@ void Solution::moveSolutionToFreePartition(const int v)
+ 	free_size_++;
+ } // void Solution::moveSolutionToFreePartition(const int v)
+ 
+-void Solution::moveNonFreeToFreePartition(const int v)
++void Solution::moveNonFreeToFreePartition(const size_t v)
+ {
+ 	assert(v < g_->n());
+ 
+ 	// current position of v in the solution vector
+-	int pos_v = position_[v];
++    size_t pos_v = position_[v];
+ 
+ 	// new position of v in the solution vector
+-	int new_pos_v = solution_size_ + free_size_;
++    size_t new_pos_v = solution_size_ + free_size_;
+ 
+ 	// first vertex of the third partition
+-	int j = solution_[solution_size_ + free_size_];
++    size_t j = solution_[solution_size_ + free_size_];
+ 
+ 	// ensures v is in the non free partition of the solution vector
+ 	assert(pos_v >= solution_size_ + free_size_);
+@@ -143,39 +143,39 @@ void Solution::moveNonFreeToFreePartition(const int v)
+ 	free_size_++;
+ } // void Solution::moveNonFreeToFreePartition(const int v)
+ 
+-void Solution::addVertex(const int v)
++void Solution::addVertex(const size_t v)
+ {
+ 	int weight_v = g_->weight(v);
+ 	weight_ += weight_v;
+ 
+ 	moveFreeToSolutionPartition(v);
+ 
+-	const vector<int> &adj_l = g_->adj_l(v);
++	const vector<size_t> &adj_l = g_->adj_l(v);
+ 
+-	for (int neighbor : adj_l) {
++	for (size_t neighbor : adj_l) {
+ 		// increase the tighness of each neighbor by one
+ 		tightness_[neighbor]++;
+ 
+ 		mu_[neighbor] -= weight_v;
+ 
+ 		// if the neighbor is in the free partition, move to non free partition
+-		int neighbor_pos = position_[neighbor];
++        size_t neighbor_pos = position_[neighbor];
+ 		if ((solution_size_ <= neighbor_pos) && (solution_size_ + free_size_ > neighbor_pos)) {
+ 			moveFreeToNonFreePartition(neighbor);
+ 		}
+ 	}
+ } // void Solution::addVertex(const int v)
+ 
+-void Solution::removeVertex(const int v)
++void Solution::removeVertex(const size_t v)
+ {
+ 	int weight_v = g_->weight(v);
+ 	weight_ -= weight_v;
+ 
+ 	moveSolutionToFreePartition(v);
+ 
+-	const vector<int> &adj_l = g_->adj_l(v);
++	const vector<size_t> &adj_l = g_->adj_l(v);
+ 
+-	for (int neighbor : adj_l) {
++	for (size_t neighbor : adj_l) {
+ 		tightness_[neighbor]--;
+ 
+ 		mu_[neighbor] += weight_v;
+@@ -189,30 +189,30 @@ void Solution::removeVertex(const int v)
+ 
+ bool Solution::integrityCheck() const
+ {
+-	for (int idx = 0; idx < solution_size_; idx++) {
+-		int vertex = solution_[idx];
++	for (size_t idx = 0; idx < solution_size_; idx++) {
++        size_t vertex = solution_[idx];
+ 
+ 		if (tightness_[vertex] > 0) {
+ 			return false;
+ 		}
+ 
+ 		for (int neighbor : g_->adj_l(vertex)) {
+-			if (find(solution_.begin(), solution_.begin() + solution_size_, neighbor)
+-			        != solution_.begin() + solution_size_) {
++			if (find(solution_.begin(), solution_.begin() + static_cast<long>(solution_size_), neighbor)
++			        != solution_.begin() + static_cast<long>(solution_size_)) {
+ 				return false;
+ 			}
+ 		}
+ 	}
+ 
+-	for (int idx = solution_size_; idx < solution_size_ + free_size_; idx++) {
+-		int vertex = solution_[idx];
++	for (size_t idx = solution_size_; idx < solution_size_ + free_size_; idx++) {
++        size_t vertex = solution_[idx];
+ 		if (tightness_[vertex] > 0) {
+ 			return false;
+ 		}
+ 	}
+ 
+-	for (int idx = solution_size_ + free_size_; idx < g_->n(); idx++) {
+-		int vertex = solution_[idx];
++	for (size_t idx = solution_size_ + free_size_; idx < g_->n(); idx++) {
++        size_t vertex = solution_[idx];
+ 		if (tightness_[vertex] == 0) {
+ 			return false;
+ 		}
+@@ -227,19 +227,19 @@ void Solution::addRandomVertex()
+ 
+ 	// generate a random number between [0, free_size_ - 1]
+ 	uniform_int_distribution<int> distribution(0, free_size_ - 1);
+-	int free_pos = distribution(generator);
++    auto free_pos = static_cast<size_t>(distribution(generator));
+ 
+-	int vertex = solution_[solution_size_ + free_pos];
++    size_t vertex = solution_[solution_size_ + free_pos];
+ 
+ 	addVertex(vertex);
+ } // void Solution::addRandomVertex()
+ 
+ bool Solution::omegaImprovement()
+ {
+-	for (int idx = g_->n() - 1; idx >= solution_size_; idx--) {
+-		int v = solution_[idx];
++	for (size_t idx = g_->n() - 1; idx >= solution_size_; idx--) {
++        size_t v = solution_[idx];
+ 		if (mu_[v] > 0) {
+-			for (int neighbor : g_->adj_l(v)) {
++			for (size_t neighbor : g_->adj_l(v)) {
+ 				if (position_[neighbor] < solution_size_) {
+ 					removeVertex(neighbor);
+ 				}
+@@ -256,15 +256,15 @@ bool Solution::twoImprovement()
+ {
+ 	assert(isMaximal());
+ 
+-	for (int idx = 0; idx < solution_size_; idx++) {
++	for (size_t idx = 0; idx < solution_size_; idx++) {
+ 		// the candidate for removal
+-		int x = solution_[idx];
++        size_t x = solution_[idx];
+ 
+ 		// sorted list of 1-tight nighbors of x
+-		vector<int> onetight_list;
++		vector<size_t> onetight_list;
+ 
+ 		// build the list of 1-tight nighbors of x
+-		for (int neighbor : g_->adj_l(x)) {
++		for (size_t neighbor : g_->adj_l(x)) {
+ 			if (tightness_[neighbor] == 1) {
+ 				onetight_list.push_back(neighbor);
+ 			}
+@@ -278,16 +278,16 @@ bool Solution::twoImprovement()
+ 
+ 		// attempt to find in onetight_list a pair {v, w} such that there
+ 		// is no edge between v and w
+-		for (int v : onetight_list) {
++		for (size_t v : onetight_list) {
+ 
+ 			// stores the sorted list of v nighbors
+-			vector<int> v_neighbors(g_->adj_l(v));
++			vector<size_t> v_neighbors(g_->adj_l(v));
+ 			assert(is_sorted(v_neighbors.begin(), v_neighbors.end()));
+ 
+ 			// check if there is a vertex w in onetight_list (besides v) that
+ 			// does not belong to v_neighbors. since both onetight_list and v_neighbors
+ 			// are sorted, this can be done by traversing both lists in tandem.
+-			size_t i_idx = 0, j_idx = 0;
++            size_t i_idx = 0, j_idx = 0;
+ 			while (i_idx < v_neighbors.size()
+ 			        && j_idx < onetight_list.size()) {
+ 				if (onetight_list[j_idx] == v) {
+@@ -304,7 +304,7 @@ bool Solution::twoImprovement()
+ 
+ 				// if this point is reached, this means we found the pair {v, w}
+ 				// we were looking for !!
+-				int w = onetight_list[j_idx];
++                size_t w = onetight_list[j_idx];
+ 
+ 				int weight_v = g_->weight(v);
+ 				int weight_w = g_->weight(w);
+@@ -330,13 +330,13 @@ bool Solution::threeImprovement()
+ 	assert(isMaximal());
+ 
+ 	// for each 2-tight vertex u..
+-	for (int idx = solution_size_; idx < g_->n(); idx++) {
+-		int u = solution_[idx];
++	for (size_t idx = solution_size_; idx < g_->n(); idx++) {
++        size_t u = solution_[idx];
+ 		if (tightness_[u] != 2) continue;
+ 
+ 		// temporarly remove neighbors vertices x and y from the solution
+-		vector<int> xy;
+-		for (int j : g_->adj_l(u)) {
++		vector<size_t> xy;
++		for (size_t j : g_->adj_l(u)) {
+ 			if (position_[j] < solution_size_) {
+ 				xy.push_back(j);
+ 			}
+@@ -352,7 +352,7 @@ bool Solution::threeImprovement()
+ 		// if there are less than two free vertices, we are done with u
+ 		if (free_size_ >= 2) {
+ 			// temporarly add each free vertex that is neighbor of x
+-			for (int v : g_->adj_l(xy[0])) {
++			for (size_t v : g_->adj_l(xy[0])) {
+ 				if (position_[v] >= solution_size_ && position_[v] < solution_size_ + free_size_) {
+ 					addVertex(v);
+ 					// if the solution is not maximal, adding any free vertex w will
+@@ -384,13 +384,13 @@ void Solution::force(int k)
+ {
+ 	for(int i = 0; i < k; i++) {
+ 		// select a non solution vertex to add
+-		int nonsolution_size = g_->n() - (solution_size_ + free_size_);
++        size_t nonsolution_size = g_->n() - (solution_size_ + free_size_);
+ 		uniform_int_distribution<int> discrete_distribution(0, nonsolution_size - 1);
+-		int nonsolution_pos = discrete_distribution(generator);
+-		int vertex = solution_[solution_size_ + free_size_ + nonsolution_pos];
++        auto nonsolution_pos = static_cast<size_t>(discrete_distribution(generator));
++        size_t vertex = solution_[solution_size_ + free_size_ + nonsolution_pos];
+ 
+ 		// remove the neighboring vertices as necessary
+-		for (int neighbor : g_->adj_l(vertex))	{
++		for (size_t neighbor : g_->adj_l(vertex))	{
+ 			if (position_[neighbor] < solution_size_) {
+ 				removeVertex(neighbor);
+ 			}
+diff --git a/src/Solution.h b/src/Solution.h
+index b8357e0..75a8db8 100644
+--- a/src/Solution.h
++++ b/src/Solution.h
+@@ -15,7 +15,7 @@
+ #include <vector>
+ #include <string>
+ 
+-namespace ils_mwis
++namespace nps_mwis
+ {
+ 
+ class Solution
+@@ -23,15 +23,15 @@ class Solution
+ 
+ public:
+ 
+-	Solution(const Graph *g);
++	explicit Solution(const Graph *g);
+ 
+ 	// add a vertex to the solution
+ 
+-	void addVertex(const int v);
++	void addVertex(size_t v);
+ 
+ 	// remove a vertex from the solution
+ 
+-	void removeVertex(const int v);
++	void removeVertex(size_t v);
+ 
+ 	// randomly add a free vertex to the solution
+ 
+@@ -85,7 +85,7 @@ public:
+ 	std::vector<int> solution() const
+ 	{
+ 		std::vector<int> sol;
+-		for (int idx = 0; idx < g_->n(); idx++) {
++		for (size_t idx = 0; idx < g_->n(); idx++) {
+ 			if(position_[idx] < solution_size_) {
+ 				sol.push_back(1);
+ 			} else {
+@@ -100,7 +100,7 @@ public:
+ 	std::vector<int> i_set() const
+ 	{
+ 		std::vector<int> iset;
+-		for (int idx = 0; idx < g_->n(); idx++) {
++		for (size_t idx = 0; idx < g_->n(); idx++) {
+ 			if(position_[idx] < solution_size_) 
+ 				iset.push_back(idx);
+ 		}
+@@ -118,15 +118,15 @@ private:
+ 	// the free vertices (i.e., vertices that are not adjacent to any vertex in the solution), and 
+ 	// finally the non-solution vertices that are not free
+ 
+-	std::vector<int> solution_;
++	std::vector<size_t> solution_;
+ 
+-	// size of the solution verticies partition
++	// size of the solution vertices partition
+ 
+-	int solution_size_;
++	size_t solution_size_;
+ 
+ 	// size of the free vertices partition
+ 
+-	int free_size_;
++	size_t free_size_;
+ 
+ 	// for each vertex, the number of adjacent vertices that are on the solution
+ 
+@@ -134,7 +134,7 @@ private:
+ 
+ 	// position of each vertex in the solution_ vector
+ 
+-	std::vector<int> position_;
++	std::vector<size_t> position_;
+ 
+ 	// weight of each vertex i minus the sum of the weights of its neighbors that
+ 	// are in the independent set
+@@ -147,19 +147,19 @@ private:
+ 
+ 	// move a vertex from the free partition to solution partition
+ 
+-	void moveFreeToSolutionPartition(const int v);
++	void moveFreeToSolutionPartition(size_t v);
+ 
+-	// move a vertex from the free patition to non free partition
++	// move a vertex from the free partition to non free partition
+ 
+-	void moveFreeToNonFreePartition(const int v);
++	void moveFreeToNonFreePartition(size_t v);
+ 
+ 	// move a vertex from the solution partition to free partition
+ 
+-	void moveSolutionToFreePartition(const int v);
++	void moveSolutionToFreePartition(size_t v);
+ 
+ 	// move a vertex from the non free partition to free partition
+ 
+-	void moveNonFreeToFreePartition(const int v);
++	void moveNonFreeToFreePartition(size_t v);
+ 
+ }; // class Solution
+ 
+diff --git a/src/algorithm.h b/src/algorithm.h
+index eb9dc30..79c3190 100644
+--- a/src/algorithm.h
++++ b/src/algorithm.h
+@@ -8,7 +8,7 @@
+ #include "Solution.h"
+ #include "Graph.h"
+ 
+-namespace ils_mwis {
++namespace nps_mwis {
+ 
+ Solution solve(Graph *graph_instance, const ArgPack &ap) {
+     BossaTimer proc_timer;
+@@ -43,7 +43,7 @@ Solution solve(Graph *graph_instance, const ArgPack &ap) {
+         Solution next_s(s);
+ 
+         // shake
+-        next_s.force(ap.p[0]);
++        next_s.force(static_cast<int>(ap.p[0]));
+ 
+         assert(next_s.integrityCheck());
+ 
+@@ -60,13 +60,13 @@ Solution solve(Graph *graph_instance, const ArgPack &ap) {
+             s = next_s;
+ 
+             if (local_best < next_s.weight()) {
+-                k -= s.size() / ap.p[1];
++                k -= static_cast<int>(s.size() / ap.p[1]);
+                 local_best = next_s.weight();
+             }
+ 
+             if (best_s.weight() < s.weight()) {
+                 best_s = s;
+-                k -= s.size() * ap.p[2];
++                k -= static_cast<int>(s.size() * ap.p[2]);
+ 
+                 target_iterations = iter;
+ 
+@@ -81,7 +81,7 @@ Solution solve(Graph *graph_instance, const ArgPack &ap) {
+             k++;
+         } else {
+             local_best = s.weight();
+-            s.force(ap.p[3]);
++            s.force(static_cast<int>(ap.p[3]));
+             k = 1;
+         }
+     }
+diff --git a/src/bossa_timer.cpp b/src/bossa_timer.cpp
+index 2000ee5..ea30ffb 100644
+--- a/src/bossa_timer.cpp
++++ b/src/bossa_timer.cpp
+@@ -11,19 +11,19 @@
+ //-----------------------------
+ // Generic functions
+ //-----------------------------
+-
++
+ /*
+ BossaTimer::BossaTimer () {
+ 	base_time = 0.0;
+ 	max_time = 0.0;
+ 	running = false;
+-}*/
+-
+-BossaTimer::BossaTimer (bool s) {
+-	base_time = 0.0;
+-	max_time = 0.0;
+-	if (s) start();
+-	else running = false;
++}*/
++
++BossaTimer::BossaTimer (bool s) {
++	base_time = 0.0;
++	max_time = 0.0;
++	if (s) start();
++	else running = false;
+ }
+ 
+ double BossaTimer::getTime() {
+@@ -97,8 +97,8 @@ double BossaTimer::getElapsedTime() {
+     end_time.tv_usec += 1000000;
+     end_time.tv_sec -= 1;
+   }
+-  t = 100.0*(double)(end_time.tv_sec - start_time.tv_sec) + (double)(end_time.tv_usec - start_time.tv_usec) / (double)10000.0;
+-  return ((double)t/(double)100);
++  t = 100.0* static_cast<double>(end_time.tv_sec - start_time.tv_sec) + static_cast<double>(end_time.tv_usec - start_time.tv_usec) / 10000.0;
++  return (t/static_cast<double>(100));
+ }
+ 
+ #endif
+diff --git a/src/main.cpp b/src/main.cpp
+index ac444bd..89e6cd8 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -19,7 +19,7 @@
+ 
+ using namespace std;
+ 
+-namespace ils_mwis
++namespace nps_mwis
+ {
+ 
+ // Mersenne Twister 19937 generator
+@@ -42,7 +42,7 @@ Graph *readInstance (const string &filename, bool complement)
+ 	int linenum = 0; // number of readed lines
+ 	char buffer[256];
+ 	ifstream input(filename.c_str());
+-	Graph *graph = NULL;
++	Graph *graph = nullptr;
+ 
+ 	if (!input) {
+ 		throw InitError("error opening the input file: " + filename + "\n");
+@@ -64,10 +64,10 @@ Graph *readInstance (const string &filename, bool complement)
+ 				                ". The number of edges and vertices must not be negative.\n");
+ 			}
+ 			m = v2;
+-			graph = new Graph(v1, v2, Graph::WeightsFromIndex());
++			graph = new Graph(static_cast<size_t>(v1), static_cast<size_t>(v2), Graph::WeightsFromIndex());
+ 			if (complement) {
+-				for (int idx1 = 0; idx1 < v1; idx1++) {
+-					for (int idx2 = idx1 + 1; idx2 < v1; idx2++) {
++				for (size_t idx1 = 0; idx1 < static_cast<size_t>(v1); idx1++) {
++					for (size_t idx2 = idx1 + 1; idx2 < static_cast<size_t>(v1); idx2++) {
+ 						graph->addEdge(idx1, idx2);
+ 					}
+ 				}
+@@ -79,9 +79,9 @@ Graph *readInstance (const string &filename, bool complement)
+ 				                ". Vertices label must not be negative.\n");
+ 			}
+ 			if (!complement) {
+-				graph->addEdge(v1 - 1, v2 - 1);
++				graph->addEdge(static_cast<size_t>(v1 - 1), static_cast<size_t>(v2 - 1));
+ 			} else {
+-				graph->removeEdge(v1 - 1, v2 - 1);
++				graph->removeEdge(static_cast<size_t>(v1 - 1), static_cast<size_t>(v2 - 1));
+ 			}
+ 			m_count++;
+ 		}
+@@ -108,16 +108,16 @@ int main(int argc, char *argv[])
+ {
+ 	try {
+ 		// read input parameters
+-		ils_mwis::ArgPack single_ap(argc, argv);
++		nps_mwis::ArgPack single_ap(argc, argv);
+ 
+ 		// set the random seed
+ 
+-		ils_mwis::generator.seed(single_ap.rand_seed);
++		nps_mwis::generator.seed(single_ap.rand_seed);
+ 
+ 		// read instance
+-		ils_mwis::Graph *graph_instance = ils_mwis::readInstance(single_ap.input_name, single_ap.complement);
++		nps_mwis::Graph *graph_instance = nps_mwis::readInstance(single_ap.input_name, single_ap.complement);
+ 
+-		ils_mwis::Solution s = solve(graph_instance, single_ap);
++		nps_mwis::Solution s = solve(graph_instance, single_ap);
+ 
+ 		delete(graph_instance);
+ 
+-- 
+2.20.1
+

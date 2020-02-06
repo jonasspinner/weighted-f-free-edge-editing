@@ -1,7 +1,7 @@
 From 4d3f5fe76aa357a7e7df7cd534f47b160e04e002 Mon Sep 17 00:00:00 2001
 From: Jonas Spinner <jonas.spinner@student.kit.edu>
 Date: Tue, 28 Jan 2020 16:23:40 +0100
-Subject: [PATCH 2/4] Modified default weight assignment
+Subject: [PATCH 2/5] Modified default weight assignment
 
 ---
  src/ArgPack.cpp |  2 +-
