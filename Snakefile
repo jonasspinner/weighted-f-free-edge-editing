@@ -42,27 +42,36 @@ PRELIM_TIMELIMITS = [100]
 PRELIM_ILP_CONSTRAINTS = ILP_CONSTRAINTS
 PRELIM_FPT_LOWER_BOUND = ["Trivial", "LocalSearch", "SortedGreedy"]
 PRELIM_FPT_FPT_SELECTOR = ["FirstFound", "MostMarkedPairs", "MostAdjacentSubgraphs"]
-PRELIM_FPT_SEARCH_STRATEGY = ["IncrementByMultiplier"]
+PRELIM_FPT_SEARCH_STRATEGY = ["IncrementByMultiplier", "Fixed"]
 
 
 ruleorder: collect_fpt_fixed > collect_fpt > fpt_fixed_k_from_solution > fpt
 
 rule all:
     input:
-        expand("data/{dataset}/{dataset}.metadata.yaml", dataset=["bio", "bio-C4P4-subset", "bio-subset-A"]),
-        "experiments/rules/experiments_01_preliminary",
-        "experiments/rules/experiments_02_finders",
-        "experiments/rules/experiments_03_main",
-        "experiments/rules/experiments_04_calls",
-        "experiments/rules/experiments_05_search_strategies",
-        "experiments/rules/experiments_06_lp_relaxation"
+        # expand("data/{dataset}/{dataset}.metadata.yaml", dataset=["bio", "bio-C4P4-subset", "bio-subset-A"]),
+        # "experiments/rules/experiments_01_preliminary",
+        # "experiments/rules/experiments_02_finders",
+        # "experiments/rules/experiments_03_main",
+        # "experiments/rules/experiments_04_calls",
+        # "experiments/rules/experiments_05_search_strategies",
+        "experiments/rules/experiments_06_lp_relaxation",
+        "experiments/rules/experiments_07_nps_mwis"
+
+rule experiments_07_nps_mwis:
+    input:
+        expand("experiments/C4P4/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark=0.search-strategy={search_strategy}/bio-C4P4-subset.solutions.yaml",
+               timelimit=[1000], selector=["MostAdjacentSubgraphs"], lower_bound=["NPS_MWIS_Solver"], search_strategy=["Fixed"])
+    output:
+        "experiments/rules/experiments_07_nps_mwis"
+    shell: "touch {output}"
 
 rule experiments_06_lp_relaxation:
     input:
         # Experiments to test the effects of the linear program relaxation as lower bound for getting an upper
         # bound on the possible improvements for the other lower bound algorithms.
         expand("experiments/C4P4/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark=0.search-strategy={search_strategy}/bio-C4P4-subset.solutions.yaml",
-               timelimit=[1000], selector=["MostAdjacentSubgraphs"], lower_bound=["LPRelaxation"], search_strategy=["Fixed"])
+               timelimit=[1000], selector=["MostAdjacentSubgraphs"], lower_bound=["LPRelaxation"], search_strategy=["Fixed", "Exponential"])
     output:
         "experiments/rules/experiments_06_lp_relaxation"
     shell: "touch {output}"
