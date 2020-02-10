@@ -11,12 +11,16 @@
 #include "TrivialLowerBound.h"
 
 #ifdef GUROBI_FOUND
-
 #include "LPRelaxationLowerBound.h"
-
 #endif
 
+#ifdef NPS_MWIS_FOUND
 #include "NPS_MWIS_SolverLowerBound.h"
+#endif
+
+#ifdef LSSWZ_MWIS_FOUND
+#include "LSSWZ_MWIS_SolverLowerBound.h"
+#endif
 
 namespace LowerBound {
     /**
@@ -48,11 +52,18 @@ namespace LowerBound {
                 std::cerr << "gurobi has to be installed to use LB::LinearProgram.";
                 abort();
 #endif
-            case LB::ILSMWISSolver:
+            case LB::NPS_MWIS_Solver:
 #ifdef NPS_MWIS_FOUND
                 return std::make_unique<NPS_MWIS_SolverLowerBound>(instance, marked, finder);
 #else
-                std::cerr << "ils_mwis has to be installed to use LB::ILSMWISSolver.";
+                std::cerr << "nps_mwis has to be installed to use LB::NPS_MWIS_Solver.";
+                abort();
+#endif
+            case LB::LSSWZ_MWIS_Solver:
+#ifdef LSSWZ_MWIS_FOUND
+                return std::make_unique<LSSWZ_MWIS_SolverLowerBound>(instance, marked, finder);
+#else
+            std::cerr << "lsswz_mwis has to be installed to use LB::LSSWZ_MWIS_Solver.";
                 abort();
 #endif
             default:

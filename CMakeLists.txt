@@ -61,6 +61,9 @@ set(LOWER_BOUND_SRC_FILES src/lower_bound/lower_bound_utils.cpp src/lower_bound/
 if(NPS_MWIS_FOUND)
     set(LOWER_BOUND_SRC_FILES ${LOWER_BOUND_SRC_FILES} src/lower_bound/NPS_MWIS_SolverLowerBound.cpp)
 endif(NPS_MWIS_FOUND)
+if(LSSWZ_MWIS_FOUND)
+    set(LOWER_BOUND_SRC_FILES ${LOWER_BOUND_SRC_FILES} src/lower_bound/LSSWZ_MWIS_SolverLowerBound.cpp)
+endif(LSSWZ_MWIS_FOUND)
 
 set(SRC_FILES ${FINDER_SRC_FILES} ${SELECTOR_SRC_FILES} ${LOWER_BOUND_SRC_FILES} src/Configuration.cpp src/graph/Subgraph.cpp src/options.cpp ${NPS_MWIS_SRC_FILES})
 

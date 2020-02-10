@@ -34,7 +34,7 @@ namespace Options {
 
 
     enum class LB {
-        Trivial, Greedy, SortedGreedy, LocalSearch, LPRelaxation, ILSMWISSolver
+        Trivial, Greedy, SortedGreedy, LocalSearch, LPRelaxation, NPS_MWIS_Solver, LSSWZ_MWIS_Solver
     };
 
     std::istream &operator>>(std::istream &in, LB &lower_bound);
