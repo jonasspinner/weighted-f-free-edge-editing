@@ -1,7 +1,7 @@
 From b1842457d4231a943c73358f792ac3b0d9b4fd6e Mon Sep 17 00:00:00 2001
 From: Jonas Spinner <jonas.spinner@student.kit.edu>
 Date: Wed, 29 Jan 2020 11:57:05 +0100
-Subject: [PATCH 3/5] Added default ArgPack constructor
+Subject: [PATCH 3/6] Added default ArgPack constructor
 
 ---
  src/ArgPack.cpp | 10 +++++++++-

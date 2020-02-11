@@ -1,0 +1,25 @@
+From efc8825cd8be177e5e77e42fad1ec493ddff1c1d Mon Sep 17 00:00:00 2001
+From: Jonas Spinner <jonas.spinner@student.kit.edu>
+Date: Tue, 11 Feb 2020 17:13:40 +0100
+Subject: [PATCH 6/6] Removed algorithm output in non-verbose mode
+
+---
+ src/algorithm.h | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/src/algorithm.h b/src/algorithm.h
+index 79c3190..92ad340 100644
+--- a/src/algorithm.h
++++ b/src/algorithm.h
+@@ -102,8 +102,6 @@ Solution solve(Graph *graph_instance, const ArgPack &ap) {
+         std::cout << "- time to find the best (s): " << target_time << "\n";
+         std::cout << "- total iterations: " << iter << "\n";
+         std::cout << "- total processing time (s): " << proc_timer.getTime() << "\n";
+-    } else {
+-        std::cout << best_s.weight() << " " << target_time << " " << proc_timer.getTime() << "\n";
+     }
+ 
+     return best_s;
+-- 
+2.20.1
+

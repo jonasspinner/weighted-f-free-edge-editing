@@ -1,7 +1,7 @@
 From 9d679319e1f35fc524357b1ba1d81148ce8c083a Mon Sep 17 00:00:00 2001
 From: Jonas Spinner <jonas.spinner@student.kit.edu>
 Date: Tue, 28 Jan 2020 13:36:24 +0100
-Subject: [PATCH 1/5] Refactored algorithm into function
+Subject: [PATCH 1/6] Refactored algorithm into function
 
 ---
  src/ArgPack.cpp  |   4 +-
