@@ -35,6 +35,15 @@ Cost NPS_MWIS_SolverLowerBound::calculate_lower_bound(Cost k) {
         if (graph_instance.value().n() == 0)
             return 0;
 
+        // ... or zero edges/one vertex
+        if (graph_instance.value().m() == 0) {
+            Cost sum = 0;
+            for (size_t u = 0; u < graph_instance.value().n(); ++u) {
+                sum += graph_instance.value().weight(u);
+            }
+            return sum;
+        }
+
         auto solution = nps_mwis::solve(&graph_instance.value(), ap);
 
         return solution.weight();
