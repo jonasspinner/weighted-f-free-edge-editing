@@ -6,6 +6,8 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_NPS_MWIS_SOLVERLOWERBOUND_H
 
 
+#include <optional>
+
 #include "../interfaces/LowerBoundI.h"
 #include "../../extern/nps_mwis/src/Graph.h"
 #include "../Instance.h"
@@ -24,7 +26,7 @@ public:
     Cost calculate_lower_bound(Cost k) override;
 
 private:
-    nps_mwis::Graph build_instance();
+    std::optional<nps_mwis::Graph> build_instance();
 };
 
 

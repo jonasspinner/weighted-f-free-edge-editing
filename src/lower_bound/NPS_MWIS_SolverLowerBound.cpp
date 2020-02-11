@@ -27,11 +27,15 @@ Cost NPS_MWIS_SolverLowerBound::calculate_lower_bound(Cost k) {
     ap.target = k + 1;
     ap.iterations = 500;
 
-    nps_mwis::Graph graph_instance = build_instance();
+    auto graph_instance = build_instance();
 
-    auto solution = nps_mwis::solve(&graph_instance, ap);
+    if (graph_instance) {
+        auto solution = nps_mwis::solve(&graph_instance.value(), ap);
 
-    return solution.weight();
+        return solution.weight();
+    } else {
+        return invalid_cost;
+    }
 }
 
 /**
@@ -41,20 +45,24 @@ Cost NPS_MWIS_SolverLowerBound::calculate_lower_bound(Cost k) {
  *
  * @return
  */
-nps_mwis::Graph NPS_MWIS_SolverLowerBound::build_instance() {
+std::optional<nps_mwis::Graph> NPS_MWIS_SolverLowerBound::build_instance() {
     VertexPairMap<std::vector<Vertex>> cliques(m_graph.size());
 
     std::vector<int> weights;
 
     // The set of subgraphs which share a vertex pair form a clique in the MWIS instance.
-    finder->find([&](const Subgraph& subgraph) {
+    auto unsolvable = finder->find([&](const Subgraph& subgraph) {
         const auto index = weights.size();
         for (VertexPair uv : subgraph.vertexPairs()) {
             cliques[uv].push_back(index);
         }
-        weights.push_back(get_subgraph_cost(subgraph, m_marked, m_costs));
-        return false;
+        Cost cost = get_subgraph_cost(subgraph, m_marked, m_costs);
+        weights.push_back(cost);
+        return cost == invalid_cost;
     });
+
+    if (unsolvable)
+        return {};
 
     const auto n = weights.size();
 
