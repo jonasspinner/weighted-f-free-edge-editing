@@ -47,7 +47,7 @@ endif(NPS_MWIS_FOUND)
 set(LSSWZ_MWIS_FOUND TRUE)
 if(LSSWZ_MWIS_FOUND)
     add_definitions(-DLSSWZ_MWIS_FOUND)
-    add_subdirectory(extern/lsswz_mwis/code)
+    # add_subdirectory(extern/lsswz_mwis/code)
 endif(LSSWZ_MWIS_FOUND)
 
 
