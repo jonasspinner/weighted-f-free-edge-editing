@@ -16,62 +16,57 @@ class FinderI {
 public:
     using SubgraphCallback = std::function<bool(Subgraph&&)>;
 
-protected:
-    const Graph &graph;
-
 public:
-    explicit FinderI(const Graph &graph_ref) : graph(graph_ref) {}
-
     virtual ~FinderI() = default;
 
     /**
      * Find all forbidden subgraphs. When a subgraph is found, callback(subgraph) is called.
      *
+     * @param graph
      * @param callback
      * @return Whether the callback returned true once
      */
-    virtual bool find(SubgraphCallback callback) = 0;
+    virtual bool find(const Graph& graph, SubgraphCallback callback) = 0;
 
     /**
      * Find all forbidden subgraphs. Subgraphs sharing an edge with forbidden are ignored. When a subgraph is found,
      * callback(subgraph) is called.
      *
+     * @param graph
      * @param forbidden
      * @param callback
      * @return
      */
-    virtual bool find(const Graph &forbidden, SubgraphCallback callback) = 0;
+    virtual bool find(const Graph& graph, const Graph &forbidden, SubgraphCallback callback) = 0;
 
     /**
      * Find all forbidden subgraphs having uv as an vertex pair. Subgraphs sharing an edge with forbidden are ignored.
      * When a subgraph is found, callback(subgraph) is called.
      *
      * @param uv
+     * @param graph
      * @param callback
      * @return Whether the callback returned true once
      */
-    virtual bool find_near(VertexPair uv, SubgraphCallback callback) = 0;
+    virtual bool find_near(VertexPair uv, const Graph& graph, SubgraphCallback callback) = 0;
 
     /**
      * Find all forbidden subgraphs having uv as an vertex pair. Subgraphs sharing an edge with forbidden are ignored.
      * When a subgraph is found, callback(subgraph) is called.
      *
      * @param uv
+     * @param graph
      * @param forbidden
      * @param callback
      * @return Whether the callback returned true once
      */
-    virtual bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) = 0;
+    virtual bool find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) = 0;
 
     [[nodiscard]] virtual Options::FSG forbidden_subgraphs() const = 0;
 
     [[nodiscard]] virtual std::string name() const = 0;
 
     virtual void to_yaml(YAML::Emitter &out) const = 0;
-
-    const Graph &graph_() const {
-        return graph;
-    }
 
     friend YAML::Emitter &operator<<(YAML::Emitter &out, const FinderI &finder) {
         finder.to_yaml(out);
