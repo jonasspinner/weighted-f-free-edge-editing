@@ -30,6 +30,11 @@ Cost NPS_MWIS_SolverLowerBound::calculate_lower_bound(Cost k) {
     auto graph_instance = build_instance();
 
     if (graph_instance) {
+
+        // nps_mwis does not seem to be able to handle instances with zero vertices.
+        if (graph_instance.value().n() == 0)
+            return 0;
+
         auto solution = nps_mwis::solve(&graph_instance.value(), ap);
 
         return solution.weight();
