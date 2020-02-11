@@ -62,15 +62,15 @@ bool all_c4p4(const Graph &graph, const std::vector<Subgraph> &subgraphs) {
 }
 
 
-std::vector<Subgraph> find_all_subgraphs(FinderI &finder) {
+std::vector<Subgraph> find_all_subgraphs(FinderI &finder, const Graph& graph) {
     std::vector<Subgraph> subgraphs;
-    finder.find([&](Subgraph&& subgraph) { subgraphs.push_back(subgraph); return false; });
+    finder.find(graph, [&](Subgraph&& subgraph) { subgraphs.push_back(subgraph); return false; });
     return subgraphs;
 }
 
-std::vector<Subgraph> find_all_non_marked_subgraphs(FinderI &finder, const Graph& marked) {
+std::vector<Subgraph> find_all_non_marked_subgraphs(FinderI &finder, const Graph& graph, const Graph& marked) {
     std::vector<Subgraph> subgraphs;
-    finder.find(marked, [&](Subgraph&& subgraph) { subgraphs.push_back(subgraph); return false; });
+    finder.find(graph, marked, [&](Subgraph&& subgraph) { subgraphs.push_back(subgraph); return false; });
     return subgraphs;
 }
 
@@ -80,35 +80,35 @@ class FinderTests {
 public:
     explicit FinderTests(int seed=0) : gen(static_cast<unsigned long>(seed)) {}
 
-    static std::unique_ptr<FinderI> make_finder(const std::string &name, const Graph &graph) {
+    static std::unique_ptr<FinderI> make_finder(const std::string &name) {
         if (name == "CenterRecC5P5") {
-            return std::make_unique<Finder::CenterRecC5P5>(graph);
+            return std::make_unique<Finder::CenterRecC5P5>();
         } else if (name == "CenterRecC4P4") {
-            return std::make_unique<Finder::CenterRecC4P4>(graph);
+            return std::make_unique<Finder::CenterRecC4P4>();
         } else if (name == "CenterRecP3") {
-            return std::make_unique<Finder::CenterRecP3>(graph);
+            return std::make_unique<Finder::CenterRecP3>();
         } else if (name == "EndpointRecC5P5") {
-            return std::make_unique<Finder::EndpointRecC5P5>(graph);
+            return std::make_unique<Finder::EndpointRecC5P5>();
         } else if (name == "EndpointRecC4P4") {
-            return std::make_unique<Finder::EndpointRecC4P4 >(graph);
+            return std::make_unique<Finder::EndpointRecC4P4 >();
         } else if (name == "EndpointRecP3") {
-            return std::make_unique<Finder::EndpointRecP3>(graph);
+            return std::make_unique<Finder::EndpointRecP3>();
         } else if (name == "CenterC4P4") {
-            return std::make_unique<Finder::CenterC4P4>(graph);
+            return std::make_unique<Finder::CenterC4P4>();
         } else if (name == "CenterP3") {
-            return std::make_unique<Finder::CenterP3>(graph);
+            return std::make_unique<Finder::CenterP3>();
         } else if (name == "NaiveC4P4") {
-            return std::make_unique<Finder::NaiveC4P4>(graph);
+            return std::make_unique<Finder::NaiveC4P4>();
         } else if (name == "NaiveP3") {
-            return std::make_unique<Finder::NaiveP3>(graph);
+            return std::make_unique<Finder::NaiveP3>();
         } else if (name == "NaiveRecC5P5") {
-            return std::make_unique<Finder::NaiveRecC5P5>(graph);
+            return std::make_unique<Finder::NaiveRecC5P5>();
         } else if (name == "NaiveRecC4P4") {
-            return std::make_unique<Finder::NaiveRecC4P4>(graph);
+            return std::make_unique<Finder::NaiveRecC4P4>();
         } else if (name == "NaiveRecP3") {
-            return std::make_unique<Finder::NaiveRecP3>(graph);
+            return std::make_unique<Finder::NaiveRecP3>();
         } else if (name == "OuterP3") {
-            return std::make_unique<Finder::OuterP3>(graph);
+            return std::make_unique<Finder::OuterP3>();
         } else {
             std::cerr << "name = " << name << "\n";
             throw std::runtime_error("Finder name not valid.");
@@ -203,8 +203,8 @@ public:
         {
             std::vector<Subgraph> expected{{0, 1, 2, 3}};
 
-            Finder finder(C4);
-            auto actual = find_all_subgraphs(finder);
+            Finder finder;
+            auto actual = find_all_subgraphs(finder, C4);
             expect(name + " recognizes C4", normalize(expected), normalize(actual));
         }
 
@@ -221,8 +221,8 @@ public:
 
         {
             std::vector<Subgraph> expected({{0, 1, 2, 3}, {0, 1, 2, 4}, {0, 1, 3, 5}, {0, 1, 4, 5}, {0, 2, 3, 4}, {1, 2, 3, 5}});
-            Finder finder(G);
-            auto actual = find_all_subgraphs(finder);
+            Finder finder;
+            auto actual = find_all_subgraphs(finder, G);
             expect(name + " recognizes C4P4 in small graph", normalize(expected), normalize(actual));
         }
 
@@ -230,8 +230,8 @@ public:
             Graph marked(6);
             marked.setEdge({1, 2});
             std::vector<Subgraph> expected({{0, 1, 3, 5}, {0, 1, 4, 5}, {0, 2, 3, 4}});
-            Finder finder(G);
-            auto actual = find_all_non_marked_subgraphs(finder, marked);
+            Finder finder;
+            auto actual = find_all_non_marked_subgraphs(finder, G, marked);
             expect(name + " recognizes C4P4 in small graph with marked edges", normalize(expected), normalize(actual));
         }
 
@@ -257,24 +257,24 @@ public:
                      {2, 11}});
 
         {
-            Finder finder(G2);
+            Finder finder;
             std::vector<Subgraph> expected({{3, 0, 1, 6}, {3, 0, 1, 7}, {3, 0, 1, 8}, {3, 0, 2, 9}, {3, 0, 2, 10}, {3, 0, 2, 11},
                                             {4, 0, 1, 6}, {4, 0, 1, 7}, {4, 0, 1, 8}, {4, 0, 2, 9}, {4, 0, 2, 10}, {4, 0, 2, 11},
                                             {5, 0, 1, 6}, {5, 0, 1, 7}, {5, 0, 1, 8}, {5, 0, 2, 9}, {5, 0, 2, 10}, {5, 0, 2, 11},
                                             {6, 1, 2, 9}, {6, 1, 2, 10}, {6, 1, 2, 11}, {7, 1, 2, 9}, {7, 1, 2, 10}, {7, 1, 2, 11}, {8, 1, 2, 9}, {8, 1, 2, 10}, {8, 1, 2, 11}});
-            auto actual = find_all_subgraphs(finder);
+            auto actual = find_all_subgraphs(finder, G2);
             expect(name + " recognizes many P4 in small graph", normalize(expected), normalize(actual));
         }
 
         {
             Graph marked(12);
             marked.setEdge({0, 1});
-            Finder finder(G2);
+            Finder finder;
             std::vector<Subgraph> expected({{3, 0, 2, 9}, {3, 0, 2, 10}, {3, 0, 2, 11},
                                             {4, 0, 2, 9}, {4, 0, 2, 10}, {4, 0, 2, 11},
                                             {5, 0, 2, 9}, {5, 0, 2, 10}, {5, 0, 2, 11},
                                             {6, 1, 2, 9}, {6, 1, 2, 10}, {6, 1, 2, 11}, {7, 1, 2, 9}, {7, 1, 2, 10}, {7, 1, 2, 11}, {8, 1, 2, 9}, {8, 1, 2, 10}, {8, 1, 2, 11}});
-            auto actual = find_all_non_marked_subgraphs(finder, marked);
+            auto actual = find_all_non_marked_subgraphs(finder, G2, marked);
             expect(name + " recognizes many P4 in small graph with marked edges", normalize(expected), normalize(actual));
         }
     }
@@ -287,8 +287,8 @@ public:
                     {2, 3}});
 
         std::vector<Subgraph> expected{{0, 1, 2, 3}};
-        Finder finder(G);
-        auto actual = find_all_subgraphs(finder);
+        Finder finder;
+        auto actual = find_all_subgraphs(finder, G);
         expect(name + " recognizes P4", normalize(expected), normalize(actual));
     }
 
@@ -299,8 +299,8 @@ public:
                     {1, 2}});
 
         std::vector<Subgraph> expected{{0, 1, 2}};
-        Finder finder(G);
-        auto actual = find_all_subgraphs(finder);
+        Finder finder;
+        auto actual = find_all_subgraphs(finder, G);
         expect(name + " recognizes P3", normalize(expected), normalize(actual));
     }
 
@@ -350,16 +350,16 @@ public:
             auto G = P[G_original];
             auto F = P[F_original];
             for (const auto &name : finders) {
-                auto finder = make_finder(name, G);
+                auto finder = make_finder(name);
 
                 std::vector<Subgraph> find;
-                finder->find([&](Subgraph &&subgraph) {
+                finder->find(G, [&](Subgraph &&subgraph) {
                     find.push_back(std::move(subgraph));
                     return false;
                 });
 
                 std::vector<Subgraph> find_forbidden;
-                finder->find(F, [&](Subgraph &&subgraph) {
+                finder->find(G, F, [&](Subgraph &&subgraph) {
                     find_forbidden.push_back(std::move(subgraph));
                     return false;
                 });
@@ -367,7 +367,7 @@ public:
                 std::vector<std::vector<Subgraph>> find_near;
                 for (VertexPair uv : G.vertexPairs()) {
                     std::vector<Subgraph> find_near_uv;
-                    finder->find_near(uv, [&](Subgraph &&subgraph) {
+                    finder->find_near(uv, G, [&](Subgraph &&subgraph) {
                         find_near_uv.push_back(std::move(subgraph));
                         return false;
                     });
@@ -377,7 +377,7 @@ public:
                 std::vector<std::vector<Subgraph>> find_near_forbidden;
                 for (VertexPair uv : G.vertexPairs()) {
                     std::vector<Subgraph> find_near_uv;
-                    finder->find_near(uv, F, [&](Subgraph &&subgraph) {
+                    finder->find_near(uv, G, F, [&](Subgraph &&subgraph) {
                         find_near_uv.push_back(std::move(subgraph));
                         return false;
                     });

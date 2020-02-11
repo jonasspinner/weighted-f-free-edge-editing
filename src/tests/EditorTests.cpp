@@ -129,7 +129,10 @@ void EditorTests::run() {
     using Options::FSG;
 
     auto all_selectors = {Selector::FirstFound, Selector::LeastWeight, Selector::MostMarkedPairs, Selector::MostAdjacentSubgraphs};
-    auto all_lower_bounds = {LB::LocalSearch, LB::Trivial, LB::Greedy, LB::SortedGreedy, LB::LPRelaxation};
+    auto all_lower_bounds = {LB::LocalSearch, LB::Trivial, LB::Greedy, LB::SortedGreedy, LB::LPRelaxation, LB::NPS_MWIS_Solver};
+
+    //auto all_selectors = {Selector::MostAdjacentSubgraphs};
+    //auto all_lower_bounds = {LB::SortedGreedy, LB::NPS_MWIS_Solver};
 
     configurations_have_same_output(FSG::C4P4, all_selectors, all_lower_bounds, {0, 1}, 100);
     configurations_have_same_output(FSG::C4P4, all_selectors, all_lower_bounds, {0, 1}, 1);
