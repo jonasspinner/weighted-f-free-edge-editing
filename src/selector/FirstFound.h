@@ -14,12 +14,13 @@ namespace Selector {
 
     class FirstFound : public SelectorI {
     private:
+        const Graph &m_graph;
         const VertexPairMap<bool> &m_forbidden;
 
     public:
-        explicit FirstFound(std::shared_ptr<FinderI> finder_ptr,
-                            const VertexPairMap<bool> &forbidden) : SelectorI(std::move(finder_ptr)),
-                                                                       m_forbidden(forbidden) {}
+        explicit FirstFound(std::shared_ptr<FinderI> finder_ptr, const Graph &graph,
+                            const VertexPairMap<bool> &forbidden) : SelectorI(std::move(finder_ptr)), m_graph(graph),
+                                                                    m_forbidden(forbidden) {}
 
         /**
          * Select the first forbidden subgraph found.
@@ -30,7 +31,7 @@ namespace Selector {
             Problem problem;
             problem.solved = true;
 
-            finder->find([&](const Subgraph &subgraph) {
+            finder->find(m_graph, [&](const Subgraph &subgraph) {
                 problem.solved = false;
 
                 for (VertexPair uv : subgraph.vertexPairs())

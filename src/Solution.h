@@ -43,7 +43,7 @@ public:
 
     [[nodiscard]] bool is_valid(const Instance &instance, Options::FSG fsg) const {
         Graph graph(instance.graph);
-        std::unique_ptr<FinderI> finder = Finder::make(fsg, graph);
+        std::unique_ptr<FinderI> finder = Finder::make(fsg);
         Cost sum = 0;
 
         for (VertexPair uv : edits) {
@@ -51,7 +51,7 @@ public:
             sum += instance.costs[uv];
         }
 
-        bool found_forbidden_subgraph = finder->find([&](const Subgraph &) { return true; });
+        bool found_forbidden_subgraph = finder->find(graph, [&](const Subgraph &) { return true; });
 
         return !found_forbidden_subgraph;
     }

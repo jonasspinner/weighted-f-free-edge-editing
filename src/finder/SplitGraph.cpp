@@ -11,23 +11,24 @@ namespace Finder {
     /**
      * Calls callback on 2K_2, C_4 and C_5 subgraphs.
      *
-     * @param forbidden
+     * @param graph
      * @param callback
      * @return
      */
-    bool SplitGraph::find(SubgraphCallback callback) {
-        return find(callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
+    bool SplitGraph::find(const Graph& graph, SubgraphCallback callback) {
+        return find(graph, callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
     }
 
     /**
      * Calls callback on 2K_2, C_4 and C_5 subgraphs. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
      *
+     * @param graph
      * @param forbidden
      * @param callback
      * @return
      */
-    bool SplitGraph::find(const Graph& forbidden, SubgraphCallback callback) {
-        return find(callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
+    bool SplitGraph::find(const Graph& graph, const Graph& forbidden, SubgraphCallback callback) {
+        return find(graph, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
     /**
@@ -35,7 +36,7 @@ namespace Finder {
      *
      * @return
      */
-    bool SplitGraph::find_near(VertexPair /*uv*/, SubgraphCallback /*callback*/) {
+    bool SplitGraph::find_near(VertexPair /*uv*/, const Graph& /*graph*/, SubgraphCallback /*callback*/) {
         throw std::runtime_error("SplitGraph does not support find_near");
         return false;
     }
@@ -45,7 +46,7 @@ namespace Finder {
      *
      * @return
      */
-    bool SplitGraph::find_near(VertexPair /*uv*/, const Graph& /*forbidden*/, SubgraphCallback /*callback*/)  {
+    bool SplitGraph::find_near(VertexPair /*uv*/, const Graph& /*graph*/, const Graph& /*forbidden*/, SubgraphCallback /*callback*/)  {
         throw std::runtime_error("SplitGraph does not support find_near");
         return false;
     }
@@ -59,7 +60,7 @@ namespace Finder {
     }
 
     template <typename F, typename G, typename H, typename I>
-    bool SplitGraph::find(const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+    bool SplitGraph::find(const Graph& graph, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
         // TODO: avoid listing a subgraph more than once
 
         for (Vertex u : graph.vertices()) {

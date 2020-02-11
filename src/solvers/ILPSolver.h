@@ -32,7 +32,7 @@ private:
     public:
         FSGCallback(const Configuration &config, Graph graph, const VertexPairMap<GRBVar> &vars) :
             m_graph(std::move(graph)), m_vars(vars), m_edited(m_graph.size()), m_config(config) {
-            m_finder = Finder::make(m_config.forbidden_subgraphs, m_graph);
+            m_finder = Finder::make(m_config.forbidden_subgraphs);
         };
 
     protected:
@@ -56,7 +56,7 @@ private:
 
                  if (m_config.sparse_constraints) {
                     VertexPairMap<bool> used_pairs(m_graph.size());
-                    m_finder->find([&](const Subgraph& subgraph) {
+                    m_finder->find(m_graph, [&](const Subgraph& subgraph) {
 
                         bool not_covered = false;
                         for (VertexPair uv : subgraph.vertexPairs())
@@ -75,14 +75,14 @@ private:
                         return false;
                     });
                 } else if (m_config.single_constraints) {
-                     m_finder->find([&](const Subgraph& subgraph) {
+                     m_finder->find(m_graph, [&](const Subgraph& subgraph) {
                          addSubgraphConstraint(subgraph);
                          ++num_added;
                          return true;
                      });
                  } else {
                     // Find forbidden subgraphs in current solution and add additional constraints.
-                    m_finder->find([&](Subgraph &&subgraph) {
+                    m_finder->find(m_graph, [&](Subgraph &&subgraph) {
                         addSubgraphConstraint(subgraph);
                         ++num_added;
                         return false;
@@ -186,10 +186,10 @@ private:
     }
 
     size_t addConstraints(GRBModel &model, const VertexPairMap<GRBVar> &vars, const Graph &graph) {
-        auto finder = Finder::make(m_config.forbidden_subgraphs, graph);
+        auto finder = Finder::make(m_config.forbidden_subgraphs);
         size_t num_added = 0;
 
-        finder->find([&](const Subgraph& subgraph) {
+        finder->find(graph, [&](const Subgraph& subgraph) {
             GRBLinExpr expr;
             for (VertexPair xy : subgraph.vertexPairs())
                 expr += vars[xy];

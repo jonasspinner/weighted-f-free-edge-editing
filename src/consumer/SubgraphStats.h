@@ -38,7 +38,7 @@ public:
         subgraph_count_per_vertex_pair_sum = 0;
         subgraph_count = 0;
 
-        finder->find([&](Subgraph &&subgraph) {
+        finder->find(graph, [&](Subgraph &&subgraph) {
             register_subgraph(subgraph);
             return false;
         });
@@ -49,7 +49,7 @@ public:
     void remove_near_subgraphs(VertexPair uv) {
         assert(m_marked[uv]);
         verify();
-        finder->find_near(uv, [&](Subgraph &&subgraph) {
+        finder->find_near(uv, graph, [&](Subgraph &&subgraph) {
             remove_subgraph(subgraph);
             return false;
         });
@@ -57,7 +57,7 @@ public:
     }
 
     void register_near_subgraphs(VertexPair uv) {
-        finder->find_near(uv, [&](Subgraph &&subgraph) {
+        finder->find_near(uv, graph, [&](Subgraph &&subgraph) {
             register_subgraph(subgraph);
             return false;
         });
@@ -121,7 +121,7 @@ private:
         VertexPairMap<size_t> debug_sg_per_vertex_pair(graph.size());
         size_t debug_sg_count = 0;
 
-        finder->find([&](Subgraph &&subgraph) {
+        finder->find(graph, [&](Subgraph &&subgraph) {
             debug_sg_count++;
 
             for (VertexPair uv : subgraph.vertexPairs()) {

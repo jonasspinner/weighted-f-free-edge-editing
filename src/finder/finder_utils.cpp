@@ -20,30 +20,29 @@ namespace Finder {
      * Factory function for Finders. The enum forbidden determines the class.
      *
      * @param forbidden
-     * @param graph
      * @return
      */
-    std::unique_ptr<FinderI> make(Options::FSG forbidden, const Graph &graph) {
+    std::unique_ptr<FinderI> make(Options::FSG forbidden) {
         using Options::FSG;
         switch (forbidden) {
             case FSG::P3:
-                return std::make_unique<OuterP3>(graph);
+                return std::make_unique<OuterP3>();
             case FSG::P4:
-                return std::make_unique<CenterRecP4>(graph);
+                return std::make_unique<CenterRecP4>();
             case FSG::P5:
-                return std::make_unique<CenterRecP5>(graph);
+                return std::make_unique<CenterRecP5>();
             case FSG::P6:
-                return std::make_unique<CenterRecP6>(graph);
+                return std::make_unique<CenterRecP6>();
             case FSG::C4P4:
-                return std::make_unique<CenterC4P4>(graph);
+                return std::make_unique<CenterC4P4>();
             case FSG::C5P5:
-                return std::make_unique<CenterRecC5P5>(graph);
+                return std::make_unique<CenterRecC5P5>();
             case FSG::C6P6:
-                return std::make_unique<CenterRecC6P6>(graph);
+                return std::make_unique<CenterRecC6P6>();
             case FSG::C4_C5_2K2:
-                return std::make_unique<SplitGraph>(graph);
+                return std::make_unique<SplitGraph>();
             case FSG::C4_C5_P5_Bowtie_Necktie:
-                return std::make_unique<SplitCluster>(graph);
+                return std::make_unique<SplitCluster>();
             default:
                 throw std::runtime_error("Finder not supported");
                 return nullptr;

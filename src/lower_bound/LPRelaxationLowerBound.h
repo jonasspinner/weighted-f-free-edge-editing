@@ -134,7 +134,7 @@ public:
             m_shall_solve = false;
         }
 
-        finder->find_near(uv, [&](const Subgraph &subgraph) {
+        finder->find_near(uv, m_graph, [&](const Subgraph &subgraph) {
             m_constraint_stack.back().push_back(add_constraint(subgraph));
             if (!m_shall_solve && get_constraint_value(subgraph) < 0.999) {
                 m_shall_solve = true;
@@ -320,7 +320,7 @@ private:
     size_t add_constraints_for_all_forbidden_subgraphs() {
         size_t num_found = 0;
 
-        finder->find([&](const Subgraph &subgraph) {
+        finder->find(m_graph, [&](const Subgraph &subgraph) {
             ++num_found;
             add_constraint(subgraph);
             return false;

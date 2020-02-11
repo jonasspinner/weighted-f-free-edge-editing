@@ -25,7 +25,7 @@ namespace LowerBound {
         Cost bound_size = 0;
         m_used_in_bound.clear();
 
-        finder->find([&](Subgraph &&subgraph) {
+        finder->find(m_graph, [&](Subgraph &&subgraph) {
 
             // Check if the subgraph is adjacent to one already used in the bound.
             bool touches_bound = false;

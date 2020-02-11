@@ -49,7 +49,7 @@ void LocalSearchLowerBound::initialize(Cost /*k*/) {
 
 
     std::vector<Element> subgraphs;
-    bool unsolveable = finder->find([&](Subgraph &&subgraph) {
+    bool unsolveable = finder->find(m_graph, [&](Subgraph &&subgraph) {
 
         Cost min_cost = get_subgraph_cost(subgraph, m_marked, m_costs);
         subgraphs.push_back({min_cost, std::move(subgraph)});
@@ -76,7 +76,7 @@ void LocalSearchLowerBound::initialize(Cost /*k*/) {
     }
 
     assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
-    assert(bound_is_maximal(*finder, m_bound_graph));
+    assert(bound_is_maximal(*finder, m_graph, m_bound_graph));
 }
 
 bool LocalSearchLowerBound::bound_graph_is_valid(State& state, const VertexPairMap<bool> &marked, const Graph &bound_graph) {
@@ -135,9 +135,9 @@ bool LocalSearchLowerBound::state_is_valid(State &state, const VertexPairMap<boo
     return valid;
 }
 
-bool LocalSearchLowerBound::bound_is_maximal(FinderI &finder, const Graph &bound_graph) {
+bool LocalSearchLowerBound::bound_is_maximal(FinderI &finder, const Graph &graph, const Graph &bound_graph) {
     std::vector<Subgraph> subgraphs;
-    finder.find(bound_graph, [&](Subgraph &&subgraph) {
+    finder.find(graph, bound_graph, [&](Subgraph &&subgraph) {
         subgraphs.push_back(std::move(subgraph));
         return false;
     });
@@ -179,7 +179,7 @@ void LocalSearchLowerBound::remove_near_subgraphs_from_bound(State& state, Verte
  * @param uv
  */
 void LocalSearchLowerBound::update_near_subgraphs(State& state, VertexPair uv, FinderI &finder,
-        const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs, Graph &bound_graph) {
+        const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs, const Graph &graph, Graph &bound_graph) {
     assert(state.solvable());
 
     Subgraph removed_subgraph{};
@@ -206,7 +206,7 @@ void LocalSearchLowerBound::update_near_subgraphs(State& state, VertexPair uv, F
         if (xy == uv) continue;
         assert(!bound_graph.hasEdge(xy));
 
-        bool unsolvable = finder.find_near(xy, bound_graph,[&](Subgraph &&subgraph) {
+        bool unsolvable = finder.find_near(xy, graph, bound_graph,[&](Subgraph &&subgraph) {
             Cost min_cost = get_subgraph_cost(subgraph, marked, costs);
             subgraphs.emplace_back(min_cost, std::move(subgraph));
             return min_cost == invalid_cost;
@@ -246,13 +246,13 @@ void LocalSearchLowerBound::update_near_subgraphs(State& state, VertexPair uv, F
  * If a fully marked subgraph is found, the state is marked as unsolvable.
  */
 void LocalSearchLowerBound::insert_near_subgraphs_into_bound(State& state, VertexPair uv, FinderI &finder,
-        const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs, Graph &bound_graph) {
+        const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs, const Graph &graph, Graph &bound_graph) {
     assert(state.solvable());
 
     std::vector<std::pair<Cost, Subgraph>> subgraphs;
 
     // The finder iterates over subgraphs having u and v as vertices.
-    bool unsolvable = finder.find_near(uv, bound_graph, [&](Subgraph &&subgraph) {
+    bool unsolvable = finder.find_near(uv, graph, bound_graph, [&](Subgraph &&subgraph) {
         Cost min_cost = get_subgraph_cost(subgraph, marked, costs);
         subgraphs.emplace_back(min_cost, std::move(subgraph));
         return min_cost == invalid_cost;
@@ -277,7 +277,7 @@ void LocalSearchLowerBound::insert_near_subgraphs_into_bound(State& state, Verte
 
 #ifndef NDEBUG
     // local
-    bool has_nearby_subgraph = finder.find_near(uv, bound_graph, [](Subgraph &&) { return true; });
+    bool has_nearby_subgraph = finder.find_near(uv, graph, bound_graph, [](Subgraph &&) { return true; });
     assert(!has_nearby_subgraph);
 #endif
 }
@@ -333,7 +333,7 @@ void LocalSearchLowerBound::before_mark(VertexPair uv) {
 
     // Either only remove the subgraph at uv (I) or remove it and fill the "hole" with subgraphs not containing uv (II).
     // remove_near_subgraphs_from_bound(state, uv); // I
-    update_near_subgraphs(state, uv, *finder, m_marked, m_costs, m_bound_graph); // II
+    update_near_subgraphs(state, uv, *finder, m_marked, m_costs, m_graph, m_bound_graph); // II
 
 #ifndef NDEBUG
     for (const auto &[cost, subgraph] : state.bound())
@@ -352,7 +352,7 @@ void LocalSearchLowerBound::before_edit(VertexPair uv) {
     if (!state.solvable()) return;
 
     initialize_bound_graph(state, m_marked, m_bound_graph);
-    insert_near_subgraphs_into_bound(state, uv, *finder, m_marked, m_costs, m_bound_graph);
+    insert_near_subgraphs_into_bound(state, uv, *finder, m_marked, m_costs, m_graph, m_bound_graph);
 }
 
 /**
@@ -365,7 +365,7 @@ void LocalSearchLowerBound::after_edit(VertexPair uv) {
     if (!state.solvable()) return;
 
     initialize_bound_graph(state, m_marked, m_bound_graph);
-    insert_near_subgraphs_into_bound(state, uv, *finder, m_marked, m_costs, m_bound_graph);
+    insert_near_subgraphs_into_bound(state, uv, *finder, m_marked, m_costs, m_graph, m_bound_graph);
 }
 
 /**
@@ -469,7 +469,7 @@ void LocalSearchLowerBound::local_search(State &state, Cost k) {
 
 #ifndef NDEBUG
     if (state.cost() <= k) {
-        assert(bound_is_maximal(*finder, m_bound_graph));
+        assert(bound_is_maximal(*finder, m_graph, m_bound_graph));
     }
 #endif
 }
@@ -521,7 +521,7 @@ bool LocalSearchLowerBound::find_one_improvements(State &state, size_t index) {
 
         if (m_subgraph_stats.subgraphCount(uv) > 1) {
 
-            finder->find_near(uv, m_bound_graph, [&](Subgraph &&neighbor) {
+            finder->find_near(uv, m_graph, m_bound_graph, [&](Subgraph &&neighbor) {
 #ifndef NDEBUG
                 {
                     auto vp = neighbor.vertexPairs();
@@ -604,7 +604,7 @@ bool LocalSearchLowerBound::find_two_improvement(State &state, size_t index, boo
 
     // Candidates are subgraphs which are only adjacent to subgraph but no other subgraph in the lower bound.
     const auto pairs = get_pairs(subgraph, m_marked);
-    auto[candidates, border] = get_candidates(*finder, pairs, m_bound_graph, m_subgraph_stats);
+    auto[candidates, border] = get_candidates(*finder, pairs, m_graph, m_bound_graph, m_subgraph_stats);
 
 #ifndef NDEBUG
     {
@@ -800,7 +800,7 @@ bool LocalSearchLowerBound::find_omega_improvement(State &state, Cost k) {
     }
 #endif
 
-    finder->find([&](Subgraph &&subgraph) {
+    finder->find(m_graph, [&](Subgraph &&subgraph) {
         // assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
 
         auto subgraph_cost = get_subgraph_cost(subgraph, m_marked, m_costs);
@@ -958,7 +958,8 @@ bool LocalSearchLowerBound::try_insert_into_graph(const Subgraph &subgraph, cons
  * @return candidates and a border array partitioning the candidates by vertex pairs.
  */
 std::pair<std::vector<Subgraph>, std::vector<size_t>> LocalSearchLowerBound::get_candidates(FinderI &finder,
-        const std::vector<VertexPair> &pairs, Graph &bound_graph, const SubgraphStats &subgraph_stats) {
+        const std::vector<VertexPair> &pairs, const Graph &graph, Graph &bound_graph,
+        const SubgraphStats &subgraph_stats) {
 
     // Precondition: subgraph is removed from bound_graph.
     assert(std::none_of(pairs.begin(), pairs.end(), [&](VertexPair uv) { return bound_graph.hasEdge(uv); }));
@@ -971,7 +972,7 @@ std::pair<std::vector<Subgraph>, std::vector<size_t>> LocalSearchLowerBound::get
         assert(!bound_graph.hasEdge(uv));
 
         if (subgraph_stats.subgraphCount(uv) > 1) {
-            finder.find_near(uv, bound_graph, [&](Subgraph &&neighbor) {
+            finder.find_near(uv, graph, bound_graph, [&](Subgraph &&neighbor) {
 #ifndef NDEBUG
                 auto vp = neighbor.vertexPairs();
                 assert(std::none_of(vp.begin(), vp.end(), [&](VertexPair xy) { return bound_graph.hasEdge(xy); }));

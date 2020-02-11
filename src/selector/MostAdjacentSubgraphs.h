@@ -12,13 +12,16 @@
 
 class MostAdjacentSubgraphs : public SelectorI {
 private:
+    const Graph &m_graph;
     const VertexPairMap<bool> &m_marked;
     const SubgraphStats &m_subgraph_stats;
     Graph m_used;
 
 public:
-    MostAdjacentSubgraphs(std::shared_ptr<FinderI> finder_ptr, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) : SelectorI(
-            std::move(finder_ptr)), m_marked(marked), m_subgraph_stats(subgraph_stats), m_used(m_marked.size()) {}
+    MostAdjacentSubgraphs(std::shared_ptr<FinderI> finder_ptr, const Graph &graph, const VertexPairMap<bool> &marked,
+        const SubgraphStats &subgraph_stats) :
+            SelectorI(std::move(finder_ptr)), m_graph(graph), m_marked(marked), m_subgraph_stats(subgraph_stats),
+            m_used(m_marked.size()) {}
 
     Problem select_problem(Cost /*k*/) override {
 
@@ -36,7 +39,7 @@ public:
 
         std::vector<std::pair<size_t, VertexPair>> best_pairs, current_pairs;
         for (VertexPair uv : pairs) {
-            finder->find_near(uv, m_used, [&](Subgraph &&subgraph) {
+            finder->find_near(uv, m_graph, m_used, [&](Subgraph &&subgraph) {
                 current_pairs.clear();
 
                 for (VertexPair xy : subgraph.vertexPairs())
@@ -73,7 +76,7 @@ public:
 
 #ifndef NDEBUG
         if (problem.solved) {
-            assert(!finder->find([](Subgraph&&){ return true; }));
+            assert(!finder->find(m_graph, [](Subgraph&&){ return true; }));
         }
 #endif
 

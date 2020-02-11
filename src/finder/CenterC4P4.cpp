@@ -12,44 +12,48 @@ namespace Finder {
     /**
      * Calls callback for all P_4's and C_4's.
      *
+     * @param graph
      * @param callback
      * @return
      */
-    bool CenterC4P4::find(SubgraphCallback callback) {
-        return find(callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
+    bool CenterC4P4::find(const Graph& graph, SubgraphCallback callback) {
+        return find(graph, callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
     }
 
     /**
      * Calls callback for all P_4's and C_4's. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
      *
+     * @param graph
      * @param forbidden
      * @param callback
      * @return
      */
-    bool CenterC4P4::find(const Graph &forbidden, SubgraphCallback callback) {
-        return find(callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
+    bool CenterC4P4::find(const Graph& graph, const Graph &forbidden, SubgraphCallback callback) {
+        return find(graph, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
     /**
      * Calls callback for all P_4's and C_4's having both u and v as vertices.
      *
      * @param uv
+     * @param graph
      * @param callback
      * @return
      */
-    bool CenterC4P4::find_near(VertexPair uv, SubgraphCallback callback) {
-        return find_near(uv, callback,neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
+    bool CenterC4P4::find_near(VertexPair uv, const Graph& graph, SubgraphCallback callback) {
+        return find_near(uv, callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
     }
 
     /**
      * Calls callback for all P_4's and C_4's having both u and v as vertices. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
      *
      * @param uv
+     * @param graph
      * @param forbidden
      * @param callback
      * @return
      */
-    bool CenterC4P4::find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) {
+    bool CenterC4P4::find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) {
         return find_near(uv, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
@@ -62,7 +66,7 @@ namespace Finder {
     }
 
     template<typename F, typename G, typename H, typename I>
-    bool CenterC4P4::find(const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+    bool CenterC4P4::find(const Graph& graph, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
 
         for (Vertex u : graph.vertices()) {
             V = neighbors(u);

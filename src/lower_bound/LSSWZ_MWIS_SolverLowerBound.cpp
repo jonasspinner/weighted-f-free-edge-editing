@@ -67,7 +67,7 @@ LSSWZ_MWIS_SolverLowerBound::build_instance(FinderI &finder, const Graph &graph,
     std::vector<Cost> weights;
 
     // The set of subgraphs which share a vertex pair form a clique in the MWIS instance.
-    finder.find([&](const Subgraph &subgraph) {
+    finder.find(graph, [&](const Subgraph &subgraph) {
         const auto index = weights.size();
         for (VertexPair uv : subgraph.vertexPairs()) {
             cliques[uv].push_back(index);

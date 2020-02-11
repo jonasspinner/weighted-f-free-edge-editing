@@ -17,15 +17,13 @@ namespace Finder {
         Graph::AdjRow B;
 
     public:
-        explicit CenterC4P4(const Graph &graph_ref) : FinderI(graph_ref), V(graph.size()), A(graph.size()), B(graph.size()) {}
+        bool find(const Graph& graph, SubgraphCallback callback) override;
 
-        bool find(SubgraphCallback callback) override;
+        bool find(const Graph& graph, const Graph &forbidden, SubgraphCallback callback) override;
 
-        bool find(const Graph &forbidden, SubgraphCallback callback) override;
+        bool find_near(VertexPair uv, const Graph& graph, SubgraphCallback callback) override;
 
-        bool find_near(VertexPair uv, SubgraphCallback callback) override;
-
-        bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override;
+        bool find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) override;
 
         [[nodiscard]] Options::FSG forbidden_subgraphs() const override { return Options::FSG::C4P4; }
 
@@ -35,7 +33,7 @@ namespace Finder {
 
     private:
         template<typename F, typename G, typename H, typename I>
-        bool find(const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge);
+        bool find(const Graph& graph, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge);
 
         template<typename F, typename G, typename H, typename I>
         bool find_near(VertexPair uv, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge,

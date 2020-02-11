@@ -26,13 +26,13 @@ namespace Selector {
          const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) {
         switch (selector) {
             case Options::Selector::LeastWeight:
-                return std::make_unique<LeastWeight>(instance.costs, finder, marked);
+                return std::make_unique<LeastWeight>(instance.graph, instance.costs, finder, marked);
             case Options::Selector::FirstFound:
-                return std::make_unique<FirstFound>(finder, marked);
+                return std::make_unique<FirstFound>(finder, instance.graph, marked);
             case Options::Selector::MostMarkedPairs:
-                return std::make_unique<MostMarkedPairs>(finder, marked, subgraph_stats);
+                return std::make_unique<MostMarkedPairs>(finder, instance.graph, marked, subgraph_stats);
             case Options::Selector::MostAdjacentSubgraphs:
-                return std::make_unique<MostAdjacentSubgraphs>(finder, marked, subgraph_stats);
+                return std::make_unique<MostAdjacentSubgraphs>(finder, instance.graph, marked, subgraph_stats);
             default:
                 assert(false);
                 return nullptr;

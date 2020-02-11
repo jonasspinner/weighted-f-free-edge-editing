@@ -14,11 +14,12 @@ namespace Finder {
     /**
      * Calls callback for all paths and cycles of the given length.
      *
+     * @param graph
      * @param callback
      * @return
      */
     template <int length, bool with_cycles>
-    bool Center<length, with_cycles>::find(SubgraphCallback callback) {
+    bool Center<length, with_cycles>::find(const Graph& graph, SubgraphCallback callback) {
         auto cb = [&callback](Subgraph&& subgraph, Vertex) { return callback(std::move(subgraph)); };
         return detail::CenterFindImpl<length, with_cycles>::find(graph, cb,
                 neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
@@ -27,12 +28,13 @@ namespace Finder {
     /**
      * Calls callback for all paths and cycles of the given length. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
      *
+     * @param graph
      * @param forbidden
      * @param callback
      * @return
      */
     template <int length, bool with_cycles>
-    bool Center<length, with_cycles>::find(const Graph &forbidden, SubgraphCallback callback) {
+    bool Center<length, with_cycles>::find(const Graph& graph, const Graph &forbidden, SubgraphCallback callback) {
         auto cb = [&callback](Subgraph&& subgraph, Vertex) { return callback(std::move(subgraph)); };
         return detail::CenterFindImpl<length, with_cycles>::find(graph, cb,
                 neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
@@ -42,11 +44,12 @@ namespace Finder {
      * Calls callback for all paths and cycles of the given length having both u and v as vertices.
      *
      * @param uv
+     * @param graph
      * @param callback
      * @return
      */
     template <int length, bool with_cycles>
-    bool Center<length, with_cycles>::find_near(VertexPair uv, SubgraphCallback callback) {
+    bool Center<length, with_cycles>::find_near(VertexPair uv, const Graph& graph, SubgraphCallback callback) {
         return detail::FindNearImpl<length, with_cycles>::find_near(graph, uv, callback,
                 neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
     }
@@ -55,12 +58,13 @@ namespace Finder {
      * Calls callback for all paths and cycles of the given length having both u and v as vertices. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
      *
      * @param uv
+     * @param graph
      * @param forbidden
      * @param callback
      * @return
      */
     template <int length, bool with_cycles>
-    bool Center<length, with_cycles>::find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) {
+    bool Center<length, with_cycles>::find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) {
         return detail::FindNearImpl<length, with_cycles>::find_near(graph, uv, callback,
                 neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }

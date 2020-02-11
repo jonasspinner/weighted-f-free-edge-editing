@@ -10,13 +10,14 @@
 namespace Selector {
     class LeastWeight : public SelectorI {
     private:
+        const Graph &m_graph;
         const VertexPairMap<Cost> &m_costs;
         const VertexPairMap<bool> &m_marked;
 
     public:
-        LeastWeight(const VertexPairMap<Cost> &costs, std::shared_ptr<FinderI> finder_ptr,
-                    const VertexPairMap<bool> &marked) : SelectorI(std::move(finder_ptr)), m_costs(costs),
-                                                                     m_marked(marked) {}
+        LeastWeight(const Graph &graph, const VertexPairMap<Cost> &costs, std::shared_ptr<FinderI> finder_ptr,
+                    const VertexPairMap<bool> &marked) : SelectorI(std::move(finder_ptr)), m_graph(graph),
+                                                         m_costs(costs), m_marked(marked) {}
 
         Problem select_problem(Cost /*k*/) override {
             Subgraph min_subgraph{};
@@ -24,7 +25,7 @@ namespace Selector {
             bool solved = true;
             bool unsolveable = false;
 
-            finder->find([&](Subgraph &&subgraph) {
+            finder->find(m_graph, [&](Subgraph &&subgraph) {
                 solved = false;
 
                 Cost subgraph_cost = get_subgraph_cost(subgraph, m_marked, m_costs);
@@ -32,7 +33,7 @@ namespace Selector {
                 if (subgraph_cost == invalid_cost) {
                     // if at least one forbidden subgraph has only marked vertex pairs, the problem is not solvable.
                     unsolveable = true;
-                } else  if (subgraph_cost < min_subgraph_cost) {
+                } else if (subgraph_cost < min_subgraph_cost) {
                     // update subgraph with minimum edit cost
                     min_subgraph_cost = subgraph_cost;
                     min_subgraph = std::move(subgraph);

@@ -148,7 +148,7 @@ void write_output_doc(std::ostream &file, const FinderI &finder, const std::stri
 }
 
 
-std::pair<int, std::vector<double>> find_all_subgraphs_benchmark(FinderI &finder, size_t iterations) {
+std::pair<int, std::vector<double>> find_all_subgraphs_benchmark(FinderI &finder, const Graph& graph, size_t iterations) {
     std::vector<double> find_all_times(iterations);
     int count = 0;
 
@@ -156,7 +156,7 @@ std::pair<int, std::vector<double>> find_all_subgraphs_benchmark(FinderI &finder
         count = 0;
         auto start = std::chrono::system_clock::now();
 
-        finder.find([&](Subgraph &&) {
+        finder.find(graph, [&](Subgraph &&) {
             ++count;
             return false;
         });
@@ -168,7 +168,7 @@ std::pair<int, std::vector<double>> find_all_subgraphs_benchmark(FinderI &finder
     return {count, find_all_times};
 }
 
-std::pair<int, std::vector<double>> find_one_subgraph_benchmark(FinderI &finder, size_t iterations) {
+std::pair<int, std::vector<double>> find_one_subgraph_benchmark(FinderI &finder, const Graph &graph, size_t iterations) {
     std::vector<double> find_one_times(iterations);
     int count = 0;
 
@@ -176,7 +176,7 @@ std::pair<int, std::vector<double>> find_one_subgraph_benchmark(FinderI &finder,
         count = 0;
         auto start = std::chrono::system_clock::now();
 
-        finder.find([&](Subgraph &&) {
+        finder.find(graph, [&](Subgraph &&) {
             ++count;
             return true;
         });
@@ -198,7 +198,7 @@ std::pair<int, std::vector<double>> find_all_near_subgraphs_benchmark(FinderI &f
         auto start = std::chrono::system_clock::now();
 
         for (VertexPair uv : graph.vertexPairs()) {
-            finder.find_near(uv, [&](Subgraph &&) {
+            finder.find_near(uv, graph, [&](Subgraph &&) {
                 ++count;
                 return false;
             });
@@ -221,7 +221,7 @@ std::pair<int, std::vector<double>> find_one_near_subgraph_benchmark(FinderI &fi
         auto start = std::chrono::system_clock::now();
 
         for (VertexPair uv : graph.vertexPairs()) {
-            finder.find_near(uv, [&](Subgraph &&) {
+            finder.find_near(uv, graph, [&](Subgraph &&) {
                 ++count;
                 return true;
             });

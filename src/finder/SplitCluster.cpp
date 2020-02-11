@@ -12,23 +12,25 @@ namespace Finder {
     /**
      * Calls callback on C4, C5, P5, Necktie and Bowtie subgraphs.
      *
+     * @param graph
      * @param callback
      * @return
      */
-    bool SplitCluster::find(SubgraphCallback callback) {
-        return find(callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
+    bool SplitCluster::find(const Graph& graph, SubgraphCallback callback) {
+        return find(graph, callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
     }
 
     /**
      * Calls callback on C4, C5, P5, Necktie and Bowtie subgraphs. Subgraphs sharing a vertex pair with the graph
      * forbidden are ignored.
      *
+     * @param graph
      * @param forbidden
      * @param callback
      * @return
      */
-    bool SplitCluster::find(const Graph& forbidden, SubgraphCallback callback) {
-        return find(callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
+    bool SplitCluster::find(const Graph& graph, const Graph& forbidden, SubgraphCallback callback) {
+        return find(graph, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
     /**
@@ -36,7 +38,7 @@ namespace Finder {
      *
      * @return
      */
-    bool SplitCluster::find_near(VertexPair /*uv*/, SubgraphCallback /*callback*/) {
+    bool SplitCluster::find_near(VertexPair /*uv*/, const Graph& /*graph*/, SubgraphCallback /*callback*/) {
         throw std::runtime_error("SplitCluster does not support find_near");
         return false;
     }
@@ -46,7 +48,7 @@ namespace Finder {
      *
      * @return
      */
-    bool SplitCluster::find_near(VertexPair /*uv*/, const Graph& /*forbidden*/, SubgraphCallback /*callback*/) {
+    bool SplitCluster::find_near(VertexPair /*uv*/, const Graph& /*graph*/, const Graph& /*forbidden*/, SubgraphCallback /*callback*/) {
         throw std::runtime_error("SplitCluster does not support find_near");
         return false;
     }
@@ -60,7 +62,7 @@ namespace Finder {
     }
 
     template <typename F, typename G, typename H, typename I>
-    bool SplitCluster::find(const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+    bool SplitCluster::find(const Graph& graph, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
 
         // C4, C5, P5, Necktie, Bowtie
 

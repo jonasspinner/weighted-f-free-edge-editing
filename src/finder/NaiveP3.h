@@ -13,15 +13,13 @@ namespace Finder {
     class NaiveP3 : public FinderI {
 
     public:
-        explicit NaiveP3(const Graph &graph_ref) : FinderI(graph_ref) {}
+        bool find(const Graph& graph, SubgraphCallback callback) override;
 
-        bool find(SubgraphCallback callback) override;
+        bool find(const Graph& graph, const Graph &forbidden, SubgraphCallback callback) override;
 
-        bool find(const Graph &forbidden, SubgraphCallback callback) override;
+        bool find_near(VertexPair uv, const Graph& graph, SubgraphCallback callback) override;
 
-        bool find_near(VertexPair uv, SubgraphCallback callback) override;
-
-        bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override;
+        bool find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) override;
 
         [[nodiscard]] Options::FSG forbidden_subgraphs() const override { return Options::FSG::P3; }
 
@@ -31,10 +29,10 @@ namespace Finder {
 
     private:
         template <typename H, typename I>
-        bool find(const SubgraphCallback &callback, H valid_edge, I valid_non_edge);
+        bool find(const Graph& graph, const SubgraphCallback &callback, H valid_edge, I valid_non_edge);
 
         template <typename H, typename I>
-        bool find_near(VertexPair uv, const SubgraphCallback &callback, H valid_edge, I valid_non_edge);
+        bool find_near(VertexPair uv, const Graph& graph, const SubgraphCallback &callback, H valid_edge, I valid_non_edge);
     };
 }
 

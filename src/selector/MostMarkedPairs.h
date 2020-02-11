@@ -9,11 +9,13 @@
 namespace Selector {
     class MostMarkedPairs : public SelectorI {
     private:
+        const Graph &m_graph;
         const VertexPairMap<bool> &m_marked;
         const SubgraphStats &m_subgraph_stats;
     public:
-        MostMarkedPairs(std::shared_ptr <FinderI> finder_ptr, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) : SelectorI(
-                std::move(finder_ptr)), m_marked(marked), m_subgraph_stats(subgraph_stats) {}
+        MostMarkedPairs(std::shared_ptr <FinderI> finder_ptr, const Graph &graph, const VertexPairMap<bool> &marked,
+            const SubgraphStats &subgraph_stats) :
+                SelectorI(std::move(finder_ptr)), m_graph(graph), m_marked(marked), m_subgraph_stats(subgraph_stats) {}
 
         Problem select_problem(Cost /*k*/) override {
             Subgraph max_subgraph{};
@@ -22,7 +24,7 @@ namespace Selector {
 
             bool solved = true;
 
-            finder->find([&](Subgraph &&subgraph) {
+            finder->find(m_graph, [&](Subgraph &&subgraph) {
                 solved = false;
 
                 int num_marked_pairs = 0;

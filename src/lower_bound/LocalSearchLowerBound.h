@@ -133,6 +133,7 @@ private:
         }
     };
 
+    const Graph &m_graph;
     const VertexPairMap<Cost> &m_costs;
     const VertexPairMap<bool> &m_marked;
     const SubgraphStats &m_subgraph_stats;
@@ -149,7 +150,7 @@ public:
     explicit LocalSearchLowerBound(const Instance &instance, const VertexPairMap<bool> &marked,
                                    const SubgraphStats &subgraph_stats, std::shared_ptr<FinderI> finder_ref,
                                    int seed = 0) :
-            LowerBoundI(std::move(finder_ref)), m_costs(instance.costs), m_marked(marked),
+            LowerBoundI(std::move(finder_ref)), m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
             m_subgraph_stats(subgraph_stats), m_bound_graph(instance.graph.size()),
             m_gen(static_cast<unsigned long>(seed)) {}
 
@@ -199,7 +200,7 @@ private:
 
     static bool state_is_valid(State &state, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs);
 
-    static bool bound_is_maximal(FinderI &finder, const Graph &bound_graph);
+    static bool bound_is_maximal(FinderI &finder, const Graph& graph, const Graph &bound_graph);
 
     static void initialize_bound_graph(const State &state, const VertexPairMap<bool> &marked, Graph &bound_graph);
 
@@ -207,11 +208,11 @@ private:
 
     static void update_near_subgraphs(State &state, VertexPair uv, FinderI &finder,
                                       const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs,
-                                      Graph &bound_graph);
+                                      const Graph& graph, Graph &bound_graph);
 
     static void insert_near_subgraphs_into_bound(State &state, VertexPair uv, FinderI &finder,
                                                  const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs,
-                                                 Graph &bounded_graph);
+                                                 const Graph &graph, Graph &bounded_graph);
 
     static void insert_subgraphs_into_bound(std::vector<std::pair<Cost, Subgraph>> &&subgraphs,
                                             const VertexPairMap<bool> &marked, State &state, Graph &bound_graph);
@@ -232,7 +233,7 @@ private:
 
     static std::pair<std::vector<Subgraph>, std::vector<size_t>> get_candidates(FinderI &finder,
                                                                                 const std::vector<VertexPair> &pairs,
-                                                                                Graph &bound_graph,
+                                                                                const Graph &graph, Graph &bound_graph,
                                                                                 const SubgraphStats &subgraph_stats);
 
     static std::vector<VertexPair> get_pairs(const Subgraph &subgraph, const VertexPairMap<bool> &marked);

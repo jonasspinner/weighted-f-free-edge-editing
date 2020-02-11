@@ -15,15 +15,13 @@ namespace Finder {
         Graph::AdjRow W;
 
     public:
-        explicit CenterP3(const Graph &graph_ref) : FinderI(graph_ref), W(graph.size()) {}
+        bool find(const Graph& graph, SubgraphCallback callback) override;
 
-        bool find(SubgraphCallback callback) override;
+        bool find(const Graph& graph, const Graph &forbidden, SubgraphCallback callback) override;
 
-        bool find(const Graph &forbidden, SubgraphCallback callback) override;
+        bool find_near(VertexPair uv, const Graph& graph, SubgraphCallback callback) override;
 
-        bool find_near(VertexPair uv, SubgraphCallback callback) override;
-
-        bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override;
+        bool find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) override;
 
         [[nodiscard]] Options::FSG forbidden_subgraphs() const override { return Options::FSG::P3; }
 
@@ -35,7 +33,7 @@ namespace Finder {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
         template<typename F, typename G, typename H, typename I>
-        bool find(const SubgraphCallback& callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge);
+        bool find(const Graph& graph, const SubgraphCallback& callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge);
 #pragma GCC diagnostic pop
 
         template<typename F, typename G, typename H, typename I>

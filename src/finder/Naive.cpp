@@ -8,17 +8,17 @@
 
 namespace Finder {
     template <int length, bool with_cycles>
-    bool Naive<length, with_cycles>::find(SubgraphCallback callback) {
+    bool Naive<length, with_cycles>::find(const Graph& graph, SubgraphCallback callback) {
         return detail::NaiveFindImpl<length, with_cycles>::find(graph, callback, valid_edge(graph), valid_non_edge(graph));
     }
 
     template <int length, bool with_cycles>
-    bool Naive<length, with_cycles>::find(const Graph& forbidden, SubgraphCallback callback) {
+    bool Naive<length, with_cycles>::find(const Graph& graph, const Graph& forbidden, SubgraphCallback callback) {
         return detail::NaiveFindImpl<length, with_cycles>::find(graph, callback, valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
     template <int length, bool with_cycles>
-    bool Naive<length, with_cycles>::find_near(VertexPair uv, SubgraphCallback callback) {
+    bool Naive<length, with_cycles>::find_near(VertexPair uv, const Graph& graph, SubgraphCallback callback) {
         auto cb = [&](Subgraph&& subgraph) {
             if (subgraph.contains(uv))
                 return callback(std::move(subgraph));
@@ -28,7 +28,7 @@ namespace Finder {
     }
 
     template <int length, bool with_cycles>
-    bool Naive<length, with_cycles>::find_near(VertexPair uv, const Graph& forbidden, SubgraphCallback callback)  {
+    bool Naive<length, with_cycles>::find_near(VertexPair uv, const Graph& graph, const Graph& forbidden, SubgraphCallback callback)  {
         auto cb = [&](Subgraph&& subgraph) {
             if (subgraph.contains(uv))
                 return callback(std::move(subgraph));

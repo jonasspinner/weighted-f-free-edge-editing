@@ -51,13 +51,15 @@ std::optional<nps_mwis::Graph> NPS_MWIS_SolverLowerBound::build_instance() {
     std::vector<int> weights;
 
     // The set of subgraphs which share a vertex pair form a clique in the MWIS instance.
-    auto unsolvable = finder->find([&](const Subgraph& subgraph) {
+    auto unsolvable = finder->find(m_graph, [&](const Subgraph& subgraph) {
         const auto index = weights.size();
         for (VertexPair uv : subgraph.vertexPairs()) {
             cliques[uv].push_back(index);
         }
         Cost cost = get_subgraph_cost(subgraph, m_marked, m_costs);
         weights.push_back(cost);
+        // If all vertex pairs are marked then the cost is invalid and the subgraph cannot be destroyed because no
+        // vertex pairs can be edited.
         return cost == invalid_cost;
     });
 
@@ -68,7 +70,7 @@ std::optional<nps_mwis::Graph> NPS_MWIS_SolverLowerBound::build_instance() {
 
     // The detour through the Graph instance instead directly the ils_mwis::Graph instance is needed because two
     // subgraphs may share multiple vertex pairs and therefore the same edge would be inserted multiple times.
-    // ils_mwis::Graph saves a vector of neighbors for each neighbor and does not handle multiple insertions.
+    // ils_mwis::Graph stores a vector of neighbors for each neighbor and does not handle multiple insertions.
     Graph instance_graph(n);
 
     for (VertexPair uv : m_graph.vertexPairs()) {

@@ -10,26 +10,22 @@
 
 
 namespace Finder {
+    /**
+     * A finder class for paths and cycles with a given length.
+     * The implementation details can be found in the FindImpl and FindNearImpl classes.
+     */
     template <int length, bool with_cycles>
     class Endpoint : public FinderI {
         static_assert(length > 1);
 
     public:
-        /**
-         * A finder class for paths and cycles with a given length.
-         * The implementation details can be found in the FindImpl and FindNearImpl classes.
-         *
-         * @param graph_ref A reference to the graph.
-         */
-        explicit Endpoint(const Graph &graph_ref) : FinderI(graph_ref) {}
+        bool find(const Graph& graph, SubgraphCallback callback) override;
 
-        bool find(SubgraphCallback callback) override;
+        bool find(const Graph& graph, const Graph &forbidden, SubgraphCallback callback) override;
 
-        bool find(const Graph &forbidden, SubgraphCallback callback) override;
+        bool find_near(VertexPair uv, const Graph& graph, SubgraphCallback callback) override;
 
-        bool find_near(VertexPair uv, SubgraphCallback callback) override;
-
-        bool find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) override;
+        bool find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) override;
 
         [[nodiscard]] Options::FSG forbidden_subgraphs() const override;
 

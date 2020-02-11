@@ -10,45 +10,49 @@ namespace Finder {
     /**
      * Calls callback for all P_3's.
      *
+     * @param graph
      * @param callback
      * @return
      */
-    bool NaiveP3::find(SubgraphCallback callback) {
-        return find(callback, valid_edge(graph), valid_non_edge(graph));
+    bool NaiveP3::find(const Graph& graph, SubgraphCallback callback) {
+        return find(graph, callback, valid_edge(graph), valid_non_edge(graph));
     }
 
     /**
      * Calls callback for all P_3's. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
      *
+     * @param graph
      * @param forbidden
      * @param callback
      * @return
      */
-    bool NaiveP3::find(const Graph &forbidden, SubgraphCallback callback) {
-        return find(callback, valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
+    bool NaiveP3::find(const Graph& graph, const Graph &forbidden, SubgraphCallback callback) {
+        return find(graph, callback, valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
     /**
      * Calls callback for all P_3's having both u and v as vertices.
      *
      * @param uv
+     * @param graph
      * @param callback
      * @return
      */
-    bool NaiveP3::find_near(VertexPair uv, SubgraphCallback callback) {
-        return find_near(uv, callback, valid_edge(graph), valid_non_edge(graph));
+    bool NaiveP3::find_near(VertexPair uv, const Graph& graph, SubgraphCallback callback) {
+        return find_near(uv, graph, callback, valid_edge(graph), valid_non_edge(graph));
     }
 
     /**
      * Calls callback for all P_3's having both u and v as vertices. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
      *
      * @param uv
+     * @param graph
      * @param forbidden
      * @param callback
      * @return
      */
-    bool NaiveP3::find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) {
-        return find_near(uv, callback, valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
+    bool NaiveP3::find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) {
+        return find_near(uv, graph, callback, valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
     void NaiveP3::to_yaml(YAML::Emitter &out) const {
@@ -60,7 +64,7 @@ namespace Finder {
     }
 
     template<typename H, typename I>
-    bool NaiveP3::find(const SubgraphCallback &callback, H valid_edge, I valid_non_edge) {
+    bool NaiveP3::find(const Graph& graph, const SubgraphCallback &callback, H valid_edge, I valid_non_edge) {
         for (Vertex u : graph.vertices()) {
             for (Vertex v : graph.vertices()) {
                 for (Vertex w : graph.vertices()) {
@@ -77,8 +81,8 @@ namespace Finder {
     }
 
     template<typename H, typename I>
-    bool NaiveP3::find_near(VertexPair uv, const SubgraphCallback &callback, H valid_edge, I valid_non_edge) {
-        return find([&](Subgraph &&subgraph){
+    bool NaiveP3::find_near(VertexPair uv, const Graph& graph, const SubgraphCallback &callback, H valid_edge, I valid_non_edge) {
+        return find(graph, [&](Subgraph &&subgraph){
             const auto &S = subgraph;
             if ((S[0] == uv.u || S[1] == uv.u || S[2] == uv.u) &&
                 (S[0] == uv.v || S[1] == uv.v || S[2] == uv.v)) {

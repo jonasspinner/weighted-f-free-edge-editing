@@ -9,45 +9,49 @@ namespace Finder {
     /**
      * Calls callback for all P_3's.
      *
+     * @param graph
      * @param callback
      * @return
      */
-    bool OuterP3::find(SubgraphCallback callback) {
-        return find(callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
+    bool OuterP3::find(const Graph& graph, SubgraphCallback callback) {
+        return find(graph, callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
     }
 
     /**
      * Calls callback for all P_3's. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
      *
+     * @param graph
      * @param forbidden
      * @param callback
      * @return
      */
-    bool OuterP3::find(const Graph &forbidden, SubgraphCallback callback) {
-        return find(callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
+    bool OuterP3::find(const Graph& graph, const Graph &forbidden, SubgraphCallback callback) {
+        return find(graph, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
     /**
      * Calls callback for all P_3's having both u and v as vertices.
      *
      * @param uv
+     * @param graph
      * @param callback
      * @return
      */
-    bool OuterP3::find_near(VertexPair uv, SubgraphCallback callback) {
-        return find_near(uv, callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
+    bool OuterP3::find_near(VertexPair uv, const Graph& graph, SubgraphCallback callback) {
+        return find_near(uv, graph, callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
     }
 
     /**
      * Calls callback for all P_3's having both u and v as vertices. Subgraphs sharing a vertex pair with the graph forbidden are ignored.
      *
      * @param uv
+     * @param graph
      * @param forbidden
      * @param callback
      * @return
      */
-    bool OuterP3::find_near(VertexPair uv, const Graph &forbidden, SubgraphCallback callback) {
-        return find_near(uv, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
+    bool OuterP3::find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) {
+        return find_near(uv, graph, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
     void OuterP3::to_yaml(YAML::Emitter &out) const {
@@ -59,7 +63,7 @@ namespace Finder {
     }
 
     template<typename F, typename G, typename H, typename I>
-    bool OuterP3::find(const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+    bool OuterP3::find(const Graph& graph, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
         Graph::AdjRow Y(graph.size()), Z(graph.size());
 
         /** P_3: <x, y, z> **/
@@ -82,8 +86,8 @@ namespace Finder {
     }
 
     template<typename F, typename G, typename H, typename I>
-    bool OuterP3::find_near(VertexPair uv, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
-        return find([&](Subgraph &&subgraph){
+    bool OuterP3::find_near(VertexPair uv, const Graph& graph, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+        return find(graph, [&](Subgraph &&subgraph){
             const auto &S = subgraph;
             if ((S[0] == uv.u || S[1] == uv.u || S[2] == uv.u) &&
                 (S[0] == uv.v || S[1] == uv.v || S[2] == uv.v)) {

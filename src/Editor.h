@@ -123,7 +123,7 @@ public:
             m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_found_solution(false),
             m_ordered_vertex_pairs(m_instance.graph, m_instance.costs, m_consumers, m_marked), m_config(std::move(config)) {
 
-        m_finder = Finder::make(m_config.forbidden_subgraphs, m_instance.graph);
+        m_finder = Finder::make(m_config.forbidden_subgraphs);
         m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_marked);
         m_consumers.emplace_back(m_subgraph_stats.get());
 

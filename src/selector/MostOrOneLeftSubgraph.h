@@ -72,7 +72,7 @@ public:
         m_states.push_back(std::make_unique<State>());
         State &state = *m_states.back();
 
-        finder->find([&](const Subgraph &path) {
+        finder->find(m_graph, [&](const Subgraph &path) {
             size_t free = 0;
 
             for (VertexPair uv : path.vertexPairs())
@@ -94,7 +94,7 @@ public:
     void after_edit(VertexPair uv) override {
         State &state = current_state();
 
-        finder->find_near(uv, [&](Subgraph &&subgraph) {
+        finder->find_near(uv, m_graph, [&](Subgraph &&subgraph) {
             size_t free = 0;
 
             for (VertexPair xy : subgraph.vertexPairs())
