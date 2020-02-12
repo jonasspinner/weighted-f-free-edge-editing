@@ -14,32 +14,6 @@
 #include "../definitions.h"
 
 
-/**
- * Forward declaration for Graph friend classes.
- */
-namespace Finder {
-    class NaiveC4P4;
-
-    class CenterC4P4;
-
-    class CenterP3;
-
-    class NaiveP3;
-
-    class SplitGraph;
-
-    class SplitCluster;
-}
-// template <int length> class Center;
-namespace detail {
-    template<int length, bool with_cycles>
-    class CenterFindImpl;
-
-    template<int length, bool with_cycles>
-    class CenterFindNearImpl;
-}
-
-
 class VertexPair {
 public:
     Vertex u;
@@ -212,7 +186,7 @@ public:
 
     class RowVertices {
         class Iterator {
-            const AdjRow &m_row;
+            const AdjRow *m_row;
             Vertex u;
         public:
 #ifndef NDEBUG
@@ -225,39 +199,40 @@ public:
             using reference = const Vertex &;
             using iterator_category = std::forward_iterator_tag;
 
-            explicit Iterator(const AdjRow &row) : m_row(row) {
-                u = row.find_first();
-                if (u >= m_row.size()) u = m_row.size();
+            explicit Iterator(const AdjRow *row) : m_row(row) {
+                assert(row != nullptr);
+                u = row->find_first();
+                if (u >= m_row->size()) u = m_row->size();
             }
 
-            Iterator(const AdjRow &row, Vertex start) : m_row(row), u(start) {}
+            Iterator(const AdjRow *row, Vertex start) : m_row(row), u(start) {}
 
             Vertex operator*() const {
                 assert(u != end_vertex);
-                assert(u < m_row.size());
+                assert(u < m_row->size());
                 return u;
             }
 
             Iterator &operator++() {
                 assert(u != end_vertex);
-                assert(u < m_row.size());
-                u = m_row.find_next(u);
-                if (u >= m_row.size()) u = m_row.size();
+                assert(u < m_row->size());
+                u = m_row->find_next(u);
+                if (u >= m_row->size()) u = m_row->size();
                 return *this;
             }
 
-            bool operator==(const Iterator &other) const { return &m_row == &other.m_row && u == other.u; }
+            bool operator==(const Iterator &other) const { return m_row == other.m_row && u == other.u; }
 
             bool operator!=(const Iterator &other) const { return !(*this == other); }
         };
 
-        const AdjRow &m_row;
+        const AdjRow *m_row;
     public:
-        explicit RowVertices(const AdjRow &row) : m_row(row) {}
+        explicit RowVertices(const AdjRow &row) : m_row(std::addressof(row)) {}
 
         [[nodiscard]] Iterator begin() const { return Iterator(m_row); }
 
-        [[nodiscard]] Iterator end() const { return Iterator(m_row, m_row.size()); }
+        [[nodiscard]] Iterator end() const { return Iterator(m_row, m_row->size()); }
     };
 
     /**
@@ -340,7 +315,7 @@ public:
 
     class Edges {
         class Iterator {
-            const AdjMatrix &m_adj;
+            const AdjMatrix *m_adj;
             VertexPair m_uv;
         public:
             using value_type = VertexPair;
@@ -349,13 +324,13 @@ public:
             using reference = const VertexPair &;
             using iterator_category = std::forward_iterator_tag;
 
-            Iterator(const AdjMatrix &adj, VertexPair start) : m_adj(adj), m_uv(start) {}
+            Iterator(const AdjMatrix *adj, VertexPair start) : m_adj(adj), m_uv(start) {}
 
-            explicit Iterator(const AdjMatrix &adj) : m_adj(adj), m_uv({0, 1}) {
-                const Vertex size = m_adj.size();
-                while (m_uv.u < size && m_adj[m_uv.u].none()) m_uv.u++;
+            explicit Iterator(const AdjMatrix *adj) : m_adj(adj), m_uv({0, 1}) {
+                const Vertex size = m_adj->size();
+                while (m_uv.u < size && (*m_adj)[m_uv.u].none()) m_uv.u++;
                 if (m_uv.u < size) {
-                    m_uv.v = m_adj[m_uv.u].find_first();
+                    m_uv.v = (*m_adj)[m_uv.u].find_first();
                     assert(m_uv.u < size - 1);
                     assert(m_uv.v < size);
                 } else {
@@ -364,19 +339,19 @@ public:
             }
 
             VertexPair operator*() const {
-                assert(m_uv.u < m_adj.size() - 1);
-                assert(m_uv.v < m_adj.size());
+                assert(m_uv.u < m_adj->size() - 1);
+                assert(m_uv.v < m_adj->size());
                 return m_uv;
             }
 
             Iterator &operator++() {
-                const Vertex size = m_adj.size();
+                const Vertex size = m_adj->size();
                 assert(m_uv.u < size - 1);
                 assert(m_uv.v < size);
-                m_uv.v = m_adj[m_uv.u].find_next(m_uv.v);
+                m_uv.v = (*m_adj)[m_uv.u].find_next(m_uv.v);
                 while (m_uv.u < size - 1 && m_uv.v >= size) {
                     ++m_uv.u;
-                    m_uv.v = m_adj[m_uv.u].find_next(m_uv.u);
+                    m_uv.v = (*m_adj)[m_uv.u].find_next(m_uv.u);
                 }
                 if (m_uv.u >= size - 1 || m_uv.v >= size) {
                     m_uv = {size - 1, size};
@@ -384,20 +359,20 @@ public:
                 return *this;
             }
 
-            bool operator==(const Iterator &other) const { return &m_adj == &other.m_adj && m_uv == other.m_uv; }
+            bool operator==(const Iterator &other) const { return m_adj == other.m_adj && m_uv == other.m_uv; }
 
             bool operator!=(const Iterator &other) const { return !(*this == other); }
 
         };
 
-        const AdjMatrix &m_adj;
+        const AdjMatrix *m_adj;
     public:
-        explicit Edges(const AdjMatrix &adj) : m_adj(adj) {}
+        explicit Edges(const AdjMatrix &adj) : m_adj(std::addressof(adj)) {}
 
         [[nodiscard]] Iterator begin() const { return Iterator(m_adj); }
 
         [[nodiscard]] Iterator end() const {
-            Vertex size = m_adj.size();
+            Vertex size = m_adj->size();
             return Iterator(m_adj, {size - 1, size});
         }
     };
@@ -445,41 +420,20 @@ public:
         return out;
     }
 
-private:
+// private:
 
     /**
      * Returns an adjacency row with every vertex.
      *
      * @return
      */
-    [[nodiscard]] AdjRow all_vertices() const {
+    [[nodiscard]] AdjRow full_adjacency_row() const {
         auto row = AdjRow(m_size);
         row.set();
         return row;
     }
 
     friend class FinderI;
-
-    friend class Finder::NaiveP3;
-
-    friend class Finder::CenterP3;
-
-    friend class Finder::NaiveC4P4;
-
-    friend class Finder::CenterC4P4;
-
-    friend class Finder::SplitGraph;
-
-    friend class Finder::SplitCluster;
-
-
-    template<int length, bool with_cycles>
-    friend
-    class detail::CenterFindImpl;
-
-    template<int length, bool with_cycles>
-    friend
-    class detail::CenterFindNearImpl;
 };
 
 

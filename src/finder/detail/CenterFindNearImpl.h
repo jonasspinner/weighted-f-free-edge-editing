@@ -177,7 +177,7 @@ namespace detail {
                 return false;
             }
             /*
-            auto C = graph.all_vertices();
+            auto C = graph.full_adjacency_row();
             for (size_t i = 0; i <= l; ++i)
                 C[vertices[i]] = false;
             for (size_t i = r; i < size; ++i)
@@ -281,7 +281,7 @@ namespace detail {
                 }
             } else {
                 /*
-                auto C = graph.all_vertices();
+                auto C = graph.full_adjacency_row();
                 for (size_t i = l; i <= r; ++i)
                     C[vertices[i]] = false;
 

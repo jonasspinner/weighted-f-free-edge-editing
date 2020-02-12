@@ -51,7 +51,7 @@ namespace detail {
                     assert(P.size() == k - 4);
 
 
-                    C = graph.all_vertices(); // non adjacent to P - {p_1, p_{k-4}} = p_2, ..., p_{k-5}
+                    C = graph.full_adjacency_row(); // non adjacent to P - {p_1, p_{k-4}} = p_2, ..., p_{k-5}
                     for (unsigned i = 1; i < k - 5; ++i) { C &= non_neighbors(P[i]); }
 
                     A = neighbors(P[0]); // adjacent to p_1 and non adjacent to P - {p_1} = p_2, ..., p_{k-4}
