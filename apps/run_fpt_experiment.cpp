@@ -5,7 +5,7 @@
 
 #include <chrono>
 #include "../src/Configuration.h"
-#include "../src/Editor.h"
+#include "../src/editor/Editor.h"
 #include "../src/graph/GraphIO.h"
 #include "../src/Solution.h"
 

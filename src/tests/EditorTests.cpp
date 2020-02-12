@@ -6,7 +6,7 @@
 #include "EditorTests.h"
 #include "../graph/GraphIO.h"
 #include "../Solution.h"
-#include "../Editor.h"
+#include "../editor/Editor.h"
 #include "test_utils.h"
 
 

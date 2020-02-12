@@ -7,7 +7,7 @@
 #include "graph/GraphIO.h"
 
 #include "Statistics.h"
-#include "Editor.h"
+#include "editor/Editor.h"
 #include "Permutation.h"
 #include "Solution.h"
 

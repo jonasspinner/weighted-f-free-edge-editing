@@ -10,7 +10,7 @@
 
 #include "Solver.h"
 #include "../Configuration.h"
-#include "../Editor.h"
+#include "../editor/Editor.h"
 
 class FPTSolver : public Solver {
 public:

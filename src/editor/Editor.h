@@ -8,22 +8,22 @@
 #include <iostream>
 #include <utility>
 
-#include "graph/Graph.h"
-#include "graph/VertexPairMap.h"
-#include "Instance.h"
-#include "Configuration.h"
-#include "Statistics.h"
+#include "../graph/Graph.h"
+#include "../graph/VertexPairMap.h"
+#include "../Instance.h"
+#include "../Configuration.h"
+#include "../Statistics.h"
 
-#include "interfaces/SelectorI.h"
-#include "interfaces/LowerBoundI.h"
-#include "interfaces/ConsumerI.h"
-#include "interfaces/FinderI.h"
+#include "../interfaces/SelectorI.h"
+#include "../interfaces/LowerBoundI.h"
+#include "../interfaces/ConsumerI.h"
+#include "../interfaces/FinderI.h"
 
-#include "finder/finder_utils.h"
-#include "lower_bound/lower_bound_utils.h"
-#include "selector/selector_utils.h"
+#include "../finder/finder_utils.h"
+#include "../lower_bound/lower_bound_utils.h"
+#include "../selector/selector_utils.h"
 
-#include "consumer/SubgraphStats.h"
+#include "../consumer/SubgraphStats.h"
 
 
 class Editor {
