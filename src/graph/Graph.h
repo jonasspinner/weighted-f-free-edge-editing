@@ -110,7 +110,7 @@ public:
     [[nodiscard]] bool hasEdge(VertexPair edge) const { return m_adj[edge.u][edge.v]; }
 
     /**
-     * Inserts the edge into the Graph.
+     * Inserts the edge into the graph.
      *
      * @param edge
      */
@@ -121,7 +121,7 @@ public:
     }
 
     /**
-     * Inserts the edges into the Graph.
+     * Inserts the edges into the graph.
      *
      * @param edges
      */
@@ -133,7 +133,7 @@ public:
     }
 
     /**
-     * Removes the edge from the Graph.
+     * Removes the edge from the graph.
      *
      * @param edge
      */
@@ -145,6 +145,7 @@ public:
 
 
     class Vertices {
+    public:
         class Iterator {
             Vertex v;
         public:
@@ -165,6 +166,7 @@ public:
             bool operator!=(const Iterator &other) const { return !(*this == other); }
         };
 
+    private:
         Vertex n;
     public:
         explicit Vertices(Vertex size) : n(size) {}
@@ -185,6 +187,7 @@ public:
 
 
     class RowVertices {
+    public:
         class Iterator {
             const AdjRow *m_row;
             Vertex u;
@@ -200,12 +203,14 @@ public:
             using iterator_category = std::forward_iterator_tag;
 
             explicit Iterator(const AdjRow *row) : m_row(row) {
-                assert(row != nullptr);
-                u = row->find_first();
+                assert(m_row != nullptr);
+                u = m_row->find_first();
                 if (u >= m_row->size()) u = m_row->size();
             }
 
-            Iterator(const AdjRow *row, Vertex start) : m_row(row), u(start) {}
+            Iterator(const AdjRow *row, Vertex start) : m_row(row), u(start) {
+                assert(m_row != nullptr);
+            }
 
             Vertex operator*() const {
                 assert(u != end_vertex);
@@ -226,6 +231,7 @@ public:
             bool operator!=(const Iterator &other) const { return !(*this == other); }
         };
 
+    private:
         const AdjRow *m_row;
     public:
         explicit RowVertices(const AdjRow &row) : m_row(std::addressof(row)) {}
@@ -259,6 +265,7 @@ public:
 
 
     class VertexPairs {
+    public:
         class Iterator {
             VertexPair m_uv;
             Vertex n;
@@ -287,6 +294,7 @@ public:
             bool operator!=(const Iterator &other) const { return !(*this == other); }
         };
 
+    private:
         Vertex n;
     public:
         explicit VertexPairs(Vertex size) : n(size) {}
@@ -314,6 +322,7 @@ public:
 
 
     class Edges {
+    public:
         class Iterator {
             const AdjMatrix *m_adj;
             VertexPair m_uv;
@@ -324,9 +333,12 @@ public:
             using reference = const VertexPair &;
             using iterator_category = std::forward_iterator_tag;
 
-            Iterator(const AdjMatrix *adj, VertexPair start) : m_adj(adj), m_uv(start) {}
+            Iterator(const AdjMatrix *adj, VertexPair start) : m_adj(adj), m_uv(start) {
+                assert(m_adj != nullptr);
+            }
 
             explicit Iterator(const AdjMatrix *adj) : m_adj(adj), m_uv({0, 1}) {
+                assert(m_adj != nullptr);
                 const Vertex size = m_adj->size();
                 while (m_uv.u < size && (*m_adj)[m_uv.u].none()) m_uv.u++;
                 if (m_uv.u < size) {
@@ -365,6 +377,7 @@ public:
 
         };
 
+    private:
         const AdjMatrix *m_adj;
     public:
         explicit Edges(const AdjMatrix &adj) : m_adj(std::addressof(adj)) {}
@@ -419,8 +432,6 @@ public:
         out << EndMap << EndMap;
         return out;
     }
-
-// private:
 
     /**
      * Returns an adjacency row with every vertex.
