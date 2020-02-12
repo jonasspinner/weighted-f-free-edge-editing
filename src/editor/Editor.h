@@ -32,6 +32,7 @@ class Editor {
 private:
     Instance m_instance;
     VertexPairMap<bool> m_marked;
+    VertexPairMap<bool> m_edited;
 
     std::unique_ptr<LowerBoundI> m_lower_bound;
     std::unique_ptr<SelectorI> m_selector;
@@ -53,15 +54,17 @@ private:
     Configuration m_config;
 public:
     explicit Editor(Instance instance, Configuration config) :
-            m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_found_solution(false),
-            m_ordered_vertex_pairs(m_instance.graph, m_instance.costs, m_consumers, m_marked), m_config(std::move(config)) {
+            m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_edited(m_instance.graph.size()),
+            m_found_solution(false), m_ordered_vertex_pairs(m_instance.graph, m_instance.costs, m_consumers, m_marked),
+            m_config(std::move(config)) {
 
         m_finder = Finder::make(m_config.forbidden_subgraphs);
         m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_marked);
         m_consumers.emplace_back(m_subgraph_stats.get());
 
         m_selector = Selector::make(m_config.selector, m_finder, m_instance, m_marked, *m_subgraph_stats);
-        m_lower_bound = LowerBound::make(m_config.lower_bound, m_finder, m_instance, m_marked, *m_subgraph_stats, m_config);
+        m_lower_bound = LowerBound::make(m_config.lower_bound, m_finder, m_instance, m_marked, *m_subgraph_stats,
+                                         m_config);
 
         m_consumers.emplace_back(m_lower_bound.get());
         m_consumers.emplace_back(m_selector.get());
@@ -76,17 +79,20 @@ public:
     /**
      * Initializes statistics and consumers. Calls recursive editing function.
      *
-     * @param k The maximimum allowed editing cost.
+     * @param k The maximum allowed editing cost.
      * @param result_cb A callback which is called when a result is found (vector<VertexPair> -> void).
      * @param prune_cb A callback which is called when a branch is pruned ((Cost, Cost) -> void).
      * @return Whether a solution was found.
      */
     //template<typename ResultCallback, typename PrunedCallback>
     bool edit(Cost k,
-            const std::function<void(const std::vector<VertexPair>&)>& result_cb,
-            const std::function<void(Cost, Cost)>& prune_cb = [](Cost, Cost) {},
-            const std::function<bool(Cost)> &call_cb = [](Cost) { return false; }) {
-        auto result_cb2 = [&](const std::vector<VertexPair> &e) { result_cb(e); return !m_config.find_all_solutions; };
+              const std::function<void(const std::vector<VertexPair> &)> &result_cb,
+              const std::function<void(Cost, Cost)> &prune_cb = [](Cost, Cost) {},
+              const std::function<bool(Cost)> &call_cb = [](Cost) { return false; }) {
+        auto result_cb2 = [&](const std::vector<VertexPair> &e) {
+            result_cb(e);
+            return !m_config.find_all_solutions;
+        };
 
         // init stats
         m_stats = Statistics(-k / 2, k, 100);
@@ -112,9 +118,9 @@ private:
      */
     //template<typename ResultCallback, typename PrunedCallback>
     bool edit_recursive(Cost k,
-            const std::function<bool(const std::vector<VertexPair>&)> &result_cb,
-            const std::function<void(Cost, Cost)> &prune_cb,
-            const std::function<bool(Cost)> &call_cb) {
+                        const std::function<bool(const std::vector<VertexPair> &)> &result_cb,
+                        const std::function<void(Cost, Cost)> &prune_cb,
+                        const std::function<bool(Cost)> &call_cb) {
         const VertexPairMap<Cost> &costs = m_instance.costs;
 
         m_stats.calls(k)++;
@@ -197,6 +203,8 @@ private:
         G.toggleEdge(uv);
         edits.push_back(uv);
 
+        m_edited[uv] = true;
+
         for (auto &c : m_consumers) c->after_edit(uv);
     }
 
@@ -213,6 +221,8 @@ private:
 
         G.toggleEdge(uv);
         edits.pop_back();
+
+        m_edited[uv] = false;
 
         for (auto &c : m_consumers) c->after_unedit(uv);
     }
