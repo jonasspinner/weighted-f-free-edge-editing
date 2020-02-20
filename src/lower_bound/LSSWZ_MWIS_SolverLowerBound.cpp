@@ -37,8 +37,20 @@ Cost LSSWZ_MWIS_SolverLowerBound::calculate_lower_bound(Cost /*k*/) {
     }
 
 
+    auto path = m_config.input_path;
+    auto pos = path.find_last_of('/');
+    std::string tmp_file_prefix = "/tmp/";
+    if (pos == std::string::npos) {
+        tmp_file_prefix += path;
+    } else {
+        tmp_file_prefix += path.substr(pos + 1);
+    }
+    tmp_file_prefix += ".tmp";
+
+    auto instance_filename = tmp_file_prefix + ".instance";
+    auto output_filename = tmp_file_prefix + ".output";
+
     // Write instance to file
-    constexpr auto instance_filename = "lsswz.tmp.graph";
     std::ofstream file(instance_filename);
     file << n << " " << m << " " << 10 << "\n";
 
@@ -53,24 +65,24 @@ Cost LSSWZ_MWIS_SolverLowerBound::calculate_lower_bound(Cost /*k*/) {
 
 
     // Execute MWIS solver
-    std::string command = "../extern/lsswz_mwis/code/build/weighted_ls lsswz.tmp.graph"
+    std::string command = "${LSSWZ_SCRIPT} " + instance_filename +
                           " --console_log --disable_checks --reduction_style dense";
     if (time_limit > 0)
         command += " --time_limit=" + std::to_string(time_limit);
     if (disable_reduction)
         command += " --disable_reduction";
 
-    command += " > lsswz.tmp.out";
+    command += " > " + output_filename;
     auto ret_code = system(command.c_str());
 
     if (ret_code != 0) {
-        std::remove(instance_filename);
-        std::remove("lsswz.tmp.out");
+        std::remove(instance_filename.c_str());
+        std::remove(output_filename.c_str());
         throw std::runtime_error("weighted_ls exited with a non-zero exit code.");
     }
 
     // Read cost from output file
-    std::ifstream output("lsswz.tmp.out");
+    std::ifstream output(output_filename.c_str());
     std::string line;
     Cost cost = 0;
     do {
@@ -86,21 +98,8 @@ Cost LSSWZ_MWIS_SolverLowerBound::calculate_lower_bound(Cost /*k*/) {
         }
     } while (!line.empty());
 
-    std::remove(instance_filename);
-    std::remove("lsswz.tmp.out");
-
-
-    /*
-     * Am stupid, ignore.
-    // The lsswz_mwis seems to sometimes calculate (reduction_offset + 2147483647) instead of (reduction_offset).
-    // We try to detect these errors and fix them.
-    // TODO: Propose a fix
-    constexpr Cost MAX_NodeWeight = std::numeric_limits<int>::max();  // 2147483647; // 2^31 - 1
-    static_assert(MAX_NodeWeight > 0, "The MAX_NodeWeight is positive and fits into Cost.");
-    if (cost > MAX_NodeWeight / 2) {
-        cost -= MAX_NodeWeight;
-    }
-    */
+    std::remove(instance_filename.c_str());
+    std::remove(output_filename.c_str());
 
     if (m_config.verbosity > 0)
         std::cout << "lsswz solve    n: " << graph.size() << " m: " << m << " cost: " << cost << "\n";

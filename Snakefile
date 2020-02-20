@@ -55,8 +55,18 @@ rule all:
         # "experiments/rules/experiments_03_main",
         # "experiments/rules/experiments_04_calls",
         # "experiments/rules/experiments_05_search_strategies",
-        "experiments/rules/experiments_06_lp_relaxation",
-        "experiments/rules/experiments_07_nps_mwis"
+        # "experiments/rules/experiments_06_lp_relaxation",
+        "experiments/rules/experiments_07_nps_mwis",
+        "experiments/rules/experiments_08_lsswz_mwis"
+
+rule experiments_08_lsswz_mwis:
+       input:
+           expand("experiments/C4P4/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark=0.search-strategy={search_strategy}/bio-subset-A.solutions.yaml",
+                  timelimit=[-1], selector=["MostAdjacentSubgraphs"], lower_bound=["LSSWZ_MWIS_Solver"], search_strategy=["Fixed"])
+       output:
+           "experiments/rules/experiments_08_lsswz_mwis"
+       shell: "touch {output}"
+
 
 rule experiments_07_nps_mwis:
     input:
@@ -159,7 +169,7 @@ rule ilp:
     output:
         "experiments/{fsg}/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/{dataset}/{graph}.{multiplier}.{permutation}.solution.yaml"
     params:
-        hard_timeout = lambda wildcards, output: int(1.1 * int(wildcards.timelimit))
+        hard_timeout = lambda wildcards, output: int(1.1 * int(wildcards.timelimit)) if int(wildcards.timelimit) > 0 else None
     run:
         constraint_args = dict(basic=[], sparse=["--sparse-constraints", "1"], single=["--single-constraints", "1"])
         try:
@@ -201,7 +211,7 @@ rule fpt_fixed_k_from_solution:
     output:
         "experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all={all}.pre-mark={pre_mark}.search-strategy=Fixed/{dataset}/{graph}.{multiplier}.{permutation}.solution.yaml"
     params:
-        hard_timeout = lambda wildcards, output: int(1.1 * int(wildcards.timelimit))
+        hard_timeout = lambda wildcards, output: int(1.1 * int(wildcards.timelimit)) if int(wildcards.timelimit) > 0 else None
     run:
         k = yaml.safe_load(open(input.solution))["solution_cost"]
         try:
@@ -219,7 +229,7 @@ rule fpt:
     output:
         "experiments/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all={all}.pre-mark={pre_mark}.search-strategy={search_strategy}/{dataset}/{graph}.{multiplier}.{permutation}.solution.yaml"
     params:
-        hard_timeout = lambda wildcards, output: int(4 * int(wildcards.timelimit))
+        hard_timeout = lambda wildcards, output: int(4 * int(wildcards.timelimit)) if int(wildcards.timelimit) > 0 else None
     run:
         try:
             subprocess.run(f"cmake-build-release/fpt "
