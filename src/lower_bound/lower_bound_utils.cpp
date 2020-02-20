@@ -49,22 +49,19 @@ namespace LowerBound {
 #ifdef GUROBI_FOUND
                 return std::make_unique<LPRelaxationLowerBound>(instance, marked, std::move(config), finder);
 #else
-                std::cerr << "gurobi has to be installed to use LB::LinearProgram.";
-                abort();
+                throw std::runtime_error("gurobi has to be installed to use LB::LinearProgram.");
 #endif
             case LB::NPS_MWIS_Solver:
 #ifdef NPS_MWIS_FOUND
                 return std::make_unique<NPS_MWIS_SolverLowerBound>(instance, marked, finder);
 #else
-                std::cerr << "nps_mwis has to be installed to use LB::NPS_MWIS_Solver.";
-                abort();
+                throw std::runtime_error("nps_mwis has to be installed to use LB::NPS_MWIS_Solver.");
 #endif
             case LB::LSSWZ_MWIS_Solver:
 #ifdef LSSWZ_MWIS_FOUND
-                return std::make_unique<LSSWZ_MWIS_SolverLowerBound>(instance, marked, finder);
+                return std::make_unique<LSSWZ_MWIS_SolverLowerBound>(instance, marked, std::move(config), finder);
 #else
-            std::cerr << "lsswz_mwis has to be installed to use LB::LSSWZ_MWIS_Solver.";
-                abort();
+                throw std::runtime_error("lsswz_mwis has to be installed to use LB::LSSWZ_MWIS_Solver.");
 #endif
             default:
                 assert(false);
