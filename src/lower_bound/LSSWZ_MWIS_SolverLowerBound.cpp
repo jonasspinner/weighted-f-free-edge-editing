@@ -39,7 +39,7 @@ Cost LSSWZ_MWIS_SolverLowerBound::calculate_lower_bound(Cost /*k*/) {
 
     auto path = m_config.input_path;
     auto pos = path.find_last_of('/');
-    std::string tmp_file_prefix = "/tmp/";
+    std::string tmp_file_prefix = "$TMP/";
     if (pos == std::string::npos) {
         tmp_file_prefix += path;
     } else {
