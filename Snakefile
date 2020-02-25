@@ -59,10 +59,11 @@ rule all:
         "experiments/rules/experiments_07_nps_mwis",
         "experiments/rules/experiments_08_lsswz_mwis"
 
+
+
 rule experiments_08_lsswz_mwis:
        input:
-           expand("experiments/C4P4/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark=0.search-strategy={search_strategy}/bio-subset-A.solutions.yaml",
-                  timelimit=[-1], selector=["MostAdjacentSubgraphs"], lower_bound=["LSSWZ_MWIS_Solver"], search_strategy=["Fixed"])
+           "experiments/C4P4/fpt.timelimit=100.selector=MostAdjacentSubgraphs.lower-bound=LSSWZ_MWIS_Solver.all=1.pre-mark=0.search-strategy=Fixed/bio-C4P4-subset.solutions.yaml"
        output:
            "experiments/rules/experiments_08_lsswz_mwis"
        shell: "touch {output}"
@@ -70,11 +71,11 @@ rule experiments_08_lsswz_mwis:
 
 rule experiments_07_nps_mwis:
     input:
-        expand("experiments/C4P4/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark=0.search-strategy={search_strategy}/bio-C4P4-subset.solutions.yaml",
-               timelimit=[1000], selector=["MostAdjacentSubgraphs"], lower_bound=["NPS_MWIS_Solver"], search_strategy=["Fixed"])
+        "experiments/C4P4/fpt.timelimit=1000.selector=MostAdjacentSubgraphs.lower-bound=NPS_MWIS_Solver.all=1.pre-mark=0.search-strategy=Fixed/bio-C4P4-subset.solutions.yaml"
     output:
         "experiments/rules/experiments_07_nps_mwis"
     shell: "touch {output}"
+
 
 rule experiments_06_lp_relaxation:
     input:
@@ -85,6 +86,7 @@ rule experiments_06_lp_relaxation:
     output:
         "experiments/rules/experiments_06_lp_relaxation"
     shell: "touch {output}"
+
 
 rule experiments_05_search_strategies:
     input:
@@ -106,6 +108,7 @@ rule experiments_02_finders:
         "experiments/rules/experiments_02_finders"
     shell: "touch {output}"
 
+
 rule experiments_04_calls:
     input:
         # relationship between k and the number of calls for different lower bounds and forbidden subgraphs
@@ -120,6 +123,7 @@ rule experiments_04_calls:
     output:
         "experiments/rules/experiments_04_calls"
     shell: "touch {output}"
+
 
 rule experiments_03_main:
     input:
@@ -145,6 +149,7 @@ rule experiments_03_main:
     output:
         "experiments/rules/experiments_03_main"
     shell: "touch {output}"
+
 
 rule experiments_01_preliminary:
     input:
@@ -173,10 +178,12 @@ rule ilp:
     run:
         constraint_args = dict(basic=[], sparse=["--sparse-constraints", "1"], single=["--single-constraints", "1"])
         try:
-            subprocess.run(f"cmake-build-release/ilp "
-                           f"--input {input} --permutation {wildcards.permutation} --multiplier {wildcards.multiplier} --F {wildcards.fsg} --output {output} "
-                           f"--timelimit {wildcards.timelimit} "
-                           f"--num-threads {wildcards.threads}".split(" ") + constraint_args[wildcards.constraints], timeout=params.hard_timeout)
+            command = f"""
+            cmake-build-release/ilp "
+            --input {input} --permutation {wildcards.permutation} --multiplier {wildcards.multiplier} --F {wildcards.fsg} --output {output}
+            --timelimit {wildcards.timelimit}
+            --num-threads {wildcards.threads}"""
+            subprocess.run(command.split() + constraint_args[wildcards.constraints], timeout=params.hard_timeout)
         except subprocess.TimeoutExpired:
             pass
 
@@ -215,11 +222,15 @@ rule fpt_fixed_k_from_solution:
     run:
         k = yaml.safe_load(open(input.solution))["solution_cost"]
         try:
-            subprocess.run(f"cmake-build-release/fpt "
-                           f"--input {input} --permutation {wildcards.permutation} --multiplier {wildcards.multiplier} --F {wildcards.fsg} --output {output} "
-                           f"--selector {wildcards.selector} --lower-bound {wildcards.lower_bound} "
-                           f"--all {wildcards.all} --pre-mark {wildcards.pre_mark} "
-                           f"--search-strategy Fixed --k {k}".split(" "), timeout=params.hard_timeout)
+            command = f"""
+            cmake-build-release/fpt
+            --input {input} --permutation {wildcards.permutation} --multiplier {wildcards.multiplier} --F {wildcards.fsg} --output {output}
+            --selector {wildcards.selector} --lower-bound {wildcards.lower_bound}
+            --all {wildcards.all} --pre-mark {wildcards.pre_mark}
+            --search-strategy Fixed --k {k}
+            --timelimit {wildcards.timelimit}
+            """
+            subprocess.run(command.split(), timeout=params.hard_timeout)
         except subprocess.TimeoutExpired:
             pass
 
@@ -232,12 +243,15 @@ rule fpt:
         hard_timeout = lambda wildcards, output: int(4 * int(wildcards.timelimit)) if int(wildcards.timelimit) > 0 else None
     run:
         try:
-            subprocess.run(f"cmake-build-release/fpt "
-                           f"--input {input} --permutation {wildcards.permutation} --multiplier {wildcards.multiplier} --F {wildcards.fsg} --output {output} "
-                           f"--selector {wildcards.selector} --lower-bound {wildcards.lower_bound} "
-                           f"--all {wildcards.all} --pre-mark {wildcards.pre_mark} "
-                           f"--search-strategy {wildcards.search_strategy} "
-                           f"--timelimit {wildcards.timelimit}".split(" "), timeout=params.hard_timeout)
+            command = f"""
+            cmake-build-release/fpt
+            --input {input} --permutation {wildcards.permutation} --multiplier {wildcards.multiplier} --F {wildcards.fsg} --output {output}
+            --selector {wildcards.selector} --lower-bound {wildcards.lower_bound}
+            --all {wildcards.all} --pre-mark {wildcards.pre_mark}
+            --search-strategy {wildcards.search_strategy}
+            --timelimit {wildcards.timelimit}
+            """
+            subprocess.run(command.split(), timeout=params.hard_timeout)
         except subprocess.TimeoutExpired:
             pass
 
@@ -280,10 +294,13 @@ rule finder_experiment:
         hard_timeout = 100
     run:
         try:
-            subprocess.run(f"cmake-build-release/finder_benchmark "
-                           f"--input {input.instance} --permutation {wildcards.permutation} --output {output} "
-                           f"--finder {wildcards.finder} "
-                           f"--iterations {params.iterations}".split(" "), timeout=params.hard_timeout)
+            command = f"""
+            cmake-build-release/finder_benchmark
+            --input {input.instance} --permutation {wildcards.permutation} --output {output}
+            --finder {wildcards.finder}
+            --iterations {params.iterations}
+            """
+            subprocess.run(command.split(), timeout=params.hard_timeout)
         except subprocess.TimeoutExpired:
             pass
 
@@ -316,12 +333,15 @@ rule calls_experiment:
     output:
         "experiments/calls-experiment/{fsg}/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark={pre_mark}.search-strategy={search_strategy}/{dataset}/{graph}.{multiplier}.{permutation}.result.yaml"
     run:
-        subprocess.run(f"cmake-build-release/fpt "
-                       f"--input {input} --permutation {wildcards.permutation} --multiplier {wildcards.multiplier} --F {wildcards.fsg} --output {output} "
-                       f"--selector {wildcards.selector} --lower-bound {wildcards.lower_bound} "
-                       f"--all 1 --pre-mark {wildcards.pre_mark} "
-                       f"--search-strategy {wildcards.search_strategy} "
-                       f"--timelimit {wildcards.timelimit}".split(" "))
+        command = f"""
+        cmake-build-release/fpt
+        --input {input} --permutation {wildcards.permutation} --multiplier {wildcards.multiplier} --F {wildcards.fsg} --output {output}
+        --selector {wildcards.selector} --lower-bound {wildcards.lower_bound}
+        --all 1 --pre-mark {wildcards.pre_mark}
+        --search-strategy {wildcards.search_strategy}
+        --timelimit {wildcards.timelimit}
+        """
+        subprocess.run(command.split())
 
 rule collect_calls_experiment:
     input:
