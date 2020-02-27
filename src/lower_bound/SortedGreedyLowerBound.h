@@ -11,7 +11,7 @@
 #include "LowerBoundI.h"
 
 
-namespace LowerBound {
+namespace lower_bound {
     class SortedGreedyLowerBound : public LowerBoundI {
     private:
         const Graph &m_graph;

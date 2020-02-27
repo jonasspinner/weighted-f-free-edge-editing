@@ -9,7 +9,7 @@
 #include "LowerBoundI.h"
 
 
-namespace LowerBound {
+namespace lower_bound {
     class TrivialLowerBound : public LowerBoundI {
     public:
         explicit TrivialLowerBound(std::shared_ptr<FinderI> finder_ptr) : LowerBoundI(std::move(finder_ptr)) {};

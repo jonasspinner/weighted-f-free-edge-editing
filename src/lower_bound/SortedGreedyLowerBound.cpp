@@ -8,7 +8,7 @@
 #include <vector>
 
 
-namespace LowerBound {
+namespace lower_bound {
     /**
      * Calculates a lower bound on the costs required to solve the current instance.
      *

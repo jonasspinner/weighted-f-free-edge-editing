@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
             std::shared_ptr<FinderI> finder = Finder::make(config.forbidden_subgraphs, instance.graph);
             SubgraphStats subgraph_stats(finder, instance, marked);
             subgraph_stats.initialize(max_k);
-            auto lb = LowerBound::make(config.lower_bound, finder, instance, marked, subgraph_stats, config);
+            auto lb = lower_bound::make(config.lower_bound, finder, instance, marked, subgraph_stats, config);
 
 
             std::vector<double> initialization_times, result_times, complete_times;

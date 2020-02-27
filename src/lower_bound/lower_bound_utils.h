@@ -12,7 +12,7 @@
 #include "../consumer/SubgraphStats.h"
 
 
-namespace LowerBound {
+namespace lower_bound {
     std::unique_ptr<LowerBoundI>
     make(Options::LB lower_bound, const std::shared_ptr<FinderI> &finder, const Instance &instance,
          const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats, Configuration config);

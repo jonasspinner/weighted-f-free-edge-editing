@@ -6,7 +6,7 @@
 #include "TrivialLowerBound.h"
 
 
-namespace LowerBound {
+namespace lower_bound {
     /**
      * A trivial lower bound on the number of edits needed to solve an instance is 0.
      *

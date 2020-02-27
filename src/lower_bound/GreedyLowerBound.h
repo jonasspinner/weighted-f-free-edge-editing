@@ -10,7 +10,7 @@
 #include "../Instance.h"
 
 
-namespace LowerBound {
+namespace lower_bound {
     class GreedyLowerBound : public LowerBoundI {
     private:
         const Graph &m_graph;

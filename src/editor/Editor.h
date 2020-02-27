@@ -63,8 +63,8 @@ public:
         m_consumers.emplace_back(m_subgraph_stats.get());
 
         m_selector = Selector::make(m_config.selector, m_finder, m_instance, m_marked, *m_subgraph_stats);
-        m_lower_bound = LowerBound::make(m_config.lower_bound, m_finder, m_instance, m_marked, *m_subgraph_stats,
-                                         m_config);
+        m_lower_bound = lower_bound::make(m_config.lower_bound, m_finder, m_instance, m_marked, *m_subgraph_stats,
+                                          m_config);
 
         m_consumers.emplace_back(m_lower_bound.get());
         m_consumers.emplace_back(m_selector.get());

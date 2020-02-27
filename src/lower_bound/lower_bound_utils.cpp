@@ -22,7 +22,7 @@
 #include "LSSWZ_MWIS_SolverLowerBound.h"
 #endif
 
-namespace LowerBound {
+namespace lower_bound {
     /**
      * A factory function for LowerBounds. The enum lower_bound determines the class.
      *
