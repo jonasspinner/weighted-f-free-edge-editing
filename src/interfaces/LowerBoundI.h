@@ -2,11 +2,11 @@
 // Created by jonas on 15.07.19.
 //
 
-#ifndef CONCEPT_LOWERBOUNDI_H
-#define CONCEPT_LOWERBOUNDI_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_LOWERBOUNDI_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_LOWERBOUNDI_H
 
 
-#include "ConsumerI.h"
+#include "../consumer/ConsumerI.h"
 
 
 class LowerBoundI : public ConsumerI {
@@ -30,4 +30,4 @@ public:
     virtual Cost get_lower_bound() { return 0; }
 };
 
-#endif //CONCEPT_LOWERBOUNDI_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_LOWERBOUNDI_H

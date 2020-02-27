@@ -2,8 +2,8 @@
 // Created by jonas on 15.07.19.
 //
 
-#ifndef CONCEPT_CONSUMERI_H
-#define CONCEPT_CONSUMERI_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_CONSUMERI_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_CONSUMERI_H
 
 
 #include "../graph/Graph.h"
@@ -43,4 +43,4 @@ public:
     friend class Editor;
 };
 
-#endif //CONCEPT_CONSUMERI_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_CONSUMERI_H

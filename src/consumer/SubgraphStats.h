@@ -6,7 +6,7 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPHSTATS_H
 
 
-#include "../interfaces/ConsumerI.h"
+#include "../consumer/ConsumerI.h"
 #include "../graph/VertexPairMap.h"
 #include "../Instance.h"
 

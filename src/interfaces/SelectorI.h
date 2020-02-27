@@ -2,10 +2,10 @@
 // Created by jonas on 17.07.19.
 //
 
-#ifndef CONCEPT_SELECTORI_H
-#define CONCEPT_SELECTORI_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_SELECTORI_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_SELECTORI_H
 
-#include "ConsumerI.h"
+#include "../consumer/ConsumerI.h"
 #include "../graph/Subgraph.h"
 
 struct Problem {
@@ -20,4 +20,4 @@ public:
     virtual Problem select_problem(Cost k) = 0;
 };
 
-#endif //CONCEPT_SELECTORI_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_SELECTORI_H

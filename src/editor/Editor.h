@@ -16,7 +16,7 @@
 
 #include "../interfaces/SelectorI.h"
 #include "../interfaces/LowerBoundI.h"
-#include "../interfaces/ConsumerI.h"
+#include "../consumer/ConsumerI.h"
 #include "../interfaces/FinderI.h"
 
 #include "../finder/finder_utils.h"
