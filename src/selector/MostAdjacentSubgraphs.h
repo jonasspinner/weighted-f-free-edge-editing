@@ -6,7 +6,7 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_MOSTADJACENTSUBGRAPHS_H
 
 
-#include "../interfaces/SelectorI.h"
+#include "SelectorI.h"
 #include "../consumer/SubgraphStats.h"
 
 

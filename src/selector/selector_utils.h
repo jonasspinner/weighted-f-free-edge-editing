@@ -8,7 +8,7 @@
 
 #include <memory>
 
-#include "../interfaces/SelectorI.h"
+#include "SelectorI.h"
 #include "../options.h"
 #include "../Instance.h"
 #include "../consumer/SubgraphStats.h"

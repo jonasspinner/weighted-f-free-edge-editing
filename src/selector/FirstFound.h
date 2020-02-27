@@ -7,7 +7,7 @@
 
 
 #include "../graph/VertexPairMap.h"
-#include "../interfaces/SelectorI.h"
+#include "SelectorI.h"
 
 
 namespace Selector {
