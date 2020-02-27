@@ -6,7 +6,7 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_EXPONENTIALSEARCHSTRATEGY_H
 
 #include <deque>
-#include "../interfaces/SearchStrategyI.h"
+#include "SearchStrategyI.h"
 
 class ExponentialSearchStrategy : public SearchStrategyI {
     std::deque<size_t> m_calls_history;
