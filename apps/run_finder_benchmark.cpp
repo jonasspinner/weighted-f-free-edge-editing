@@ -6,7 +6,7 @@
 #include <boost/program_options.hpp>
 #include <chrono>
 
-#include "../src/interfaces/FinderI.h"
+#include "../src/finder/FinderI.h"
 #include "../src/finder/Center.h"
 #include "../src/finder/CenterC4P4.h"
 #include "../src/finder/CenterP3.h"
@@ -19,59 +19,59 @@
 #include "../src/finder/OuterP3.h"
 
 
-std::unique_ptr<FinderI> make_finder(const std::string &name, const Graph &graph) {
+std::unique_ptr<FinderI> make_finder(const std::string &name) {
     if (name == "CenterRecC6P6") {
-        return std::make_unique<Finder::CenterRecC6P6>(graph);
+        return std::make_unique<Finder::CenterRecC6P6>();
     } if (name == "CenterRecC5P5") {
-        return std::make_unique<Finder::CenterRecC5P5>(graph);
+        return std::make_unique<Finder::CenterRecC5P5>();
     } else if (name == "CenterRecC4P4") {
-        return std::make_unique<Finder::CenterRecC4P4>(graph);
+        return std::make_unique<Finder::CenterRecC4P4>();
     } else if (name == "CenterRecP6") {
-        return std::make_unique<Finder::CenterRecP6>(graph);
+        return std::make_unique<Finder::CenterRecP6>();
     } else if (name == "CenterRecP5") {
-        return std::make_unique<Finder::CenterRecP5>(graph);
+        return std::make_unique<Finder::CenterRecP5>();
     } else if (name == "CenterRecP4") {
-        return std::make_unique<Finder::CenterRecP4>(graph);
+        return std::make_unique<Finder::CenterRecP4>();
     } else if (name == "CenterRecP3") {
-        return std::make_unique<Finder::CenterRecP3>(graph);
+        return std::make_unique<Finder::CenterRecP3>();
     } else if (name == "EndpointRecC6P6") {
-        return std::make_unique<Finder::EndpointRecC6P6>(graph);
+        return std::make_unique<Finder::EndpointRecC6P6>();
     } else if (name == "EndpointRecC5P5") {
-        return std::make_unique<Finder::EndpointRecC5P5>(graph);
+        return std::make_unique<Finder::EndpointRecC5P5>();
     } else if (name == "EndpointRecC4P4") {
-        return std::make_unique<Finder::EndpointRecC4P4 >(graph);
+        return std::make_unique<Finder::EndpointRecC4P4 >();
     } else if (name == "EndpointRecP6") {
-        return std::make_unique<Finder::EndpointRecP6>(graph);
+        return std::make_unique<Finder::EndpointRecP6>();
     } else if (name == "EndpointRecP5") {
-        return std::make_unique<Finder::EndpointRecP5>(graph);
+        return std::make_unique<Finder::EndpointRecP5>();
     } else if (name == "EndpointRecP4") {
-        return std::make_unique<Finder::EndpointRecP4>(graph);
+        return std::make_unique<Finder::EndpointRecP4>();
     } else if (name == "EndpointRecP3") {
-        return std::make_unique<Finder::EndpointRecP3>(graph);
+        return std::make_unique<Finder::EndpointRecP3>();
     } else if (name == "CenterC4P4") {
-        return std::make_unique<Finder::CenterC4P4>(graph);
+        return std::make_unique<Finder::CenterC4P4>();
     } else if (name == "CenterP3") {
-        return std::make_unique<Finder::CenterP3>(graph);
+        return std::make_unique<Finder::CenterP3>();
     } else if (name == "NaiveC4P4") {
-        return std::make_unique<Finder::NaiveC4P4>(graph);
+        return std::make_unique<Finder::NaiveC4P4>();
     } else if (name == "NaiveP3") {
-        return std::make_unique<Finder::NaiveP3>(graph);
+        return std::make_unique<Finder::NaiveP3>();
     } else if (name == "NaiveRecC6P6") {
-        return std::make_unique<Finder::NaiveRecC6P6>(graph);
+        return std::make_unique<Finder::NaiveRecC6P6>();
     } else if (name == "NaiveRecC5P5") {
-        return std::make_unique<Finder::NaiveRecC5P5>(graph);
+        return std::make_unique<Finder::NaiveRecC5P5>();
     } else if (name == "NaiveRecC4P4") {
-        return std::make_unique<Finder::NaiveRecC4P4>(graph);
+        return std::make_unique<Finder::NaiveRecC4P4>();
     } else if (name == "NaiveRecP6") {
-        return std::make_unique<Finder::NaiveRecP6>(graph);
+        return std::make_unique<Finder::NaiveRecP6>();
     } else if (name == "NaiveRecP5") {
-        return std::make_unique<Finder::NaiveRecP4>(graph);
+        return std::make_unique<Finder::NaiveRecP5>();
     } else if (name == "NaiveRecP4") {
-        return std::make_unique<Finder::NaiveRecP3>(graph);
+        return std::make_unique<Finder::NaiveRecP4>();
     } else if (name == "NaiveRecP3") {
-        return std::make_unique<Finder::NaiveRecP3>(graph);
+        return std::make_unique<Finder::NaiveRecP3>();
     } else if (name == "OuterP3") {
-        return std::make_unique<Finder::OuterP3>(graph);
+        return std::make_unique<Finder::OuterP3>();
     } else {
         std::cerr << "name = " << name << "\n";
         throw std::runtime_error("Finder name not valid.");
@@ -79,19 +79,7 @@ std::unique_ptr<FinderI> make_finder(const std::string &name, const Graph &graph
 }
 
 bool has_near(const std::string &name) {
-    if (name == "CenterRecC5P5") {
-        return false;
-    } else if (name == "CenterRecC4P4") {
-        return false;
-    } else if (name == "CenterRecP3") {
-        return false;
-    } else if (name == "EndpointRecC5P5") {
-        return false;
-    } else if (name == "EndpointRecC4P4") {
-        return false;
-    } else if (name == "EndpointRecP3") {
-        return false;
-    } else if (name == "CenterC4P4") {
+    if (name == "CenterC4P4") {
         return true;
     } else if (name == "CenterP3") {
         return true;
@@ -280,7 +268,7 @@ int main(int argc, char* argv[]) {
     auto instance = P[original_instance];
 
 
-    auto finder = make_finder(finder_name, instance.graph);
+    auto finder = make_finder(finder_name);
 
     write_output_doc(file, *finder, "find_all_subgraphs", instance, -1, {});
     write_output_doc(file, *finder, "find_one_subgraph", instance, -1, {});
@@ -294,8 +282,8 @@ int main(int argc, char* argv[]) {
     int c1 = -1, c2 = -1, c3 = -1, c4 = -1;
     std::vector<double> t1, t2, t3, t4;
 
-    std::tie(c1, t1) = find_all_subgraphs_benchmark(*finder, iterations);
-    std::tie(c2, t2) = find_one_subgraph_benchmark(*finder, iterations);
+    std::tie(c1, t1) = find_all_subgraphs_benchmark(*finder, instance.graph, iterations);
+    std::tie(c2, t2) = find_one_subgraph_benchmark(*finder, instance.graph, iterations);
 
     if (with_near) {
         std::tie(c3, t3) = find_all_near_subgraphs_benchmark(*finder, instance.graph, iterations);
