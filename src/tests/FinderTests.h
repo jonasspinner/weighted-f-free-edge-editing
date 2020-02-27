@@ -12,7 +12,7 @@
 #include "../Solution.h"
 #include "test_utils.h"
 
-#include "../interfaces/FinderI.h"
+#include "../finder/FinderI.h"
 #include "../finder/NaiveC4P4.h"
 #include "../finder/NaiveP3.h"
 #include "../finder/CenterC4P4.h"

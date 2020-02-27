@@ -5,7 +5,7 @@
 
 #include "Center.h"
 
-#include "../interfaces/FinderI.h"
+#include "FinderI.h"
 #include "detail/CenterFindNearImpl.h"
 #include "detail/CenterFindImpl.h"
 

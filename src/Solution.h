@@ -9,7 +9,7 @@
 #include "graph/VertexPairMap.h"
 #include "graph/Graph.h"
 #include "Configuration.h"
-#include "interfaces/FinderI.h"
+#include "finder/FinderI.h"
 #include "finder/finder_utils.h"
 
 

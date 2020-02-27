@@ -8,7 +8,7 @@
 
 #include <random>
 #include "LowerBoundI.h"
-#include "../interfaces/FinderI.h"
+#include "../finder/FinderI.h"
 #include "../consumer/SubgraphStats.h"
 
 

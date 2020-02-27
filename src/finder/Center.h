@@ -6,7 +6,7 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_CENTER_H
 
 
-#include "../interfaces/FinderI.h"
+#include "FinderI.h"
 
 
 namespace Finder {

@@ -6,7 +6,7 @@
 #define CONCEPT_NAIVEP3_H
 
 
-#include "../interfaces/FinderI.h"
+#include "FinderI.h"
 
 
 namespace Finder {

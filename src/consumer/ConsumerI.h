@@ -8,7 +8,7 @@
 
 #include "../graph/Graph.h"
 
-#include "../interfaces/FinderI.h"
+#include "../finder/FinderI.h"
 
 
 class ConsumerI {
