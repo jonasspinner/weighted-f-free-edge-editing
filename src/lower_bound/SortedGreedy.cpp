@@ -3,7 +3,7 @@
 //
 
 
-#include "SortedGreedyLowerBound.h"
+#include "SortedGreedy.h"
 
 #include <vector>
 
@@ -23,7 +23,7 @@ namespace lower_bound {
      * @param k Not used
      * @return A lower bound on the costs required to solve the current instance.
      */
-    Cost SortedGreedyLowerBound::calculate_lower_bound(Cost k) {
+    Cost SortedGreedy::calculate_lower_bound(Cost k) {
         Cost max_min_cost = std::numeric_limits<Cost>::min();
 
         // Find all forbidden subgraphs with editable vertex pairs.

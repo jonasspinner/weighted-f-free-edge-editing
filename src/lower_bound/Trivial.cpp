@@ -3,7 +3,7 @@
 //
 
 
-#include "TrivialLowerBound.h"
+#include "Trivial.h"
 
 
 namespace lower_bound {
@@ -12,7 +12,7 @@ namespace lower_bound {
      *
      * @return 0
      */
-    Cost TrivialLowerBound::calculate_lower_bound(Cost /*k*/) {
+    Cost Trivial::calculate_lower_bound(Cost /*k*/) {
         return 0;
     }
 }

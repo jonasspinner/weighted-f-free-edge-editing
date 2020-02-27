@@ -39,7 +39,7 @@ through Python scripts found in the `scripts` directory.
 * [Gurobi](https://www.gurobi.com/) *(optional)*
 
   Used for an [ILP algorithm](src/solvers/ILPSolver.h) as an own solver and for
-  [Linear Program Relaxation](src/lower_bound/LPRelaxationLowerBound.h) to compute lower bounds for the
+  [Linear Program Relaxation](src/lower_bound/LPRelaxation.h) to compute lower bounds for the
   [FPT algorithm](src/Editor.h).
 
   You can get Gurobi [here](https://www.gurobi.com/de/downloads/).

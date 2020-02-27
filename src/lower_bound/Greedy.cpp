@@ -3,7 +3,7 @@
 //
 
 
-#include "GreedyLowerBound.h"
+#include "Greedy.h"
 
 
 namespace lower_bound {
@@ -21,7 +21,7 @@ namespace lower_bound {
      * @param k Not used
      * @return A lower bound on the costs required to solve the current instance.
      */
-    Cost GreedyLowerBound::calculate_lower_bound(Cost k) {
+    Cost Greedy::calculate_lower_bound(Cost k) {
         Cost bound_size = 0;
         m_used_in_bound.clear();
 
