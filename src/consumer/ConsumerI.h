@@ -12,12 +12,7 @@
 
 
 class ConsumerI {
-protected:
-    std::shared_ptr<FinderI> finder;
-
 public:
-    explicit ConsumerI(std::shared_ptr<FinderI> finder_ptr) : finder(std::move(finder_ptr)) {}
-
     virtual ~ConsumerI() = default;
 
     virtual void initialize(Cost /*k*/) {};

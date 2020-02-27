@@ -12,6 +12,8 @@
 
 class SubgraphStats : public ConsumerI {
 private:
+    std::shared_ptr<FinderI> finder;
+
     VertexPairMap<size_t> subgraph_count_per_vertex_pair;
     size_t subgraph_count_per_vertex_pair_sum;
     size_t subgraph_count;
@@ -22,7 +24,7 @@ private:
 
 public:
     SubgraphStats(std::shared_ptr<FinderI> finder_ptr, const Instance &instance, const VertexPairMap<bool> &marked)
-            : ConsumerI(std::move(finder_ptr)), subgraph_count_per_vertex_pair(instance.graph.size()),
+            : finder(std::move(finder_ptr)), subgraph_count_per_vertex_pair(instance.graph.size()),
               subgraph_count_per_vertex_pair_sum(0), subgraph_count(0), graph(instance.graph), m_marked(marked) {}
 
     [[nodiscard]] size_t subgraphCount() const {
