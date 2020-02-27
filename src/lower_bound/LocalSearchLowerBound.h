@@ -7,7 +7,7 @@
 
 
 #include <random>
-#include "../interfaces/LowerBoundI.h"
+#include "LowerBoundI.h"
 #include "../interfaces/FinderI.h"
 #include "../consumer/SubgraphStats.h"
 

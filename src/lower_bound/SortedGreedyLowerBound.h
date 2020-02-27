@@ -8,7 +8,7 @@
 
 #include "../graph/Graph.h"
 #include "../Instance.h"
-#include "../interfaces/LowerBoundI.h"
+#include "LowerBoundI.h"
 
 
 namespace LowerBound {

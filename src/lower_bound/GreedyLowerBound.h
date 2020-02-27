@@ -6,7 +6,7 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_GREEDYLOWERBOUND_H
 
 
-#include "../interfaces/LowerBoundI.h"
+#include "LowerBoundI.h"
 #include "../Instance.h"
 
 

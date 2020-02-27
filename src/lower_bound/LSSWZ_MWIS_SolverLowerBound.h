@@ -5,7 +5,7 @@
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_LSSWZ_MWIS_SOLVERLOWERBOUND_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_LSSWZ_MWIS_SOLVERLOWERBOUND_H
 
-#include "../interfaces/LowerBoundI.h"
+#include "LowerBoundI.h"
 #include "../Instance.h"
 
 class LSSWZ_MWIS_SolverLowerBound : public LowerBoundI {

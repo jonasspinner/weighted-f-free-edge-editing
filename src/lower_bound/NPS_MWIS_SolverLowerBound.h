@@ -8,7 +8,7 @@
 
 #include <optional>
 
-#include "../interfaces/LowerBoundI.h"
+#include "LowerBoundI.h"
 #include "../../extern/nps_mwis/src/Graph.h"
 #include "../Instance.h"
 

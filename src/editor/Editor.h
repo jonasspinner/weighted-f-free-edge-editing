@@ -15,7 +15,7 @@
 #include "../Statistics.h"
 
 #include "../interfaces/SelectorI.h"
-#include "../interfaces/LowerBoundI.h"
+#include "../lower_bound/LowerBoundI.h"
 #include "../consumer/ConsumerI.h"
 #include "../interfaces/FinderI.h"
 

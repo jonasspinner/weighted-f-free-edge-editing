@@ -7,7 +7,7 @@
 
 
 #include "../options.h"
-#include "../interfaces/LowerBoundI.h"
+#include "LowerBoundI.h"
 #include "../Instance.h"
 #include "../consumer/SubgraphStats.h"
 
