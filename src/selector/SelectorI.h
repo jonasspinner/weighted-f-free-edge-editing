@@ -9,9 +9,23 @@
 #include "../graph/Subgraph.h"
 
 
-struct Problem {
+class Problem {
+public:
     std::vector<VertexPair> pairs;
     bool solved = false;
+
+public:
+    [[nodiscard]] bool is_solved() const {
+        return solved;
+    }
+
+    [[nodiscard]] auto begin() const {
+        return pairs.begin();
+    }
+
+    [[nodiscard]] auto end() const {
+        return pairs.end();
+    }
 };
 
 class SelectorI : public ConsumerI {
