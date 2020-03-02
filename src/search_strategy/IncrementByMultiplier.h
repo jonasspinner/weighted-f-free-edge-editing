@@ -6,10 +6,15 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_INCREMENTBYMULTIPLIER_H
 
 
-class IncrementByMultiplier : public SearchStrategyI {
+#include "IncrementByConstValue.h"
+#include "../lower_bound/LowerBoundI.h"
+
+
+class IncrementByMultiplier : public IncrementByConstValue {
 public:
-    Cost search_step() override { return -1; }
-    void bound(Cost /*k*/, Cost /*lower_bound_k*/) override {}
+    IncrementByMultiplier(Configuration config) : IncrementByConstValue(std::move(config)) {
+        m_increment_value = m_config.multiplier;
+    }
 };
 
 

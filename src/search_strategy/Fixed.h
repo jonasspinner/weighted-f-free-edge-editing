@@ -9,6 +9,9 @@
 #include "../Configuration.h"
 
 
+/**
+ * Goal: Execute fpt algorithm exactly once with editing cost determined by the configuration (k_max).
+ */
 class Fixed : public SearchStrategyI {
     Configuration m_config;
 
@@ -19,11 +22,17 @@ public:
         }
     }
 
-    Cost search_step() override {
+    void set_initial_search_k(Cost /*initial_search_k*/) override {
+        throw std::runtime_error("Fixed::set_initial_search_k not implemented.");
+    }
+
+    std::optional<Cost> get_next_search_k() override {
         return m_config.k_max;
     }
 
-    void bound(Cost /*k*/, Cost /*lower_bound_k*/) override {}
+    void register_call(Cost /*k*/) override {}
+
+    void register_bound(Cost /*k*/, Cost /*lower_bound_k*/) override {}
 };
 
 

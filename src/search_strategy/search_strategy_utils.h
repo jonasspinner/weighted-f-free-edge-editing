@@ -9,9 +9,11 @@
 #include <memory>
 #include "SearchStrategyI.h"
 #include "../options.h"
+#include "../Instance.h"
+
 
 namespace search_strategy {
-    std::unique_ptr<SearchStrategyI> make(Options::FPTSearchStrategy search_strategy);
+    std::unique_ptr<SearchStrategyI> make(Options::FPTSearchStrategy search_strategy, const Instance &instance);
 }
 
 #endif //WEIGHTED_F_FREE_EDGE_EDITING_SEARCH_STRATEGY_UTILS_H

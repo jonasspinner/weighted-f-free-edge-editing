@@ -4,24 +4,26 @@
 
 
 #include "search_strategy_utils.h"
-
 #include "Exponential.h"
 #include "Fixed.h"
+#include "IncrementByConstValue.h"
 #include "IncrementByMinCost.h"
 #include "IncrementByMultiplier.h"
 #include "PrunedDelta.h"
 
+
 namespace search_strategy {
-    std::unique_ptr<SearchStrategyI> make(Options::FPTSearchStrategy search_strategy, Configuration config) {
+    std::unique_ptr<SearchStrategyI> make(Options::FPTSearchStrategy search_strategy, Configuration config,
+                                          const Instance &instance) {
         switch (search_strategy) {
             case Options::FPTSearchStrategy::Exponential:
                 return std::make_unique<Exponential>();
             case Options::FPTSearchStrategy::Fixed:
                 return std::make_unique<Fixed>(std::move(config));
             case Options::FPTSearchStrategy::IncrementByMinCost:
-                return std::make_unique<IncrementByMinCost>();
+                return std::make_unique<IncrementByMinCost>(instance, std::move(config));
             case Options::FPTSearchStrategy::IncrementByMultiplier:
-                return std::make_unique<IncrementByMultiplier>();
+                return std::make_unique<IncrementByMultiplier>(std::move(config));
             case Options::FPTSearchStrategy::PrunedDelta:
                 return std::make_unique<PrunedDelta>();
             default:
