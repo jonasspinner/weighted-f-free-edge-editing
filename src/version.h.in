@@ -1,7 +1,8 @@
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_VERSION_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_VERSION_H
 
-#define GIT_BRANCH "@GIT_BRANCH@"
-#define GIT_COMMIT_HASH "@GIT_COMMIT_HASH@"
+static const std::string TMP_DIR = "@TMP_DIR@";
+static const std::string GIT_BRANCH = "@GIT_BRANCH@";
+static const std::string GIT_COMMIT_HASH = "@GIT_COMMIT_HASH@";
 
 #endif //WEIGHTED_F_FREE_EDGE_EDITING_VERSION_H

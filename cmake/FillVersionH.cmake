@@ -12,6 +12,7 @@ execute_process(
 )
 message("configure_file" ${CMAKE_SOURCE_DIR})
 configure_file(
-    ${CMAKE_SOURCE_DIR}/../src/version.h.in
-    ${CMAKE_BINARY_DIR}/../src/version.h
+    ${SRC}
+    ${DST}
+    @ONLY
 )
