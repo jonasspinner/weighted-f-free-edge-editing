@@ -5,6 +5,7 @@
 
 #include <fstream>
 #include "LSSWZ_MWIS_Solver.h"
+#include "../version.h"
 
 
 namespace lower_bound {
@@ -44,7 +45,7 @@ namespace lower_bound {
 
         auto path = m_config.input_path;
         auto pos = path.find_last_of('/');
-        std::string tmp_file_prefix = "${TMP}/";
+        std::string tmp_file_prefix = TMP_DIR + "/";
         if (pos == std::string::npos) {
             tmp_file_prefix += path;
         } else {
@@ -70,8 +71,9 @@ namespace lower_bound {
 
 
         // Execute MWIS solver
-        std::string command = "${LSSWZ_SCRIPT} " + instance_filename +
-                              " --console_log --disable_checks --reduction_style dense";
+        std::string command = LSSWZ_MWIS_SCRIPT;
+        command += " " + instance_filename +
+                   " --console_log --disable_checks --reduction_style dense";
         if (time_limit > 0)
             command += " --time_limit=" + std::to_string(time_limit);
         if (disable_reduction)
