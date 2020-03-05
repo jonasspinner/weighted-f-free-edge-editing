@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
     using Options::LB;
 
     // std::vector<Options::LB> lower_bounds = {LB::Greedy, LB::No, LB::LocalSearch, LB::LinearProgram};
-    LB lower_bound = LB::LPRelaxation;
+    LB lower_bound = LB::LSSWZ_MWIS_Solver;
     std::vector<std::string> inputs = {
         "../data/bio/bio-nr-3-size-16.graph",
         "../data/bio/bio-nr-4-size-39.graph",
@@ -27,8 +27,8 @@ int main(int argc, char* argv[]) {
         "../data/misc/karate.graph"
     };
     std::string output;
-    std::vector<int> seeds = {0};
-    size_t iterations = 1;
+    std::vector<int> seeds = {0, 1, 2, 3};
+    size_t iterations = 10;
     double multiplier = 100;
 
 
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
             Permutation P(orig_instance.graph.size(), config.seed);
             auto instance = P[orig_instance];
 
-            std::shared_ptr<FinderI> finder = Finder::make(config.forbidden_subgraphs, instance.graph);
+            std::shared_ptr<FinderI> finder = Finder::make(config.forbidden_subgraphs);
             SubgraphStats subgraph_stats(finder, instance, marked);
             subgraph_stats.initialize(max_k);
             auto lb = lower_bound::make(config.lower_bound, finder, instance, marked, subgraph_stats, config);
