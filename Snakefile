@@ -56,17 +56,27 @@ rule all:
         # "experiments/rules/experiments_04_calls",
         # "experiments/rules/experiments_05_search_strategies",
         # "experiments/rules/experiments_06_lp_relaxation",
-        "experiments/rules/experiments_07_nps_mwis",
-        "experiments/rules/experiments_08_lsswz_mwis"
+        # "experiments/rules/experiments_07_nps_mwis",
+        # "experiments/rules/experiments_08_lsswz_mwis",
+        "experiments/rules/experiments_09_lp_relaxation_vs_packing_lower_bounds"
 
+
+
+rule experiments_09_lp_relaxation_vs_packing_lower_bounds:
+    input:
+        "experiments/C4P4/lb.timelimit=100.lower-bound=SortedGreedy/bio.benchmarks.yaml",
+        "experiments/C4P4/lb.timelimit=100.lower-bound=LPRelaxation/bio.benchmarks.yaml",
+    output:
+        "experiments/rules/experiments_09_lp_relaxation_vs_packing_lower_bounds"
+    shell: "touch {output}"
 
 
 rule experiments_08_lsswz_mwis:
-       input:
-           "experiments/C4P4/fpt.timelimit=100.selector=MostAdjacentSubgraphs.lower-bound=LSSWZ_MWIS_Solver.all=1.pre-mark=0.search-strategy=Fixed/bio-C4P4-subset.solutions.yaml"
-       output:
-           "experiments/rules/experiments_08_lsswz_mwis"
-       shell: "touch {output}"
+    input:
+        "experiments/C4P4/fpt.timelimit=100.selector=MostAdjacentSubgraphs.lower-bound=LSSWZ_MWIS_Solver.all=1.pre-mark=0.search-strategy=Fixed/bio-C4P4-subset.solutions.yaml"
+    output:
+        "experiments/rules/experiments_08_lsswz_mwis"
+    shell: "touch {output}"
 
 
 rule experiments_07_nps_mwis:
@@ -311,6 +321,41 @@ rule collect_finder_experiment:
                                  "{{dataset}}/{graph}.{permutation}.benchmark.yaml", graph=get_dataset_files(wildcards.dataset), permutation=range(4))
     output:
         "experiments/finder-benchmark.finder={finder}/{dataset}.benchmarks.yaml"
+    run:
+        with open(output[0], "w") as out_file:
+            for path in input:
+                with open(path) as in_file:
+                    out_file.write(in_file.read())
+
+
+rule lower_bound_experiment:
+    input:
+        "data/{dataset}/{graph}.graph"
+    output:
+        "experiments/{fsg}/lb.timelimit={timelimit}.lower-bound={lower_bound}/{dataset}/{graph}.{multiplier}.{permutation}.benchmark.yaml"
+    params:
+        hard_timeout = lambda wildcards, output: int(1.1 * int(wildcards.timelimit)) if int(wildcards.timelimit) > 0 else None
+    run:
+        try:
+            command = f"""
+            cmake-build-release/lower_bound_benchmark
+            --input {input} --permutation {wildcards.permutation} --multiplier {wildcards.multiplier} --F {wildcards.fsg} --output {output}
+            --lower-bound {wildcards.lower_bound}
+            --iterations 1
+            --timelimit {wildcards.timelimit}
+            """
+            subprocess.run(command.split(), timeout=params.hard_timeout)
+        except subprocess.TimeoutExpired:
+            pass
+
+rule collect_lower_bound_experiment:
+    input:
+        lambda wildcards: expand("experiments/{{fsg}}/"
+                                 "lb.timelimit={{timelimit}}.lower-bound={{lower_bound}}/"
+                                 "{{dataset}}/{graph}.{multiplier}.{permutation}.benchmark.yaml",
+                                 graph=get_dataset_files(wildcards.dataset), multiplier=[100], permutation=[0])
+    output:
+        "experiments/{fsg}/lb.timelimit={timelimit}.lower-bound={lower_bound}/{dataset}.benchmarks.yaml"
     run:
         with open(output[0], "w") as out_file:
             for path in input:
