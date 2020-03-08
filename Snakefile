@@ -7,6 +7,7 @@ import yaml
 BIO_GRAPHS = [path.stem for path in Path("data/bio").glob("*.graph")]
 BIO_GRAPHS_C4P4_SUBSET = [path.stem for path in Path("data/bio-C4P4-subset").glob("*.graph")]
 BIO_GRAPHS_SUBSET_A = [path.stem for path in Path("data/bio-subset-A").glob("*.graph")]
+BIO_GRAPHS_SUBSET_B = [path.stem for path in Path("data/bio-subset-B").glob("*.graph")]
 
 
 def get_dataset_files(name):
@@ -16,6 +17,8 @@ def get_dataset_files(name):
         return BIO_GRAPHS_C4P4_SUBSET
     elif name == "bio-subset-A":
         return BIO_GRAPHS_SUBSET_A
+    elif name == "bio-subset-B":
+        return BIO_GRAPHS_SUBSET_B
     else:
         return []
 
@@ -73,7 +76,7 @@ rule experiments_09_lp_relaxation_vs_packing_lower_bounds:
 
 rule experiments_08_lsswz_mwis:
     input:
-        "experiments/C4P4/fpt.timelimit=100.selector=MostAdjacentSubgraphs.lower-bound=LSSWZ_MWIS_Solver.all=1.pre-mark=0.search-strategy=Fixed/bio-C4P4-subset.solutions.yaml"
+        "experiments/C4P4/fpt.timelimit=3600.selector=MostAdjacentSubgraphs.lower-bound=LSSWZ_MWIS_Solver.all=1.pre-mark=0.search-strategy=Fixed/bio-C4P4-subset.solutions.yaml"
     output:
         "experiments/rules/experiments_08_lsswz_mwis"
     shell: "touch {output}"
