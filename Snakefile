@@ -69,6 +69,7 @@ rule experiments_09_lp_relaxation_vs_packing_lower_bounds:
     input:
         "experiments/C4P4/lb.timelimit=100.lower-bound=SortedGreedy/bio.benchmarks.yaml",
         "experiments/C4P4/lb.timelimit=100.lower-bound=LPRelaxation/bio.benchmarks.yaml",
+        "experiments/C4P4/lb.timelimit=100.lower-bound=NPS_MWIS_Solver/bio.benchmarks.yaml",
     output:
         "experiments/rules/experiments_09_lp_relaxation_vs_packing_lower_bounds"
     shell: "touch {output}"
