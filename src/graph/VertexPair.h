@@ -15,7 +15,7 @@ public:
     Vertex v;
 
     /**
-     * An pair of vertices. Can be used as an undirected edge.
+     * An unordered pair of vertices. Represents an undirected edge.
      *
      * The vertex pairs {u, v} and {v, u} are the same object. It is guaranteed that pair.u < pair.v.
      *
@@ -23,6 +23,9 @@ public:
      * @param y A vertex
      */
     VertexPair(Vertex x, Vertex y) : u(x < y ? x : y), v(x < y ? y : x) { assert(x != y); }
+
+    struct Ordered {};
+    VertexPair(Vertex x, Vertex y, Ordered) : u(x), v(y) { assert(x < y); } // x < y as precondition
 
     friend std::ostream &operator<<(std::ostream &os, VertexPair uv) {
         return os << "{" << uv.u << ", " << uv.v << "}";
