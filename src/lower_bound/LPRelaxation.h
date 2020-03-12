@@ -11,6 +11,9 @@
 #include <utility>
 
 #include "../finder/finder_utils.h"
+#include "LowerBoundI.h"
+#include "../Instance.h"
+
 
 namespace lower_bound {
 
@@ -218,6 +221,19 @@ namespace lower_bound {
             return 0;
         }
 
+    public:
+        [[nodiscard]] auto variable_edge_value(VertexPair uv) const {
+            return m_variables[uv].get(GRB_DoubleAttr_X);
+        }
+
+        [[nodiscard]] auto variable_edited_value(VertexPair uv) const {
+            if (m_graph.hasEdge(uv)) {
+                return 1 - m_variables[uv].get(GRB_DoubleAttr_X);
+            } else {
+                return m_variables[uv].get(GRB_DoubleAttr_X);
+            }
+        }
+
     private:
         /**
          * Solves the current model and returns the objective value.
@@ -374,7 +390,8 @@ namespace lower_bound {
             return 3.0 - x({u, v}) - x({v, a}) - x({a, b}) + x({u, a}) + x({v, b});
         }
 
-        void assertC4orP4(const Subgraph &subgraph) {
+        static void assertC4orP4(const Subgraph &subgraph) {
+#ifndef NDEBUG
             assert(subgraph.size() == 4);
             Vertex u = subgraph[0], v = subgraph[1], a = subgraph[2], b = subgraph[3];
             assert(m_graph.hasEdge({u, v}));
@@ -382,6 +399,7 @@ namespace lower_bound {
             assert(m_graph.hasEdge({a, b}));
             assert(!m_graph.hasEdge({u, a}));
             assert(!m_graph.hasEdge({v, b}));
+#endif
         }
     };
 

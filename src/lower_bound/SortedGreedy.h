@@ -26,6 +26,10 @@ namespace lower_bound {
                 m_used_in_bound(m_graph.size()) {}
 
         Cost calculate_lower_bound(Cost k) override;
+
+        [[nodiscard]] const auto& used_in_bound() const {
+            return m_used_in_bound;
+        }
     };
 }
 
