@@ -22,7 +22,7 @@ def generate_dataset_unweighted(config_path: Path, input_dir: Path, output_dir: 
 
     output_dir.mkdir()
     for input_path in (input_dir / weighted_dataset).glob("*.graph"):
-        output_path = output_dir / f"{input_path.stem}.unweighted.graph"
+        output_path = output_dir / f"{input_path.stem}-unweighted.graph"
         convert_instance_to_unweighted(input_path, output_path)
 
 
