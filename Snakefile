@@ -68,13 +68,13 @@ rule all:
         "experiments/rules/experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted"
 
 
-rule experiments_09_lp_relaxation_vs_packing_lower_bounds:
+rule experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted:
     input:
         "experiments/C4P4/lb.timelimit=100.lower-bound=SortedGreedy/bio-unweighted.benchmarks.yaml",
         "experiments/C4P4/lb.timelimit=100.lower-bound=LPRelaxation/bio-unweighted.benchmarks.yaml",
         "experiments/C4P4/lb.timelimit=100.lower-bound=NPS_MWIS_Solver/bio-unweighted.benchmarks.yaml",
     output:
-        "experiments/rules/experiments_10_lp_relaxation_vs_packing_lower_bounds"
+        "experiments/rules/experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted"
     shell: "touch {output}"
 
 
