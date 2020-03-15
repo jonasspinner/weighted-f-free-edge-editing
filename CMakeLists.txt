@@ -98,6 +98,7 @@ add_executable(tests apps/run_tests.cpp ${SRC_FILES} ${TEST_SRC_FILES})
 add_executable(finder_benchmark apps/run_finder_benchmark.cpp ${SRC_FILES})
 add_executable(lower_bound_benchmark apps/run_lower_bound_benchmark.cpp ${SRC_FILES})
 add_executable(fpt_experiment apps/run_fpt_experiment.cpp ${SRC_FILES})
+add_executable(lower_bound_inspection apps/run_lower_bound_inspection.cpp ${SRC_FILES})
 
 
 add_dependencies(fpt version)
@@ -119,6 +120,7 @@ target_link_libraries(tests LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES}
 target_link_libraries(finder_benchmark LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(lower_bound_benchmark LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(fpt_experiment LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
+target_link_libraries(lower_bound_inspection LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 
 # Gurobi
 # TODO: Only link if necessary.
@@ -129,4 +131,5 @@ if (GUROBI_FOUND)
     target_link_libraries(finder_benchmark LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
     target_link_libraries(lower_bound_benchmark LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
     target_link_libraries(fpt_experiment LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
+    target_link_libraries(lower_bound_inspection LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
 endif (GUROBI_FOUND)

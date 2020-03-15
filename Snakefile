@@ -8,6 +8,7 @@ BIO_GRAPHS = [path.stem for path in Path("data/bio").glob("*.graph")]
 BIO_GRAPHS_C4P4_SUBSET = [path.stem for path in Path("data/bio-C4P4-subset").glob("*.graph")]
 BIO_GRAPHS_SUBSET_A = [path.stem for path in Path("data/bio-subset-A").glob("*.graph")]
 BIO_GRAPHS_SUBSET_B = [path.stem for path in Path("data/bio-subset-B").glob("*.graph")]
+BIO_UNWEIGHTED = [path.stem for path in Path("data/bio-unweighted").glob("*.graph")]
 
 
 def get_dataset_files(name):
@@ -19,6 +20,8 @@ def get_dataset_files(name):
         return BIO_GRAPHS_SUBSET_A
     elif name == "bio-subset-B":
         return BIO_GRAPHS_SUBSET_B
+    elif name == "bio-unweighted":
+        return BIO_UNWEIGHTED
     else:
         return []
 
@@ -61,8 +64,18 @@ rule all:
         # "experiments/rules/experiments_06_lp_relaxation",
         # "experiments/rules/experiments_07_nps_mwis",
         # "experiments/rules/experiments_08_lsswz_mwis",
-        "experiments/rules/experiments_09_lp_relaxation_vs_packing_lower_bounds"
+        "experiments/rules/experiments_09_lp_relaxation_vs_packing_lower_bounds",
+        "experiments/rules/experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted"
 
+
+rule experiments_09_lp_relaxation_vs_packing_lower_bounds:
+    input:
+        "experiments/C4P4/lb.timelimit=100.lower-bound=SortedGreedy/bio-unweighted.benchmarks.yaml",
+        "experiments/C4P4/lb.timelimit=100.lower-bound=LPRelaxation/bio-unweighted.benchmarks.yaml",
+        "experiments/C4P4/lb.timelimit=100.lower-bound=NPS_MWIS_Solver/bio-unweighted.benchmarks.yaml",
+    output:
+        "experiments/rules/experiments_10_lp_relaxation_vs_packing_lower_bounds"
+    shell: "touch {output}"
 
 
 rule experiments_09_lp_relaxation_vs_packing_lower_bounds:
