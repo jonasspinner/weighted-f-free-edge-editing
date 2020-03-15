@@ -1,0 +1,5 @@
+name: biological (unweighted)
+description: |-
+  Unweighted graphs derived from COG protein similarity data.
+url: https://bio.informatik.uni-jena.de/data/#cluster_editing_data
+weighted_dataset: bio
