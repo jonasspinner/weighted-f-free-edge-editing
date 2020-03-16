@@ -45,7 +45,8 @@ void output_matrix(YAML::Emitter &out, const std::string &key, const VertexPairM
 
 
 void write_output(const VertexPairMap<bool> &adjacency, const VertexPairMap<Cost> &costs, Cost relaxation_lb,
-                  const VertexPairMap<double> &values, Cost packing_lb, const VertexPairMap<bool> &used_by_packing) {
+                  const VertexPairMap<double> &values, Cost packing_lb, const VertexPairMap<bool> &covered_by_packing,
+                  const std::vector<Subgraph> &packing, const std::vector<VertexPair> &min_cost_vertex_pairs) {
     using namespace YAML;
 
     Emitter out;
@@ -55,7 +56,9 @@ void write_output(const VertexPairMap<bool> &adjacency, const VertexPairMap<Cost
     output_matrix(out, "adjacency", adjacency);
     output_matrix(out, "costs", costs);
     output_matrix(out, "relaxation", values);
-    output_matrix(out, "packing", used_by_packing);
+    output_matrix(out, "packing_cover", covered_by_packing);
+    out << Key << "packing" << Value << packing;
+    out << Key << "packing_min_cost_vertex_pairs" << Value << min_cost_vertex_pairs;
     out << EndMap << EndDoc;
 
 
@@ -64,13 +67,35 @@ void write_output(const VertexPairMap<bool> &adjacency, const VertexPairMap<Cost
 
 
 int main(int argc, char *argv[]) {
-
+    namespace po = boost::program_options;
     constexpr Cost max_cost = std::numeric_limits<Cost>::max();
 
 
     Configuration config(Options::FSG::C4P4, 100, Options::SolverType::FPT, Options::Selector::FirstFound,
                          Options::LB::Trivial);
     config.input_path = "../data/bio/bio-nr-3-size-16.graph";
+
+    po::options_description desc("Allowed options");
+    desc.add_options()
+            ("help", "produce help message")
+            ("F", po::value<Options::FSG>(&config.forbidden_subgraphs)->default_value(config.forbidden_subgraphs))
+            ("input", po::value<std::string>(&config.input_path)->default_value(config.input_path),
+             "path to input instance")
+            ("permutation", po::value<int>(&config.permutation)->default_value(config.permutation),
+             "permutation of input instance")
+            ("multiplier", po::value<double>(&config.multiplier)->default_value(config.multiplier),
+             "multiplier for discretization of input instance");
+
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
+    po::notify(vm);
+
+    if (vm.count("help")) {
+        std::cout << desc << "\n";
+        return 1;
+    }
+
+
 
     Instance instance = GraphIO::read_instance(config);
     VertexPairMap<bool> marked(instance.graph.size());
@@ -84,7 +109,9 @@ int main(int argc, char *argv[]) {
 
     lower_bound::SortedGreedy packing_algorithm(instance, marked, finder);
     packing_algorithm.initialize(max_cost);
-    auto packing_lb = packing_algorithm.calculate_lower_bound(max_cost);
+//    auto packing_lb = packing_algorithm.calculate_lower_bound(max_cost);
+
+    auto [packing_lb, covered_by_packing, packing, min_cost_vertex_pairs] = packing_algorithm.calculate_lower_bound_and_packing();
 
     //std::cout << relaxation_lb << "\n";
     //std::cout << packing_lb << "\n";
@@ -99,7 +126,7 @@ int main(int argc, char *argv[]) {
         values[uv] = lp_algorithm.variable_edited_value(uv);
     }
 
-    write_output(adjacency, instance.costs, relaxation_lb, values, packing_lb, packing_algorithm.used_in_bound());
+    write_output(adjacency, instance.costs, relaxation_lb, values, packing_lb, covered_by_packing, packing, min_cost_vertex_pairs);
 
 
     return 0;

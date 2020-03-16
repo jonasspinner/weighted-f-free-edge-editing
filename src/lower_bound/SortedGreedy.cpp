@@ -71,4 +71,59 @@ namespace lower_bound {
 
         return bound_size;
     }
+
+    std::tuple<Cost, VertexPairMap<bool>, std::vector<Subgraph>, std::vector<VertexPair>>
+    SortedGreedy::calculate_lower_bound_and_packing() const {
+
+        // Find all forbidden subgraphs with editable vertex pairs.
+        // The cost for a single forbidden subgraph is the minimum edit cost for an editable vertex pair.
+        std::vector<std::pair<Cost, Subgraph>> subgraphs;
+        finder->find(m_graph, [&](Subgraph &&subgraph) {
+            Cost min_cost = get_subgraph_cost(subgraph, m_marked, m_costs);
+            subgraphs.emplace_back(min_cost, std::move(subgraph));
+            return false;
+        });
+
+        // Sort subgraphs with decreasing costs.
+        std::sort(subgraphs.begin(), subgraphs.end(),
+                  [](const auto &lhs, const auto &rhs) { return lhs.first > rhs.first; });
+
+        Cost packing_cost = 0;
+        VertexPairMap<bool> covered_by_packing(m_graph.size());
+        std::vector<Subgraph> packing;
+        std::vector<VertexPair> min_cost_vertex_pairs;
+
+        // Insert forbidden subgraphs with decreasing minimum edit cost into the bound.
+        // Only insert a subgraph if it does not share an editable vertex pair with a subgraph already in the bound.
+        for (const auto&[cost, subgraph] : subgraphs) {
+
+            // Check if the subgraph is adjacent to one already used in the bound.
+            bool touches_bound = false;
+            for (VertexPair uv : subgraph.vertexPairs())
+                if (!m_marked[uv] && covered_by_packing[uv]) {
+                    touches_bound = true;
+                    break;
+                }
+
+            if (!touches_bound) {
+                VertexPair xy{-0, static_cast<Vertex>(-1)};
+                Cost min_cost = invalid_cost;
+                for (VertexPair uv : subgraph.vertexPairs()) {
+                    if (!m_marked[uv]) {
+                        covered_by_packing[uv] = true;
+                        if (m_costs[uv] < min_cost) {
+                            min_cost = m_costs[uv];
+                            xy = uv;
+                        }
+                    }
+                }
+
+                packing_cost += cost;
+                packing.push_back(subgraph);
+                min_cost_vertex_pairs.push_back(xy);
+            }
+        }
+
+        return {packing_cost, covered_by_packing, packing, min_cost_vertex_pairs};
+    }
 }
