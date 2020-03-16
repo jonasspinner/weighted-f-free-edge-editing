@@ -217,7 +217,7 @@ rule ilp:
         constraint_args = dict(basic=[], sparse=["--sparse-constraints", "1"], single=["--single-constraints", "1"])
         try:
             command = f"""
-            cmake-build-release/ilp "
+            cmake-build-release/ilp
             --input {input} --permutation {wildcards.permutation} --multiplier {wildcards.multiplier} --F {wildcards.fsg} --output {output}
             --timelimit {wildcards.timelimit}
             --num-threads {wildcards.threads}"""
