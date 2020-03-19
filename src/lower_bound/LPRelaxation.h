@@ -356,7 +356,7 @@ namespace lower_bound {
          *  This function calculates $\alpha \cdot x$ for a given $x$.
          */
         double get_constraint_value(const Subgraph &subgraph) {
-            assertC4orP4(subgraph);
+            assertC4orP4(m_graph, subgraph);
             /*
             auto x = [&](VertexPair e) {
                 if (m_edited[e]) {
@@ -376,7 +376,7 @@ namespace lower_bound {
 
 
         GRBLinExpr alpha(const Subgraph &subgraph, bool fixed_var_is_constant = false) {
-            assertC4orP4(subgraph);
+            assertC4orP4(m_graph, subgraph);
             Vertex u = subgraph[0], v = subgraph[1], a = subgraph[2], b = subgraph[3];
 
             auto x = [&](VertexPair e) -> GRBLinExpr {
@@ -390,15 +390,15 @@ namespace lower_bound {
             return 3.0 - x({u, v}) - x({v, a}) - x({a, b}) + x({u, a}) + x({v, b});
         }
 
-        static void assertC4orP4(const Subgraph &subgraph) {
+        static void assertC4orP4(const Graph &graph, const Subgraph &subgraph) {
 #ifndef NDEBUG
             assert(subgraph.size() == 4);
             Vertex u = subgraph[0], v = subgraph[1], a = subgraph[2], b = subgraph[3];
-            assert(m_graph.hasEdge({u, v}));
-            assert(m_graph.hasEdge({v, a}));
-            assert(m_graph.hasEdge({a, b}));
-            assert(!m_graph.hasEdge({u, a}));
-            assert(!m_graph.hasEdge({v, b}));
+            assert(graph.hasEdge({u, v}));
+            assert(graph.hasEdge({v, a}));
+            assert(graph.hasEdge({a, b}));
+            assert(!graph.hasEdge({u, a}));
+            assert(!graph.hasEdge({v, b}));
 #endif
         }
     };
