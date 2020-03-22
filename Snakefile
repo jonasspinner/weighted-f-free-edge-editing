@@ -64,8 +64,8 @@ rule all:
         # "experiments/rules/experiments_06_lp_relaxation",
         # "experiments/rules/experiments_07_nps_mwis",
         # "experiments/rules/experiments_08_lsswz_mwis",
-        # "experiments/rules/experiments_09_lp_relaxation_vs_packing_lower_bounds",
-        # "experiments/rules/experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted",
+        "experiments/rules/experiments_09_lp_relaxation_vs_packing_lower_bounds",
+        "experiments/rules/experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted",
         "experiments/rules/experiments_11_lp_relaxation_vs_packing_unweighted"
 
 
@@ -74,6 +74,7 @@ rule experiments_11_lp_relaxation_vs_packing_unweighted:
         "experiments/C4P4/fpt.timelimit=3600.selector=MostAdjacentSubgraphs.lower-bound=LSSWZ_MWIS_Solver.all=1.pre-mark=0.search-strategy=Fixed/bio-unweighted.solutions.yaml",
         "experiments/C4P4/fpt.timelimit=1000.selector=MostAdjacentSubgraphs.lower-bound=NPS_MWIS_Solver.all=1.pre-mark=0.search-strategy=Fixed/bio-unweighted.solutions.yaml",
         "experiments/C4P4/fpt.timelimit=1000.selector=MostAdjacentSubgraphs.lower-bound=LPRelaxation.all=1.pre-mark=0.search-strategy=Fixed/bio-unweighted.solutions.yaml"
+        "experiments/C4P4/fpt.timelimit=1000.selector=MostAdjacentSubgraphs.lower-bound=LocalSearch.all=1.pre-mark=0.search-strategy=Fixed/bio-unweighted.solutions.yaml"
     output:
         "experiments/rules/experiments_11_lp_relaxation_vs_packing_unweighted"
     shell: "touch {output}"
@@ -84,6 +85,7 @@ rule experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted:
         "experiments/C4P4/lb.timelimit=100.lower-bound=SortedGreedy/bio-unweighted.benchmarks.yaml",
         "experiments/C4P4/lb.timelimit=100.lower-bound=LPRelaxation/bio-unweighted.benchmarks.yaml",
         "experiments/C4P4/lb.timelimit=100.lower-bound=NPS_MWIS_Solver/bio-unweighted.benchmarks.yaml",
+        "experiments/C4P4/lb.timelimit=100.lower-bound=LocalSearch/bio-unweighted.benchmarks.yaml",
     output:
         "experiments/rules/experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted"
     shell: "touch {output}"
@@ -94,6 +96,7 @@ rule experiments_09_lp_relaxation_vs_packing_lower_bounds:
         "experiments/C4P4/lb.timelimit=100.lower-bound=SortedGreedy/bio.benchmarks.yaml",
         "experiments/C4P4/lb.timelimit=100.lower-bound=LPRelaxation/bio.benchmarks.yaml",
         "experiments/C4P4/lb.timelimit=100.lower-bound=NPS_MWIS_Solver/bio.benchmarks.yaml",
+        "experiments/C4P4/lb.timelimit=100.lower-bound=LocalSearch/bio.benchmarks.yaml",
     output:
         "experiments/rules/experiments_09_lp_relaxation_vs_packing_lower_bounds"
     shell: "touch {output}"
