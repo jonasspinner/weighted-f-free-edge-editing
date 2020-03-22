@@ -99,7 +99,16 @@ public:
         m_found_solution = false;
 
         for (auto &c : m_consumers) c->initialize(k);
-        edit_recursive(k, result_cb2, prune_cb, call_cb);
+        switch (m_selector->recursion_type()) {
+            case SelectorI::RecursionType::Subgraph:
+                edit_recursive_subgraph(k, result_cb2, prune_cb, call_cb);
+                break;
+            case SelectorI::RecursionType::VertexPair:
+                edit_recursive_vertex_pair(k, result_cb2, prune_cb, call_cb);
+                break;
+            default:
+                throw std::runtime_error("Invalid recursion type");
+        }
         return m_found_solution;
     }
 
@@ -109,7 +118,7 @@ public:
 
 private:
     /**
-     * Perform an edit step with remaining edit cost k.
+     * Perform an edit step with remaining edit cost k. Branch on all unmarked vertex pairs of a single subgraphs.
      *
      * @param k The remaining editing cost.
      * @param result_cb A callback which is called when a result is found (vector<VertexPair> -> bool). If it returns true, the execution is stopped early.
@@ -117,7 +126,7 @@ private:
      * @return Whether the execution was stopped early
      */
     //template<typename ResultCallback, typename PrunedCallback>
-    bool edit_recursive(Cost k,
+    bool edit_recursive_subgraph(Cost k,
                         const std::function<bool(const std::vector<VertexPair> &)> &result_cb,
                         const std::function<void(Cost, Cost)> &prune_cb,
                         const std::function<bool(Cost)> &call_cb) {
@@ -157,7 +166,7 @@ private:
 
             edit_edge(uv);
 
-            if (edit_recursive(k - costs[uv], result_cb, prune_cb, call_cb)) return_value = true;
+            if (edit_recursive_subgraph(k - costs[uv], result_cb, prune_cb, call_cb)) return_value = true;
 
             for (auto &c : m_consumers) c->pop_state();
 
@@ -171,6 +180,83 @@ private:
             if (m_marked[*uv])
                 unmark_edge(*uv);
 
+
+        return return_value;
+    }
+
+
+    /**
+     * Perform an edit step with remaining edit cost k. Branch on vertex pairs.
+     *
+     * @param k The remaining editing cost.
+     * @param result_cb A callback which is called when a result is found (vector<VertexPair> -> bool). If it returns true, the execution is stopped early.
+     * @param prune_cb A callback which is called when a branch is pruned ((Cost, Cost) -> void).
+     * @return Whether the execution was stopped early
+     */
+    //template<typename ResultCallback, typename PrunedCallback>
+    bool edit_recursive_vertex_pair(Cost k,
+                        const std::function<bool(const std::vector<VertexPair> &)> &result_cb,
+                        const std::function<void(Cost, Cost)> &prune_cb,
+                        const std::function<bool(Cost)> &call_cb) {
+        const VertexPairMap<Cost> &costs = m_instance.costs;
+
+        m_stats.calls(k)++;
+        if (call_cb(k)) return false;
+
+        PreMarkerGuard guard(m_ordered_vertex_pairs);
+        if (m_config.pre_mark_vertex_pairs)
+            guard.mark(k);
+
+        auto lb = m_lower_bound->calculate_lower_bound(k);
+        if (k < lb) {
+            // unsolvable, too few edits remaining
+            prune_cb(k, lb);
+            m_stats.prunes(k)++;
+            return false;
+        }
+
+        auto problem = m_selector->select_problem(k);
+
+        if (problem.solved) {
+            // solved
+            m_found_solution = true;
+            return result_cb(edits); // output graph
+        }
+
+
+        bool return_value = false;
+
+        if (!problem.pairs.empty()) {
+            assert(problem.pairs.size() == 1);
+            VertexPair uv = problem.pairs[0];
+
+
+            mark_edge(uv);
+
+            // uv not edited
+            for (auto &c : m_consumers) c->push_state(k);
+
+            if (edit_recursive_vertex_pair(k, result_cb, prune_cb, call_cb)) return_value = true;
+
+            for (auto &c : m_consumers) c->pop_state();
+
+
+            if (!return_value) {
+                // uv edited
+                for (auto &c : m_consumers) c->push_state(k);
+
+                edit_edge(uv);
+
+                if (edit_recursive_vertex_pair(k - costs[uv], result_cb, prune_cb, call_cb)) return_value = true;
+
+                for (auto &c : m_consumers) c->pop_state();
+
+                unedit_edge(uv);
+            }
+
+
+            unmark_edge(uv);
+        }
 
         return return_value;
     }

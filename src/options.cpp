@@ -18,6 +18,8 @@ namespace Options {
             selector = Selector::MostMarkedPairs;
         else if (token == "MostAdjacentSubgraphs")
             selector = Selector::MostAdjacentSubgraphs;
+        else if (token == "SingleEdgeEditing")
+            selector = Selector::SingleEdgeEditing;
         else
             in.setstate(std::ios_base::failbit);
         return in;
@@ -33,6 +35,8 @@ namespace Options {
                 return os << "MostMarkedPairs";
             case Selector::MostAdjacentSubgraphs:
                 return os << "MostAdjacentSubgraphs";
+            case Selector::SingleEdgeEditing:
+                return os << "SingleEdgeEditing";
             default:
                 return os;
         }

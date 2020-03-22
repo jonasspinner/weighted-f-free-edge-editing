@@ -12,7 +12,7 @@
 
 namespace Options {
     enum class Selector {
-        FirstFound, LeastWeight, MostMarkedPairs, MostAdjacentSubgraphs
+        FirstFound, LeastWeight, MostMarkedPairs, MostAdjacentSubgraphs, SingleEdgeEditing
     };
 
     std::istream &operator>>(std::istream &in, Selector &selector);

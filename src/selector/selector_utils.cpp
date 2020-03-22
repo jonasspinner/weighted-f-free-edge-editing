@@ -9,6 +9,8 @@
 #include "LeastWeight.h"
 #include "MostMarkedPairs.h"
 #include "MostAdjacentSubgraphs.h"
+#include "SingleEdgeEditing.h"
+
 
 namespace Selector {
 
@@ -33,8 +35,10 @@ namespace Selector {
                 return std::make_unique<MostMarkedPairs>(finder, instance.graph, marked, subgraph_stats);
             case Options::Selector::MostAdjacentSubgraphs:
                 return std::make_unique<MostAdjacentSubgraphs>(finder, instance.graph, marked, subgraph_stats);
+            case Options::Selector::SingleEdgeEditing:
+                return std::make_unique<SingleEdgeEditing>(finder, instance.graph, marked, subgraph_stats);
             default:
-                assert(false);
+                throw std::runtime_error("Invalid selector");
                 return nullptr;
         }
     }
