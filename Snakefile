@@ -394,7 +394,7 @@ rule lower_bound_experiment_fpt_editing_local_search:
             extern/fpt-editing/build/ls_bound
             --input {input} --permutation {wildcards.permutation}
             """
-            benchmark_out = subprocess.run(command.split(), timeout=params.hard_timeout, capture_output=True)
+            benchmark_out = subprocess.run(command.split(), timeout=params.hard_timeout, stdout=subprocess.PIPE)
             d = yaml.safe_load(benchmark_out.stdout.decode("utf-8"))
             d["value"] = int(wildcards.multiplier) * d["value"]
             out_path = Path(str(output))
