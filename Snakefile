@@ -51,7 +51,7 @@ PRELIM_FPT_FPT_SELECTOR = ["FirstFound", "MostMarkedPairs", "MostAdjacentSubgrap
 PRELIM_FPT_SEARCH_STRATEGY = ["IncrementByMultiplier", "Fixed"]
 
 
-ruleorder: collect_fpt_fixed > collect_fpt > fpt_fixed_k_from_solution > fpt
+ruleorder: collect_fpt_fixed > collect_fpt > fpt_fixed_k_from_solution > fpt > lower_bound_experiment_fpt_editing_local_search > lower_bound_experiment
 
 rule all:
     input:
@@ -86,6 +86,7 @@ rule experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted:
         "experiments/C4P4/lb.timelimit=100.lower-bound=LPRelaxation/bio-unweighted.benchmarks.yaml",
         "experiments/C4P4/lb.timelimit=100.lower-bound=NPS_MWIS_Solver/bio-unweighted.benchmarks.yaml",
         "experiments/C4P4/lb.timelimit=100.lower-bound=LocalSearch/bio-unweighted.benchmarks.yaml",
+        "experiments/C4P4/lb.timelimit=100.lower-bound=fpt-editing-LocalSearch/bio-unweighted.benchmarks.yaml",
     output:
         "experiments/rules/experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted"
     shell: "touch {output}"
@@ -376,6 +377,32 @@ rule lower_bound_experiment:
             --timelimit {wildcards.timelimit}
             """
             subprocess.run(command.split(), timeout=params.hard_timeout)
+        except subprocess.TimeoutExpired:
+            pass
+
+
+rule lower_bound_experiment_fpt_editing_local_search:
+    input:
+        "data/{dataset}/{graph}.graph"
+    output:
+        "experiments/C4P4/lb.timelimit={timelimit}.lower-bound=fpt-editing-LocalSearch/{dataset}/{graph}.{multiplier}.{permutation}.benchmark.yaml"
+    params:
+        hard_timeout = lambda wildcards, output: int(1.1 * int(wildcards.timelimit)) if int(wildcards.timelimit) > 0 else None
+    run:
+        try:
+            command = f"""
+            extern/fpt-editing/build/ls_bound
+            --input {input} --permutation {wildcards.permutation}
+            """
+            benchmark_out = subprocess.run(command.split(), timeout=params.hard_timeout, capture_output=True)
+            d = yaml.safe_load(benchmark_out.stdout.decode("utf-8"))
+            d["value"] = int(wildcards.multiplier) * d["value"]
+            out_path = Path(str(output))
+            out_path.parent.mkdir(exist_ok=True)
+            with out_path.open("w") as file:
+                file.write("---\n")
+                yaml.safe_dump(d, file)
+                file.write("...\n")
         except subprocess.TimeoutExpired:
             pass
 
