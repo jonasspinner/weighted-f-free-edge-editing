@@ -431,3 +431,49 @@ rule collect_calls_experiment:
             for path in input:
                 with open(path) as in_file:
                     out_file.write(in_file.read())
+
+
+
+rule bio_dataset:
+    input:
+        "data/bio.yaml"
+    output:
+        directory("data/bio")
+    shell:
+        "python3 scripts/download_dataset.py --dir data/bio --config data/bio.yaml --biological --max-size 1000"
+
+rule bio_C4P4_subset_dataset:
+    input:
+        "data/bio-C4P4-subset.yaml",
+        "data/bio/bio.metadata.yaml"
+    output:
+        directory("data/bio-C4P4-subset")
+    shell:
+        "python3 scripts/generate_dataset_subset.py data/bio-C4P4-subset.yaml"
+
+rule bio_subset_A_dataset:
+    input:
+        "data/bio-subset-A.yaml",
+        "data/bio/bio.metadata.yaml"
+    output:
+        directory("data/bio-subset-A")
+    shell:
+        "python3 scripts/generate_dataset_subset.py data/bio-subset-A.yaml"
+
+rule bio_subset_B_dataset:
+    input:
+        "data/bio-subset-B.yaml",
+        "data/bio/bio.metadata.yaml"
+    output:
+        directory("data/bio-subset-B")
+    shell:
+        "python3 scripts/generate_dataset_subset.py data/bio-subset-B.yaml"
+
+rule bio_unweighted_dataset:
+    input:
+        "data/bio-unweighted.yaml",
+        "data/bio/bio.metadata.yaml"
+    output:
+        directory("data/bio-unweighted")
+    shell:
+        "python3 scripts/generate_dataset_unweighted.py data/bio-unweighted.yaml"
