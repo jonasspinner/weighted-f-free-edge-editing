@@ -60,7 +60,7 @@ endif (GUROBI_FOUND)
 find_package(NPS_MWIS)
 if (NPS_MWIS_FOUND)
     add_definitions(-DNPS_MWIS_FOUND)
-    set(NPS_MWIS_SRC_FILES extern/nps_mwis/src/ArgPack.cpp extern/nps_mwis/src/bossa_timer.cpp extern/nps_mwis/src/Graph.cpp extern/nps_mwis/src/Solution.cpp)
+    file(GLOB NPS_MWIS_SRC_FILES extern/nps_mwis/src/*.cpp)
     set_source_files_properties(${NPS_MWIS_SRC_FILES} PROPERTIES COMPILE_FLAGS "-w")
 else (NPS_MWIS_FOUND)
     message(STATUS "Not found NPS_MWIS: Download with extern/nps_mwis/get.sh")
@@ -76,13 +76,13 @@ endif ()
 
 
 # Source files
-
-set(TEST_SRC_FILES src/tests/EditorTests.cpp src/tests/GraphTests.cpp src/tests/test_utils.cpp)
-set(FINDER_SRC_FILES src/finder/finder_utils.cpp src/finder/CenterC4P4.cpp src/finder/Center.cpp src/finder/SplitCluster.cpp src/finder/SplitGraph.cpp src/finder/CenterP3.cpp src/finder/NaiveP3.cpp src/finder/Endpoint.cpp src/finder/Naive.cpp src/finder/OuterP3.cpp)
-set(SELECTOR_SRC_FILES src/selector/selector_utils.cpp)
-set(SEARCH_STRATEGY_SRC_FILES src/search_strategy/search_strategy_utils.cpp)
+file(GLOB TEST_SRC_FILES src/tests/*.cpp)
+file(GLOB FINDER_SRC_FILES src/finder/*.cpp)
+file(GLOB SELECTOR_SRC_FILES src/selector/*.cpp)
+file(GLOB SEARCH_STRATEGY_SRC_FILES src/search_strategy/*.cpp)
 
 set(LOWER_BOUND_SRC_FILES src/lower_bound/lower_bound_utils.cpp src/lower_bound/Trivial.cpp src/lower_bound/SortedGreedy.cpp src/lower_bound/Greedy.cpp src/lower_bound/LocalSearch.cpp)
+
 if (NPS_MWIS_FOUND)
     set(LOWER_BOUND_SRC_FILES ${LOWER_BOUND_SRC_FILES} src/lower_bound/NPS_MWIS_Solver.cpp)
 endif (NPS_MWIS_FOUND)
