@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.13)
 project(Weighted_F-free_Edge_Editing)
 
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
 set(CMAKE_CXX_STANDARD 17)
 
 # Compiler flags
