@@ -11,3 +11,10 @@ nps_mwis/*
 
 # LSSWZ MWIS
 lsswz_mwis/*
+
+
+# FPT-Editing
+fpt-editing/*
+# Except these files
+!fpt-editing/LICENSE
+!fpt-editing/README.md
