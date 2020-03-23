@@ -2,13 +2,17 @@ import networkx as nx
 import numpy as np
 from pathlib import Path
 
-from typing import Union, Tuple
+from typing import Union, Tuple, Optional, List
 
 
 def read_metis_graph(path: Union[str, Path]) -> Tuple[nx.Graph, np.ndarray]:
     """
     Read a metis file from `path`. The instance must be a fully connected undirected weighted graph.
     Returns a graph with edges where c_{uv} > 0 and a matrix with the similarity scores.
+
+    References
+    ----------
+        [1]: https://people.sc.fsu.edu/~jburkardt/data/metis_graph/metis_graph.html
     """
     path = Path(path)
     with path.open("r") as f:
@@ -47,14 +51,49 @@ def read_metis_graph(path: Union[str, Path]) -> Tuple[nx.Graph, np.ndarray]:
     return graph, S
 
 
-def write_metis_graph(path: Union[str, Path], graph: nx.Graph, costs: np.ndarray) -> None:
+def write_metis_graph(path: Union[str, Path], graph: nx.Graph, costs: Optional[np.ndarray] = None, *,
+                      comments: Optional[List[str]] = None) -> None:
+    """
+    Writes graph to file. Either writes a unweighted (fmt = 0) or a weighted instance (fmt = 1) when `costs` is given.
+
+    For weighted instances the output is a fully connected graph. Only the upper triangular adjacency matrix is being
+    written, i.e. all vertex pairs where u < v. The edge weight is negative if no edge is present in the graph.
+
+    For unweighted instances the output is the graph directly.
+
+    Parameters
+    ----------
+    path : Path
+    graph : Graph
+    costs : symmetric costs matrix, optional
+    comments : list of comments, optional
+
+    References
+    ----------
+        [1]: https://people.sc.fsu.edu/~jburkardt/data/metis_graph/metis_graph.html
+    """
     with Path(path).open('w') as file:
-        n = graph.number_of_nodes()
-        m = n * (n - 1) // 2
-        fmt = 1
+        if comments is not None:
+            for comment in comments:
+                file.write(f"% {comment}\n")
 
-        file.write(f"{n} {m} {fmt}\n")
+        if costs is None:
+            n = graph.number_of_nodes()
+            m = graph.number_of_edges()
+            fmt = 0
 
-        for u in range(n):
-            file.write(" ".join([f"{v + 1} {costs[u][v] if graph.has_edge(u, v) else -costs[u][v]}"
-                                 for v in range(u + 1, n)]) + "\n")
+            file.write(f"{n} {m} {fmt}\n")
+
+            for u in range(n):
+                file.write(" ".join([f"{v + 1}" for v in graph.neighbors(u)]) + "\n")
+
+        else:
+            n = graph.number_of_nodes()
+            m = n * (n - 1) // 2
+            fmt = 1
+
+            file.write(f"{n} {m} {fmt}\n")
+
+            for u in range(n):
+                file.write(" ".join([f"{v + 1} {costs[u][v] if graph.has_edge(u, v) else -costs[u][v]}"
+                                     for v in range(u + 1, n)]) + "\n")

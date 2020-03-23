@@ -1,7 +1,7 @@
 import argparse
 import yaml
 from pathlib import Path
-import numpy as np
+
 
 from graph_io import write_metis_graph, read_metis_graph
 
@@ -9,9 +9,9 @@ from graph_io import write_metis_graph, read_metis_graph
 def convert_instance_to_unweighted(input_path: Path, output_path: Path):
     graph, scores = read_metis_graph(input_path)
 
-    # TODO: Modify write_metis_graph to also output fmt=0 files.
-    unit_scores = np.ones_like(scores)
-    write_metis_graph(output_path, graph, unit_scores)
+    origin_comment = f"unweighted instance based on {graph.name}"
+
+    write_metis_graph(output_path, graph, comments=[origin_comment])
 
 
 def generate_dataset_unweighted(config_path: Path, input_dir: Path, output_dir: Path):
