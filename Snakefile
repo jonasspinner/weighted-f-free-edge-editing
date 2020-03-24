@@ -64,9 +64,21 @@ rule all:
         # "experiments/rules/experiments_06_lp_relaxation",
         # "experiments/rules/experiments_07_nps_mwis",
         # "experiments/rules/experiments_08_lsswz_mwis",
-        "experiments/rules/experiments_09_lp_relaxation_vs_packing_lower_bounds",
+        # "experiments/rules/experiments_09_lp_relaxation_vs_packing_lower_bounds",
         "experiments/rules/experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted",
         "experiments/rules/experiments_11_lp_relaxation_vs_packing_unweighted",
+        "experiments/rules/experiments_12_single_edge_editing_weighted",
+
+
+rule experiments_12_single_edge_editing_weighted:
+    input:
+        "experiments/C4P4/fpt.timelimit=100.selector=SingleEdgeEditing.lower-bound=SortedGreedy.all=1.pre-mark=0.search-strategy=Fixed/bio.solutions.yaml",
+        "experiments/C4P4/fpt.timelimit=100.selector=SingleEdgeEditing.lower-bound=LPRelaxation.all=1.pre-mark=0.search-strategy=Fixed/bio.solutions.yaml",
+        "experiments/C4P4/fpt.timelimit=100.selector=SingleEdgeEditing.lower-bound=NPS_MWIS_Solver.all=1.pre-mark=0.search-strategy=Fixed/bio.solutions.yaml",
+        "experiments/C4P4/fpt.timelimit=100.selector=SingleEdgeEditing.lower-bound=LocalSearch.all=1.pre-mark=0.search-strategy=Fixed/bio.solutions.yaml",
+    output:
+        "experiments/rules/experiments_12_single_edge_editing_weighted"
+    shell: "touch {output}"
 
 
 rule experiments_11_lp_relaxation_vs_packing_unweighted:
