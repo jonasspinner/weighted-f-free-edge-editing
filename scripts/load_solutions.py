@@ -10,16 +10,18 @@ from typing import List, Dict, Any, Callable, Union
 DEFAULT_CATEGORY: Callable[[], Union[str, CategoricalDtype]] = lambda: "category"
 CATEGORIES = defaultdict(DEFAULT_CATEGORY,
                          forbidden_subgraphs=CategoricalDtype([
-                             "P3", "P4", "P5", "P6", "C4P4", "C5P5", "C6P6"]),
+                             "P3", "P4", "P5", "P6", "C4P4", "C5P5", "C6P6", ", C4_C5_2K2", "C4_C5_P5_Bowtie_Necktie"]),
                          selector=CategoricalDtype([
-                             "FirstFound", "LeastWeight", "MostMarkedPairs", "MostAdjacentSubgraphs"]),
+                             "FirstFound", "LeastWeight", "MostMarkedPairs", "MostAdjacentSubgraphs",
+                             "SingleEdgeEditing"]),
                          lower_bound=CategoricalDtype([
-                             "Trivial", "Greedy", "SortedGreedy", "LocalSearch", "LPRelaxation"]),
+                             "Trivial", "Greedy", "SortedGreedy", "LocalSearch", "LPRelaxation", "NPS_MWIS_Solver",
+                             "LSSWZ_MWIS_Solver"]),
                          search_strategy=CategoricalDtype([
                              "IncrementByMultiplier", "PrunedDelta", "IncrementByMinCost", "Exponential", "Fixed"]),
                          dataset=CategoricalDtype([
                              "barabasi-albert", "bio", "bio-C4P4-subset", "bio-subset-A", "duplication-divergence",
-                             "misc", "powerlaw-cluster"]),
+                             "misc", "powerlaw-cluster", "bio-subset-B", "bio-unweighted"]),
                          finder=CategoricalDtype(
                              ["OuterP3", "CenterP3", "CenterRecP3", "EndpointRecP3", "NaiveRecP3", "NaiveP3"] +
                              ["CenterC4P4", "CenterRecC4P4", "EndpointRecC4P4", "NaiveRecC4P4", "NaiveC4P4"] +
@@ -50,7 +52,7 @@ def build_fpt_dataframe(docs: List[Dict[str, Any]]) -> pd.DataFrame:
     df = df.astype({k: CATEGORIES[k] for k in
                     ["commit_hash", "forbidden_subgraphs", "selector", "lower_bound", "search_strategy", "dataset"]})
 
-    df["n"] = df["instance"].str[:-6].str.split("-").str[-1].astype(int)
+    df["n"] = df["instance"].str[:-6].str.split("-").str[4].astype(int)
 
     return df
 
@@ -82,7 +84,8 @@ def build_finder_dataframe(docs: List[Dict[str, Any]]) -> pd.DataFrame:
 
     df[["dataset", "instance"]] = df["name"].str.split("/", expand=True)[[1, 2]]
 
-    df = df.astype({k: CATEGORIES[k] for k in ["commit_hash", "finder", "forbidden_subgraphs", "finder_benchmark_type"]})
+    df = df.astype({k: CATEGORIES[k]
+                    for k in ["commit_hash", "finder", "forbidden_subgraphs", "finder_benchmark_type"]})
     df["time_mean"] = df["time_mean"].astype(float)
 
     df["time_mean"] = df["raw_time"].apply(lambda x: np.nan if len(x) == 0 else np.mean(x[1:]) / 10**9)
@@ -98,7 +101,7 @@ def save_dataframe(path: Path, df: pd.DataFrame) -> None:
 
 
 def convert_docs_to_dataframes(input_experiments_path: Path, output_experiments_path: Path, pattern: str,
-                                    build_dataframe: Callable[[List[Dict[str, Any]]], pd.DataFrame]) -> None:
+                               build_dataframe: Callable[[List[Dict[str, Any]]], pd.DataFrame]) -> None:
     paths = [p.relative_to(input_experiments_path) for p in input_experiments_path.glob(pattern)]
 
     for path in paths:
@@ -131,13 +134,13 @@ def convert_ilp_solutions_to_dataframes(input_experiments_path: Path, output_exp
 
 
 def convert_finder_benchmarks_to_dataframes(input_experiments_path: Path, output_experiments_path: Path,
-                                        pattern: str = "finder*/*.benchmarks.yaml"):
+                                            pattern: str = "finder*/*.benchmarks.yaml"):
     convert_docs_to_dataframes(input_experiments_path, output_experiments_path,
                                pattern, build_finder_dataframe)
 
 
 def main() -> None:
-    input_experiments_path = Path.home() / "experiments" / "experiments"
+    input_experiments_path = Path.home() / "ba" / "experiments"
     output_experiments_path = Path.cwd() / ".." / "experiments"
 
     convert_fpt_solutions_to_dataframes(input_experiments_path, output_experiments_path)
