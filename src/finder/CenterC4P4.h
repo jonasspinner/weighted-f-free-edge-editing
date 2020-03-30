@@ -17,13 +17,18 @@ namespace Finder {
         Graph::AdjRow B;
 
     public:
-        bool find(const Graph& graph, SubgraphCallback callback) override;
+        bool find(const Graph &graph, SubgraphCallback callback) override;
 
-        bool find(const Graph& graph, const Graph &forbidden, SubgraphCallback callback) override;
+        bool find(const Graph &graph, const Graph &forbidden, SubgraphCallback callback) override;
 
-        bool find_near(VertexPair uv, const Graph& graph, SubgraphCallback callback) override;
+        bool find_near(VertexPair uv, const Graph &graph, SubgraphCallback callback) override;
 
-        bool find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) override;
+        bool find_near(VertexPair uv, const Graph &graph, const Graph &forbidden, SubgraphCallback callback) override;
+
+        bool find_with_duplicates(const Graph &graph, const Graph &forbidden, SubgraphCallback callback) override;
+
+        bool for_all_x_vertex_pairs(const Subgraph &subgraph, const VertexPairMap<bool> &marked,
+                                    VertexPairCallBack callback) override;
 
         [[nodiscard]] Options::FSG forbidden_subgraphs() const override { return Options::FSG::C4P4; }
 
@@ -33,11 +38,16 @@ namespace Finder {
 
     private:
         template<typename F, typename G, typename H, typename I>
-        bool find(const Graph& graph, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge);
+        bool find(const Graph &graph, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge,
+                  I valid_non_edge);
 
         template<typename F, typename G, typename H, typename I>
         bool find_near(VertexPair uv, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge,
                        I valid_non_edge);
+
+        template<typename F, typename G, typename H, typename I>
+        bool find_with_duplicates(const Graph &graph, const SubgraphCallback &callback, F neighbors, G non_neighbors,
+                                  H valid_edge, I valid_non_edge);
     };
 }
 

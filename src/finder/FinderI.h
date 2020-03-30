@@ -15,12 +15,18 @@ class FinderI {
 
 public:
     using SubgraphCallback = std::function<bool(Subgraph&&)>;
+    using VertexPairCallBack = std::function<bool(VertexPair)>;
 
 public:
     virtual ~FinderI() = default;
 
     /**
      * Find all forbidden subgraphs. When a subgraph is found, callback(subgraph) is called.
+     *
+     * Contract: Every subgraph is listed exactly once.
+     *      Example: P_3 1-2-3-1 list one of
+     *          1-2-3-1, 2-3-1-2, 3-1-2-3,
+     *          1-3-2-1, 2-1-3-2, 3-2-1-3
      *
      * @param graph
      * @param callback
@@ -61,6 +67,32 @@ public:
      * @return Whether the callback returned true once
      */
     virtual bool find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) = 0;
+
+
+    virtual bool find_with_duplicates(const Graph& /*graph*/, const Graph &/*forbidden*/,
+            SubgraphCallback /*callback*/) {
+        throw std::runtime_error("FinderI::find_with_duplicates is not implemented");
+    };
+
+
+    /**
+     * Iterate over all unmarked vertex pairs. A fixed vertex pair can be ignored if its edit would turn the given
+     * forbidden subgraph into another.
+     *
+     * Example: F = (C_4, P_4)
+     *      P_4: a-b-c-d   -> all except {a, d}. +{a, d} would result in a C_4
+     *      C_4: a-b-c-d-a -> all except {a, d}. -{a, d} would result in a P_4
+     *          Every other edge of the C_4 would also work, but it is assumed that the function will be called for all
+     *          4 rotations (1-2-3-4-1, 2-3-4-1-2, 3-4-1-2-3, 4-1-2-3-4). As {a, d} is fixed, every edge will be
+     *          excluded once.
+     *
+     * @return
+     */
+    virtual bool for_all_x_vertex_pairs(const Subgraph& /*subgraph*/, const VertexPairMap<bool> &/*marked*/,
+                                        VertexPairCallBack /*callback*/) {
+        throw std::runtime_error("FinderI::for_all_x_vertex_pairs is not implemented");
+    }
+
 
     [[nodiscard]] virtual Options::FSG forbidden_subgraphs() const = 0;
 

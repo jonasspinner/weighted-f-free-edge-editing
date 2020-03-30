@@ -57,6 +57,29 @@ namespace Finder {
         return find_near(uv, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
+    bool
+    CenterC4P4::find_with_duplicates(const Graph &graph, const Graph &forbidden, FinderI::SubgraphCallback callback) {
+        return find_with_duplicates(graph, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
+    }
+
+    bool CenterC4P4::for_all_x_vertex_pairs(const Subgraph& subgraph, const VertexPairMap<bool> &marked,
+                                            VertexPairCallBack callback) {
+        assert(subgraph.size() == 4);
+        Vertex a = subgraph[0], b = subgraph[1], c = subgraph[2], d = subgraph[3];
+
+        // Case P_4: +{a, d} results in a C_4
+        // Case C_4: -{a, d} results in a P_4
+
+        if (VertexPair uv = {a, b}; !marked[uv] && callback(uv)) return true;
+        if (VertexPair uv = {a, c}; !marked[uv] && callback(uv)) return true;
+        // if (VertexPair uv = {a, d}; !marked[uv] && callback(uv)) return true;
+        if (VertexPair uv = {b, c}; !marked[uv] && callback(uv)) return true;
+        if (VertexPair uv = {b, d}; !marked[uv] && callback(uv)) return true;
+        if (VertexPair uv = {c, d}; !marked[uv] && callback(uv)) return true;
+
+        return false;
+    }
+
     void CenterC4P4::to_yaml(YAML::Emitter &out) const {
         using namespace YAML;
         out << BeginMap;
@@ -228,7 +251,7 @@ namespace Finder {
 
                 for (Vertex b : Graph::iterate(B)) {
 
-                    // assert that {b, a, u, b} is either a C_4 or P_4
+                    // assert that {b, a, u, v} is either a C_4 or P_4
                     assert(valid_edge({b, a})); assert(valid_non_edge({b, u})); /*assert(valid({b, v}));*/ assert(valid_edge({a, u})); assert(valid_non_edge({a, v})); assert(valid_edge({u, v}));
 
                     if (valid_edge({b, v}) && b < std::min({a, u, v})) {
@@ -237,6 +260,34 @@ namespace Finder {
                     } else if (valid_non_edge({b, v})) {
                         // P_4
                         if (callback(Subgraph{b, a, u, v})) return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    template<typename F, typename G, typename H, typename I>
+    bool CenterC4P4::find_with_duplicates(const Graph &graph, const FinderI::SubgraphCallback &callback, F neighbors,
+                                          G non_neighbors, H valid_edge, I valid_non_edge) {
+        for (auto uv : graph.edges()) {
+            if (!valid_edge(uv))
+                continue;
+            auto [u, v] = uv;
+
+            A = neighbors(u) & non_neighbors(v);
+            B = neighbors(v) & non_neighbors(u);
+
+            for (auto a : Graph::iterate(A)) {
+                for (auto b : Graph::iterate(B)) {
+                    // assert that {a, u, v, b} is either a P_4 or a C_4
+                    assert(valid_edge({a, u})); assert(valid_non_edge({a, v})); /*assert(valid({a, b}));*/ assert(valid_edge({u, v})); assert(valid_non_edge({u, b})); assert(valid_edge({v, b}));
+                    if (valid_edge({a, b})) {
+                        // C_4
+                        if (callback(Subgraph{a, u, v, b})) return true;
+                    } else if (valid_non_edge({a, b})) {
+                        // P_4
+                        if (callback(Subgraph{a, u, v, b})) return true;
                     }
                 }
             }
