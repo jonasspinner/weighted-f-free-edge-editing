@@ -143,18 +143,23 @@ namespace lower_bound {
         Graph m_bound_graph;
         std::vector<std::unique_ptr<State>> m_states;
         std::mt19937_64 m_gen;
-        float m_alpha = 0.7; // percent of plateau candidates being chosen from the ones covering the least other subgraphs instead of all candidates
-        size_t m_max_rounds_no_improvement = 5;
+        float m_alpha; // percent of plateau candidates being chosen from the ones covering the least other subgraphs instead of all candidates
+        size_t m_max_rounds_no_improvement;
 
         const int verbosity = 0;
+
+        constexpr static bool use_one_improvement = false;
+        constexpr static bool use_two_improvement = true;
+        constexpr static bool use_omega_improvement = true;
 
     public:
         explicit LocalSearch(const Instance &instance, const VertexPairMap<bool> &marked,
                              const SubgraphStats &subgraph_stats, std::shared_ptr<FinderI> finder_ref,
-                             int seed = 0) :
+                             int seed = 0, float alpha = 0.7, size_t max_rounds_no_improvements = 5) :
                 LowerBoundI(std::move(finder_ref)), m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
                 m_subgraph_stats(subgraph_stats), m_bound_graph(instance.graph.size()),
-                m_gen(static_cast<unsigned long>(seed)) {}
+                m_gen(static_cast<unsigned long>(seed)), m_alpha(alpha),
+                m_max_rounds_no_improvement(max_rounds_no_improvements) {}
 
         Cost calculate_lower_bound(Cost k) override;
 

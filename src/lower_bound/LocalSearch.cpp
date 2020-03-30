@@ -381,10 +381,6 @@ namespace lower_bound {
      * @param k
      */
     void LocalSearch::local_search(State &state, Cost k) {
-        constexpr static bool use_one_improvement = false;
-        constexpr static bool use_two_improvement = true;
-        constexpr static bool use_omega_improvement = true;
-
         // TODO: Remove ugly debug output
 // #define stats
 #ifdef stats
