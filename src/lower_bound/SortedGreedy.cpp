@@ -29,6 +29,9 @@ namespace lower_bound {
         // Find all forbidden subgraphs with editable vertex pairs.
         // The cost for a single forbidden subgraph is the minimum edit cost for an editable vertex pair.
         std::vector<std::pair<Cost, Subgraph>> subgraphs;
+
+        // Only use find and not find_with_duplicates because the first version of the subgraph will be inserted.
+        // This relies on the fact that all duplicate version have the same cost. Note: That may change.
         finder->find(m_graph, [&](Subgraph &&subgraph) {
             Cost min_cost = get_subgraph_cost(subgraph, m_marked, m_costs);
             subgraphs.emplace_back(min_cost, std::move(subgraph));
@@ -54,18 +57,17 @@ namespace lower_bound {
                 break;
 
             // Check if the subgraph is adjacent to one already used in the bound.
-            bool touches_bound = false;
-            for (VertexPair uv : subgraph.vertexPairs())
-                if (!m_marked[uv] && m_used_in_bound[uv]) {
-                    touches_bound = true;
-                    break;
-                }
+            bool touches_bound = finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
+                return !m_marked[uv] && m_used_in_bound[uv];
+            });
 
             if (!touches_bound) {
                 bound_size += cost;
-                for (VertexPair uv : subgraph.vertexPairs())
+                finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
                     if (!m_marked[uv])
                         m_used_in_bound[uv] = true;
+                    return false;
+                });
             }
         }
 

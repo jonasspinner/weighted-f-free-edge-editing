@@ -25,15 +25,14 @@ namespace lower_bound {
         Cost bound_size = 0;
         m_used_in_bound.clear();
 
+        // Only use find and not find_with_duplicates because the first version of the subgraph will be inserted.
+        // This relies on the fact that all duplicate version have the same cost. Note: That may change.
         finder->find(m_graph, [&](Subgraph &&subgraph) {
 
             // Check if the subgraph is adjacent to one already used in the bound.
-            bool touches_bound = false;
-            for (VertexPair uv : subgraph.vertexPairs())
-                if (!m_marked[uv] && m_used_in_bound[uv]) {
-                    touches_bound = true;
-                    break;
-                }
+            bool touches_bound = finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
+                return !m_marked[uv] && m_used_in_bound[uv];
+            });
 
             if (!touches_bound) {
                 Cost cost = get_subgraph_cost(subgraph, m_marked, m_costs);
@@ -43,9 +42,12 @@ namespace lower_bound {
                 }
                 bound_size += cost;
 
-                for (VertexPair uv : subgraph.vertexPairs())
+
+                finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
                     if (!m_marked[uv])
                         m_used_in_bound[uv] = true;
+                    return false;
+                });
             }
             return bound_size > k;
         });
