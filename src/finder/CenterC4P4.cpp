@@ -72,7 +72,7 @@ namespace Finder {
 
         if (VertexPair uv = {a, b}; !marked[uv] && callback(uv)) return true;
         if (VertexPair uv = {a, c}; !marked[uv] && callback(uv)) return true;
-        // if (VertexPair uv = {a, d}; !marked[uv] && callback(uv)) return true;
+        // if (VertexPair uv = {a, d}; !marked[uv] && callback(uv)) return true; <- do not list {a, d}
         if (VertexPair uv = {b, c}; !marked[uv] && callback(uv)) return true;
         if (VertexPair uv = {b, d}; !marked[uv] && callback(uv)) return true;
         if (VertexPair uv = {c, d}; !marked[uv] && callback(uv)) return true;
@@ -282,13 +282,8 @@ namespace Finder {
                 for (auto b : Graph::iterate(B)) {
                     // assert that {a, u, v, b} is either a P_4 or a C_4
                     assert(valid_edge({a, u})); assert(valid_non_edge({a, v})); /*assert(valid({a, b}));*/ assert(valid_edge({u, v})); assert(valid_non_edge({u, b})); assert(valid_edge({v, b}));
-                    if (valid_edge({a, b})) {
-                        // C_4
-                        if (callback(Subgraph{a, u, v, b})) return true;
-                    } else if (valid_non_edge({a, b})) {
-                        // P_4
-                        if (callback(Subgraph{a, u, v, b})) return true;
-                    }
+                    // C_4 or P_4
+                    if (callback(Subgraph{a, u, v, b})) return true;
                 }
             }
         }

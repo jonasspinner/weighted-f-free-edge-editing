@@ -68,9 +68,16 @@ std::vector<Subgraph> find_all_subgraphs(FinderI &finder, const Graph& graph) {
     return subgraphs;
 }
 
-std::vector<Subgraph> find_all_non_marked_subgraphs(FinderI &finder, const Graph& graph, const Graph& marked) {
+std::vector<Subgraph> find_all_subgraphs_with_duplicates(FinderI &finder, const Graph& graph, const Graph& forbidden) {
     std::vector<Subgraph> subgraphs;
-    finder.find(graph, marked, [&](Subgraph&& subgraph) { subgraphs.push_back(subgraph); return false; });
+    finder.find_with_duplicates(graph, forbidden,
+            [&](Subgraph&& subgraph) { subgraphs.push_back(subgraph); return false; });
+    return subgraphs;
+}
+
+std::vector<Subgraph> find_all_non_forbidden_subgraphs(FinderI &finder, const Graph& graph, const Graph& forbidden) {
+    std::vector<Subgraph> subgraphs;
+    finder.find(graph, forbidden, [&](Subgraph&& subgraph) { subgraphs.push_back(subgraph); return false; });
     return subgraphs;
 }
 
@@ -115,7 +122,7 @@ public:
         }
     }
 
-    void EditsSolveKarate() {
+    void karate_graph_is_solved_with_21_edits() {
         try {
             auto instance = GraphIO::read_instance("../data/misc/karate.graph");
             Graph G = instance.graph;
@@ -227,12 +234,12 @@ public:
         }
 
         {
-            Graph marked(6);
-            marked.setEdge({1, 2});
+            Graph forbidden(6);
+            forbidden.setEdge({1, 2});
             std::vector<Subgraph> expected({{0, 1, 3, 5}, {0, 1, 4, 5}, {0, 2, 3, 4}});
             Finder finder;
-            auto actual = find_all_non_marked_subgraphs(finder, G, marked);
-            expect(name + " recognizes C4P4 in small graph with marked edges", normalize(expected), normalize(actual));
+            auto actual = find_all_non_forbidden_subgraphs(finder, G, forbidden);
+            expect(name + " recognizes C4P4 in small graph with forbidden edges", normalize(expected), normalize(actual));
         }
 
         /*    4
@@ -267,15 +274,15 @@ public:
         }
 
         {
-            Graph marked(12);
-            marked.setEdge({0, 1});
+            Graph forbidden(12);
+            forbidden.setEdge({0, 1});
             Finder finder;
             std::vector<Subgraph> expected({{3, 0, 2, 9}, {3, 0, 2, 10}, {3, 0, 2, 11},
                                             {4, 0, 2, 9}, {4, 0, 2, 10}, {4, 0, 2, 11},
                                             {5, 0, 2, 9}, {5, 0, 2, 10}, {5, 0, 2, 11},
                                             {6, 1, 2, 9}, {6, 1, 2, 10}, {6, 1, 2, 11}, {7, 1, 2, 9}, {7, 1, 2, 10}, {7, 1, 2, 11}, {8, 1, 2, 9}, {8, 1, 2, 10}, {8, 1, 2, 11}});
-            auto actual = find_all_non_marked_subgraphs(finder, G2, marked);
-            expect(name + " recognizes many P4 in small graph with marked edges", normalize(expected), normalize(actual));
+            auto actual = find_all_non_forbidden_subgraphs(finder, G2, forbidden);
+            expect(name + " recognizes many P4 in small graph with forbidden edges", normalize(expected), normalize(actual));
         }
     }
 
@@ -417,6 +424,85 @@ public:
         }
     }
 
+    template <typename Finder>
+    void Finder_finds_C4P4_with_duplicates(const std::string &name) {
+
+        auto to_string = [](auto x) {
+            std::stringstream ss;
+            ss << x;
+            return ss.str();
+        };
+
+        {
+            Graph P4(4);
+            P4.setEdges({{0, 1},
+                         {1, 2},
+                         {2, 3}});
+            Graph forbidden(4);
+
+            std::vector<Subgraph> expected{{0, 1, 2, 3}};
+            Finder finder;
+            auto actual = find_all_subgraphs_with_duplicates(finder, P4, forbidden);
+            expect(name + " recognizes P4 (with duplicates)", expected, actual);
+        }
+
+        {
+            Graph C4(4);
+            C4.setEdges({{0, 1},
+                         {1, 2},
+                         {2, 3},
+                         {3, 0}});
+            Graph forbidden(4);
+
+            std::vector<Subgraph> expected{{3, 0, 1, 2}, {1, 0, 3, 2}, {0, 1, 2, 3}, {1, 2, 3, 0}};
+            Finder finder;
+            auto actual = find_all_subgraphs_with_duplicates(finder, C4, forbidden);
+            expect(name + " recognizes C4 (with duplicates)", expected, actual);
+        }
+
+        {
+            Graph P4(4);
+            P4.setEdges({{0, 1},
+                         {1, 2},
+                         {2, 3}});
+
+            VertexPairMap<std::vector<Subgraph>> expected(4);
+            expected[{3, 0}] = {{0, 1, 2, 3}};
+
+            for (auto uv : P4.vertexPairs()) {
+                Graph forbidden(4);
+                forbidden.setEdge(uv);
+
+                Finder finder;
+                auto actual = find_all_subgraphs_with_duplicates(finder, P4, forbidden);
+                expect(name + " recognizes P4 (with duplicates) forbidden " + to_string(uv), expected[uv], actual);
+            }
+        }
+
+        {
+            Graph C4(4);
+            C4.setEdges({{0, 1},
+                         {1, 2},
+                         {2, 3},
+                         {3, 0}});
+
+            VertexPairMap<std::vector<Subgraph>> expected(4);
+            expected[{0, 1}] = {{1, 2, 3, 0}};  // {{0, 3, 2, 1}}  NOTE(jonas): Consider allowing other orientation
+            expected[{1, 2}] = {{1, 0, 3, 2}};  // {{2, 3, 0, 1}}
+            expected[{2, 3}] = {{3, 0, 1, 2}};  // {{2, 1, 0, 3}}
+            expected[{3, 0}] = {{0, 1, 2, 3}};  // {{3, 2, 1, 0}}
+
+            for (auto uv : C4.vertexPairs()) {
+                Graph forbidden(4);
+                forbidden.setEdge(uv);
+
+                Finder finder;
+                auto actual = find_all_subgraphs_with_duplicates(finder, C4, forbidden);
+                expect(name + " recognizes one C4 (with duplicates) forbidden " + to_string(uv), expected[uv], actual);
+            }
+        }
+    }
+
     void run() {
         std::cout << "\nFinderTests"
                      "\n-----------" << std::endl;
@@ -441,9 +527,11 @@ public:
         Finder_finds_P4<Finder::NaiveRecC4P4>("NaiveRecC4P4");
         finders_have_same_output({"NaiveC4P4", "CenterC4P4", "CenterRecC4P4", "EndpointRecC4P4", "NaiveRecC4P4"}, {0, 1});
 
+        Finder_finds_C4P4_with_duplicates<Finder::CenterC4P4>("CenterC4P4");
+
         finders_have_same_output({"CenterRecC5P5", "EndpointRecC5P5", "NaiveRecC5P5"}, {0, 1});
 
-        EditsSolveKarate();
+        karate_graph_is_solved_with_21_edits();
     }
 };
 
