@@ -138,6 +138,7 @@ protected:
     }
 
     static inline auto neighbors(const Graph &graph, const Graph &forbidden) {
+        assert(graph.size() == forbidden.size());
         return [&](Vertex u) { return graph.m_adj[u] - forbidden.m_adj[u]; };
     }
 
@@ -146,6 +147,7 @@ protected:
     }
 
     static inline auto non_neighbors(const Graph &graph, const Graph &forbidden) {
+        assert(graph.size() == forbidden.size());
         return [&](Vertex u) { auto result = ~graph.m_adj[u] - forbidden.m_adj[u]; result[u] = false; return result; };
     }
 
@@ -154,6 +156,7 @@ protected:
     }
 
     static inline auto valid_edge(const Graph &graph, const Graph &forbidden) {
+        assert(graph.size() == forbidden.size());
         return [&](VertexPair xy) { return graph.hasEdge(xy) && !forbidden.hasEdge(xy); };
     }
 
@@ -162,6 +165,7 @@ protected:
     }
 
     static inline auto valid_non_edge(const Graph &graph, const Graph &forbidden) {
+        assert(graph.size() == forbidden.size());
         return [&](VertexPair xy) { return !graph.hasEdge(xy) && !forbidden.hasEdge(xy); };
     }
 };
