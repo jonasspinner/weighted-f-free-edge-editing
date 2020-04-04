@@ -201,11 +201,7 @@ public:
 
     template <typename Finder>
     void Finder_finds_C4(const std::string& name) {
-        Graph C4(4);
-        C4.setEdges({{0, 1},
-                     {1, 2},
-                     {2, 3},
-                     {3, 0}});
+        auto C4 = Graph::make_cycle(4);
 
         {
             std::vector<Subgraph> expected{{0, 1, 2, 3}};
@@ -218,13 +214,10 @@ public:
         // 3-0-4
         // | |
         // 2-1-5
-        Graph G(6);
-        G.setEdges({{0, 1},
-                    {1, 2},
-                    {2, 3},
-                    {3, 0},
-                    {0, 4},
-                    {1, 5}});
+        auto G = Graph::from_vertex_pairs(6, {
+            {0, 1}, {1, 2},
+            {2, 3}, {3, 0},
+            {0, 4}, {1, 5}});
 
         {
             std::vector<Subgraph> expected({{0, 1, 2, 3}, {0, 1, 2, 4}, {0, 1, 3, 5}, {0, 1, 4, 5}, {0, 2, 3, 4}, {1, 2, 3, 5}});
@@ -249,19 +242,13 @@ public:
           b-2-1-6
            /| |\
           a 9 8 7  */
-        Graph G2(12);
-        G2.setEdges({{0, 1},
-                     {1, 2},
-                     {2, 0},
-                     {0, 3},
-                     {0, 4},
-                     {0, 5},
-                     {1, 6},
-                     {1, 7},
-                     {1, 8},
-                     {2, 9},
-                     {2, 10},
-                     {2, 11}});
+        auto G2 = Graph::from_vertex_pairs(12, {
+            {0, 1}, {1, 2},
+            {2, 0}, {0, 3},
+            {0, 4}, {0, 5},
+            {1, 6}, {1, 7},
+            {1, 8}, {2, 9},
+            {2, 10}, {2, 11}});
 
         {
             Finder finder;
@@ -274,8 +261,7 @@ public:
         }
 
         {
-            Graph forbidden(12);
-            forbidden.setEdge({0, 1});
+            auto forbidden = Graph::from_vertex_pairs(12, {{0, 1}});
             Finder finder;
             std::vector<Subgraph> expected({{3, 0, 2, 9}, {3, 0, 2, 10}, {3, 0, 2, 11},
                                             {4, 0, 2, 9}, {4, 0, 2, 10}, {4, 0, 2, 11},
@@ -288,10 +274,7 @@ public:
 
     template <typename Finder>
     void Finder_finds_P4(const std::string& name) {
-        Graph G(4);
-        G.setEdges({{0, 1},
-                    {1, 2},
-                    {2, 3}});
+        auto G = Graph::make_path(4);
 
         std::vector<Subgraph> expected{{0, 1, 2, 3}};
         Finder finder;
@@ -301,9 +284,7 @@ public:
 
     template <typename Finder>
     void Finder_finds_P3(const std::string& name) {
-        Graph G(3);
-        G.setEdges({{0, 1},
-                    {1, 2}});
+        auto G = Graph::make_path(3);
 
         std::vector<Subgraph> expected{{0, 1, 2}};
         Finder finder;
