@@ -112,7 +112,7 @@ public:
      * @return
      */
     virtual bool for_all_vertex_pairs_skipping_conversions(const Subgraph &/*subgraph*/,
-                                                           const VertexPairCallBack &/*callback*/) {
+                                                           const VertexPairCallBack &/*callback*/) const {
         throw std::runtime_error("FinderI::for_all_vertex_pairs_skipping_conversions is not implemented");
     }
 

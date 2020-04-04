@@ -67,7 +67,7 @@ namespace Finder {
     }
 
     bool CenterC4P4::for_all_vertex_pairs_skipping_conversions(const Subgraph &subgraph,
-                                                               const VertexPairCallBack &callback) {
+                                                               const VertexPairCallBack &callback) const {
         assert(subgraph.size() == 4);
         Vertex a = subgraph[0], b = subgraph[1], c = subgraph[2], d = subgraph[3];
 

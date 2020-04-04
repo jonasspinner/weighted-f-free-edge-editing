@@ -29,7 +29,7 @@ namespace Finder {
                                   const SubgraphCallback &callback) override;
 
         bool for_all_vertex_pairs_skipping_conversions(const Subgraph &subgraph,
-                                                       const VertexPairCallBack &callback) override;
+                                                       const VertexPairCallBack &callback) const override;
 
         [[nodiscard]] Options::FSG forbidden_subgraphs() const override { return Options::FSG::C4P4; }
 
