@@ -2,7 +2,7 @@
 // Created by jonas on 15.07.19.
 //
 
-#ifndef WEIGHTED_F_FREE_EDGE_EDITING
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_FINDERI_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_FINDERI_H
 
 
@@ -173,4 +173,4 @@ protected:
     }
 };
 
-#endif //WEIGHTED_F_FREE_EDGE_EDITING
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_FINDERI_H
