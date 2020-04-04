@@ -201,7 +201,7 @@ public:
 
     template <typename Finder>
     void Finder_finds_C4(const std::string& name) {
-        auto C4 = Graph::make_cycle(4);
+        auto C4 = Graph::make_cycle_graph(4);
 
         {
             std::vector<Subgraph> expected{{0, 1, 2, 3}};
@@ -214,7 +214,7 @@ public:
         // 3-0-4
         // | |
         // 2-1-5
-        auto G = Graph::from_vertex_pairs(6, {
+        auto G = Graph::from_edges(6, {
             {0, 1}, {1, 2},
             {2, 3}, {3, 0},
             {0, 4}, {1, 5}});
@@ -242,7 +242,7 @@ public:
           b-2-1-6
            /| |\
           a 9 8 7  */
-        auto G2 = Graph::from_vertex_pairs(12, {
+        auto G2 = Graph::from_edges(12, {
             {0, 1}, {1, 2},
             {2, 0}, {0, 3},
             {0, 4}, {0, 5},
@@ -261,7 +261,7 @@ public:
         }
 
         {
-            auto forbidden = Graph::from_vertex_pairs(12, {{0, 1}});
+            auto forbidden = Graph::from_edges(12, {{0, 1}});
             Finder finder;
             std::vector<Subgraph> expected({{3, 0, 2, 9}, {3, 0, 2, 10}, {3, 0, 2, 11},
                                             {4, 0, 2, 9}, {4, 0, 2, 10}, {4, 0, 2, 11},
@@ -274,7 +274,7 @@ public:
 
     template <typename Finder>
     void Finder_finds_P4(const std::string& name) {
-        auto G = Graph::make_path(4);
+        auto G = Graph::make_path_graph(4);
 
         std::vector<Subgraph> expected{{0, 1, 2, 3}};
         Finder finder;
@@ -284,7 +284,7 @@ public:
 
     template <typename Finder>
     void Finder_finds_P3(const std::string& name) {
-        auto G = Graph::make_path(3);
+        auto G = Graph::make_path_graph(3);
 
         std::vector<Subgraph> expected{{0, 1, 2}};
         Finder finder;
@@ -415,7 +415,7 @@ public:
         };
 
         {
-            auto P4 = Graph::make_path(4);
+            auto P4 = Graph::make_path_graph(4);
             Graph forbidden(4);
 
             std::vector<Subgraph> expected{{0, 1, 2, 3}};
@@ -425,7 +425,7 @@ public:
         }
 
         {
-            auto C4 = Graph::make_cycle(4);
+            auto C4 = Graph::make_cycle_graph(4);
             Graph forbidden(4);
 
             std::vector<Subgraph> expected{{3, 0, 1, 2}, {1, 0, 3, 2}, {0, 1, 2, 3}, {1, 2, 3, 0}};
@@ -435,13 +435,13 @@ public:
         }
 
         {
-            auto P4 = Graph::make_path(4);
+            auto P4 = Graph::make_path_graph(4);
 
             VertexPairMap<std::vector<Subgraph>> expected(4);
             expected[{3, 0}] = {{0, 1, 2, 3}};
 
             for (auto uv : P4.vertexPairs()) {
-                auto forbidden = Graph::from_vertex_pairs(4, {uv});
+                auto forbidden = Graph::from_edges(4, {uv});
 
                 Finder finder;
                 auto actual = find_all_subgraphs_with_duplicates(finder, P4, forbidden);
@@ -450,7 +450,7 @@ public:
         }
 
         {
-            auto C4 = Graph::make_cycle(4);
+            auto C4 = Graph::make_cycle_graph(4);
 
             VertexPairMap<std::vector<Subgraph>> expected(4);
             expected[{0, 1}] = {{1, 2, 3, 0}};  // {{0, 3, 2, 1}}  NOTE(jonas): Consider allowing other orientation
@@ -459,7 +459,7 @@ public:
             expected[{3, 0}] = {{0, 1, 2, 3}};  // {{3, 2, 1, 0}}
 
             for (auto uv : C4.vertexPairs()) {
-                auto forbidden = Graph::from_vertex_pairs(4, {uv});
+                auto forbidden = Graph::from_edges(4, {uv});
 
                 Finder finder;
                 auto actual = find_all_subgraphs_with_duplicates(finder, C4, forbidden);

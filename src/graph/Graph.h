@@ -48,15 +48,15 @@ public:
         return other;
     }
 
-    static Graph from_vertex_pairs(unsigned int size, const std::vector<VertexPair> &vertexPairs ) {
+    static Graph from_edges(unsigned int size, const std::vector<VertexPair> &edges) {
         Graph new_graph(size);
-        for (auto uv : vertexPairs) {
+        for (auto uv : edges) {
             new_graph.setEdge(uv);
         }
         return new_graph;
     }
 
-    static Graph make_path(unsigned int size) {
+    static Graph make_path_graph(unsigned int size) {
         Graph path(size);
         for (Vertex u = 0; u + 1 < size; ++u) {
             path.setEdge({u, u + 1});
@@ -64,7 +64,7 @@ public:
         return path;
     }
 
-    static Graph make_cycle(unsigned int size) {
+    static Graph make_cycle_graph(unsigned int size) {
         Graph cycle(size);
         for (Vertex u = 0; u + 1 < size; ++u) {
             cycle.setEdge({u, u + 1});
@@ -73,7 +73,7 @@ public:
         return cycle;
     }
 
-    static Graph make_empty(unsigned int size) {
+    static Graph make_empty_graph(unsigned int size) {
         return Graph(size);
     }
 
@@ -82,7 +82,9 @@ public:
      *
      * @return
      */
-    [[nodiscard]] Vertex size() const { return m_size; }
+    [[nodiscard]] unsigned int size() const { return m_size; }
+
+    [[nodiscard]] unsigned int number_of_vertices() const { return m_size; }
 
 
     /**
@@ -99,6 +101,8 @@ public:
      */
     void toggleEdge(VertexPair edge) {
         const auto[u, v] = edge;
+        assert(u < m_size);
+        assert(v < m_size);
         m_adj[u].flip(v);
         m_adj[v].flip(u);
     }
@@ -109,7 +113,10 @@ public:
      * @param u
      * @return
      */
-    [[nodiscard]] size_t degree(Vertex u) const { return m_adj[u].count(); };
+    [[nodiscard]] size_t degree(Vertex u) const {
+        assert(u < m_size);
+        return m_adj[u].count();
+    };
 
     /**
      * Checks whether the edge is in the graph.
@@ -117,7 +124,11 @@ public:
      * @param edge
      * @return
      */
-    [[nodiscard]] bool hasEdge(VertexPair edge) const { return m_adj[edge.u][edge.v]; }
+    [[nodiscard]] bool hasEdge(VertexPair edge) const {
+        assert(edge.u < m_size);
+        assert(edge.v < m_size);
+        return m_adj[edge.u][edge.v];
+    }
 
     /**
      * Inserts the edge into the graph.
@@ -126,6 +137,8 @@ public:
      */
     void setEdge(VertexPair edge) {
         const auto[u, v] = edge;
+        assert(u < m_size);
+        assert(v < m_size);
         m_adj[u].set(v);
         m_adj[v].set(u);
     }
@@ -149,6 +162,8 @@ public:
      */
     void clearEdge(VertexPair edge) {
         const auto[u, v] = edge;
+        assert(u < m_size);
+        assert(v < m_size);
         m_adj[u].reset(v);
         m_adj[v].reset(u);
     }
