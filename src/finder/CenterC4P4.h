@@ -25,6 +25,8 @@ namespace Finder {
 
         bool find_near(VertexPair uv, const Graph &graph, const Graph &forbidden, SubgraphCallback callback) override;
 
+        bool find_with_duplicates(const Graph &graph, const SubgraphCallback &callback) override;
+
         bool find_with_duplicates(const Graph &graph, const Graph &forbidden,
                                   const SubgraphCallback &callback) override;
 

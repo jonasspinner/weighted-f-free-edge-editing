@@ -60,6 +60,11 @@ namespace Finder {
                          valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
+    bool CenterC4P4::find_with_duplicates(const Graph &graph, const SubgraphCallback &callback) {
+        return find_with_duplicates(graph, callback, neighbors(graph), non_neighbors(graph),
+                                    valid_edge(graph), valid_non_edge(graph));
+    }
+
     bool
     CenterC4P4::find_with_duplicates(const Graph &graph, const Graph &forbidden, const SubgraphCallback &callback) {
         return find_with_duplicates(graph, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden),
