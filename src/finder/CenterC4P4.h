@@ -25,10 +25,11 @@ namespace Finder {
 
         bool find_near(VertexPair uv, const Graph &graph, const Graph &forbidden, SubgraphCallback callback) override;
 
-        bool find_with_duplicates(const Graph &graph, const Graph &forbidden, SubgraphCallback callback) override;
+        bool find_with_duplicates(const Graph &graph, const Graph &forbidden,
+                                  const SubgraphCallback &callback) override;
 
-        bool for_all_x_vertex_pairs(const Subgraph &subgraph, const VertexPairMap<bool> &marked,
-                                    VertexPairCallBack callback) override;
+        bool for_all_vertex_pairs_skipping_conversions(const Subgraph &subgraph,
+                                                       const VertexPairCallBack &callback) override;
 
         [[nodiscard]] Options::FSG forbidden_subgraphs() const override { return Options::FSG::C4P4; }
 

@@ -14,7 +14,7 @@
 class FinderI {
 
 public:
-    using SubgraphCallback = std::function<bool(Subgraph&&)>;
+    using SubgraphCallback = std::function<bool(Subgraph &&)>;
     using VertexPairCallBack = std::function<bool(VertexPair)>;
 
 public:
@@ -32,7 +32,7 @@ public:
      * @param callback
      * @return Whether the callback returned true once
      */
-    virtual bool find(const Graph& graph, SubgraphCallback callback) = 0;
+    virtual bool find(const Graph &graph, SubgraphCallback callback) = 0;
 
     /**
      * Find all forbidden subgraphs. Subgraphs sharing an edge with forbidden are ignored. When a subgraph is found,
@@ -43,7 +43,7 @@ public:
      * @param callback
      * @return
      */
-    virtual bool find(const Graph& graph, const Graph &forbidden, SubgraphCallback callback) = 0;
+    virtual bool find(const Graph &graph, const Graph &forbidden, SubgraphCallback callback) = 0;
 
     /**
      * Find all forbidden subgraphs having uv as an vertex pair. Subgraphs sharing an edge with forbidden are ignored.
@@ -54,7 +54,7 @@ public:
      * @param callback
      * @return Whether the callback returned true once
      */
-    virtual bool find_near(VertexPair uv, const Graph& graph, SubgraphCallback callback) = 0;
+    virtual bool find_near(VertexPair uv, const Graph &graph, SubgraphCallback callback) = 0;
 
     /**
      * Find all forbidden subgraphs having uv as an vertex pair. Subgraphs sharing an edge with forbidden are ignored.
@@ -66,11 +66,11 @@ public:
      * @param callback
      * @return Whether the callback returned true once
      */
-    virtual bool find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) = 0;
+    virtual bool find_near(VertexPair uv, const Graph &graph, const Graph &forbidden, SubgraphCallback callback) = 0;
 
 
-    virtual bool find_with_duplicates(const Graph& /*graph*/, const Graph &/*forbidden*/,
-            SubgraphCallback /*callback*/) {
+    virtual bool find_with_duplicates(const Graph &/*graph*/, const Graph &/*forbidden*/,
+                                      const SubgraphCallback &/*callback*/) {
         throw std::runtime_error("FinderI::find_with_duplicates is not implemented");
     };
 
@@ -85,12 +85,27 @@ public:
      *          Every other edge of the C_4 would also work, but it is assumed that the function will be called for all
      *          4 rotations (1-2-3-4-1, 2-3-4-1-2, 3-4-1-2-3, 4-1-2-3-4). As {a, d} is fixed, every edge will be
      *          excluded once.
+     * 
+     * Contract with find_with_duplicates:
+     *      All vertex pairs listed by this method are not forbidden. Vertex pairs that are not listed are permitted to
+     *      be forbidden in the output of find_with_duplicates.
+     *
+     *      std::vector<Subgraph> subgraphs;
+     *      Finder.find_with_duplicates(graph, forbidden, [](auto subgraph) {
+     *          subgraphs.push_back(subgraph);
+     *          return false;
+     *      });
+     *      for (auto subgraph : subgraphs) {
+     *          finder.for_all_vertex_pairs_skipping_conversions(subgraph, [](auto uv) {
+     *              assert(!forbidden.hasEdge(uv));
+     *          });
+     *      }
      *
      * @return
      */
-    virtual bool for_all_x_vertex_pairs(const Subgraph& /*subgraph*/, const VertexPairMap<bool> &/*marked*/,
-                                        VertexPairCallBack /*callback*/) {
-        throw std::runtime_error("FinderI::for_all_x_vertex_pairs is not implemented");
+    virtual bool for_all_vertex_pairs_skipping_conversions(const Subgraph &/*subgraph*/,
+                                                           const VertexPairCallBack &/*callback*/) {
+        throw std::runtime_error("FinderI::for_all_vertex_pairs_skipping_conversions is not implemented");
     }
 
 
@@ -111,7 +126,7 @@ protected:
      */
 
     static inline auto neighbors(const Graph &graph) {
-        return [&](Vertex u) -> const Graph::AdjRow& { return  graph.m_adj[u]; };
+        return [&](Vertex u) -> const Graph::AdjRow & { return graph.m_adj[u]; };
     }
 
     static inline auto neighbors(const Graph &graph, const Graph &forbidden) {

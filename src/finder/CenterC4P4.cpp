@@ -16,7 +16,7 @@ namespace Finder {
      * @param callback
      * @return
      */
-    bool CenterC4P4::find(const Graph& graph, SubgraphCallback callback) {
+    bool CenterC4P4::find(const Graph &graph, SubgraphCallback callback) {
         return find(graph, callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
     }
 
@@ -28,8 +28,9 @@ namespace Finder {
      * @param callback
      * @return
      */
-    bool CenterC4P4::find(const Graph& graph, const Graph &forbidden, SubgraphCallback callback) {
-        return find(graph, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
+    bool CenterC4P4::find(const Graph &graph, const Graph &forbidden, SubgraphCallback callback) {
+        return find(graph, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden),
+                    valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
     /**
@@ -40,8 +41,9 @@ namespace Finder {
      * @param callback
      * @return
      */
-    bool CenterC4P4::find_near(VertexPair uv, const Graph& graph, SubgraphCallback callback) {
-        return find_near(uv, callback, neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
+    bool CenterC4P4::find_near(VertexPair uv, const Graph &graph, SubgraphCallback callback) {
+        return find_near(uv, callback, neighbors(graph), non_neighbors(graph), valid_edge(graph),
+                         valid_non_edge(graph));
     }
 
     /**
@@ -53,31 +55,30 @@ namespace Finder {
      * @param callback
      * @return
      */
-    bool CenterC4P4::find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) {
-        return find_near(uv, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
+    bool CenterC4P4::find_near(VertexPair uv, const Graph &graph, const Graph &forbidden, SubgraphCallback callback) {
+        return find_near(uv, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden),
+                         valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
     bool
-    CenterC4P4::find_with_duplicates(const Graph &graph, const Graph &forbidden, FinderI::SubgraphCallback callback) {
-        return find_with_duplicates(graph, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
+    CenterC4P4::find_with_duplicates(const Graph &graph, const Graph &forbidden, const SubgraphCallback &callback) {
+        return find_with_duplicates(graph, callback, neighbors(graph, forbidden), non_neighbors(graph, forbidden),
+                                    valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
-    bool CenterC4P4::for_all_x_vertex_pairs(const Subgraph& subgraph, const VertexPairMap<bool> &marked,
-                                            VertexPairCallBack callback) {
+    bool CenterC4P4::for_all_vertex_pairs_skipping_conversions(const Subgraph &subgraph,
+                                                               const VertexPairCallBack &callback) {
         assert(subgraph.size() == 4);
         Vertex a = subgraph[0], b = subgraph[1], c = subgraph[2], d = subgraph[3];
 
         // Case P_4: +{a, d} results in a C_4
         // Case C_4: -{a, d} results in a P_4
 
-        if (VertexPair uv = {a, b}; !marked[uv] && callback(uv)) return true;
-        if (VertexPair uv = {a, c}; !marked[uv] && callback(uv)) return true;
-        // if (VertexPair uv = {a, d}; !marked[uv] && callback(uv)) return true; <- do not list {a, d}
-        if (VertexPair uv = {b, c}; !marked[uv] && callback(uv)) return true;
-        if (VertexPair uv = {b, d}; !marked[uv] && callback(uv)) return true;
-        if (VertexPair uv = {c, d}; !marked[uv] && callback(uv)) return true;
-
-        return false;
+        if (callback({a, b})) return true;
+        if (callback({a, c})) return true;
+        if (callback({b, c})) return true;
+        if (callback({b, d})) return true;
+        return callback({c, d});
     }
 
     void CenterC4P4::to_yaml(YAML::Emitter &out) const {
@@ -89,7 +90,9 @@ namespace Finder {
     }
 
     template<typename F, typename G, typename H, typename I>
-    bool CenterC4P4::find(const Graph& graph, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge) {
+    bool
+    CenterC4P4::find(const Graph &graph, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge,
+                     I valid_non_edge) {
 
         for (Vertex u : graph.vertices()) {
             V = neighbors(u);
@@ -102,7 +105,10 @@ namespace Finder {
                     for (Vertex b : Graph::iterate(B)) {
 
                         // assert that {a, u, v, b} is either a P_4 or a C_4
-                        assert(valid_edge({a, u})); assert(valid_non_edge({a, v})); /*assert(valid({a, b}));*/ assert(valid_edge({u, v})); assert(valid_non_edge({u, b})); assert(valid_edge({v, b}));
+                        assert(valid_edge({a, u}));
+                        assert(valid_non_edge({a, v})); /*assert(valid({a, b}));*/ assert(valid_edge({u, v}));
+                        assert(valid_non_edge({u, b}));
+                        assert(valid_edge({v, b}));
 
                         if (valid_non_edge({a, b}) && a < b) {
                             // P_4
@@ -120,10 +126,11 @@ namespace Finder {
     }
 
     template<typename F, typename G, typename H, typename I>
-    bool CenterC4P4::find_near(VertexPair uv, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge,
-                   I valid_non_edge) {
+    bool
+    CenterC4P4::find_near(VertexPair uv, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge,
+                          I valid_non_edge) {
 
-        auto [u, v] = uv;
+        auto[u, v] = uv;
         assert(u < v);
 
         if (valid_non_edge(uv)) {
@@ -136,7 +143,12 @@ namespace Finder {
                     if (valid_edge({a, b})) {
 
                         // assert that {u, a, b, v} is a P_4
-                        assert(valid_edge({u, a})); assert(valid_non_edge({u, b})); assert(valid_non_edge({u, v})); assert(valid_edge({a, b})); assert(valid_non_edge({a, v})); assert(valid_edge({b, v}));
+                        assert(valid_edge({u, a}));
+                        assert(valid_non_edge({u, b}));
+                        assert(valid_non_edge({u, v}));
+                        assert(valid_edge({a, b}));
+                        assert(valid_non_edge({a, v}));
+                        assert(valid_edge({b, v}));
 
                         // P_4
                         if (callback(Subgraph{u, a, b, v})) return true;
@@ -151,7 +163,10 @@ namespace Finder {
                 for (Vertex b : Graph::iterate(B)) {
 
                     // assert that {u, a, v, b} is either a C_4 or P_4
-                    assert(valid_edge({u, a})); assert(valid_non_edge({u, v})); /*assert(valid({u, b}));*/ assert(valid_edge({a, v})); assert(valid_non_edge({a, b})); assert(valid_edge({v, b}));
+                    assert(valid_edge({u, a}));
+                    assert(valid_non_edge({u, v})); /*assert(valid({u, b}));*/ assert(valid_edge({a, v}));
+                    assert(valid_non_edge({a, b}));
+                    assert(valid_edge({v, b}));
 
                     if (valid_edge({u, b}) && u < std::min({a, v, b}) && a < b) {
                         // C_4
@@ -170,7 +185,10 @@ namespace Finder {
                 for (Vertex a : Graph::iterate(A)) {
 
                     // assert that {a, u, b, b} is either a C_4 or P_4
-                    assert(valid_edge({a, u})); assert(valid_non_edge({a, b})); /*assert(valid({a, v}));*/ assert(valid_edge({u, b})); assert(valid_non_edge({u, v})); assert(valid_edge({b, v}));
+                    assert(valid_edge({a, u}));
+                    assert(valid_non_edge({a, b})); /*assert(valid({a, v}));*/ assert(valid_edge({u, b}));
+                    assert(valid_non_edge({u, v}));
+                    assert(valid_edge({b, v}));
 
                     if (valid_edge({a, v}) && a < std::min({u, b, v})) {
                         // C_4
@@ -192,7 +210,12 @@ namespace Finder {
                     if (valid_edge({a, b}) && u < std::min({a, b, v}) && a < v) {
 
                         // assert that {u, a, b, v} is a C_4
-                        assert(valid_edge({u, a})); assert(valid_non_edge({u, b})); assert(valid_edge({u, v})); assert(valid_edge({a, b})); assert(valid_non_edge({a, v})); assert(valid_edge({b, v}));
+                        assert(valid_edge({u, a}));
+                        assert(valid_non_edge({u, b}));
+                        assert(valid_edge({u, v}));
+                        assert(valid_edge({a, b}));
+                        assert(valid_non_edge({a, v}));
+                        assert(valid_edge({b, v}));
 
                         // C_4
                         if (callback(Subgraph{u, a, b, v})) return true;
@@ -208,7 +231,10 @@ namespace Finder {
                 for (Vertex b : Graph::iterate(B)) {
 
                     // assert that {a, u, v, b} is either a C_4 or a P_4
-                    assert(valid_edge({a, u})); assert(valid_non_edge({a, v})); /*assert(valid({a, b}));*/ assert(valid_edge({u, v})); assert(valid_non_edge({u, b})); assert(valid_edge({v, b}));
+                    assert(valid_edge({a, u}));
+                    assert(valid_non_edge({a, v})); /*assert(valid({a, b}));*/ assert(valid_edge({u, v}));
+                    assert(valid_non_edge({u, b}));
+                    assert(valid_edge({v, b}));
 
                     if (valid_edge({a, b}) && a < std::min({u, v, b})) {
                         // C_4
@@ -230,7 +256,10 @@ namespace Finder {
                 for (Vertex b : Graph::iterate(B)) {
 
                     // assert that {u, v, a, b} is either a C_4 or a P_4
-                    assert(valid_edge({u, v})); assert(valid_non_edge({u, a})); /*assert(valid({u, b}));*/ assert(valid_edge({v, a})); assert(valid_non_edge({v, b})); assert(valid_edge({a, b}));
+                    assert(valid_edge({u, v}));
+                    assert(valid_non_edge({u, a})); /*assert(valid({u, b}));*/ assert(valid_edge({v, a}));
+                    assert(valid_non_edge({v, b}));
+                    assert(valid_edge({a, b}));
 
                     if (valid_edge({u, b}) && u < std::min({v, a, b}) && v < b) {
                         // C_4
@@ -252,7 +281,10 @@ namespace Finder {
                 for (Vertex b : Graph::iterate(B)) {
 
                     // assert that {b, a, u, v} is either a C_4 or P_4
-                    assert(valid_edge({b, a})); assert(valid_non_edge({b, u})); /*assert(valid({b, v}));*/ assert(valid_edge({a, u})); assert(valid_non_edge({a, v})); assert(valid_edge({u, v}));
+                    assert(valid_edge({b, a}));
+                    assert(valid_non_edge({b, u})); /*assert(valid({b, v}));*/ assert(valid_edge({a, u}));
+                    assert(valid_non_edge({a, v}));
+                    assert(valid_edge({u, v}));
 
                     if (valid_edge({b, v}) && b < std::min({a, u, v})) {
                         // C_4
@@ -273,7 +305,7 @@ namespace Finder {
         for (auto uv : graph.edges()) {
             if (!valid_edge(uv))
                 continue;
-            auto [u, v] = uv;
+            auto[u, v] = uv;
 
             A = neighbors(u) & non_neighbors(v);
             B = neighbors(v) & non_neighbors(u);
@@ -281,7 +313,10 @@ namespace Finder {
             for (auto a : Graph::iterate(A)) {
                 for (auto b : Graph::iterate(B)) {
                     // assert that {a, u, v, b} is either a P_4 or a C_4
-                    assert(valid_edge({a, u})); assert(valid_non_edge({a, v})); /*assert(valid({a, b}));*/ assert(valid_edge({u, v})); assert(valid_non_edge({u, b})); assert(valid_edge({v, b}));
+                    assert(valid_edge({a, u}));
+                    assert(valid_non_edge({a, v})); /*assert(valid({a, b}));*/ assert(valid_edge({u, v}));
+                    assert(valid_non_edge({u, b}));
+                    assert(valid_edge({v, b}));
                     // C_4 or P_4
                     if (callback(Subgraph{a, u, v, b})) return true;
                 }
