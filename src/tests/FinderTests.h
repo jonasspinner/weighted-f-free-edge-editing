@@ -125,7 +125,7 @@ public:
     void karate_graph_is_solved_with_21_edits() {
         try {
             auto instance = GraphIO::read_instance("../data/misc/karate.graph");
-            Graph G = instance.graph;
+            Graph G = instance.graph.copy();
 
             std::vector<VertexPair> edits {
                     {0, 8}, {0, 16}, {0, 31},
@@ -434,10 +434,7 @@ public:
         };
 
         {
-            Graph P4(4);
-            P4.setEdges({{0, 1},
-                         {1, 2},
-                         {2, 3}});
+            auto P4 = Graph::make_path(4);
             Graph forbidden(4);
 
             std::vector<Subgraph> expected{{0, 1, 2, 3}};
@@ -447,11 +444,7 @@ public:
         }
 
         {
-            Graph C4(4);
-            C4.setEdges({{0, 1},
-                         {1, 2},
-                         {2, 3},
-                         {3, 0}});
+            auto C4 = Graph::make_cycle(4);
             Graph forbidden(4);
 
             std::vector<Subgraph> expected{{3, 0, 1, 2}, {1, 0, 3, 2}, {0, 1, 2, 3}, {1, 2, 3, 0}};
@@ -461,17 +454,13 @@ public:
         }
 
         {
-            Graph P4(4);
-            P4.setEdges({{0, 1},
-                         {1, 2},
-                         {2, 3}});
+            auto P4 = Graph::make_path(4);
 
             VertexPairMap<std::vector<Subgraph>> expected(4);
             expected[{3, 0}] = {{0, 1, 2, 3}};
 
             for (auto uv : P4.vertexPairs()) {
-                Graph forbidden(4);
-                forbidden.setEdge(uv);
+                auto forbidden = Graph::from_vertex_pairs(4, {uv});
 
                 Finder finder;
                 auto actual = find_all_subgraphs_with_duplicates(finder, P4, forbidden);
@@ -480,11 +469,7 @@ public:
         }
 
         {
-            Graph C4(4);
-            C4.setEdges({{0, 1},
-                         {1, 2},
-                         {2, 3},
-                         {3, 0}});
+            auto C4 = Graph::make_cycle(4);
 
             VertexPairMap<std::vector<Subgraph>> expected(4);
             expected[{0, 1}] = {{1, 2, 3, 0}};  // {{0, 3, 2, 1}}  NOTE(jonas): Consider allowing other orientation
@@ -493,8 +478,7 @@ public:
             expected[{3, 0}] = {{0, 1, 2, 3}};  // {{3, 2, 1, 0}}
 
             for (auto uv : C4.vertexPairs()) {
-                Graph forbidden(4);
-                forbidden.setEdge(uv);
+                auto forbidden = Graph::from_vertex_pairs(4, {uv});
 
                 Finder finder;
                 auto actual = find_all_subgraphs_with_duplicates(finder, C4, forbidden);
@@ -525,11 +509,11 @@ public:
         Finder_finds_P4<Finder::CenterRecC4P4>("CenterRecC4P4");
         Finder_finds_P4<Finder::EndpointRecC4P4>("EndpointRecC4P4");
         Finder_finds_P4<Finder::NaiveRecC4P4>("NaiveRecC4P4");
-        finders_have_same_output({"NaiveC4P4", "CenterC4P4", "CenterRecC4P4", "EndpointRecC4P4", "NaiveRecC4P4"}, {0, 1});
+        // finders_have_same_output({"NaiveC4P4", "CenterC4P4", "CenterRecC4P4", "EndpointRecC4P4", "NaiveRecC4P4"}, {0, 1});
 
         Finder_finds_C4P4_with_duplicates<Finder::CenterC4P4>("CenterC4P4");
 
-        finders_have_same_output({"CenterRecC5P5", "EndpointRecC5P5", "NaiveRecC5P5"}, {0, 1});
+        // finders_have_same_output({"CenterRecC5P5", "EndpointRecC5P5", "NaiveRecC5P5"}, {0, 1});
 
         karate_graph_is_solved_with_21_edits();
     }

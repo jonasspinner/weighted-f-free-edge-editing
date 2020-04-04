@@ -124,7 +124,7 @@ public:
         }
     }
 
-    Result solve(Instance instance) override {
+    Result solve(const Instance &instance) override {
         auto &[graph, costs, _1, _2, _3] = instance;
 
         try {
@@ -153,7 +153,7 @@ public:
             addConstraints(model, vars, graph);
 
             // Register callback
-            FSGCallback cb(m_config, graph, vars);
+            FSGCallback cb(m_config, graph.copy(), vars);
             model.setCallback(&cb);
 
 

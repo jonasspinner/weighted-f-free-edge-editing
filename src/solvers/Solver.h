@@ -26,7 +26,7 @@ public:
 
     virtual ~Solver() = default;
 
-    virtual Result solve(Instance instance) = 0;
+    virtual Result solve(const Instance &instance) = 0;
 };
 
 

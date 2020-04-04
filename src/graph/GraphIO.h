@@ -108,8 +108,8 @@ public:
             if (edit_costs[uv] == undefined_cost)
                 throw std::runtime_error("undefined editing cost");
 
-        Instance instance(path, G, edit_costs, multiplier);
         Permutation P(G.size(), permutation);
+        Instance instance(path, std::move(G), edit_costs, multiplier);
         instance = P[instance];
 
         return instance;

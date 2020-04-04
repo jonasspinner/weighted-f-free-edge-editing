@@ -41,7 +41,7 @@ void EditorTests::configurations_have_same_output(Options::FSG fsg, const std::v
                 config.seed = seed;
                 std::vector<Solution> solutions;
 
-                Editor editor(instance, config);
+                Editor editor(instance.copy(), config);
 
                 editor.edit(12 * multiplier, [&](const std::vector<VertexPair> &edits) {
                     solutions.emplace_back(orig_instance, P_r[edits]);
@@ -93,7 +93,7 @@ void EditorTests::output_is_independent_of_seed(const std::vector<int> &seeds) {
 
         auto config = Configuration(Options::FSG::C4P4, -1, Options::SolverType::FPT, Options::Selector::FirstFound, Options::LB::SortedGreedy);
 
-        Editor editor(instance, config);
+        Editor editor(instance.copy(), config);
         editor.edit(1100, [&](const std::vector<VertexPair> &edits) {
             solutions.emplace_back(orig_instance, P_r[edits]);
         }, [](Cost, Cost) {});
@@ -131,8 +131,10 @@ void EditorTests::run() {
     auto all_selectors = {Selector::FirstFound, Selector::LeastWeight, Selector::MostMarkedPairs, Selector::MostAdjacentSubgraphs};
     auto all_lower_bounds = {LB::LocalSearch, LB::Trivial, LB::Greedy, LB::SortedGreedy, LB::LPRelaxation, LB::NPS_MWIS_Solver};
 
-    //auto all_selectors = {Selector::MostAdjacentSubgraphs};
-    //auto all_lower_bounds = {LB::SortedGreedy, LB::NPS_MWIS_Solver};
+    // auto all_selectors = {Selector::MostAdjacentSubgraphs, Selector::SingleEdgeEditing};
+    // auto all_lower_bounds = {LB::LocalSearch, LB::Greedy, LB::SortedGreedy, LB::LPRelaxation, LB::NPS_MWIS_Solver};
+    // auto all_lower_bounds = {LB::NPS_MWIS_Solver};
+
 
     configurations_have_same_output(FSG::C4P4, all_selectors, all_lower_bounds, {0, 1}, 100);
     configurations_have_same_output(FSG::C4P4, all_selectors, all_lower_bounds, {0, 1}, 1);

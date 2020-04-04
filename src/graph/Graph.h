@@ -32,6 +32,51 @@ public:
      */
     explicit Graph(unsigned int size) : m_size(size), m_adj(m_size, AdjRow(m_size)) {}
 
+    Graph(const Graph&) = delete;
+
+    Graph(Graph&& other) : m_size(other.m_size), m_adj(std::move(other.m_adj)) {}
+
+    friend void swap(Graph &a, Graph &b) {
+        using std::swap;
+        swap(a.m_size, b.m_size);
+        swap(a.m_adj, b.m_adj);
+    }
+
+    Graph copy() const {
+        Graph other(m_size);
+        other.m_adj = m_adj;
+        return other;
+    }
+
+    static Graph from_vertex_pairs(unsigned int size, const std::vector<VertexPair> &vertexPairs ) {
+        Graph new_graph(size);
+        for (auto uv : vertexPairs) {
+            new_graph.setEdge(uv);
+        }
+        return new_graph;
+    }
+
+    static Graph make_path(unsigned int size) {
+        Graph path(size);
+        for (Vertex u = 0; u + 1 < size; ++u) {
+            path.setEdge({u, u + 1});
+        }
+        return path;
+    }
+
+    static Graph make_cycle(unsigned int size) {
+        Graph cycle(size);
+        for (Vertex u = 0; u + 1 < size; ++u) {
+            cycle.setEdge({u, u + 1});
+        }
+        cycle.setEdge({0, size - 1});
+        return cycle;
+    }
+
+    static Graph make_empty(unsigned int size) {
+        return Graph(size);
+    }
+
     /**
      * Returns the number of vertices.
      *

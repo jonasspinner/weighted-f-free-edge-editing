@@ -163,7 +163,7 @@ namespace lower_bound {
             }
         }
 
-        return std::make_pair(instance_graph, weights);
+        return std::make_pair(std::move(instance_graph), std::move(weights));
     }
 
 }

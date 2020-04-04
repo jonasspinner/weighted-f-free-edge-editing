@@ -42,7 +42,7 @@ public:
     }
 
     [[nodiscard]] bool is_valid(const Instance &instance, Options::FSG fsg) const {
-        Graph graph(instance.graph);
+        Graph graph = instance.graph.copy();
         std::unique_ptr<FinderI> finder = Finder::make(fsg);
         Cost sum = 0;
 
