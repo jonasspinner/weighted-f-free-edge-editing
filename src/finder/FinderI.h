@@ -101,6 +101,14 @@ public:
      *          });
      *      }
      *
+     *  TODO: Evaluate moving logic into Subgraph class.
+     *  Note(jonas): Ideally the logic would be handled in subgraph.vertexPairsWithoutConversions(). This is not
+     *      dependent on the type of forbidden subgraph, but also the set of forbidden subgraphs. The skipping of
+     *      conversion for F = {C_l, P_l} is only possible because it is always the same pair of vertices, the degree
+     *      one vertices in the graph, or a fixed edge in the cycle. This relies on the ordering of vertices in the
+     *      Subgraph class, i.e. S[0] and S[l-1] are the fixed pair of vertices which, when editied, leads to a
+     *      conversion.
+     *
      * @return
      */
     virtual bool for_all_vertex_pairs_skipping_conversions(const Subgraph &/*subgraph*/,
