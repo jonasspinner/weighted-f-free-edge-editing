@@ -337,7 +337,7 @@ namespace lower_bound {
         size_t add_constraints_for_all_forbidden_subgraphs() {
             size_t num_found = 0;
 
-            finder->find(m_graph, [&](const Subgraph &subgraph) {
+            finder->find_with_duplicates(m_graph, [&](const Subgraph &subgraph) {
                 ++num_found;
                 add_constraint(subgraph);
                 return false;
