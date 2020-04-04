@@ -34,7 +34,7 @@ public:
     }
 
     /**
-     * An optimized constructor for concatinating the vertices and the subgraph.
+     * An optimized constructor for concatenating the vertices and the subgraph.
      *
      * Only allocates memory once.
      *
