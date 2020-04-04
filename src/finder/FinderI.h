@@ -18,7 +18,7 @@ public:
     //       needed.
     using SubgraphCallback = std::function<bool(Subgraph &&)>;
 
-    using VertexPairCallBack = std::function<bool(VertexPair)>;
+    using VertexPairCallback = std::function<bool(VertexPair)>;
 
 public:
     virtual ~FinderI() = default;
@@ -119,7 +119,7 @@ public:
      * @return
      */
     virtual bool for_all_conversionless_edits(const Subgraph &/*subgraph*/,
-            const VertexPairCallBack &/*callback*/) const {
+            const VertexPairCallback &/*callback*/) const {
         throw std::runtime_error("FinderI::for_all_conversionless_edits is not implemented");
     }
 

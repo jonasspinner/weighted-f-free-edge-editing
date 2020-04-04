@@ -71,7 +71,7 @@ namespace Finder {
                                     valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
-    bool CenterC4P4::for_all_conversionless_edits(const Subgraph &subgraph, const VertexPairCallBack &callback) const {
+    bool CenterC4P4::for_all_conversionless_edits(const Subgraph &subgraph, const VertexPairCallback &callback) const {
         assert(subgraph.size() == 4);
         Vertex a = subgraph[0], b = subgraph[1], c = subgraph[2], d = subgraph[3];
 

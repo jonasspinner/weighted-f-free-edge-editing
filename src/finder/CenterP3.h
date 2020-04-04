@@ -15,13 +15,19 @@ namespace Finder {
         Graph::AdjRow W;
 
     public:
-        bool find(const Graph& graph, SubgraphCallback callback) override;
+        bool find(const Graph &graph, SubgraphCallback callback) override;
 
-        bool find(const Graph& graph, const Graph &forbidden, SubgraphCallback callback) override;
+        bool find(const Graph &graph, const Graph &forbidden, SubgraphCallback callback) override;
 
-        bool find_near(VertexPair uv, const Graph& graph, SubgraphCallback callback) override;
+        bool find_near(VertexPair uv, const Graph &graph, SubgraphCallback callback) override;
 
-        bool find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) override;
+        bool find_near(VertexPair uv, const Graph &graph, const Graph &forbidden, SubgraphCallback callback) override;
+
+        bool find_with_duplicates(const Graph &graph, const SubgraphCallback &callback) override;
+
+        bool find_with_duplicates(const Graph &graph, const Graph &forbidden, const SubgraphCallback &callback) override;
+
+        bool for_all_conversionless_edits(const Subgraph &subgraph, const VertexPairCallback &callback) const override;
 
         [[nodiscard]] Options::FSG forbidden_subgraphs() const override { return Options::FSG::P3; }
 
@@ -32,12 +38,16 @@ namespace Finder {
     private:
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+
         template<typename F, typename G, typename H, typename I>
-        bool find(const Graph& graph, const SubgraphCallback& callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge);
+        bool find(const Graph &graph, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge,
+                  I valid_non_edge);
+
 #pragma GCC diagnostic pop
 
         template<typename F, typename G, typename H, typename I>
-        bool find_near(VertexPair uv, const SubgraphCallback& callback, F neighbors, G non_neighbors, H valid_edge, I valid_non_edge);
+        bool find_near(VertexPair uv, const SubgraphCallback &callback, F neighbors, G non_neighbors, H valid_edge,
+                       I valid_non_edge);
 
     };
 }

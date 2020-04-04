@@ -119,4 +119,22 @@ namespace Finder {
         }
         return false;
     }
+
+    bool CenterP3::find_with_duplicates(const Graph &graph, const FinderI::SubgraphCallback &callback) {
+        return find(graph, callback);
+    }
+
+    bool CenterP3::find_with_duplicates(const Graph &graph, const Graph &forbidden,
+                                        const FinderI::SubgraphCallback &callback) {
+        return find(graph, forbidden, callback);
+    }
+
+    bool CenterP3::for_all_conversionless_edits(const Subgraph &subgraph,
+                                                const FinderI::VertexPairCallback &callback) const {
+        for (auto uv : subgraph.vertexPairs()) {
+            if (callback(uv))
+                return true;
+        }
+        return false;
+    }
 }

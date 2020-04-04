@@ -21,6 +21,12 @@ namespace Finder {
 
         bool find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) override;
 
+        bool find_with_duplicates(const Graph &graph, const SubgraphCallback &callback) override;
+
+        bool find_with_duplicates(const Graph &graph, const Graph &forbidden, const SubgraphCallback &callback) override;
+
+        bool for_all_conversionless_edits(const Subgraph &subgraph, const VertexPairCallback &callback) const override;
+
         [[nodiscard]] Options::FSG forbidden_subgraphs() const override { return Options::FSG::P3; }
 
         [[nodiscard]] std::string name() const override { return "OuterP3"; }

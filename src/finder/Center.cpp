@@ -50,6 +50,7 @@ namespace Finder {
      */
     template <int length, bool with_cycles>
     bool Center<length, with_cycles>::find_near(VertexPair uv, const Graph& graph, SubgraphCallback callback) {
+        // Note: Consider throwing an exception until efficient implementation is available.
         return detail::FindNearImpl<length, with_cycles>::find_near(graph, uv, callback,
                 neighbors(graph), non_neighbors(graph), valid_edge(graph), valid_non_edge(graph));
     }
@@ -65,8 +66,42 @@ namespace Finder {
      */
     template <int length, bool with_cycles>
     bool Center<length, with_cycles>::find_near(VertexPair uv, const Graph& graph, const Graph &forbidden, SubgraphCallback callback) {
+        // Note: Consider throwing an exception until efficient implementation is available.
         return detail::FindNearImpl<length, with_cycles>::find_near(graph, uv, callback,
                 neighbors(graph, forbidden), non_neighbors(graph, forbidden), valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
+    }
+
+    template <int length, bool with_cycles>
+    bool Center<length, with_cycles>::find_with_duplicates(const Graph &graph, const FinderI::SubgraphCallback &callback) {
+        if constexpr (with_cycles) {
+            return FinderI::find_with_duplicates(graph, callback);
+        } else {
+            return find(graph, callback);
+        }
+    }
+
+    template <int length, bool with_cycles>
+    bool Center<length, with_cycles>::find_with_duplicates(const Graph &graph, const Graph &forbidden,
+                                                          const FinderI::SubgraphCallback &callback) {
+        if constexpr (with_cycles) {
+            return FinderI::find_with_duplicates(graph, forbidden, callback);
+        } else {
+            return find(graph, forbidden, callback);
+        }
+    }
+
+    template <int length, bool with_cycles>
+    bool Center<length, with_cycles>::for_all_conversionless_edits(const Subgraph &subgraph,
+                                                                  const FinderI::VertexPairCallback &callback) const {
+        if constexpr (with_cycles) {
+            return FinderI::for_all_conversionless_edits(subgraph, callback);
+        } else {
+            for (auto uv : subgraph.vertexPairs()) {
+                if (callback(uv))
+                    return true;
+            }
+            return false;
+        }
     }
 
     template <int length, bool with_cycles>

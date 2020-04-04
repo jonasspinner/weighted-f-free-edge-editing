@@ -92,4 +92,21 @@ namespace Finder {
         }, valid_edge, valid_non_edge);
     }
 
+    bool NaiveP3::find_with_duplicates(const Graph &graph, const FinderI::SubgraphCallback &callback) {
+        return find(graph, callback);
+    }
+
+    bool NaiveP3::find_with_duplicates(const Graph &graph, const Graph &forbidden,
+                                        const FinderI::SubgraphCallback &callback) {
+        return find(graph, forbidden, callback);
+    }
+
+    bool NaiveP3::for_all_conversionless_edits(const Subgraph &subgraph,
+                                                const FinderI::VertexPairCallback &callback) const {
+        for (auto uv : subgraph.vertexPairs()) {
+            if (callback(uv))
+                return true;
+        }
+        return false;
+    }
 }

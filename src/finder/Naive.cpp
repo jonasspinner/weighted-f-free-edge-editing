@@ -98,6 +98,39 @@ namespace Finder {
         out << EndMap;
     }
 
+    template <int length, bool with_cycles>
+    bool Naive<length, with_cycles>::find_with_duplicates(const Graph &graph, const FinderI::SubgraphCallback &callback) {
+        if constexpr (with_cycles) {
+            return FinderI::find_with_duplicates(graph, callback);
+        } else {
+            return find(graph, callback);
+        }
+    }
+
+    template <int length, bool with_cycles>
+    bool Naive<length, with_cycles>::find_with_duplicates(const Graph &graph, const Graph &forbidden,
+                                       const FinderI::SubgraphCallback &callback) {
+        if constexpr (with_cycles) {
+            return FinderI::find_with_duplicates(graph, forbidden, callback);
+        } else {
+            return find(graph, forbidden, callback);
+        }
+    }
+
+    template <int length, bool with_cycles>
+    bool Naive<length, with_cycles>::for_all_conversionless_edits(const Subgraph &subgraph,
+                                               const FinderI::VertexPairCallback &callback) const {
+        if constexpr (with_cycles) {
+            return FinderI::for_all_conversionless_edits(subgraph, callback);
+        } else {
+            for (auto uv : subgraph.vertexPairs()) {
+                if (callback(uv))
+                    return true;
+            }
+            return false;
+        }
+    }
+
     template class Naive<6, true>;
     template class Naive<5, true>;
     template class Naive<4, true>;
