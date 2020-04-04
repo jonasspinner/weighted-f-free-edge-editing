@@ -122,7 +122,7 @@ public:
         }
     }
 
-    void karate_graph_is_solved_with_21_edits() {
+    void FinderC4P4_karate_graph_is_solved_with_21_edits() {
         try {
             auto instance = GraphIO::read_instance("../data/misc/karate.graph");
             Graph G = instance.graph.copy();
@@ -463,8 +463,25 @@ public:
 
                 Finder finder;
                 auto actual = find_all_subgraphs_with_duplicates(finder, C4, forbidden);
-                expect(name + " recognizes one C4 (with duplicates) forbidden " + to_string(uv), expected[uv], actual);
+                expect(name + " recognizes C4 (with duplicates) forbidden " + to_string(uv), expected[uv], actual);
             }
+        }
+    }
+
+    template <typename Finder>
+    void FinderC4P4_for_all_conversionless_edits(const std::string &name) {
+        {
+            Subgraph subgraph{0, 1, 2, 3};
+
+            std::vector<VertexPair> expected{{0, 1}, {0, 2}, {1, 2}, {1, 3}, {2, 3}};
+            Finder finder;
+
+            std::vector<VertexPair> actual;
+            finder.for_all_conversionless_edits(subgraph, [&](auto uv) {
+                actual.push_back(uv);
+                return false;
+            });
+            expect(name + " lists vertex pairs for C4P4 skipping conversion", expected, actual);
         }
     }
 
@@ -493,10 +510,11 @@ public:
         // finders_have_same_output({"NaiveC4P4", "CenterC4P4", "CenterRecC4P4", "EndpointRecC4P4", "NaiveRecC4P4"}, {0, 1});
 
         Finder_finds_C4P4_with_duplicates<Finder::CenterC4P4>("CenterC4P4");
+        FinderC4P4_for_all_conversionless_edits<Finder::CenterC4P4>("CenterC4P4");
 
         // finders_have_same_output({"CenterRecC5P5", "EndpointRecC5P5", "NaiveRecC5P5"}, {0, 1});
 
-        karate_graph_is_solved_with_21_edits();
+        FinderC4P4_karate_graph_is_solved_with_21_edits();
     }
 };
 

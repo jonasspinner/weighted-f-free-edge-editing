@@ -2,8 +2,8 @@
 // Created by jonas on 15.07.19.
 //
 
-#ifndef CONCEPT_FINDERI_H
-#define CONCEPT_FINDERI_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING
+#define WEIGHTED_F_FREE_EDGE_EDITING_FINDERI_H
 
 
 #include "../graph/Graph.h"
@@ -14,7 +14,10 @@
 class FinderI {
 
 public:
+    // TODO: Maybe convert to (const Subgraph &). This allows using the same Subgraph for finding and only copy it if
+    //       needed.
     using SubgraphCallback = std::function<bool(Subgraph &&)>;
+
     using VertexPairCallBack = std::function<bool(VertexPair)>;
 
 public:
@@ -96,7 +99,7 @@ public:
      *          return false;
      *      });
      *      for (auto subgraph : subgraphs) {
-     *          finder.for_all_vertex_pairs_skipping_conversions(subgraph, [](auto uv) {
+     *          finder.for_all_conversionless_edits(subgraph, [](auto uv) {
      *              assert(!forbidden.hasEdge(uv));
      *          });
      *      }
@@ -111,9 +114,9 @@ public:
      *
      * @return
      */
-    virtual bool for_all_vertex_pairs_skipping_conversions(const Subgraph &/*subgraph*/,
-                                                           const VertexPairCallBack &/*callback*/) const {
-        throw std::runtime_error("FinderI::for_all_vertex_pairs_skipping_conversions is not implemented");
+    virtual bool for_all_conversionless_edits(const Subgraph &/*subgraph*/,
+            const VertexPairCallBack &/*callback*/) const {
+        throw std::runtime_error("FinderI::for_all_conversionless_edits is not implemented");
     }
 
 
@@ -170,4 +173,4 @@ protected:
     }
 };
 
-#endif //CONCEPT_FINDERI_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING
