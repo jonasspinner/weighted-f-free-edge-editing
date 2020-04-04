@@ -129,6 +129,11 @@ namespace lower_bound {
     std::optional<std::pair<Graph, std::vector<Cost>>>
     LSSWZ_MWIS_Solver::build_instance(FinderI &finder, const Graph &graph, const VertexPairMap<bool> &marked,
                                       const VertexPairMap<Cost> &costs) {
+        // TODO: Implement subgraph conversions. For F = {C_l, P_l}: A forbidden C_l may be represented with l vertices.
+        //       Every vertex represents one version of the cycle in which one edge is ignored.
+        //       A P_l is still represented as one vertex but ignores the conversion edit.
+        // Note: That could be done by discarding the clique optimization.
+
         VertexPairMap<std::vector<Vertex>> cliques(graph.size());
 
         std::vector<Cost> weights;
