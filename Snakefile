@@ -64,18 +64,18 @@ rule all:
         # "experiments/rules/experiments_06_lp_relaxation",
         # "experiments/rules/experiments_07_nps_mwis",
         # "experiments/rules/experiments_08_lsswz_mwis",
-        # "experiments/rules/experiments_09_lp_relaxation_vs_packing_lower_bounds",
+        "experiments/rules/experiments_09_lp_relaxation_vs_packing_lower_bounds",
         "experiments/rules/experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted",
-        "experiments/rules/experiments_11_lp_relaxation_vs_packing_unweighted",
-        "experiments/rules/experiments_12_single_edge_editing_weighted",
+        # "experiments/rules/experiments_11_lp_relaxation_vs_packing_unweighted",
+        # "experiments/rules/experiments_12_single_edge_editing_weighted",
 
 
 rule experiments_12_single_edge_editing_weighted:
     input:
-        "experiments/C4P4/fpt.timelimit=100.selector=SingleEdgeEditing.lower-bound=SortedGreedy.all=1.pre-mark=0.search-strategy=Fixed/bio.solutions.yaml",
-        "experiments/C4P4/fpt.timelimit=100.selector=SingleEdgeEditing.lower-bound=LPRelaxation.all=1.pre-mark=0.search-strategy=Fixed/bio.solutions.yaml",
-        "experiments/C4P4/fpt.timelimit=100.selector=SingleEdgeEditing.lower-bound=NPS_MWIS_Solver.all=1.pre-mark=0.search-strategy=Fixed/bio.solutions.yaml",
-        "experiments/C4P4/fpt.timelimit=100.selector=SingleEdgeEditing.lower-bound=LocalSearch.all=1.pre-mark=0.search-strategy=Fixed/bio.solutions.yaml",
+        "experiments/C4P4/fpt.timelimit=1000.selector=SingleEdgeEditing.lower-bound=SortedGreedy.all=1.pre-mark=0.search-strategy=Fixed/bio.solutions.yaml",
+        "experiments/C4P4/fpt.timelimit=1000.selector=SingleEdgeEditing.lower-bound=NPS_MWIS_Solver.all=1.pre-mark=0.search-strategy=Fixed/bio.solutions.yaml",
+        "experiments/C4P4/fpt.timelimit=1000.selector=SingleEdgeEditing.lower-bound=LPRelaxation.all=1.pre-mark=0.search-strategy=Fixed/bio.solutions.yaml",
+        "experiments/C4P4/fpt.timelimit=1000.selector=SingleEdgeEditing.lower-bound=LocalSearch.all=1.pre-mark=0.search-strategy=Fixed/bio.solutions.yaml",
     output:
         "experiments/rules/experiments_12_single_edge_editing_weighted"
     shell: "touch {output}"
@@ -83,6 +83,7 @@ rule experiments_12_single_edge_editing_weighted:
 
 rule experiments_11_lp_relaxation_vs_packing_unweighted:
     input:
+        "experiments/C4P4/fpt.timelimit=1000.selector=MostAdjacentSubgraphs.lower-bound=SortedGreedy.all=1.pre-mark=0.search-strategy=Fixed/bio.solutions.yaml",
         "experiments/C4P4/fpt.timelimit=3600.selector=MostAdjacentSubgraphs.lower-bound=LSSWZ_MWIS_Solver.all=1.pre-mark=0.search-strategy=Fixed/bio-unweighted.solutions.yaml",
         "experiments/C4P4/fpt.timelimit=1000.selector=MostAdjacentSubgraphs.lower-bound=NPS_MWIS_Solver.all=1.pre-mark=0.search-strategy=Fixed/bio-unweighted.solutions.yaml",
         "experiments/C4P4/fpt.timelimit=1000.selector=MostAdjacentSubgraphs.lower-bound=LPRelaxation.all=1.pre-mark=0.search-strategy=Fixed/bio-unweighted.solutions.yaml",
@@ -96,8 +97,8 @@ rule experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted:
     input:
         "experiments/C4P4/lb.timelimit=100.lower-bound=SortedGreedy/bio-unweighted.benchmarks.yaml",
         "experiments/C4P4/lb.timelimit=100.lower-bound=LPRelaxation/bio-unweighted.benchmarks.yaml",
-        "experiments/C4P4/lb.timelimit=100.lower-bound=NPS_MWIS_Solver/bio-unweighted.benchmarks.yaml",
-        "experiments/C4P4/lb.timelimit=100.lower-bound=LocalSearch/bio-unweighted.benchmarks.yaml",
+        #"experiments/C4P4/lb.timelimit=100.lower-bound=NPS_MWIS_Solver/bio-unweighted.benchmarks.yaml",  # Uncomment when implemented with conversionless edits optimization
+        #"experiments/C4P4/lb.timelimit=100.lower-bound=LocalSearch/bio-unweighted.benchmarks.yaml",
         "experiments/C4P4/lb.timelimit=100.lower-bound=fpt-editing-LocalSearch/bio-unweighted.benchmarks.yaml",
     output:
         "experiments/rules/experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted"
@@ -108,8 +109,8 @@ rule experiments_09_lp_relaxation_vs_packing_lower_bounds:
     input:
         "experiments/C4P4/lb.timelimit=100.lower-bound=SortedGreedy/bio.benchmarks.yaml",
         "experiments/C4P4/lb.timelimit=100.lower-bound=LPRelaxation/bio.benchmarks.yaml",
-        "experiments/C4P4/lb.timelimit=100.lower-bound=NPS_MWIS_Solver/bio.benchmarks.yaml",
-        "experiments/C4P4/lb.timelimit=100.lower-bound=LocalSearch/bio.benchmarks.yaml",
+        #"experiments/C4P4/lb.timelimit=100.lower-bound=NPS_MWIS_Solver/bio.benchmarks.yaml",  # Uncomment when implemented with conversionless edits optimization
+        #"experiments/C4P4/lb.timelimit=100.lower-bound=LocalSearch/bio.benchmarks.yaml",
     output:
         "experiments/rules/experiments_09_lp_relaxation_vs_packing_lower_bounds"
     shell: "touch {output}"
