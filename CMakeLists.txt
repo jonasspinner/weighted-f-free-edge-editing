@@ -102,7 +102,7 @@ add_executable(finder_benchmark apps/run_finder_benchmark.cpp ${SRC_FILES})
 add_executable(lower_bound_benchmark apps/run_lower_bound_benchmark.cpp ${SRC_FILES})
 add_executable(fpt_experiment apps/run_fpt_experiment.cpp ${SRC_FILES})
 add_executable(lower_bound_inspection apps/run_lower_bound_inspection.cpp ${SRC_FILES})
-add_executable(instance_to_yaml_converter apps/run_instance_to_yaml_converter.cpp)
+add_executable(instance_converter apps/run_instance_converter.cpp)
 
 
 add_dependencies(fpt version)
@@ -125,7 +125,7 @@ target_link_libraries(finder_benchmark LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP
 target_link_libraries(lower_bound_benchmark LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(fpt_experiment LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(lower_bound_inspection LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
-target_link_libraries(instance_to_yaml_converter LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
+target_link_libraries(instance_converter LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 
 # Gurobi
 # TODO: Only link if necessary.
