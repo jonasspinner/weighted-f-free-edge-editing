@@ -63,21 +63,17 @@ namespace lower_bound {
      * @return
      */
     std::optional<nps_mwis::Graph> NPS_MWIS_Solver::build_instance() {
-        // TODO: Implement subgraph conversions. For F = {C_l, P_l}: A forbidden C_l may be represented with l vertices.
-        //       Every vertex represents one version of the cycle in which one edge is ignored.
-        //       A P_l is still represented as one vertex but ignores the conversion edit.
-        // Note: That could be done by discarding the clique optimization.
-
         VertexPairMap<std::vector<Vertex>> cliques(m_graph.size());
 
         std::vector<int> weights;
 
         // The set of subgraphs which share a vertex pair form a clique in the MWIS instance.
-        auto unsolvable = finder->find(m_graph, [&](const Subgraph &subgraph) {
+        auto unsolvable = finder->find_with_duplicates(m_graph, [&](const Subgraph &subgraph) {
             const auto index = weights.size();
-            for (VertexPair uv : subgraph.vertexPairs()) {
+            finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
                 cliques[uv].push_back(index);
-            }
+                return false;
+            });
             Cost cost = get_subgraph_cost(subgraph, m_marked, m_costs);
             weights.push_back(cost);
             // If all vertex pairs are marked then the cost is invalid and the subgraph cannot be destroyed because no
