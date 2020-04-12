@@ -81,6 +81,11 @@ public:
         throw std::runtime_error("FinderI::find_with_duplicates is not implemented");
     };
 
+    virtual bool find_near_with_duplicates(VertexPair uv, const Graph &/*graph*/, const Graph &/*forbidden*/,
+                                           const SubgraphCallback &/*callback*/) {
+        throw std::runtime_error("FinderI::find_with_duplicates is not implemented");
+    };
+
 
     /**
      * Iterate over all unmarked vertex pairs. A fixed vertex pair can be ignored if its edit would turn the given
@@ -121,6 +126,18 @@ public:
     virtual bool for_all_conversionless_edits(const Subgraph &/*subgraph*/,
             const VertexPairCallback &/*callback*/) const {
         throw std::runtime_error("FinderI::for_all_conversionless_edits is not implemented");
+    }
+
+    [[nodiscard]] Cost calculate_min_cost(const Subgraph &subgraph, const VertexPairMap<bool> &marked,
+            const VertexPairMap<Cost> &costs) const {
+        Cost min_cost = invalid_cost;
+        for_all_conversionless_edits(subgraph, [&](auto uv) {
+            if (!marked[uv]) {
+                min_cost = std::min(min_cost, costs[uv]);
+            }
+            return false;
+        });
+        return min_cost;
     }
 
 
