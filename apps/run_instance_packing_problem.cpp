@@ -22,19 +22,21 @@ std::vector<Subgraph> get_all_forbidden_subgraphs(const Graph &graph, Options::F
 
 
 std::pair<std::vector<VertexPair>, std::vector<Cost>>
-get_covered_edges_and_costs(const std::vector<Subgraph> &subgraphs, const VertexPairMap<Cost> &costs) {
-    Graph covered(costs.size());
+get_covered_edges_and_costs(const Graph &graph, const std::vector<Subgraph> &subgraphs, const VertexPairMap<Cost> &costs) {
+    VertexPairMap<bool> covered(costs.size());
     for (const auto &subgraph : subgraphs) {
         for (auto uv : subgraph.vertexPairs()) {
-            covered.setEdge(uv);
+            covered[uv] = true;
         }
     }
 
     std::vector<VertexPair> edges;
     std::vector<Cost> edges_costs;
-    for (auto uv : covered.edges()) {
-        edges.push_back(uv);
-        edges_costs.push_back(costs[uv]);
+    for (auto uv : graph.edges()) {
+        if (covered[uv]) {
+            edges.push_back(uv);
+            edges_costs.push_back(costs[uv]);
+        }
     }
     return {edges, edges_costs};
 }
@@ -64,7 +66,7 @@ int main(int argc, char *argv[]) {
                 ("output", po::value<std::string>(&output_path)->default_value(output_path),
                  "Path to output file. If no path is specified the output is written to stdout.\n"
                  "May be provided as named option or as the second positional parameter.")
-                ("fsg", po::value<Options::FSG>(&fsg)->default_value(fsg));
+                ("F", po::value<Options::FSG>(&fsg)->default_value(fsg));
 
         po::positional_options_description pd;
         pd.add("input", 1);
@@ -94,7 +96,8 @@ int main(int argc, char *argv[]) {
         auto instance = GraphIO::read_instance(input_path, multiplier, permutation);
 
         auto forbidden_subgraphs = get_all_forbidden_subgraphs(instance.graph, fsg);
-        auto[covered_edges, covered_edges_costs] = get_covered_edges_and_costs(forbidden_subgraphs, instance.costs);
+        auto[covered_edges, covered_edges_costs] =
+            get_covered_edges_and_costs(instance.graph, forbidden_subgraphs, instance.costs);
 
         using namespace YAML;
 
@@ -103,6 +106,7 @@ int main(int argc, char *argv[]) {
         out << Key << "forbidden_subgraphs" << Value << Flow << forbidden_subgraphs << Comment("conflict set");
         out << Key << "covered_edges" << Value << Flow << covered_edges;
         out << Key << "covered_edges_costs" << Value << Flow << covered_edges_costs;
+        out << Key << "forbidden_subgraph" << Value << fsg;
         out << EndMap << EndDoc;
 
         *os << out.c_str() << "\n";
