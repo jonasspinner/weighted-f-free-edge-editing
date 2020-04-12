@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
     // std::cout << config << "\n";
 
     auto instance = GraphIO::read_instance(config);
-    Editor editor(instance, config);
+    Editor editor(instance.copy(), config);
 
     Cost k_init = editor.initial_lower_bound();
     //for (int i = 0; i < num_steps_warming_up; ++i)
