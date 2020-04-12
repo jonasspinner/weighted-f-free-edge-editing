@@ -74,7 +74,7 @@ namespace lower_bound {
                 cliques[uv].push_back(index);
                 return false;
             });
-            Cost cost = get_subgraph_cost(subgraph, m_marked, m_costs);
+            Cost cost = finder->calculate_min_cost(subgraph, m_marked, m_costs);
             weights.push_back(cost);
             // If all vertex pairs are marked then the cost is invalid and the subgraph cannot be destroyed because no
             // vertex pairs can be edited.

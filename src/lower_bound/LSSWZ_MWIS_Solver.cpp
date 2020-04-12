@@ -140,7 +140,7 @@ namespace lower_bound {
                 cliques[uv].push_back(index);
                 return false;
             });
-            Cost cost = get_subgraph_cost(subgraph, marked, costs);
+            Cost cost = finder.calculate_min_cost(subgraph, marked, costs);
             weights.push_back(cost);
             return cost == invalid_cost;
         });

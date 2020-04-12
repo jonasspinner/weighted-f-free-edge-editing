@@ -35,7 +35,7 @@ namespace lower_bound {
             });
 
             if (!touches_bound) {
-                Cost cost = get_subgraph_cost(subgraph, m_marked, m_costs);
+                Cost cost = finder->calculate_min_cost(subgraph, m_marked, m_costs);
                 if (cost == invalid_cost) {
                     bound_size = invalid_cost;
                     return true;
