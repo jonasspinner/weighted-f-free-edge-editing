@@ -81,7 +81,7 @@ public:
         throw std::runtime_error("FinderI::find_with_duplicates is not implemented");
     };
 
-    virtual bool find_near_with_duplicates(VertexPair uv, const Graph &/*graph*/, const Graph &/*forbidden*/,
+    virtual bool find_near_with_duplicates(VertexPair /*uv*/, const Graph &/*graph*/, const Graph &/*forbidden*/,
                                            const SubgraphCallback &/*callback*/) {
         throw std::runtime_error("FinderI::find_with_duplicates is not implemented");
     };

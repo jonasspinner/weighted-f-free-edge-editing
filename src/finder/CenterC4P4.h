@@ -30,6 +30,9 @@ namespace Finder {
         bool find_with_duplicates(const Graph &graph, const Graph &forbidden,
                                   const SubgraphCallback &callback) override;
 
+        bool find_near_with_duplicates(VertexPair uv, const Graph &graph, const Graph &forbidden,
+                                       const SubgraphCallback &callback) override;
+
         bool for_all_conversionless_edits(const Subgraph &subgraph, const VertexPairCallback &callback) const override;
 
         [[nodiscard]] Options::FSG forbidden_subgraphs() const override { return Options::FSG::C4P4; }

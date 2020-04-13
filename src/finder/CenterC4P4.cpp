@@ -71,6 +71,238 @@ namespace Finder {
                                     valid_edge(graph, forbidden), valid_non_edge(graph, forbidden));
     }
 
+    bool
+    CenterC4P4::find_near_with_duplicates(VertexPair uv, const Graph &graph, const Graph &forbidden,
+                                          const SubgraphCallback &callback) {
+        // /*
+        // version 1
+
+        auto x = [&](Vertex a, Vertex b) -> size_t {
+            return forbidden.hasEdge({a, b}) ? 1 : 0;
+        };
+
+        return find_near(uv, graph, [&](Subgraph &&subgraph) {
+            auto a = subgraph[0], b = subgraph[1], c = subgraph[2], d = subgraph[3];
+            if (graph.hasEdge({a, d})) {
+                // C4
+                if ((x(a, b) + x(b, c) + x(c, d) + x(d, a) <= 1) && x(a, c) + x(b, d) == 0) {
+                    if (callback(Subgraph{a, b, c , d}))
+                        return true;
+                    if (callback(Subgraph{b, c , d, a}))
+                        return true;
+                    if (callback(Subgraph{c , d, a, b}))
+                        return true;
+                    if (callback(Subgraph{d, a, b, c}))
+                        return true;
+                }
+            } else {
+                // P4
+                if ((x(a, b) <= 1) && (x(b, c) + x(c, d) + x(d, a) + x(a, c) + x(b, d) == 0)) {
+                    if (callback(std::move(subgraph)))
+                        return true;
+                }
+            }
+            return false;
+        });
+        //*/
+
+
+        /*
+        // version 2
+        const auto _neighbors = neighbors(graph);
+        const auto _non_neighbors = non_neighbors(graph, forbidden);
+        auto covered = [&](Vertex a, Vertex b) -> size_t {
+            return forbidden.hasEdge({a, b}) ? 1 : 0;
+        };
+
+
+        bool conversion_edit_covered = forbidden.hasEdge(uv);
+
+        if (graph.hasEdge(uv)) {
+            // C4
+            // u-v-a-b-u
+            // b-u-v-a-b
+            // a-b-u-v-a
+            // v-a-b-u-v
+
+            // P4
+            // u-v-a-b
+            // b-u-v-a
+            // a-b-u-v
+
+
+            // u-v-a
+            A = _neighbors(v) & _non_neighbors(u);
+            for (auto a : Graph::iterate(A)) {
+                assert(!forbidden.hasEdge({u, a}));  // non_neighbors(graph, forbidden)
+                if (forbidden.hasEdge({u, a}))
+                    continue;
+                if (forbidden.hasEdge({v, a})) {
+                    if (conversion_edit_covered)
+                        continue;
+                    assert(!conversion_edit_covered);
+                    conversion_edit_covered = true;
+                }
+
+                // u-v-a-b
+                // u-v-a-b-u
+                B = _neighbors(a) & _non_neighbors(v);
+                for (auto b : Graph::iterate(B)) {
+                    assert(!forbidden.hasEdge({v, b}));  // non_neighbors(graph, forbidden)
+                    if (forbidden.hasEdge({v, b}))
+                        continue;
+                    if (forbidden.hasEdge({a, b})) {
+                        if (conversion_edit_covered)
+                            continue;
+                        assert(!conversion_edit_covered);
+                        conversion_edit_covered = true;
+                    }
+
+                    if (!conversion_edit_covered || !forbidden.hasEdge({u, b})) {
+                        assert(graph.hasEdge({u, v})); assert(!graph.hasEdge({u, a})); assert(graph.hasEdge({v, a})); assert(!graph.hasEdge({v, b})); assert(graph.hasEdge({a, b}));
+                        size_t _n_cov = 0; _n_cov += forbidden.hasEdge({u, v}); _n_cov += forbidden.hasEdge({u, a}); _n_cov += forbidden.hasEdge({u, b}); _n_cov += forbidden.hasEdge({v, a}); _n_cov += forbidden.hasEdge({v, b}); _n_cov += forbidden.hasEdge({a, b});
+                        assert(_n_cov <= 1);
+                        if (callback(Subgraph{u, v, a, b})) return true;
+                    }
+
+
+                    if (forbidden.hasEdge({a, b})) {
+                        assert(conversion_edit_covered);
+                        conversion_edit_covered = false;
+                        assert(!forbidden.hasEdge(uv) && !forbidden.hasEdge({v, b}));
+                    }
+                }
+
+
+                if (forbidden.hasEdge({v, a})) {
+                    assert(conversion_edit_covered);
+                    conversion_edit_covered = false;
+                    assert(!forbidden.hasEdge(uv));
+                }
+            }
+
+
+            // b-u-v-a
+            // b-u-v-a-b
+            B = _neighbors(u) & _non_neighbors(v);
+            for (auto a : Graph::iterate(A)) {
+                assert(!forbidden.hasEdge({u, a}));
+                if (forbidden.hasEdge({v, a})) {
+                    if (conversion_edit_covered)
+                        continue;
+                    assert(!conversion_edit_covered);
+                    conversion_edit_covered = true;
+                }
+
+                for (auto b : Graph::iterate(B)) {
+                    assert(!forbidden.hasEdge({v, b}));
+                    if (forbidden.hasEdge({a, b})) {
+                        if (conversion_edit_covered)
+                            continue;
+                        assert(!conversion_edit_covered);
+                        conversion_edit_covered = true;
+                    }
+
+
+                    if (!conversion_edit_covered || !forbidden.hasEdge({a, b})) {
+                        assert(graph.hasEdge({b, u})); assert(!graph.hasEdge({b, v})); assert(graph.hasEdge({u, v})); assert(!graph.hasEdge({u, a})); assert(graph.hasEdge({v, a}));
+                        size_t _n_cov = 0; _n_cov += forbidden.hasEdge({u, v}); _n_cov += forbidden.hasEdge({u, a}); _n_cov += forbidden.hasEdge({u, b}); _n_cov += forbidden.hasEdge({v, a}); _n_cov += forbidden.hasEdge({v, b}); _n_cov += forbidden.hasEdge({a, b});
+                        assert(_n_cov <= 1);
+                        if (callback(Subgraph{u, v, a, b})) return true;
+                    }
+
+                    if (forbidden.hasEdge({a, b})) {
+                        assert(conversion_edit_covered);
+                        conversion_edit_covered = false;
+                        assert(!forbidden.hasEdge(uv) && !forbidden.hasEdge({v, b}));
+                    }
+                }
+
+                if (forbidden.hasEdge({v, a})) {
+                    assert(conversion_edit_covered);
+                    conversion_edit_covered = false;
+                    assert(!forbidden.hasEdge(uv));
+                }
+            }
+
+
+            // a-b-u-v
+            // a-b-u-v-a
+            B = _neighbors(u) & _non_neighbors(v);
+            for (auto b : Graph::iterate(B)) {
+
+
+                A = _neighbors(b) & _non_neighbors(u);
+                for (auto a : Graph::iterate(A)) {
+
+                }
+            }
+        } else {
+            // C4
+            // u-a-v-b-u
+            // b-u-a-v-b
+
+            // P4
+            // u-a-v-b
+            // b-u-a-v
+            // u-a-b-v
+
+
+            // u-a-v
+            A = _neighbors(u) & _neighbors(v);
+            for (auto a : Graph::iterate(A)) {
+                // u-a-v-b
+                // u-a-v-b-u
+                B = _neighbors(v) & _non_neighbors(a);
+
+                // b-u-a-v
+                // b-u-a-v-b
+                B = _neighbors(u) & _non_neighbors(a);
+            }
+
+            // u v
+            A = _neighbors(u) & _non_neighbors(v);
+            B = _neighbors(v) & _non_neighbors(u);
+            for (auto a : Graph::iterate(A)) {
+                for (auto b : Graph::iterate(B)) {
+                    if (graph.hasEdge({a, b})) {
+                        // u-a-b-v
+                    }
+                }
+            }
+        }
+        */
+
+        /*
+        // version 3
+        if (graph.hasEdge(uv)) {
+            // u-v
+            for (auto[a, b] : graph.edges()) {
+                if (a == u || a == v || b == u || b == v)
+                    continue;
+                if (graph.hasEdge({u, a})) {
+
+                } else if (graph.hasEdge({v, a})) {
+
+                }
+            }
+        } else {
+            // u-a b-v
+            A = _neighbors(u) & _non_neighbors(v);
+            B = _neighbors(v) & _non_neighbors(u);
+            for (auto a : Graph::iterate(A)) {
+                for (auto b : Graph::iterate(B)) {
+                    if (graph.hasEdge({a, b})) {
+                        // u-a-b-v
+                    }
+                }
+            }
+        }
+        */
+
+        return false;
+    }
+
     bool CenterC4P4::for_all_conversionless_edits(const Subgraph &subgraph, const VertexPairCallback &callback) const {
         assert(subgraph.size() == 4);
         Vertex a = subgraph[0], b = subgraph[1], c = subgraph[2], d = subgraph[3];
