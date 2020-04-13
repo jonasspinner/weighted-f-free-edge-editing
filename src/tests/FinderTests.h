@@ -552,7 +552,6 @@ public:
             for (auto uv : G.vertexPairs()) {
                 std::vector<Subgraph> actual;
                 finder.find_near_with_duplicates(uv, G, forbidden, [&](Subgraph &&subgraph) {
-                    subgraph.sortVertices();
                     actual.push_back(subgraph);
                     return false;
                 });
@@ -570,7 +569,6 @@ public:
             for (auto uv : G.vertexPairs()) {
                 std::vector<Subgraph> actual;
                 finder.find_near_with_duplicates(uv, G, forbidden, [&](Subgraph &&subgraph) {
-                    subgraph.sortVertices();
                     actual.push_back(subgraph);
                     return false;
                 });
@@ -588,7 +586,6 @@ public:
             for (auto uv : G.vertexPairs()) {
                 std::vector<Subgraph> actual;
                 finder.find_near_with_duplicates(uv, G, forbidden, [&](Subgraph &&subgraph) {
-                    subgraph.sortVertices();
                     actual.push_back(subgraph);
                     return false;
                 });
@@ -601,12 +598,11 @@ public:
             // Output no subgraph
             auto G = Graph::make_path_graph(4);
             auto forbidden = Graph::from_edges(4, {{0, 2}});
-            std::vector<Subgraph> expected = {};
+            std::vector<Subgraph> expected;
 
             for (auto uv : G.vertexPairs()) {
                 std::vector<Subgraph> actual;
                 finder.find_near_with_duplicates(uv, G, forbidden, [&](Subgraph &&subgraph) {
-                    subgraph.sortVertices();
                     actual.push_back(subgraph);
                     return false;
                 });

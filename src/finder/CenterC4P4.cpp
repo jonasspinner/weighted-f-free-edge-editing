@@ -85,19 +85,35 @@ namespace Finder {
             auto a = subgraph[0], b = subgraph[1], c = subgraph[2], d = subgraph[3];
             if (graph.hasEdge({a, d})) {
                 // C4
-                if ((x(a, b) + x(b, c) + x(c, d) + x(d, a) <= 1) && x(a, c) + x(b, d) == 0) {
-                    if (callback(Subgraph{a, b, c , d}))
+
+                if (x(a, c) || x(b, d))
+                    return false;
+
+                if (x(a, b) + x(b, c) + x(c, d) + x(d, a) == 0) {
+                    if (callback(Subgraph{a, b, c, d}))
                         return true;
-                    if (callback(Subgraph{b, c , d, a}))
+                    if (callback(Subgraph{b, c, d, a}))
                         return true;
-                    if (callback(Subgraph{c , d, a, b}))
+                    if (callback(Subgraph{c, d, a, b}))
                         return true;
                     if (callback(Subgraph{d, a, b, c}))
+                        return true;
+                } else if (x(a, b) && x(b, c) + x(c, d) + x(a, d) == 0) {
+                    if (callback(Subgraph{b, c, d, a}))
+                        return true;
+                } else if (x(b, c) && x(a, b) + x(c, d) + x(a, d) == 0) {
+                    if (callback(Subgraph{c, d, a, b}))
+                        return true;
+                } else if (x(c, d) && x(a, b) + x(b, c) + x(a, d) == 0) {
+                    if (callback(Subgraph{d, a, b, c}))
+                        return true;
+                } else if (x(a, d) && x(a, b) + x(b, c) + x(c, d) == 0) {
+                    if (callback(Subgraph{a, b, c, d}))
                         return true;
                 }
             } else {
                 // P4
-                if ((x(a, b) <= 1) && (x(b, c) + x(c, d) + x(d, a) + x(a, c) + x(b, d) == 0)) {
+                if (x(a, b) + x(a, c) + x(b, c) + x(b, d) + x(c, d) == 0) {
                     if (callback(std::move(subgraph)))
                         return true;
                 }
