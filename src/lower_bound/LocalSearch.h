@@ -103,10 +103,11 @@ namespace lower_bound {
              * @param marked
              * @param costs
              */
-            void recalculate(const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs) {
+            void recalculate(const FinderI &finder, const VertexPairMap<bool> &marked,
+                    const VertexPairMap<Cost> &costs) {
                 m_cost = 0;
                 for (auto &e : m_bound) {
-                    e.cost = get_subgraph_cost(e.subgraph, marked, costs);
+                    e.cost = finder.calculate_min_cost(e.subgraph, marked, costs);
                     m_cost += e.cost;
                     if (e.cost == invalid_cost) {
                         set_unsolvable();
@@ -118,7 +119,7 @@ namespace lower_bound {
                 if (solvable()) {
                     Cost sum = 0;
                     for (const auto &e : m_bound) {
-                        assert(e.cost == ::get_subgraph_cost(e.subgraph, marked, costs));
+                        assert(e.cost == finder.calculate_min_cost(e.subgraph, marked, costs));
                         sum += e.cost;
                     }
                     assert(m_cost == sum);
@@ -183,7 +184,7 @@ namespace lower_bound {
             m_states.pop_back();
 
             // TODO: Check
-            initialize_bound_graph(current_state(), m_marked, m_bound_graph);
+            initialize_bound_graph(*finder, current_state(), m_marked, m_bound_graph);
         }
 
         State &current_state() {
@@ -203,13 +204,16 @@ namespace lower_bound {
         void after_edit(VertexPair uv) override;
 
     private:
-        static bool bound_graph_is_valid(State &state, const VertexPairMap<bool> &marked, const Graph &bound_graph);
+        static bool bound_graph_is_valid(const FinderI &finder, State &state, const VertexPairMap<bool> &marked,
+                                         const Graph &bound_graph);
 
-        static bool state_is_valid(State &state, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs);
+        static bool state_is_valid(const FinderI &finder, State &state, const VertexPairMap<bool> &marked,
+                                   const VertexPairMap<Cost> &costs);
 
         static bool bound_is_maximal(FinderI &finder, const Graph &graph, const Graph &bound_graph);
 
-        static void initialize_bound_graph(const State &state, const VertexPairMap<bool> &marked, Graph &bound_graph);
+        static void initialize_bound_graph(const FinderI &finder, const State &state, const VertexPairMap<bool> &marked,
+                                           Graph &bound_graph);
 
         static void remove_near_subgraphs_from_bound(State &state, VertexPair uv);
 
@@ -222,7 +226,8 @@ namespace lower_bound {
                                                      const VertexPairMap<Cost> &costs,
                                                      const Graph &graph, Graph &bounded_graph);
 
-        static void insert_subgraphs_into_bound(std::vector<std::pair<Cost, Subgraph>> &&subgraphs,
+        static void insert_subgraphs_into_bound(const FinderI &finder,
+                                                std::vector<std::pair<Cost, Subgraph>> &&subgraphs,
                                                 const VertexPairMap<bool> &marked, State &state, Graph &bound_graph);
 
         void local_search(State &state, Cost k);
@@ -233,11 +238,14 @@ namespace lower_bound {
 
         bool find_omega_improvement(State &state, Cost k);
 
-        static void insert_into_graph(const Subgraph &subgraph, const VertexPairMap<bool> &marked, Graph &graph);
+        static void insert_into_graph(const FinderI &finder, const Subgraph &subgraph,
+                const VertexPairMap<bool> &marked, Graph &graph);
 
-        static void remove_from_graph(const Subgraph &subgraph, const VertexPairMap<bool> &marked, Graph &graph);
+        static void remove_from_graph(const FinderI &finder, const Subgraph &subgraph,
+                const VertexPairMap<bool> &marked, Graph &graph);
 
-        static bool try_insert_into_graph(const Subgraph &subgraph, const VertexPairMap<bool> &marked, Graph &graph);
+        static bool try_insert_into_graph(const FinderI &finder, const Subgraph &subgraph,
+                const VertexPairMap<bool> &marked, Graph &graph);
 
         static std::pair<std::vector<Subgraph>, std::vector<size_t>> get_candidates(FinderI &finder,
                                                                                     const std::vector<VertexPair> &pairs,
@@ -245,9 +253,10 @@ namespace lower_bound {
                                                                                     Graph &bound_graph,
                                                                                     const SubgraphStats &subgraph_stats);
 
-        static std::vector<VertexPair> get_pairs(const Subgraph &subgraph, const VertexPairMap<bool> &marked);
+        static std::vector<VertexPair> get_pairs(const FinderI &finder, const Subgraph &subgraph,
+                const VertexPairMap<bool> &marked);
 
-        static std::tuple<size_t, size_t> count_neighbors(const SubgraphStats &subgraph_stats,
+        static std::tuple<size_t, size_t> count_neighbors(const FinderI &finder, const SubgraphStats &subgraph_stats,
                                                           const VertexPairMap<bool> &marked, const Subgraph &subgraph);
     };
 
