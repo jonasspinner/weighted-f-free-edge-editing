@@ -469,6 +469,178 @@ public:
     }
 
     template <typename Finder>
+    void Finder_C4P4_find_near_with_duplicates_1(const std::string &name) {
+
+        auto to_string = [](auto x) {
+            std::stringstream ss;
+            ss << x;
+            return ss.str();
+        };
+
+        /*    4
+              |
+            3-0-5
+             /|
+          b-2-1-6
+           /| |\
+          a 9 8 7  */
+        auto G2 = Graph::from_edges(12, {
+                {0, 1}, {1, 2},
+                {2, 0}, {0, 3},
+                {0, 4}, {0, 5},
+                {1, 6}, {1, 7},
+                {1, 8}, {2, 9},
+                {2, 10}, {2, 11}});
+
+        VertexPairMap<std::vector<Subgraph>> expected(12);
+        std::vector<Subgraph> all_subgraphs = {{3, 0, 1, 6}, {3, 0, 1, 7}, {3, 0, 1, 8}, {3, 0, 2, 9}, {3, 0, 2, 10}, {3, 0, 2, 11},
+                                               {4, 0, 1, 6}, {4, 0, 1, 7}, {4, 0, 1, 8}, {4, 0, 2, 9}, {4, 0, 2, 10}, {4, 0, 2, 11},
+                                               {5, 0, 1, 6}, {5, 0, 1, 7}, {5, 0, 1, 8}, {5, 0, 2, 9}, {5, 0, 2, 10}, {5, 0, 2, 11},
+                                               {6, 1, 2, 9}, {6, 1, 2, 10}, {6, 1, 2, 11}, {7, 1, 2, 9}, {7, 1, 2, 10}, {7, 1, 2, 11}, {8, 1, 2, 9}, {8, 1, 2, 10}, {8, 1, 2, 11}};
+
+        for (auto uv : G2.vertexPairs()) {
+            for (Subgraph subgraph : all_subgraphs) {
+                if (subgraph.contains(uv)) {
+                    auto a = subgraph[0]; auto b = subgraph[1]; auto c = subgraph[2]; auto d = subgraph[3];
+                    if (G2.hasEdge({a, d})) {
+                        // C4
+                        expected[uv].push_back({a, b, c, d});
+                        expected[uv].push_back({b, c, d, a});
+                        expected[uv].push_back({c, d, a, b});
+                        expected[uv].push_back({d, a, b, c});
+                    } else {
+                        // P4
+                        expected[uv].push_back({a, b, c, d});
+                    }
+                }
+            }
+        }
+
+        {
+            auto forbidden = Graph::from_edges(12, {});
+            Finder finder;
+
+            for (auto uv : G2.vertexPairs()) {
+                std::vector<Subgraph> actual;
+                finder.find_near_with_duplicates(uv, G2, forbidden, [&](auto subgraph) {
+                    actual.push_back(subgraph);
+                    return false;
+                });
+
+                expect(name + " find_near_with_duplicates no forbidden " + to_string(uv), normalize(expected[uv]), normalize(actual));
+            }
+        }
+    }
+
+    template <typename Finder>
+    void Finder_C4P4_find_near_with_duplicates_2(const std::string &name) {
+
+        auto to_string = [](auto x) {
+            std::stringstream ss;
+            ss << x;
+            return ss.str();
+        };
+
+        Finder finder;
+
+        {
+            auto G = Graph::make_path_graph(4);
+            auto forbidden = Graph::make_empty_graph(4);
+            std::vector<Subgraph> expected = {{0, 1, 2, 3}};
+
+            for (auto uv : G.vertexPairs()) {
+                std::vector<Subgraph> actual;
+                finder.find_near_with_duplicates(uv, G, forbidden, [&](Subgraph &&subgraph) {
+                    subgraph.sortVertices();
+                    actual.push_back(subgraph);
+                    return false;
+                });
+                expect(name + " find_near_with_duplicates P4 no forbidden " + to_string(uv), expected, actual);
+            }
+        }
+
+        {
+            auto G = Graph::make_path_graph(4);
+            auto forbidden = Graph::from_edges(4, {{0, 1}});
+            std::vector<Subgraph> expected = {{0, 1, 2, 3}};
+
+            for (auto uv : G.vertexPairs()) {
+                std::vector<Subgraph> actual;
+                finder.find_near_with_duplicates(uv, G, forbidden, [&](Subgraph &&subgraph) {
+                    subgraph.sortVertices();
+                    actual.push_back(subgraph);
+                    return false;
+                });
+                expect(name + " find_near_with_duplicates P4 one edge forbidden " + to_string(uv), expected, actual);
+            }
+        }
+
+        {
+            auto G = Graph::make_path_graph(4);
+            auto forbidden = Graph::from_edges(4, {{0, 2}});
+            std::vector<Subgraph> expected = {};
+
+            for (auto uv : G.vertexPairs()) {
+                std::vector<Subgraph> actual;
+                finder.find_near_with_duplicates(uv, G, forbidden, [&](Subgraph &&subgraph) {
+                    subgraph.sortVertices();
+                    actual.push_back(subgraph);
+                    return false;
+                });
+                expect(name + " find_near_with_duplicates P4 one non-edge forbidden " + to_string(uv), expected, actual);
+            }
+        }
+
+        {
+            auto G = Graph::make_cycle_graph(4);
+            auto forbidden = Graph::make_empty_graph(4);
+            std::vector<Subgraph> expected = {{0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}};
+
+            for (auto uv : G.vertexPairs()) {
+                std::vector<Subgraph> actual;
+                finder.find_near_with_duplicates(uv, G, forbidden, [&](Subgraph &&subgraph) {
+                    subgraph.sortVertices();
+                    actual.push_back(subgraph);
+                    return false;
+                });
+                expect(name + " find_near_with_duplicates C4 no forbidden " + to_string(uv), expected, actual);
+            }
+        }
+
+        {
+            auto G = Graph::make_cycle_graph(4);
+            auto forbidden = Graph::from_edges(4, {{0, 1}});
+            std::vector<Subgraph> expected = {{0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}};
+
+            for (auto uv : G.vertexPairs()) {
+                std::vector<Subgraph> actual;
+                finder.find_near_with_duplicates(uv, G, forbidden, [&](Subgraph &&subgraph) {
+                    subgraph.sortVertices();
+                    actual.push_back(subgraph);
+                    return false;
+                });
+                expect(name + " find_near_with_duplicates C4 one edge forbidden " + to_string(uv), expected, actual);
+            }
+        }
+
+        {
+            auto G = Graph::make_cycle_graph(4);
+            auto forbidden = Graph::from_edges(4, {{0, 2}});
+            std::vector<Subgraph> expected = {};
+
+            for (auto uv : G.vertexPairs()) {
+                std::vector<Subgraph> actual;
+                finder.find_near_with_duplicates(uv, G, forbidden, [&](Subgraph &&subgraph) {
+                    subgraph.sortVertices();
+                    actual.push_back(subgraph);
+                    return false;
+                });
+                expect(name + " find_near_with_duplicates C4 one non-edge forbidden " + to_string(uv), expected, actual);
+            }
+        }
+    }
+
+    template <typename Finder>
     void FinderC4P4_for_all_conversionless_edits(const std::string &name) {
         {
             Subgraph subgraph{0, 1, 2, 3};
@@ -511,6 +683,10 @@ public:
 
         Finder_finds_C4P4_with_duplicates<Finder::CenterC4P4>("CenterC4P4");
         FinderC4P4_for_all_conversionless_edits<Finder::CenterC4P4>("CenterC4P4");
+
+        Finder_C4P4_find_near_with_duplicates_1<Finder::CenterC4P4>("CenterC4P4");
+        Finder_C4P4_find_near_with_duplicates_2<Finder::CenterC4P4>("CenterC4P4");
+
 
         // finders_have_same_output({"CenterRecC5P5", "EndpointRecC5P5", "NaiveRecC5P5"}, {0, 1});
 
