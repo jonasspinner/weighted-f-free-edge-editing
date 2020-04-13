@@ -544,6 +544,7 @@ public:
         Finder finder;
 
         {
+            // Output subgraph
             auto G = Graph::make_path_graph(4);
             auto forbidden = Graph::make_empty_graph(4);
             std::vector<Subgraph> expected = {{0, 1, 2, 3}};
@@ -560,8 +561,10 @@ public:
         }
 
         {
+            // Output subgraph, as a-b-c-d has ad = {0, 3} every time.
             auto G = Graph::make_path_graph(4);
-            auto forbidden = Graph::from_edges(4, {{0, 1}});
+            auto forbidden = Graph::from_edges(4, {{0, 3}});
+
             std::vector<Subgraph> expected = {{0, 1, 2, 3}};
 
             for (auto uv : G.vertexPairs()) {
@@ -571,11 +574,31 @@ public:
                     actual.push_back(subgraph);
                     return false;
                 });
+                expect(name + " find_near_with_duplicates P4 conversion non-edge forbidden " + to_string(uv), expected, actual);
+            }
+        }
+
+        {
+            // Output no subgraph
+            auto G = Graph::make_path_graph(4);
+            auto forbidden = Graph::from_edges(4, {{0, 1}});
+
+            std::vector<Subgraph> expected;
+
+            for (auto uv : G.vertexPairs()) {
+                std::vector<Subgraph> actual;
+                finder.find_near_with_duplicates(uv, G, forbidden, [&](Subgraph &&subgraph) {
+                    subgraph.sortVertices();
+                    actual.push_back(subgraph);
+                    return false;
+                });
+
                 expect(name + " find_near_with_duplicates P4 one edge forbidden " + to_string(uv), expected, actual);
             }
         }
 
         {
+            // Output no subgraph
             auto G = Graph::make_path_graph(4);
             auto forbidden = Graph::from_edges(4, {{0, 2}});
             std::vector<Subgraph> expected = {};
@@ -592,6 +615,7 @@ public:
         }
 
         {
+            // Output all 4 versions of the subgraph
             auto G = Graph::make_cycle_graph(4);
             auto forbidden = Graph::make_empty_graph(4);
             std::vector<Subgraph> expected = {{0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}};
@@ -608,9 +632,10 @@ public:
         }
 
         {
+            // Only output version of a-b-c-d-a with ad = {0, 1}
             auto G = Graph::make_cycle_graph(4);
             auto forbidden = Graph::from_edges(4, {{0, 1}});
-            std::vector<Subgraph> expected = {{0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}};
+            std::vector<Subgraph> expected = {{0, 1, 2, 3}};
 
             for (auto uv : G.vertexPairs()) {
                 std::vector<Subgraph> actual;
