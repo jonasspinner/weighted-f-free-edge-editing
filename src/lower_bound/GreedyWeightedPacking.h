@@ -1,102 +1,13 @@
-//
-// Created by jonas on 08.04.20.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_GREEDYWEIGHTEDPACKING_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_GREEDYWEIGHTEDPACKING_H
 
 
 #include <queue>
 
-class WeightedPacking {
-    VertexPairMap<Cost> m_potential;
-    Graph m_saturated_vertex_pairs;
-    Cost m_total_cost = 0;
-    std::unique_ptr<FinderI> m_finder;
-    Graph m_graph;
-    std::vector<std::pair<Subgraph, Cost>> m_subgraphs_in_packing;
+#include "../definitions.h"
+#include "LowerBoundI.h"
+#include "../Instance.h"
 
-    void insert_subgraph(const Subgraph &subgraph) {
-        Cost cost = calculate_min_cost(subgraph);
-
-        m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
-            assert(!m_saturated_vertex_pairs.hasEdge(uv));
-            m_potential[uv] -= cost;
-            if (m_potential[uv] == 0) {
-                m_saturated_vertex_pairs.setEdge(uv);
-            }
-            return false;
-        });
-
-        m_total_cost += cost;
-
-        m_subgraphs_in_packing.emplace_back(subgraph, cost);
-    }
-
-    void remove_subgraph(const std::pair<Subgraph, Cost> &element) {
-        const Subgraph &subgraph = element.first;
-        Cost cost = element.second;
-
-        m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
-            m_potential[uv] += cost;
-            if (m_potential[uv] > 0) {
-                m_saturated_vertex_pairs.clearEdge(uv);
-            }
-            return false;
-        });
-    }
-
-    std::vector<Subgraph> neighbors(const Subgraph &subgraph) {
-        std::vector<Subgraph> result;
-
-        m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
-            assert(!m_saturated_vertex_pairs.hasEdge(uv));
-            m_finder->find_near_with_duplicates(uv, m_graph, m_saturated_vertex_pairs, [&](Subgraph &&neighbor) {
-                result.push_back(std::move(neighbor));
-                return false;
-            });
-            m_saturated_vertex_pairs.setEdge(uv);
-            return false;
-        });
-
-        m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
-            assert(m_saturated_vertex_pairs.hasEdge(uv));
-            m_saturated_vertex_pairs.clearEdge(uv);
-            return false;
-        });
-        return result;
-    }
-
-    void find_one_two_improvement(size_t i) {
-        auto old_element = m_subgraphs_in_packing[i];
-
-        remove_subgraph(old_element);
-
-        auto n = neighbors(old_element.first);
-
-        for (size_t a_index = 0; a_index < n.size(); ++a_index) {
-            for (size_t b_index = a_index + 1; b_index < n.size(); ++b_index) {
-
-            }
-        }
-    }
-
-    Cost calculate_min_cost(const Subgraph &subgraph) {
-        Cost cost = std::numeric_limits<Cost>::max();
-        m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
-            assert(!m_saturated_vertex_pairs.hasEdge(uv));
-            cost = std::min(cost, m_potential[uv]);
-            return false;
-        });
-        return cost;
-    }
-
-    bool is_maximal() {
-        return m_finder->find(m_graph, m_saturated_vertex_pairs, [](auto) {
-            return true;
-        });
-    }
-};
 
 namespace lower_bound {
     class GreedyWeightedPacking : public LowerBoundI {
@@ -107,50 +18,62 @@ namespace lower_bound {
         VertexPairMap<Cost> m_costs_remaining;
     public:
         GreedyWeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked,
-                     std::shared_ptr<FinderI> finder_ref) :
+                              std::shared_ptr<FinderI> finder_ref) :
                 LowerBoundI(std::move(finder_ref)), m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
-                m_costs_remaining(m_costs.size()) {}
+                m_costs_remaining(0) {}
 
         Cost calculate_lower_bound(Cost k) override {
-            std::priority_queue<std::pair<Cost, Subgraph>> Q;
+            // The subgraphs are stored in a vector. The priority queue stores the subgraph costs and an index into the
+            // vector.
+            std::vector<Subgraph> subgraphs;
+            std::priority_queue<std::pair<Cost, size_t>> Q;
             Cost lower_bound = 0;
             Cost max_min_cost = std::numeric_limits<Cost>::min();
 
+            // Initialize remaining costs with the editing costs.
             m_costs_remaining = m_costs;
+
 
             bool early_exit = finder->find_with_duplicates(m_graph, [&](Subgraph &&subgraph) {
                 Cost initial_min_cost = finder->calculate_min_cost(subgraph, m_marked, m_costs_remaining);
-                Q.emplace(initial_min_cost, std::move(subgraph));
+
+                subgraphs.emplace_back(std::move(subgraph));
+                Q.emplace(initial_min_cost, subgraphs.size() - 1);
+
                 max_min_cost = std::max(max_min_cost, initial_min_cost);
                 return max_min_cost > k;
             });
 
+            // If a single subgraph has an editing cost larger than k, or has an invalid edititing cost (i.e. only has
+            // edits that are either marked, or lead to a conversion to another forbidden subgraph), the current
+            // instance is no longer solvable.
             if (early_exit)
                 return max_min_cost;
 
 
             while (!Q.empty() && lower_bound < k) {
-                auto x = Q.top();
-                Q.pop();
+                auto[cost, index] = Q.top(); Q.pop();
 
-                Cost current_min_cost = finder->calculate_min_cost(x.second, m_marked, m_costs_remaining);
+                // m_cost_remaining may be updated after cost has been calculated.
+                Cost current_min_cost = finder->calculate_min_cost(subgraphs[index], m_marked, m_costs_remaining);
 
                 if (current_min_cost == 0) {
+                    // The subgraph cannot be inserted.
                     continue;
-                } else if (current_min_cost == x.first) {
+                } else if (current_min_cost == cost) {
+                    // The editing cost is maximal from all remaining subgraphs in the queue. Increase the lower bound
+                    // and update the remaining cost matrix.
                     lower_bound += current_min_cost;
 
-                    finder->for_all_conversionless_edits(x.second, [&](VertexPair uv) {
+                    finder->for_all_conversionless_edits(subgraphs[index], [&](VertexPair uv) {
                         m_costs_remaining[uv] -= current_min_cost;
                         return false;
                     });
                 } else {
-                    Q.emplace(current_min_cost, std::move(x.second));
+                    // The editing cost is no longer up to date. The subgraph may be inserted in the future.
+                    Q.emplace(current_min_cost, index);
                 }
             }
-
-
-
 
             return lower_bound;
         }
