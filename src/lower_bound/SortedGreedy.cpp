@@ -30,9 +30,7 @@ namespace lower_bound {
         // The cost for a single forbidden subgraph is the minimum edit cost for an editable vertex pair.
         std::vector<std::pair<Cost, Subgraph>> subgraphs;
 
-        // Only use find and not find_with_duplicates because the first version of the subgraph will be inserted.
-        // This relies on the fact that all duplicate version have the same cost. Note: That may change.
-        finder->find(m_graph, [&](Subgraph &&subgraph) {
+        finder->find_with_duplicates(m_graph, [&](Subgraph &&subgraph) {
             Cost min_cost = finder->calculate_min_cost(subgraph, m_marked, m_costs);
             subgraphs.emplace_back(min_cost, std::move(subgraph));
             max_min_cost = std::max(max_min_cost, min_cost);
