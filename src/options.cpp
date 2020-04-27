@@ -131,6 +131,8 @@ namespace Options {
             lower_bound = LB::NPS_MWIS_Solver;
         else if (token == "LSSWZ_MWIS_Solver")
             lower_bound = LB::LSSWZ_MWIS_Solver;
+        else if (token == "GreedyWeightedPacking")
+            lower_bound = LB::GreedyWeightedPacking;
         else
             in.setstate(std::ios_base::failbit);
         return in;
@@ -152,6 +154,8 @@ namespace Options {
                 return os << "NPS_MWIS_Solver";
             case LB::LSSWZ_MWIS_Solver:
                 return os << "LSSWZ_MWIS_Solver";
+            case LB::GreedyWeightedPacking:
+                return os << "GreedyWeightedPacking";
             default:
                 return os;
         }

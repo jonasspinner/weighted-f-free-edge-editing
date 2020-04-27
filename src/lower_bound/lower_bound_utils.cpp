@@ -6,6 +6,7 @@
 #include "lower_bound_utils.h"
 
 #include "Greedy.h"
+#include "GreedyWeightedPacking.h"
 #include "SortedGreedy.h"
 #include "LocalSearch.h"
 #include "Trivial.h"
@@ -63,9 +64,10 @@ namespace lower_bound {
 #else
                 throw std::runtime_error("lsswz_mwis has to be installed to use LB::LSSWZ_MWIS_Solver.");
 #endif
+            case LB::GreedyWeightedPacking:
+                return std::make_unique<GreedyWeightedPacking>(instance, marked, finder);
             default:
-                assert(false);
-                return nullptr;
+                throw std::runtime_error("Lower bound not found.");
         }
     }
 }
