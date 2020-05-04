@@ -64,10 +64,22 @@ rule all:
         # "experiments/rules/experiments_06_lp_relaxation",
         # "experiments/rules/experiments_07_nps_mwis",
         # "experiments/rules/experiments_08_lsswz_mwis",
-        "experiments/rules/experiments_09_lp_relaxation_vs_packing_lower_bounds",
-        "experiments/rules/experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted",
+        # "experiments/rules/experiments_09_lp_relaxation_vs_packing_lower_bounds",
+        # "experiments/rules/experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted",
         # "experiments/rules/experiments_11_lp_relaxation_vs_packing_unweighted",
         # "experiments/rules/experiments_12_single_edge_editing_weighted",
+        "experiments/rules/experiments_13_greedy_weighted_packing",
+
+
+rule experiments_13_greedy_weighted_packing:
+    input:
+        "experiments/C4P4/fpt.timelimit=100.selector=MostAdjacentSubgraphs.lower-bound=GreedyWeightedPacking.all=1.pre-mark=0.search-strategy=Fixed/bio.solutions.yaml",
+        "experiments/C4P4/fpt.timelimit=100.selector=MostAdjacentSubgraphs.lower-bound=GreedyWeightedPacking.all=1.pre-mark=0.search-strategy=Fixed/bio-unweighted.solutions.yaml",
+        "experiments/C4P4/lb.timelimit=100.lower-bound=GreedyWeightedPacking/bio.benchmarks.yaml",
+        "experiments/C4P4/lb.timelimit=100.lower-bound=GreedyWeightedPacking/bio-unweighted.benchmarks.yaml",
+    output:
+        "experiments/rules/experiments_13_greedy_weighted_packing"
+    shell: "touch {output}"
 
 
 rule experiments_12_single_edge_editing_weighted:
@@ -83,7 +95,7 @@ rule experiments_12_single_edge_editing_weighted:
 
 rule experiments_11_lp_relaxation_vs_packing_unweighted:
     input:
-        "experiments/C4P4/fpt.timelimit=1000.selector=MostAdjacentSubgraphs.lower-bound=SortedGreedy.all=1.pre-mark=0.search-strategy=Fixed/bio.solutions.yaml",
+        "experiments/C4P4/fpt.timelimit=1000.selector=MostAdjacentSubgraphs.lower-bound=SortedGreedy.all=1.pre-mark=0.search-strategy=Fixed/bio-unweighted.solutions.yaml",
         "experiments/C4P4/fpt.timelimit=3600.selector=MostAdjacentSubgraphs.lower-bound=LSSWZ_MWIS_Solver.all=1.pre-mark=0.search-strategy=Fixed/bio-unweighted.solutions.yaml",
         "experiments/C4P4/fpt.timelimit=1000.selector=MostAdjacentSubgraphs.lower-bound=NPS_MWIS_Solver.all=1.pre-mark=0.search-strategy=Fixed/bio-unweighted.solutions.yaml",
         "experiments/C4P4/fpt.timelimit=1000.selector=MostAdjacentSubgraphs.lower-bound=LPRelaxation.all=1.pre-mark=0.search-strategy=Fixed/bio-unweighted.solutions.yaml",
