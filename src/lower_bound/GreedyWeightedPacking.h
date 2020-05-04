@@ -16,29 +16,32 @@ namespace lower_bound {
         const VertexPairMap<Cost> &m_costs;
         const VertexPairMap<bool> &m_marked;
         VertexPairMap<Cost> m_costs_remaining;
+
+        std::vector<std::pair<Cost, Subgraph>> m_subgraph_heap;
     public:
         GreedyWeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked,
                               std::shared_ptr<FinderI> finder_ref) :
                 LowerBoundI(std::move(finder_ref)), m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
-                m_costs_remaining(0) {}
+                m_costs_remaining(m_costs.size()) {}
 
         Cost calculate_lower_bound(Cost k) override {
             // The subgraphs are stored in a vector. The priority queue stores the subgraph costs and an index into the
             // vector.
-            std::vector<Subgraph> subgraphs;
-            std::priority_queue<std::pair<Cost, size_t>> Q;
+            m_subgraph_heap.clear();
             Cost lower_bound = 0;
             Cost max_min_cost = std::numeric_limits<Cost>::min();
 
             // Initialize remaining costs with the editing costs.
-            m_costs_remaining = m_costs;
+            // Previously this was `m_costs_remaining = m_costs`, which led to large amounts of memory consumption.
+            // TODO: Investigate memory usage.
+            for (auto uv : Graph::VertexPairs(m_costs.size()))
+                m_costs_remaining[uv] = m_costs[uv];
 
 
             bool early_exit = finder->find_with_duplicates(m_graph, [&](Subgraph &&subgraph) {
                 Cost initial_min_cost = finder->calculate_min_cost(subgraph, m_marked, m_costs_remaining);
 
-                subgraphs.emplace_back(std::move(subgraph));
-                Q.emplace(initial_min_cost, subgraphs.size() - 1);
+                m_subgraph_heap.emplace_back(initial_min_cost, std::move(subgraph));
 
                 max_min_cost = std::max(max_min_cost, initial_min_cost);
                 return max_min_cost > k;
@@ -50,28 +53,32 @@ namespace lower_bound {
             if (early_exit)
                 return max_min_cost;
 
+            std::make_heap(m_subgraph_heap.begin(), m_subgraph_heap.end());
 
-            while (!Q.empty() && lower_bound < k) {
-                auto[cost, index] = Q.top(); Q.pop();
+            while (!m_subgraph_heap.empty() && lower_bound < k) {
+                std::pop_heap(m_subgraph_heap.begin(), m_subgraph_heap.end());
+                const auto &[cost, subgraph] = m_subgraph_heap.back();
 
                 // m_cost_remaining may be updated after cost has been calculated.
-                Cost current_min_cost = finder->calculate_min_cost(subgraphs[index], m_marked, m_costs_remaining);
+                Cost current_min_cost = finder->calculate_min_cost(subgraph, m_marked, m_costs_remaining);
 
                 if (current_min_cost == 0) {
                     // The subgraph cannot be inserted.
-                    continue;
+                    m_subgraph_heap.pop_back();
                 } else if (current_min_cost == cost) {
                     // The editing cost is maximal from all remaining subgraphs in the queue. Increase the lower bound
                     // and update the remaining cost matrix.
                     lower_bound += current_min_cost;
 
-                    finder->for_all_conversionless_edits(subgraphs[index], [&](VertexPair uv) {
+                    finder->for_all_conversionless_edits(subgraph, [&](VertexPair uv) {
                         m_costs_remaining[uv] -= current_min_cost;
                         return false;
                     });
+                    m_subgraph_heap.pop_back();
                 } else {
                     // The editing cost is no longer up to date. The subgraph may be inserted in the future.
-                    Q.emplace(current_min_cost, index);
+                    m_subgraph_heap.back().first = current_min_cost;
+                    std::push_heap(m_subgraph_heap.begin(), m_subgraph_heap.end());
                 }
             }
 
