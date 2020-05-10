@@ -93,6 +93,68 @@ def plot_solved_by_time_curve(df, output_path: Path, *, names: List[str] = None,
     plt.close()
 
 
+def plot_06(subset_df):
+    # No. 06
+    n06a_names = [f"MostAdjacentSubgraphs {lb} Fixed"
+                  for lb in ["LocalSearch", "SortedGreedy", "Trivial", "LPRelaxation", "NPS_MWIS_Solver",
+                             "LSSWZ_MWIS_Solver"]]
+    n06a_labels = ["Local search", "Greedy lower bound", "No lower bound", "Relaxation", "NPS MWIS", "LSSWZ MWIS"]
+
+    n06b_names = [f"MostAdjacentSubgraphs {lb} Exponential"
+                  for lb in ["Greedy", "LocalSearch", "SortedGreedy", "Trivial", "LPRelaxation"]]
+    n06b_labels = ["Simple packing", "Local search", "Greedy lower bound", "No lower bound", "Relaxation"]
+
+    for col in ["total_time", "total_calls"]:
+        plot_solved_by_time_curve(subset_df, Path(f"06-fixed-{col}.pdf"), names=n06a_names, labels=n06a_labels,
+                                  min_number_of_edits=10, y=col,
+                                  title="Relaxation vs. Packing, weighted bio")
+        plot_solved_by_time_curve(subset_df, Path(f"06-exponential-{col}.pdf"), names=n06b_names, labels=n06b_labels,
+                                  min_number_of_edits=10, y=col)
+
+
+def plot_11(unweighted_df):
+    # No. 11
+    n11_names = [f"MostAdjacentSubgraphs {lb} Fixed"
+                 for lb in ["LocalSearch", "LPRelaxation", "NPS_MWIS_Solver", "LSSWZ_MWIS_Solver"]]
+    n11_labels = ["Local search", "Relaxation", "NPS MWIS", "LSSWZ MWIS"]
+
+    plot_solved_by_time_curve(unweighted_df, Path(f"11-fixed-total_time.pdf"), names=n11_names, labels=n11_labels,
+                              min_number_of_edits=10, y="total_time",
+                              title="Relaxation vs. Packing, unweighted bio")
+    plot_solved_by_time_curve(unweighted_df, Path(f"11-fixed-total_calls.pdf"), names=n11_names, labels=n11_labels,
+                              min_number_of_edits=10, y="total_calls",
+                              title="Relaxation vs. Packing, unweighted bio")
+
+
+def plot_12(subset_df):
+    # No. 12
+    # Weighted Single Edge Editing vs. Most Adjacent Subgraphs
+    n12_names = [f"{sel} {lb} Fixed"
+                 for sel in ["MostAdjacentSubgraphs", "SingleEdgeEditing"]
+                 for lb in ["LocalSearch", "SortedGreedy", "LPRelaxation", "NPS_MWIS_Solver"]]
+    n12_labels = [f"{lb}, {sel}"
+                  for sel in ["Subgraph", "Single Edge"]
+                  for lb in ["Local search", "Greedy", "Relaxation", "NPS MWIS"]]
+
+    plot_solved_by_time_curve(subset_df, Path(f"12-fixed-total_time.pdf"), names=n12_names, labels=n12_labels,
+                              min_number_of_edits=10, y="total_time", y_max=1058,
+                              title="Single Edge Editing vs. Most Adjacent Subgraphs, weighted bio")
+    plot_solved_by_time_curve(subset_df, Path(f"12-fixed-total_calls.pdf"), names=n12_names, labels=n12_labels,
+                              min_number_of_edits=10, y="total_calls", y_max=1058,
+                              title="Single Edge Editing vs. Most Adjacent Subgraphs, weighted bio")
+
+
+def plot_13(subset_df):
+    names = [f"MostAdjacentSubgraphs {lb} Fixed"
+                  for lb in ["LocalSearch", "SortedGreedy", "Trivial", "LPRelaxation", "NPS_MWIS_Solver",
+                             "LSSWZ_MWIS_Solver", "GreedyWeightedPacking"]]
+    labels = ["Local search", "Greedy lower bound", "No lower bound", "Relaxation", "NPS MWIS", "LSSWZ MWIS", "Greedy Weighted Packing"]
+
+    for col in ["total_time", "total_calls"]:
+        plot_solved_by_time_curve(subset_df, Path(f"13-fixed-{col}.pdf"), names=names, labels=labels,
+                                  min_number_of_edits=10, y=col)
+
+
 def main():
     ilp_paths = list((Path.cwd() / "../../experiments/C4P4/").glob("ilp*/*.solutions.df.gzip"))
     fpt_paths = list((Path.cwd() / "../../experiments/C4P4/").glob("fpt*/*.solutions.df.gzip"))
@@ -148,50 +210,10 @@ def main():
     #                                   "Increment by 1"],
     #                           min_number_of_edits=10, y="last_time")
 
-    # No. 06
-    n06a_names = [f"MostAdjacentSubgraphs {lb} Fixed"
-                  for lb in ["LocalSearch", "SortedGreedy", "Trivial", "LPRelaxation", "NPS_MWIS_Solver",
-                             "LSSWZ_MWIS_Solver"]]
-    n06a_labels = ["Local search", "Greedy lower bound", "No lower bound", "Relaxation", "NPS MWIS", "LSSWZ MWIS"]
-
-    n06b_names = [f"MostAdjacentSubgraphs {lb} Exponential"
-                  for lb in ["Greedy", "LocalSearch", "SortedGreedy", "Trivial", "LPRelaxation"]]
-    n06b_labels = ["Simple packing", "Local search", "Greedy lower bound", "No lower bound", "Relaxation"]
-
-    for col in ["total_time", "total_calls"]:
-        plot_solved_by_time_curve(subset_df, Path(f"06-fixed-{col}.pdf"), names=n06a_names, labels=n06a_labels,
-                                  min_number_of_edits=10, y=col,
-                                  title="Relaxation vs. Packing, weighted bio")
-        plot_solved_by_time_curve(subset_df, Path(f"06-exponential-{col}.pdf"), names=n06b_names, labels=n06b_labels,
-                                  min_number_of_edits=10, y=col)
-
-    # No. 11
-    n11_names = [f"MostAdjacentSubgraphs {lb} Fixed"
-                 for lb in ["LocalSearch", "LPRelaxation", "NPS_MWIS_Solver", "LSSWZ_MWIS_Solver"]]
-    n11_labels = ["Local search", "Relaxation", "NPS MWIS", "LSSWZ MWIS"]
-
-    plot_solved_by_time_curve(unweighted_df, Path(f"11-fixed-total_time.pdf"), names=n11_names, labels=n11_labels,
-                              min_number_of_edits=10, y="total_time",
-                              title="Relaxation vs. Packing, unweighted bio")
-    plot_solved_by_time_curve(unweighted_df, Path(f"11-fixed-total_calls.pdf"), names=n11_names, labels=n11_labels,
-                              min_number_of_edits=10, y="total_calls",
-                              title="Relaxation vs. Packing, unweighted bio")
-
-    # No. 12
-    # Weighted Single Edge Editing vs. Most Adjacent Subgraphs
-    n12_names = [f"{sel} {lb} Fixed"
-                 for sel in ["MostAdjacentSubgraphs", "SingleEdgeEditing"]
-                 for lb in ["LocalSearch", "SortedGreedy", "LPRelaxation", "NPS_MWIS_Solver"]]
-    n12_labels = [f"{lb}, {sel}"
-                  for sel in ["Subgraph", "Single Edge"]
-                  for lb in ["Local search", "Greedy", "Relaxation", "NPS MWIS"]]
-
-    plot_solved_by_time_curve(subset_df, Path(f"12-fixed-total_time.pdf"), names=n12_names, labels=n12_labels,
-                              min_number_of_edits=10, y="total_time", y_max=1058,
-                              title="Single Edge Editing vs. Most Adjacent Subgraphs, weighted bio")
-    plot_solved_by_time_curve(subset_df, Path(f"12-fixed-total_calls.pdf"), names=n12_names, labels=n12_labels,
-                              min_number_of_edits=10, y="total_calls", y_max=1058,
-                              title="Single Edge Editing vs. Most Adjacent Subgraphs, weighted bio")
+    #plot_06(subset_df)
+    #plot_11(unweighted_df)
+    #plot_12(subset_df)
+    plot_13(subset_df)
 
     for y in []:  # ["total_time", "total_calls", "last_time", "last_calls"]:
         plot_solved_by_time_curve(bio_df, Path(f"solved-curve-ilp-vs-fpt-bio-{y}.pdf"),

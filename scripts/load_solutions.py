@@ -16,7 +16,7 @@ CATEGORIES = defaultdict(DEFAULT_CATEGORY,
                              "SingleEdgeEditing"]),
                          lower_bound=CategoricalDtype([
                              "Trivial", "Greedy", "SortedGreedy", "LocalSearch", "LPRelaxation", "NPS_MWIS_Solver",
-                             "LSSWZ_MWIS_Solver"]),
+                             "LSSWZ_MWIS_Solver", "GreedyWeightedPacking"]),
                          search_strategy=CategoricalDtype([
                              "IncrementByMultiplier", "PrunedDelta", "IncrementByMinCost", "Exponential", "Fixed"]),
                          dataset=CategoricalDtype([
