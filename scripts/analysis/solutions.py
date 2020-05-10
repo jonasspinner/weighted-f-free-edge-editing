@@ -144,15 +144,18 @@ def plot_12(subset_df):
                               title="Single Edge Editing vs. Most Adjacent Subgraphs, weighted bio")
 
 
-def plot_13(subset_df):
+def plot_13(subset_df: pd.DataFrame):
+    df = subset_df.copy()
+    df.loc[df["total_time"] > 100, "total_time"] = np.nan
+
     names = [f"MostAdjacentSubgraphs {lb} Fixed"
                   for lb in ["LocalSearch", "SortedGreedy", "Trivial", "LPRelaxation", "NPS_MWIS_Solver",
-                             "LSSWZ_MWIS_Solver", "GreedyWeightedPacking"]]
-    labels = ["Local search", "Greedy lower bound", "No lower bound", "Relaxation", "NPS MWIS", "LSSWZ MWIS", "Greedy Weighted Packing"]
+                             "GreedyWeightedPacking"]]
+    labels = ["Local search", "Greedy lower bound", "No lower bound", "Relaxation", "NPS MWIS", "Greedy Weighted Packing"]
 
     for col in ["total_time", "total_calls"]:
-        plot_solved_by_time_curve(subset_df, Path(f"13-fixed-{col}.pdf"), names=names, labels=labels,
-                                  min_number_of_edits=10, y=col)
+        plot_solved_by_time_curve(df, Path(f"13-fixed-{col}.pdf"),
+                                  names=names, labels=labels, min_number_of_edits=10, y=col)
 
 
 def main():
