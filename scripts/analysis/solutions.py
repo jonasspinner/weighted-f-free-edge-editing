@@ -147,6 +147,7 @@ def plot_12(subset_df):
 def plot_13(subset_df: pd.DataFrame):
     df = subset_df.copy()
     df.loc[df["total_time"] > 100, "total_time"] = np.nan
+    df.loc[df["total_time"].isnull(), "total_calls"] = np.nan
 
     names = [f"MostAdjacentSubgraphs {lb} Fixed"
                   for lb in ["LocalSearch", "SortedGreedy", "Trivial", "LPRelaxation", "NPS_MWIS_Solver",
