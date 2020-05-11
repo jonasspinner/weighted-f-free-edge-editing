@@ -1,7 +1,3 @@
-//
-// Created by jonas on 02.07.19.
-//
-
 #ifndef CONCEPT_VERTEXPAIRMAP_H
 #define CONCEPT_VERTEXPAIRMAP_H
 
@@ -27,6 +23,11 @@ public:
      */
     explicit VertexPairMap(Vertex size, T initial = T()) : n(size),
         values(idx({n - 2, n - 1}) + 1 /*last valid index plus 1 is the size*/, initial) {}
+
+    VertexPairMap operator=(const VertexPairMap<T> &other) {
+        n = other.n;
+        values = other.values;
+    }
 
     const_reference operator[](VertexPair edge) const {
         assert(edge.u < n && edge.v < n);
