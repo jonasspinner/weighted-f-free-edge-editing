@@ -24,9 +24,10 @@ public:
     explicit VertexPairMap(Vertex size, T initial = T()) : n(size),
         values(idx({n - 2, n - 1}) + 1 /*last valid index plus 1 is the size*/, initial) {}
 
-    VertexPairMap operator=(const VertexPairMap<T> &other) {
+    VertexPairMap &operator=(const VertexPairMap<T> &other) {
         n = other.n;
         values = other.values;
+        return *this;
     }
 
     const_reference operator[](VertexPair edge) const {
