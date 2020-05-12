@@ -118,7 +118,7 @@ add_dependencies(fpt_experiment version)
 
 
 if (GUROBI_FOUND)
-    add_executable(ilp apps/run_ilpsolver.cpp ${SRC_FILES})
+    add_executable(ilp apps/run_ilpsolver.cpp ${FINDER_SRC_FILES} src/Configuration.cpp src/graph/Subgraph.cpp src/options.cpp)
     add_dependencies(ilp version)
     target_link_libraries(ilp LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 endif (GUROBI_FOUND)
