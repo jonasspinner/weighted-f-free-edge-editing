@@ -68,8 +68,19 @@ rule all:
         # "experiments/rules/experiments_10_lp_relaxation_vs_packing_lower_bounds_unweighted",
         # "experiments/rules/experiments_11_lp_relaxation_vs_packing_unweighted",
         # "experiments/rules/experiments_12_single_edge_editing_weighted",
-        "experiments/rules/experiments_13_greedy_weighted_packing",
+        # "experiments/rules/experiments_13_greedy_weighted_packing",
+        "experiments/rules/experiments_14_lower_bounds",
 
+
+rule experiments_14_lower_bounds:
+    input:
+        expand("experiments/C4P4/ilp.timelimit={timelimit}.threads={threads}.constraints={constraints}/bio-C4P4-subset.solutions.yaml",
+            timelimit=[1000], threads=[1], constraints=["sparse"]),
+        expand("experiments/C4P4/fpt.timelimit={timelimit}.selector={selector}.lower-bound={lower_bound}.all=1.pre-mark=0.search-strategy={search_strategy}/bio-C4P4-subset.solutions.yaml",
+            timelimit=[1000], selector=["MostAdjacentSubgraphs"], lower_bound=["LocalSearch", "SortedGreedy", "LPRelaxation", "GreedyWeightedPacking"], search_strategy=["Fixed", "Exponential"]),
+    output:
+        "experiments/rules/experiments_14_lower_bounds"
+    shell: "touch {output}"
 
 rule experiments_13_greedy_weighted_packing:
     input:
