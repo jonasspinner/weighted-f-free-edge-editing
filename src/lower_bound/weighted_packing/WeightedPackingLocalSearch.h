@@ -57,18 +57,47 @@ public:
         size_t max_iter = 5;
         size_t max_rounds_no_improvement = 5;
         size_t num_rounds_no_improvement = 0;
+        std::vector<std::pair<Subgraph, Cost>> total_removed, total_inserted;
 
         for (size_t iter = 0; iter < max_iter && num_rounds_no_improvement < max_rounds_no_improvement; ++iter) {
             bool found_improvement = false;
+            total_removed.clear();
+            total_inserted.clear();
+
             for (const auto &[subgraph, cost] : state.subgraphs()) {
-                found_improvement |= find_one_two_improvement(state, subgraph, cost);
+                auto[changed, improved, removed_from_packing, inserted_into_packing] = \
+                    find_one_two_improvement(state, subgraph, cost);
+                found_improvement |= improved;
+
+                std::move(removed_from_packing.begin(), removed_from_packing.end(),
+                          std::back_inserter(total_removed));
+                std::move(inserted_into_packing.begin(), inserted_into_packing.end(),
+                          std::back_inserter(total_inserted));
             }
+
+            // Update state after iteration. During a iteration, the state is stale and updates are only represented in
+            // m_packing.
+            // Insert before remove, because both could cancel each other.
+            for (auto&&[subgraph, cost] : total_inserted) {
+                // If the subgraph is not yet in the map, the initial value is 0.
+                state.m_subgraphs_in_packing[std::move(subgraph)] += cost;
+            }
+            for (auto&&[subgraph, cost] : total_removed) {
+                // If the subgraph is fully removed, i.e. its cost is zero, it is removed from the map.
+                auto it = state.m_subgraphs_in_packing.find(subgraph);
+                assert(it->second >= cost);
+                it->second -= cost;
+                if (it->second == 0) {
+                    state.m_subgraphs_in_packing.erase(it);
+                }
+            }
+
             num_rounds_no_improvement = found_improvement ? 0 : num_rounds_no_improvement + 1;
         }
     }
 
     bool greedy_initialize(State &state, Cost k) {
-        std::vector<std::pair<Subgraph, Cost>> subgraph_heap;
+        std::vector<std::pair<Subgraph, Cost>> subgraph_heap; // Note: Could turn this into an attribute and call clear() at beginning. This would prevent reallocating memory.
         Cost lower_bound = 0;
         Cost max_min_cost = std::numeric_limits<Cost>::min();
 
@@ -116,8 +145,12 @@ public:
     }
 
 
-    bool find_one_two_improvement(State &state, const Subgraph &x, Cost x_cost) {
+    std::tuple<bool, bool, std::vector<std::pair<Subgraph, Cost>>, std::vector<std::pair<Subgraph, Cost>>>
+    find_one_two_improvement(State &state, const Subgraph &x, Cost x_cost) {
+        std::vector<std::pair<Subgraph, Cost>> removed_from_packing, inserted_into_packing; // Note: could take total_removed and total_inserted as mutable reference parameters.
+
         m_packing.add_to_potential(x, x_cost);
+        removed_from_packing.emplace_back(x, x_cost);
 
         const auto pairs = m_packing.get_neighbor_pairs(x);
         auto[candidates, border] = m_packing.get_neighbors(pairs);
@@ -157,7 +190,8 @@ public:
                                 max_cost = a_cost + b_cost;
                                 max_i = {{{a_i, a_cost}, {b_i, b_cost}}};
                             } else if (a_cost + b_cost == max_cost) {
-                                max_i.push_back({{a_i, a_cost}, {b_i, b_cost}});
+                                max_i.push_back({{a_i, a_cost},
+                                                 {b_i, b_cost}});
                             }
                         }
                     }
@@ -171,16 +205,20 @@ public:
             // No improvement has been found. x is still optimal.
             m_packing.subtract_from_potential(x, x_cost);
             // TODO: Should not happen, as x is also a candidate.
+            assert(false);
         } else {
             // Plateau search
             size_t j = 0; // currently first element.
             // TODO: Plateau search strategy.
-            for (auto[y_i, y_cost] : max_i[j])
+            for (auto[y_i, y_cost] : max_i[j]) {
                 m_packing.subtract_from_potential(candidates[y_i], y_cost);
+                inserted_into_packing.emplace_back(std::move(candidates[y_i]), y_cost);
+            }
         }
 
         assert(m_packing.is_valid());
-        return max_cost > x_cost;
+        return {max_cost > x_cost || removed_from_packing != inserted_into_packing, max_cost > x_cost,
+                removed_from_packing, inserted_into_packing};
     }
 
     /**
