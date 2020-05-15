@@ -1,10 +1,7 @@
-//
-// Created by jonas on 03.07.19.
-//
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING__SUBGRAPH_H
+#define WEIGHTED_F_FREE_EDGE_EDITING__SUBGRAPH_H
 
-#ifndef CONCEPT_SUBGRAPH_H
-#define CONCEPT_SUBGRAPH_H
-
+#include "robin_hood.h"
 
 #include "Graph.h"
 #include "VertexPairMap.h"
@@ -23,7 +20,6 @@ public:
      */
     Subgraph(std::initializer_list<Vertex> list) : m_vertices(list) {
 #ifndef NDEBUG
-
         unsigned n = 0;
         for (auto x : list)
             for (auto y : list)
@@ -176,6 +172,18 @@ public:
     [[nodiscard]] bool contains(VertexPair uv) const {
         return contains(uv.u) && contains(uv.v);
     }
+
+    friend struct std::hash<Subgraph>;
+};
+
+template <>
+struct std::hash<Subgraph> {
+    size_t operator()(const Subgraph &subgraph) const noexcept {
+        // hash_bytes has `void const* ptr` as first parameter type.
+        auto ptr = static_cast<void const*>(subgraph.m_vertices.data());
+        auto len = subgraph.m_vertices.size() * sizeof(Vertex); // length of m_vertices in bytes.
+        return robin_hood::hash_bytes(ptr, len);
+    }
 };
 
 constexpr Cost invalid_cost = std::numeric_limits<Cost>::max();
@@ -183,4 +191,5 @@ constexpr Cost invalid_cost = std::numeric_limits<Cost>::max();
 Cost get_subgraph_cost(const Subgraph &subgraph, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs);
 
 
-#endif //CONCEPT_SUBGRAPH_H
+
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPH_H

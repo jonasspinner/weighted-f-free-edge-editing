@@ -1,8 +1,3 @@
-//
-// Created by jonas on 03.07.19.
-//
-
-
 #include "Subgraph.h"
 
 
@@ -15,7 +10,7 @@
  * @param costs
  * @return
  */
-Cost get_subgraph_cost(const Subgraph &subgraph, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs) {
+[[deprecated]] Cost get_subgraph_cost(const Subgraph &subgraph, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs) {
     Cost min_cost = invalid_cost;
     for (VertexPair uv : subgraph.vertexPairs())
         if (!marked[uv])
