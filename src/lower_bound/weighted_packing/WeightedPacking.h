@@ -45,13 +45,26 @@ class WeightedPacking {
 public:
     WeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats)
             : m_graph(instance.graph), m_costs(instance.costs), m_marked(marked), m_subgraph_stats(subgraph_stats),
-              m_potential(m_graph.size()), m_depleted_graph(m_graph.size()) {}
-
-    void clear() {
+              m_potential(m_graph.size()), m_depleted_graph(m_graph.size()) {
         for (VertexPair uv : m_graph.vertexPairs()) {
             m_potential[uv] = m_costs[uv];
+            if (m_potential[uv] == 0) {
+                m_depleted_graph.setEdge(uv);
+            }
         }
+    }
+
+    /**
+     * Reset to state after construction.
+     */
+    void clear() {
         m_depleted_graph.clearEdges();
+        for (VertexPair uv : m_graph.vertexPairs()) {
+            m_potential[uv] = m_costs[uv];
+            if (m_potential[uv] == 0) {
+                m_depleted_graph.setEdge(uv);
+            }
+        }
         m_total_cost = 0;
     }
 
@@ -106,7 +119,7 @@ public:
 
 #ifndef NDEBUG
 
-    bool is_maximal() const {
+    [[nodiscard]] bool is_maximal() const {
         return m_finder->find(m_graph, m_depleted_graph, [](auto) {
             return true;
         });
@@ -131,9 +144,9 @@ public:
 
     /**
      * Precondition:
-     *      All pairs are not depleted.
+     *      Every pair is not depleted.
      * Invariant:
-     *      The depleted graph is the same after the call.
+     *      The depleted graph remains unchanged.
      *
      * @param finder
      * @param pairs
@@ -142,9 +155,7 @@ public:
      * @param subgraph_stats
      * @return
      */
-    std::pair<std::vector<Subgraph>, std::vector<size_t>>
-    get_neighbors(const std::vector<VertexPair> &pairs) {
-
+    std::pair<std::vector<Subgraph>, std::vector<size_t>> get_neighbors(const std::vector<VertexPair> &pairs) {
 #ifndef NDEBUG
         for (auto uv : pairs) {
             assert(!m_depleted_graph.hasEdge(uv));
@@ -172,11 +183,11 @@ public:
             }
             border[i + 1] = candidates.size();
 
-            // prevent subgraphs including uv to be counted twice
+            // Prevent subgraphs including uv to be counted twice.
             m_depleted_graph.setEdge(uv);
         }
 
-        // reset bound_graph
+        // Reset bound_graph.
         for (VertexPair uv : pairs) {
             assert(m_depleted_graph.hasEdge(uv));
             m_depleted_graph.clearEdge(uv);
@@ -196,8 +207,33 @@ public:
         return pairs;
     }
 
+    /**
+     * Return the subgraph cost in respect to m_potential.
+     * @param subgraph
+     * @return
+     */
     [[nodiscard]] Cost calculate_min_cost(const Subgraph &subgraph) const {
         return m_finder->calculate_min_cost(subgraph, m_marked, m_potential);
+    }
+
+    /**
+     * Return the number of pairs with neighbors and a upper bound on the number of subgraphs sharing an unmarked pair
+     * of vertices with the given subgraph.
+     *
+     * @param subgraph
+     * @return
+     */
+    std::tuple<size_t, size_t> get_neighbor_count_estimate(const Subgraph &subgraph) {
+        size_t num_pairs = 0, num_neighbors_ub = 0;
+        m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
+            if (!m_marked[uv]) {
+                size_t uv_count = m_subgraph_stats.subgraphCount(uv) - 1; // Exclude the subgraph itself.
+                num_neighbors_ub += uv_count;
+                if (uv_count > 0) ++num_pairs;
+            }
+            return false;
+        });
+        return {num_pairs, num_neighbors_ub};
     }
 };
 
