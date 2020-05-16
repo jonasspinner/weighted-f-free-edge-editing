@@ -1,12 +1,8 @@
-//
-// Created by jonas on 06.09.19.
-//
-
-
 #include "lower_bound_utils.h"
 
 #include "Greedy.h"
 #include "GreedyWeightedPacking.h"
+#include "weighted_packing/WeightedPackingLocalSearch.h"
 #include "SortedGreedy.h"
 #include "LocalSearch.h"
 #include "Trivial.h"
@@ -66,6 +62,8 @@ namespace lower_bound {
 #endif
             case LB::GreedyWeightedPacking:
                 return std::make_unique<GreedyWeightedPacking>(instance, marked, finder);
+            case LB::WeightedPackingLocalSearch:
+                return std::make_unique<WeightedPackingLocalSearch>(instance, marked, subgraph_stats, finder);
             default:
                 throw std::runtime_error("Lower bound not found.");
         }

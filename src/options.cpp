@@ -133,6 +133,8 @@ namespace Options {
             lower_bound = LB::LSSWZ_MWIS_Solver;
         else if (token == "GreedyWeightedPacking")
             lower_bound = LB::GreedyWeightedPacking;
+        else if (token == "WeightedPackingLocalSearch")
+            lower_bound = LB::WeightedPackingLocalSearch;
         else
             in.setstate(std::ios_base::failbit);
         return in;
@@ -156,6 +158,8 @@ namespace Options {
                 return os << "LSSWZ_MWIS_Solver";
             case LB::GreedyWeightedPacking:
                 return os << "GreedyWeightedPacking";
+            case LB::WeightedPackingLocalSearch:
+                return os << "WeightedPackingLocalSearch";
             default:
                 return os;
         }
