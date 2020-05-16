@@ -17,12 +17,23 @@ class WeightedPackingLocalSearch : public LowerBoundI {
             return m_subgraphs_in_packing;
         }
 
+        [[nodiscard]] const auto &subgraphs() const {
+            return m_subgraphs_in_packing;
+        }
+
         void set_unsolvable() {
             m_solvable = false;
         }
 
         [[nodiscard]] bool is_solvable() const {
             return m_solvable;
+        }
+
+        friend std::ostream &operator<<(std::ostream &os, const State &state) {
+            for (const auto&[k, v] : state.subgraphs()) {
+                std::cout << k << ": " << v << ", ";
+            }
+            return os << "\n";
         }
     };
 
@@ -35,13 +46,14 @@ class WeightedPackingLocalSearch : public LowerBoundI {
 
     std::mt19937_64 m_gen;
 
+    int verbosity = 1;
+
 public:
     WeightedPackingLocalSearch(const Instance &instance, const VertexPairMap<bool> &marked,
                                const SubgraphStats &subgraph_stats, std::shared_ptr<FinderI> finder_ref) :
-            LowerBoundI(std::move(finder_ref)), m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
-            m_packing(instance, marked, subgraph_stats) {
-        m_gen.seed(0);
-        m_states.emplace_back();
+            LowerBoundI(finder_ref), m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
+            m_packing(instance, marked, subgraph_stats, std::move(finder_ref)), m_gen(0) {
+        m_states.push_back(std::make_unique<State>());
     }
 
     State &current_state() {
@@ -50,11 +62,13 @@ public:
     }
 
     void initialize(Cost k) override {
+        if (verbosity > 0) std::cout << "initialize\n";
         auto &state = current_state();
         greedy_initialize(state, k);
     }
 
     Cost calculate_lower_bound(Cost k) override {
+        if (verbosity > 0) std::cout << "calculate_lower_bound\n";
         auto &state = current_state();
         state.subgraphs().clear();
         m_packing.clear();
@@ -109,9 +123,13 @@ public:
     }
 
     void greedy_initialize(State &state, Cost k) {
+        if (verbosity > 0) std::cout << "greedy_initialize\n";
         std::vector<std::pair<Subgraph, Cost>> subgraph_heap; // Note: Could turn this into an attribute and call clear() at beginning. This would prevent reallocating memory.
-        Cost lower_bound = 0;
         Cost max_min_cost = std::numeric_limits<Cost>::min();
+
+        auto comp = [](const auto &lhs, const auto&rhs) { return lhs.second < rhs.second; };
+
+        if (verbosity > 0) std::cout << "bool(finder) = " << bool(finder) << "\n";
 
         bool unsolvable = finder->find_with_duplicates(m_graph, [&](Subgraph &&subgraph) {
             Cost initial_min_cost = m_packing.calculate_min_cost(subgraph);
@@ -122,15 +140,24 @@ public:
             return max_min_cost > k;
         });
 
+        if (verbosity > 0) std::cout << "subgraph_heap.size() = " << subgraph_heap.size() << "\n";
+
         if (unsolvable) {
             state.set_unsolvable();
+            return;
         }
 
-        std::make_heap(subgraph_heap.begin(), subgraph_heap.end());
+        std::make_heap(subgraph_heap.begin(), subgraph_heap.end(), comp);
 
-        while (!subgraph_heap.empty() && lower_bound < k) {
-            std::pop_heap(subgraph_heap.begin(), subgraph_heap.end());
+        if (verbosity > 0) std::cout << "while (!heap.empty()) begin\n";
+
+        while (!subgraph_heap.empty() && m_packing.cost() <= k) {
+            std::pop_heap(subgraph_heap.begin(), subgraph_heap.end(), comp);
             const auto &[subgraph, cost] = subgraph_heap.back();
+
+            if (verbosity > 0) std::cout << "heap.max() = " << subgraph << " " << cost << "\n";
+            if (verbosity > 0) std::cout << "subgraphs() = " << state;
+            if (verbosity > 0) std::cout << "subgraphs().size() = " << state.subgraphs().size() << "\n";
 
             Cost current_min_cost = m_packing.calculate_min_cost(subgraph);
 
@@ -138,18 +165,21 @@ public:
                 // The subgraph cannot be inserted.
                 subgraph_heap.pop_back();
             } else if (current_min_cost == cost) {
-                // The editing cost is maximal from all remaining subgraphs in the queue. Increase the lower bound
-                // and update the remaining cost matrix.
-                lower_bound += current_min_cost;
+                if (verbosity > 0) std::cout << "insert " << subgraph << " " << cost << "\n";
 
+                // The editing cost is maximal from all remaining subgraphs in the queue.
+                // Update packing and state.
                 m_packing.subtract_from_potential(subgraph, cost);
-                state.subgraphs().emplace(std::move(subgraph_heap.back()));
+                // state.subgraphs().emplace(std::move(subgraph_heap.back()));
+                state.subgraphs()[subgraph] += cost;
+
+                if (verbosity > 0) std::cout << "inserted " << subgraph << " " << cost << "\n";
 
                 subgraph_heap.pop_back();
             } else {
                 // The editing cost is no longer up to date. The subgraph may be inserted in the future.
                 subgraph_heap.back().second = current_min_cost;
-                std::push_heap(subgraph_heap.begin(), subgraph_heap.end());
+                std::push_heap(subgraph_heap.begin(), subgraph_heap.end(), comp);
             }
         }
 

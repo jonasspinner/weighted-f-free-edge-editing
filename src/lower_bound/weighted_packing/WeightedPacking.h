@@ -40,12 +40,13 @@ class WeightedPacking {
     VertexPairMap<Cost> m_potential;
     Graph m_depleted_graph;
     Cost m_total_cost = 0;
-    std::unique_ptr<FinderI> m_finder;
+    std::shared_ptr<FinderI> m_finder;
 
 public:
-    WeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats)
+    WeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats,
+            std::shared_ptr<FinderI> finder)
             : m_graph(instance.graph), m_costs(instance.costs), m_marked(marked), m_subgraph_stats(subgraph_stats),
-              m_potential(m_graph.size()), m_depleted_graph(m_graph.size()) {
+              m_potential(m_graph.size()), m_depleted_graph(m_graph.size()), m_finder(std::move(finder)) {
         for (VertexPair uv : m_graph.vertexPairs()) {
             m_potential[uv] = m_costs[uv];
             if (m_potential[uv] == 0) {
@@ -137,9 +138,10 @@ public:
         }
 
         for (VertexPair uv : Graph::VertexPairs(m_potential.size())) {
-            valid |= m_potential[uv] == 0 != m_depleted_graph.hasEdge(uv);
+            valid |= (m_potential[uv] == 0) != m_depleted_graph.hasEdge(uv);
             assert((m_potential[uv] == 0) == m_depleted_graph.hasEdge(uv));
         }
+        return valid;
     }
 
     /**
