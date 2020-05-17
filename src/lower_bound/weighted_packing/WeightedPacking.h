@@ -42,6 +42,8 @@ class WeightedPacking {
     Cost m_total_cost = 0;
     std::shared_ptr<FinderI> m_finder;
 
+    int verbosity = 0;
+
 public:
     WeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats,
             std::shared_ptr<FinderI> finder)
@@ -75,14 +77,17 @@ public:
      * @param cost
      */
     void subtract_from_potential(const Subgraph &subgraph, Cost cost) {
+        if (verbosity > 0) std::cout << "subtract_from_potential subgraph = " << subgraph << " cost = " << cost << "\n";
         assert(cost > 0);
         assert(cost != invalid_cost);
 
         m_total_cost += cost;
 
         m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
+            if (m_marked[uv]) return false;
             assert(!m_depleted_graph.hasEdge(uv));
 
+            if (verbosity > 0 && cost > m_potential[uv]) std::cout << "(" << uv << " " << m_marked[uv] << " " << m_costs[uv] << " " << m_potential[uv] << ") " << std::endl;
             assert(cost <= m_potential[uv]);
             m_potential[uv] -= cost;
             if (m_potential[uv] == 0) {
@@ -98,14 +103,17 @@ public:
      * @param cost
      */
     void add_to_potential(const Subgraph &subgraph, Cost cost) {
+        if (verbosity > 0) std::cout << "add_to_potential subgraph = " << subgraph << " cost = " << cost << "\n";
         assert(cost > 0);
         assert(cost != invalid_cost);
 
         m_total_cost -= cost;
 
         m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
+            if (m_marked[uv]) return false;
             m_potential[uv] += cost;
             m_depleted_graph.clearEdge(uv);
+            assert(m_potential[uv] <= m_costs[uv]);
             return false;
         });
     }
@@ -118,10 +126,14 @@ public:
         return m_depleted_graph.hasEdge(uv);
     }
 
+    [[nodiscard]] Cost potential(VertexPair uv) const {
+        return m_potential[uv];
+    }
+
 #ifndef NDEBUG
 
     [[nodiscard]] bool is_maximal() const {
-        return m_finder->find(m_graph, m_depleted_graph, [](auto) {
+        return !m_finder->find(m_graph, m_depleted_graph, [](auto) {
             return true;
         });
     }
