@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.13)
 
 project(Weighted_F-free_Edge_Editing)
 
+include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/extern/robin-hood-hashing/src/include")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
 set(CMAKE_CXX_STANDARD 17)
@@ -10,11 +11,9 @@ set(CMAKE_CXX_STANDARD 17)
 # Compiler flags
 add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Wunused
         -Woverloaded-virtual -Wpedantic -Wsign-conversion -Wmisleading-indentation -Wduplicated-cond
-        -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wuseless-cast -Wdouble-promotion -Wformat=2)
+        -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wuseless-cast -Wdouble-promotion -Wformat=2 -Wno-comment)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -Wno-comment")
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wno-unused-parameter")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -DNDEBUG -Wno-unused-parameter")
 
 
 # TMP_DIR
