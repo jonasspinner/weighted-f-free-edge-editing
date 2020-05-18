@@ -29,6 +29,11 @@ class WeightedPackingLocalSearch : public LowerBoundI {
             return m_solvable;
         }
 
+        void clear() {
+            m_subgraphs_in_packing.clear();
+            m_solvable = true;
+        }
+
         friend std::ostream &operator<<(std::ostream &os, const State &state) {
             for (const auto&[k, v] : state.subgraphs()) {
                 std::cout << k << ": " << v << ", ";
@@ -46,7 +51,7 @@ class WeightedPackingLocalSearch : public LowerBoundI {
 
     std::mt19937_64 m_gen;
 
-    int verbosity = 0;
+    int verbosity = 1;
 
 public:
     WeightedPackingLocalSearch(const Instance &instance, const VertexPairMap<bool> &marked,
@@ -70,7 +75,7 @@ public:
     Cost calculate_lower_bound(Cost k) override {
         if (verbosity > 0) std::cout << "calculate_lower_bound\n";
         auto &state = current_state();
-        state.subgraphs().clear();
+        state.clear();
         m_packing.clear();
         greedy_initialize(state, k);
         if (state.is_solvable()) {
@@ -83,12 +88,12 @@ public:
 
     void local_search(State &state) {
         if (verbosity > 0) std::cout << "local_search\n";
-        size_t max_iter = 5;
+        size_t max_setster = 5;
         size_t max_rounds_no_improvement = 5;
         size_t num_rounds_no_improvement = 0;
         std::vector<std::pair<Subgraph, Cost>> removed_subgraphs, inserted_subgraphs;
 
-        for (size_t iter = 0; iter < max_iter; ++iter) {
+        for (size_t iter = 0; iter < max_setster; ++iter) {
             bool changed_in_round = false, improved_in_round = false;
             removed_subgraphs.clear();
             inserted_subgraphs.clear();
@@ -126,7 +131,6 @@ public:
     void greedy_initialize(State &state, Cost k) {
         if (verbosity > 0) std::cout << "greedy_initialize\n";
         std::vector<std::pair<Subgraph, Cost>> subgraph_heap; // Note: Could turn this into an attribute and call clear() at beginning. This would prevent reallocating memory.
-        Cost max_min_cost = std::numeric_limits<Cost>::min();
 
         auto comp = [](const auto &lhs, const auto &rhs) { return lhs.second < rhs.second; };
 
@@ -137,8 +141,7 @@ public:
 
             subgraph_heap.emplace_back(std::move(subgraph), initial_min_cost);
 
-            max_min_cost = std::max(max_min_cost, initial_min_cost);
-            return max_min_cost > k;
+            return initial_min_cost > k;
         });
 
         if (verbosity > 0) std::cout << "subgraph_heap.size() = " << subgraph_heap.size() << "\n";
@@ -182,14 +185,16 @@ public:
             }
         }
 
-        assert(m_packing.is_maximal());
+        if (m_packing.cost() <= k){
+            assert(m_packing.is_maximal());
+        }
     }
 
 
     std::tuple<bool, bool> find_one_two_improvement(const Subgraph &x, Cost x_cost,
                                                     std::vector<std::pair<Subgraph, Cost>> &removed_subgraphs,
                                                     std::vector<std::pair<Subgraph, Cost>> &inserted_subgraphs) {
-        if (verbosity > 0) std::cout << "find_one_two_improvement\n";
+        if (verbosity > 0) std::cout << "find_one_two_improvement " << x << " " << x_cost << "\n";
 
         auto insertable = [](Cost cost) { return 0 < cost && cost != invalid_cost; };
         assert(insertable(x_cost));
@@ -208,12 +213,17 @@ public:
             assert(!m_packing.is_depleted(uv));
             return false;
         });
+
+        VertexPairMap<Cost> potential_copy(m_graph.size());
+        for (auto uv : m_graph.vertexPairs())
+            potential_copy[uv] = m_packing.potential(uv);
 #endif
 
         // The candidates are partioned by their vertex pairs.
         // For a i (0..pairs.size()-1) the candidates in the range candidates[border[i]..border[i+1]-1] do not contain pairs[0..i-1] and do contain pairs[i].
-        const auto pairs = m_packing.get_neighbor_pairs(x);
-        auto[candidates, border] = m_packing.get_neighbors(pairs);
+        auto[pairs, candidates, border] = m_packing.get_closed_neighbors(Subgraph(x));
+        // TODO: Fix find_near_with_duplicates so that it consistently outputs the same orientation, i.e. 1234 or 4321.
+        // Note: May change to open neighborhood. This is a change of the plateau search, in the sense that the bound is guaranteed to change if an alternative is available.
 
         if (verbosity > 0) std::cout << "candidates.size() = " << candidates.size() << "\n";
         if (verbosity > 0) {
@@ -225,12 +235,24 @@ public:
                 std::cout << "\n";
             }
         }
+        if (verbosity > 0) {
+            for (auto uv : x.vertexPairs()) {
+                std::cout << "(" << uv
+                << " " << m_marked[uv]
+                << " " << m_costs[uv]
+                << " " << m_packing.potential(uv)
+                << " " << m_packing.is_depleted(uv)
+                << ") ";
+            }
+            std::cout << std::endl;
+        }
+        // Note: This is true, because of get_closed_neighbors. See the earlier fix notice for correct solution.
         assert(std::any_of(candidates.begin(), candidates.end(), [&](const auto &c) { return x == c; }));
 
         // The information about the best solution.
         // Remark: the subgraph x will always be a candidate.
         Cost max_cost = x_cost;
-        std::vector<std::vector<std::pair<size_t, Cost>>> max_i;
+        std::vector<std::vector<std::pair<size_t, Cost>>> max_sets;
 
 
         for (size_t pair_i = 0; pair_i < pairs.size(); ++pair_i) {
@@ -255,9 +277,9 @@ public:
 
                 if (a_cost > max_cost) {
                     max_cost = a_cost;
-                    max_i = {{{a_i, a_cost}}};
+                    max_sets = {{{a_i, a_cost}}};
                 } else if (a_cost == max_cost) {
-                    max_i.push_back({{a_i, a_cost}});
+                    max_sets.push_back({{a_i, a_cost}});
                 }
 
                 // Note: The unweighted packing allows the following optimization.
@@ -287,7 +309,7 @@ public:
                             // b can be inserted.
 
                             // Additional linear scan for a third or more subgraphs.
-                            // This ensures that each set in max_i leads to a maximal packing.
+                            // This ensures that each set in max_sets leads to a maximal packing.
                             m_packing.subtract_from_potential(b, b_cost);
 
                             Cost additional_cost = a_cost + b_cost;
@@ -331,10 +353,10 @@ public:
 
                             if (abc_cost > max_cost) {
                                 max_cost = abc_cost;
-                                max_i.clear();
-                                max_i.push_back(std::move(additional_subgraphs));
+                                max_sets.clear();
+                                max_sets.push_back(std::move(additional_subgraphs));
                             } else if (abc_cost == max_cost) {
-                                max_i.push_back(std::move(additional_subgraphs));
+                                max_sets.push_back(std::move(additional_subgraphs));
                             }
                         }
                     }
@@ -345,25 +367,30 @@ public:
             }
         }
 
-        if (verbosity > 0) std::cout << "max_i.size() = " << max_i.size() << "\n";
+#ifndef NDEBUG
+        for (auto uv : m_graph.vertexPairs())
+            assert(potential_copy[uv] == m_packing.potential(uv));
+#endif
+
+        if (verbosity > 0) std::cout << "max_sets.size() = " << max_sets.size() << "\n";
         if (verbosity > 0) {
-            for (const auto &m : max_i) {
+            for (const auto &m : max_sets) {
                 for (auto[y_i, y_cost] : m) {
                     std::cout << "(" << candidates[y_i] << ", " << y_cost << ") ";
                 }
                 std::cout << std::endl;
             }
         }
-        assert(!max_i.empty());
+        assert(!max_sets.empty());
 
-        std::uniform_int_distribution<size_t> sample(0, max_i.size() - 1);
+        std::uniform_int_distribution<size_t> sample(0, max_sets.size() - 1);
         size_t j = sample(m_gen);
 
         // Must be done here, because candidates will be moved into inserted_subgraphs.
         bool changed = max_cost > x_cost
-                       || (max_i[j].size() == 1 && candidates[max_i[j].front().first] == x);
+                       || (max_sets[j].size() == 1 && candidates[max_sets[j].front().first] == x);
 
-        for (auto[y_i, y_cost] : max_i[j]) {
+        for (auto[y_i, y_cost] : max_sets[j]) {
             auto &y = candidates[y_i];
             m_packing.subtract_from_potential(y, y_cost);
             inserted_subgraphs.emplace_back(std::move(y), y_cost);
@@ -382,7 +409,7 @@ public:
      *
      * @param uv
      */
-    void local_fix_marked(VertexPair uv) {
+    void local_fix_marked(VertexPair /*uv*/) {
 
     }
 
@@ -393,7 +420,7 @@ public:
      * maximal.
      * @param uv
      */
-    void local_fix_edited(VertexPair uv) {
+    void local_fix_edited(VertexPair /*uv*/) {
 
     }
 };

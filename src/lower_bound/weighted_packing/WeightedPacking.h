@@ -169,14 +169,17 @@ public:
      * @param subgraph_stats
      * @return
      */
-    std::pair<std::vector<Subgraph>, std::vector<size_t>> get_neighbors(const std::vector<VertexPair> &pairs) {
-#ifndef NDEBUG
-        for (auto uv : pairs) {
+    std::tuple<std::vector<VertexPair>, std::vector<Subgraph>, std::vector<size_t>> get_closed_neighbors(Subgraph&& subgraph) {
+        std::vector<VertexPair> pairs;
+        m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
             assert(!m_depleted_graph.hasEdge(uv));
-        }
-#endif
+            if (!m_marked[uv])
+                pairs.push_back(uv);
+            return false;
+        });
 
         std::vector<Subgraph> candidates;
+        candidates.push_back(std::move(subgraph));
         std::vector<size_t> border(pairs.size() + 1);
 
         for (size_t i = 0; i < pairs.size(); ++i) {
@@ -207,18 +210,7 @@ public:
             m_depleted_graph.clearEdge(uv);
         }
 
-        return {std::move(candidates), std::move(border)};
-    }
-
-    std::vector<VertexPair> get_neighbor_pairs(const Subgraph &subgraph) {
-        std::vector<VertexPair> pairs;
-        m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
-            assert(!m_depleted_graph.hasEdge(uv));
-            if (!m_marked[uv])
-                pairs.push_back(uv);
-            return false;
-        });
-        return pairs;
+        return {std::move(pairs), std::move(candidates), std::move(border)};
     }
 
     /**
