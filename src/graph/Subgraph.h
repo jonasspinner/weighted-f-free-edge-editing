@@ -131,6 +131,8 @@ public:
      */
     [[nodiscard]] const Vertex &operator[](size_t index) const { return m_vertices[index]; }
 
+    [[nodiscard]] Vertex &operator[](size_t index) { return m_vertices[index]; }
+
     friend std::ostream &operator<<(std::ostream &os, const Subgraph &subgraph) {
         os << "{";
         for (Vertex u : subgraph.m_vertices) os << " " << u;

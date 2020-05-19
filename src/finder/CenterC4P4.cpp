@@ -81,6 +81,14 @@ namespace Finder {
             return forbidden.hasEdge({a, b}) ? 1 : 0;
         };
 
+        auto ensure_orientation = [](Subgraph &&subgraph) -> Subgraph {
+            if (subgraph[0] > subgraph[3]) {
+                std::swap(subgraph[0], subgraph[3]);
+                std::swap(subgraph[1], subgraph[2]);
+            }
+            return std::move(subgraph);
+        };
+
         return find_near(uv, graph, [&](Subgraph &&subgraph) {
             auto a = subgraph[0], b = subgraph[1], c = subgraph[2], d = subgraph[3];
             if (graph.hasEdge({a, d})) {
@@ -89,32 +97,54 @@ namespace Finder {
                 if (x(a, c) || x(b, d))
                     return false;
 
-                if (x(a, b) + x(b, c) + x(c, d) + x(d, a) == 0) {
-                    if (callback(Subgraph{a, b, c, d}))
+                if (x(a, b) + x(b, c) + x(c, d) + x(d, a) == 0) { // ab, bc, cd, ad
+                    auto s1 = ensure_orientation(Subgraph{a, b, c, d}); // ad
+                    assert(s1[0] < s1[3]);
+                    if (callback(std::move(s1)))
                         return true;
-                    if (callback(Subgraph{b, c, d, a}))
+
+                    auto s2 = ensure_orientation(Subgraph{b, c, d, a}); // ab
+                    assert(s2[0] < s2[3]);
+                    if (callback(std::move(s2)))
                         return true;
-                    if (callback(Subgraph{c, d, a, b}))
+
+                    auto s3 = ensure_orientation(Subgraph{c, d, a, b}); // bc
+                    assert(s3[0] < s3[3]);
+                    if (callback(std::move(s3)))
                         return true;
-                    if (callback(Subgraph{d, a, b, c}))
+
+                    auto s4 = ensure_orientation(Subgraph{d, a, b, c}); // cd
+                    assert(s4[0] < s4[3]);
+                    if (callback(std::move(s4)))
                         return true;
-                } else if (x(a, b) && x(b, c) + x(c, d) + x(a, d) == 0) {
-                    if (callback(Subgraph{b, c, d, a}))
+
+                } else if (x(a, b) && x(b, c) + x(c, d) + x(a, d) == 0) { // ab
+                    auto s = ensure_orientation(Subgraph{b, c, d, a});
+                    assert(s[0] < s[3]);
+                    if (callback(std::move(s)))
                         return true;
-                } else if (x(b, c) && x(a, b) + x(c, d) + x(a, d) == 0) {
-                    if (callback(Subgraph{c, d, a, b}))
+                } else if (x(b, c) && x(a, b) + x(c, d) + x(a, d) == 0) { // bc
+                    auto s = ensure_orientation(Subgraph{c, d, a, b});
+                    assert(s[0] < s[3]);
+                    if (callback(std::move(s)))
                         return true;
-                } else if (x(c, d) && x(a, b) + x(b, c) + x(a, d) == 0) {
-                    if (callback(Subgraph{d, a, b, c}))
+                } else if (x(c, d) && x(a, b) + x(b, c) + x(a, d) == 0) { // cd
+                    auto s = ensure_orientation(Subgraph{d, a, b, c});
+                    assert(s[0] < s[3]);
+                    if (callback(std::move(s)))
                         return true;
-                } else if (x(a, d) && x(a, b) + x(b, c) + x(c, d) == 0) {
-                    if (callback(Subgraph{a, b, c, d}))
+                } else if (x(a, d) && x(a, b) + x(b, c) + x(c, d) == 0) { // ad
+                    auto s = ensure_orientation(Subgraph{a, b, c, d});
+                    assert(s[0] < s[3]);
+                    if (callback(std::move(s)))
                         return true;
                 }
             } else {
                 // P4
                 if (x(a, b) + x(a, c) + x(b, c) + x(b, d) + x(c, d) == 0) {
-                    if (callback(std::move(subgraph)))
+                    auto s = ensure_orientation(std::move(subgraph));
+                    assert(s[0] < s[3]);
+                    if (callback(std::move(s)))
                         return true;
                 }
             }
@@ -554,6 +584,15 @@ namespace Finder {
     template<typename F, typename G, typename H, typename I>
     bool CenterC4P4::find_with_duplicates(const Graph &graph, const FinderI::SubgraphCallback &callback, F neighbors,
                                           G non_neighbors, H valid_edge, I valid_non_edge) {
+
+        auto ensure_orientation = [](Subgraph &&subgraph) -> Subgraph {
+            if (subgraph[0] > subgraph[3]) {
+                std::swap(subgraph[0], subgraph[3]);
+                std::swap(subgraph[1], subgraph[2]);
+            }
+            return std::move(subgraph);
+        };
+
         for (auto uv : graph.edges()) {
             if (!valid_edge(uv))
                 continue;
@@ -570,7 +609,9 @@ namespace Finder {
                     assert(valid_non_edge({u, b}));
                     assert(valid_edge({v, b}));
                     // C_4 or P_4
-                    if (callback(Subgraph{a, u, v, b})) return true;
+                    auto s = ensure_orientation(Subgraph{a, u, v, b});
+                    assert(s[0] < s[3]);
+                    if (callback(std::move(s))) return true;
                 }
             }
         }
