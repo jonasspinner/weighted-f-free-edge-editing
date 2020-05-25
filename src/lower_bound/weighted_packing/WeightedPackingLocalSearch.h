@@ -29,6 +29,27 @@ class WeightedPackingLocalSearch : public LowerBoundI {
             return m_solvable;
         }
 
+#ifndef NDEBUG
+
+        void packing_is_same_as_initialized_by_state(const WeightedPacking &packing) {
+            WeightedPacking other(packing);
+            other.clear();
+
+            for (const auto &[subgraph, cost] : m_subgraphs_in_packing) {
+                other.subtract_from_potential(subgraph, cost);
+            }
+
+            assert(other.cost() == packing.cost());
+            for (auto uv : other.depleted_graph().vertexPairs()) {
+                if (other.potential(uv) != packing.potential(uv)) std::cerr << uv << std::endl;
+                assert(other.potential(uv) == packing.potential(uv));
+                if (other.is_depleted(uv) != packing.is_depleted(uv)) std::cerr << uv << std::endl;
+                assert(other.is_depleted(uv) == packing.is_depleted(uv));
+            }
+        }
+
+#endif
+
         void clear() {
             m_subgraphs_in_packing.clear();
             m_solvable = true;
@@ -51,7 +72,7 @@ class WeightedPackingLocalSearch : public LowerBoundI {
 
     std::mt19937_64 m_gen;
 
-    int verbosity = 1;
+    int verbosity = 0;
 
 public:
     WeightedPackingLocalSearch(const Instance &instance, const VertexPairMap<bool> &marked,
@@ -61,39 +82,218 @@ public:
         m_states.push_back(std::make_unique<State>());
     }
 
+    void push_state(Cost /*k*/) override {
+        assert(!m_states.empty());
+        m_states.push_back(std::make_unique<State>(*m_states.back()));
+    }
+
+    void pop_state() override {
+        assert(!m_states.empty());
+        m_states.pop_back();
+        // initialize_bound_graph(*finder, current_state(), m_marked, m_bound_graph);
+        auto &state = current_state();
+        m_packing.clear();
+        for (const auto &[subgraph, cost] : state.subgraphs()) {
+            m_packing.subtract_from_potential(subgraph, cost);
+        }
+    }
+
     State &current_state() {
         assert(!m_states.empty());
         return *m_states.back();
+    }
+
+    State &parent_state() {
+        assert(m_states.size() > 1);
+        return *m_states[m_states.size() - 2];
+    }
+
+    /**
+     * Ensure that the state remains maximal by increasing costs of incident subgraphs in the packing.
+     *
+     * @param uv
+     */
+    void after_mark(VertexPair uv) override {
+        assert(m_marked[uv]);
+        if (verbosity > 0) std::cout << "after_mark(" << uv << ")\n";
+        auto &state = current_state();
+
+        if (!state.is_solvable()) return;
+
+        assert(m_packing.is_valid());
+        assert(m_packing.is_maximal());
+
+        m_packing.restore_potential(uv);
+#ifndef NDEBUG
+        state.packing_is_same_as_initialized_by_state(m_packing);
+#endif
+
+        // Either only remove the subgraph at uv (I) or remove it and fill the "hole" with subgraphs not containing uv (II).
+        // // remove_near_subgraphs_from_bound(state, uv); // I
+
+
+        // II
+        // update_near_subgraphs(state, uv, *finder, m_marked, m_costs, m_graph, m_bound_graph); // II
+        // std::vector<VertexPair> pairs;
+        // for (auto it = state.subgraphs().begin(); it != state.subgraphs().end(); ++it) {
+        //     const auto &[subgraph, cost] = *it;
+        //     if (subgraph.contains(uv)) {
+        //         finder->for_all_conversionless_edits(subgraph, [&](auto xy) {
+        //             if (!(xy == uv) && !m_marked[xy])
+        //                 pairs.push_back(xy);
+        //             return false;
+        //         });
+
+        //         m_packing.add_to_potential(subgraph, cost);
+        //         state.subgraphs().erase(it);
+        //     }
+        // }
+        // Note: Incomplete
+        //auto [subgraphs, _] = m_packing.get_subgraphs_non_incident_to_vertex_pair(pairs, uv);
+        //std::vector<std::pair<Subgraph, Cost>> subgraph_heap;
+
+
+        // III Increase the cost of subgraphs already in the packing
+
+        // Note: Can be optimized by incrementing subgraph cost in a greedy order.
+        for (auto &[subgraph, cost] : state.subgraphs()) {
+            if (subgraph.contains(uv)) {
+                auto delta = m_packing.calculate_min_cost(subgraph);
+                if (delta == invalid_cost) {
+                    state.set_unsolvable();
+                    break;
+                } else if (delta > 0) {
+                    if (verbosity > 0) std::cout << "increasing " << subgraph << " " << cost << " by " << delta << "\n";
+                    cost += delta;
+                    m_packing.subtract_from_potential(subgraph, delta);
+                }
+            }
+        }
+
+        // Note: Can be optimized by inserting subgraphs in a greedy order.
+        bool unsolvable = finder->find_near_with_duplicates(uv, m_graph, m_packing.depleted_graph(),
+                [&](Subgraph &&subgraph) {
+            auto cost = m_packing.calculate_min_cost(subgraph);
+            if (cost == 0) return false;
+            if (cost == invalid_cost) {
+                return true;
+            }
+            m_packing.subtract_from_potential(subgraph, cost);
+            assert(!state.subgraphs().contains(subgraph));
+            state.subgraphs()[std::move(subgraph)] = cost;
+            return false;
+        });
+
+        if (unsolvable) {
+            state.set_unsolvable();
+            return;
+        }
+
+        assert(m_packing.is_maximal());
+    }
+
+
+    /**
+     * Replace destroyed subgraphs by newly created ones.
+     * @param uv
+     */
+    void after_edit(VertexPair uv) override {
+        assert(m_marked[uv]);
+        if (verbosity > 0) std::cout << "after_edit(" << uv << ")\n";
+        auto &state = current_state();
+
+        if (!state.is_solvable()) return;
+
+        assert(m_packing.is_valid());
+#ifndef NDEBUG
+        state.packing_is_same_as_initialized_by_state(m_packing);
+#endif
+
+        assert(m_packing.potential(uv) == m_costs[uv]);
+
+        // Remove subgraphs which are destroyed.
+        // Note: This can "free" subgraphs which now can be inserted. These are at pairs which were previously depleted.
+        std::vector<VertexPair> pairs = {uv};
+        for (auto it = state.subgraphs().begin(); it != state.subgraphs().end(); ++it) {
+            const auto &[subgraph, cost] = *it;
+            if (subgraph.contains(uv)) {
+                finder->for_all_conversionless_edits(subgraph, [&](auto xy) {
+                    if (!m_marked[xy] && m_packing.is_depleted(xy)) {
+                        pairs.push_back(xy);
+                    }
+                    return false;
+                });
+                if (verbosity > 0) std::cout << "removing " << subgraph << " " << cost << "\n";
+                m_packing.add_to_potential(subgraph, cost);
+                state.subgraphs().erase(it);
+            }
+        }
+        if (verbosity > 0) {
+            if (!pairs.empty())
+                std::cout << "### pairs :";
+            for (auto xy : pairs)
+                std::cout << " " << xy;
+            std::cout << std::endl;
+        }
+
+        for (auto xy : pairs) {
+            assert(!m_packing.is_depleted(xy));
+        }
+
+        // Note: Can be optimized by inserting subgraphs in a greedy order.
+        auto subgraphs = m_packing.get_incident_subgraphs(pairs);
+        for (auto &&subgraph : subgraphs) {
+            auto cost = m_packing.calculate_min_cost(subgraph);
+            if (cost == 0) continue;
+            if (cost == invalid_cost) {
+                state.set_unsolvable();
+                return;
+            }
+            if (verbosity > 0) std::cout << "inserting " << subgraph << " " << cost << std::endl;
+            m_packing.subtract_from_potential(subgraph, cost);
+            state.subgraphs()[std::move(subgraph)] += cost;
+        }
+
+        assert(m_packing.is_maximal());
+        assert(m_packing.is_valid());
+#ifndef NDEBUG
+        state.packing_is_same_as_initialized_by_state(m_packing);
+#endif
     }
 
     void initialize(Cost k) override {
         if (verbosity > 0) std::cout << "initialize\n";
         auto &state = current_state();
         greedy_initialize(state, k);
+#ifndef NDEBUG
+        state.packing_is_same_as_initialized_by_state(m_packing);
+#endif
     }
 
     Cost calculate_lower_bound(Cost k) override {
         if (verbosity > 0) std::cout << "calculate_lower_bound\n";
         auto &state = current_state();
-        state.clear();
-        m_packing.clear();
-        greedy_initialize(state, k);
         if (state.is_solvable()) {
-            local_search(state);
+            assert(m_packing.is_maximal());
+            assert(m_packing.is_valid());
+#ifndef NDEBUG
+            state.packing_is_same_as_initialized_by_state(m_packing);
+#endif
+            local_search(state, k);
             return m_packing.cost();
         } else {
             return invalid_cost;
         }
     }
 
-    void local_search(State &state) {
+    void local_search(State &state, Cost k) {
         if (verbosity > 0) std::cout << "local_search\n";
-        size_t max_setster = 5;
-        size_t max_rounds_no_improvement = 5;
+        size_t max_iter = 20;
+        size_t max_rounds_no_improvement = 10;
         size_t num_rounds_no_improvement = 0;
         std::vector<std::pair<Subgraph, Cost>> removed_subgraphs, inserted_subgraphs;
 
-        for (size_t iter = 0; iter < max_setster; ++iter) {
+        for (size_t iter = 0; iter < max_iter; ++iter) {
             bool changed_in_round = false, improved_in_round = false;
             removed_subgraphs.clear();
             inserted_subgraphs.clear();
@@ -122,7 +322,9 @@ public:
             }
 
             num_rounds_no_improvement = improved_in_round ? 0 : num_rounds_no_improvement + 1;
-            if (!changed_in_round || num_rounds_no_improvement > max_rounds_no_improvement) {
+            if (!changed_in_round ||
+                num_rounds_no_improvement > max_rounds_no_improvement ||
+                m_packing.cost() > k) {
                 break;
             }
         }
@@ -133,8 +335,6 @@ public:
         std::vector<std::pair<Subgraph, Cost>> subgraph_heap; // Note: Could turn this into an attribute and call clear() at beginning. This would prevent reallocating memory.
 
         auto comp = [](const auto &lhs, const auto &rhs) { return lhs.second < rhs.second; };
-
-        if (verbosity > 0) std::cout << "bool(finder) = " << bool(finder) << "\n";
 
         bool unsolvable = finder->find_with_duplicates(m_graph, [&](Subgraph &&subgraph) {
             Cost initial_min_cost = m_packing.calculate_min_cost(subgraph);
@@ -153,15 +353,9 @@ public:
 
         std::make_heap(subgraph_heap.begin(), subgraph_heap.end(), comp);
 
-        if (verbosity > 0) std::cout << "while (!heap.empty()) begin\n";
-
         while (!subgraph_heap.empty() && m_packing.cost() <= k) {
             std::pop_heap(subgraph_heap.begin(), subgraph_heap.end(), comp);
             auto &[subgraph, cost] = subgraph_heap.back();
-
-            if (verbosity > 1) std::cout << "heap.max() = " << subgraph << " " << cost << "\n";
-            if (verbosity > 1) std::cout << "subgraphs() = " << state;
-            if (verbosity > 1) std::cout << "subgraphs().size() = " << state.subgraphs().size() << "\n";
 
             Cost current_min_cost = m_packing.calculate_min_cost(subgraph);
 
@@ -169,8 +363,6 @@ public:
                 // The subgraph cannot be inserted.
                 subgraph_heap.pop_back();
             } else if (current_min_cost == cost) {
-                if (verbosity > 1) std::cout << "insert " << subgraph << " " << cost << "\n";
-
                 // The editing cost is maximal from all remaining subgraphs in the queue.
                 // Update packing and state.
                 m_packing.subtract_from_potential(subgraph, cost);
@@ -185,7 +377,7 @@ public:
             }
         }
 
-        if (m_packing.cost() <= k){
+        if (m_packing.cost() <= k) {
             assert(m_packing.is_maximal());
         }
     }
@@ -222,7 +414,6 @@ public:
         // The candidates are partioned by their vertex pairs.
         // For a i (0..pairs.size()-1) the candidates in the range candidates[border[i]..border[i+1]-1] do not contain pairs[0..i-1] and do contain pairs[i].
         auto[pairs, candidates, border] = m_packing.get_closed_neighbors(Subgraph(x));
-        // TODO: Fix find_near_with_duplicates so that it consistently outputs the same orientation, i.e. 1234 or 4321.
         // Note: May change to open neighborhood. This is a change of the plateau search, in the sense that the bound is guaranteed to change if an alternative is available.
 
         if (verbosity > 0) std::cout << "candidates.size() = " << candidates.size() << "\n";
@@ -238,11 +429,11 @@ public:
         if (verbosity > 0) {
             for (auto uv : x.vertexPairs()) {
                 std::cout << "(" << uv
-                << " " << m_marked[uv]
-                << " " << m_costs[uv]
-                << " " << m_packing.potential(uv)
-                << " " << m_packing.is_depleted(uv)
-                << ") ";
+                          << " " << m_marked[uv]
+                          << " " << m_costs[uv]
+                          << " " << m_packing.potential(uv)
+                          << " " << m_packing.is_depleted(uv)
+                          << ") ";
             }
             std::cout << std::endl;
         }
@@ -398,30 +589,6 @@ public:
 
         assert(m_packing.is_valid());
         return {changed, max_cost > x_cost};
-    }
-
-    /**
-     * When an edge is marked, subgraphs in the packing may not have the maximal cost. Also, subgraphs which were
-     * previously blocked by a depleted vertex pair, may now be able to be inserted into the packing.
-     *
-     * Strategy: Remove all subgraphs from the packing incident to the vertex pair. Insert subgraphs to make the packing
-     * maximal.
-     *
-     * @param uv
-     */
-    void local_fix_marked(VertexPair /*uv*/) {
-
-    }
-
-    /**
-     * When an edge is edited, subgraphs in the packing may no longer be a forbidden subgraph.
-     *
-     * Strategy: Remove all subgraphs from the packing incident to the vertex pair. Insert subgraphs to make the packing
-     * maximal.
-     * @param uv
-     */
-    void local_fix_edited(VertexPair /*uv*/) {
-
     }
 };
 

@@ -46,12 +46,24 @@ class WeightedPacking {
 
 public:
     WeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats,
-            std::shared_ptr<FinderI> finder)
+                    std::shared_ptr<FinderI> finder)
             : m_graph(instance.graph), m_costs(instance.costs), m_marked(marked), m_subgraph_stats(subgraph_stats),
               m_potential(m_graph.size()), m_depleted_graph(m_graph.size()), m_finder(std::move(finder)) {
         for (VertexPair uv : m_graph.vertexPairs()) {
             m_potential[uv] = m_costs[uv];
             if (m_potential[uv] == 0) {
+                m_depleted_graph.setEdge(uv);
+            }
+        }
+    }
+
+    WeightedPacking(const WeightedPacking &other)
+            : m_graph(other.m_graph), m_costs(other.m_costs), m_marked(other.m_marked),
+              m_subgraph_stats(other.m_subgraph_stats), m_potential(m_graph.size()),
+              m_depleted_graph(m_graph.size()), m_finder(other.m_finder) {
+        for (VertexPair uv : m_graph.vertexPairs()) {
+            m_potential[uv] = other.m_potential[uv];
+            if (other.is_depleted(uv)) {
                 m_depleted_graph.setEdge(uv);
             }
         }
@@ -87,7 +99,9 @@ public:
             if (m_marked[uv]) return false;
             assert(!m_depleted_graph.hasEdge(uv));
 
-            if (verbosity > 0 && cost > m_potential[uv]) std::cout << "(" << uv << " " << m_marked[uv] << " " << m_costs[uv] << " " << m_potential[uv] << ") " << std::endl;
+            if (verbosity > 0 && cost > m_potential[uv])
+                std::cout << "(" << uv << " " << m_marked[uv] << " " << m_costs[uv] << " " << m_potential[uv] << ") "
+                          << std::endl;
             assert(cost <= m_potential[uv]);
             m_potential[uv] -= cost;
             if (m_potential[uv] == 0) {
@@ -126,19 +140,35 @@ public:
         return m_depleted_graph.hasEdge(uv);
     }
 
+    [[nodiscard]] const auto &depleted_graph() const {
+        return m_depleted_graph;
+    }
+
     [[nodiscard]] Cost potential(VertexPair uv) const {
         return m_potential[uv];
+    }
+
+    void restore_potential(VertexPair uv) {
+        assert(m_marked[uv]);
+        m_potential[uv] = m_costs[uv];
+        if (m_potential[uv] > 0)
+            m_depleted_graph.clearEdge(uv);
     }
 
 #ifndef NDEBUG
 
     [[nodiscard]] bool is_maximal() const {
-        return !m_finder->find(m_graph, m_depleted_graph, [](auto) {
-            return true;
+        bool maximal = true;
+        m_finder->find(m_graph, m_depleted_graph, [&](auto &&subgraph) {
+            auto cost = calculate_min_cost(subgraph);
+            std::cerr << subgraph << " " << cost << " ";
+            maximal = false;
+            return false;
         });
+        if (!maximal)
+            std::cerr << std::endl;
+        return maximal;
     }
-
-#endif
 
     [[nodiscard]] bool is_valid() const {
         bool valid = true;
@@ -156,6 +186,8 @@ public:
         return valid;
     }
 
+#endif
+
     /**
      * Precondition:
      *      Every pair is not depleted.
@@ -169,7 +201,8 @@ public:
      * @param subgraph_stats
      * @return
      */
-    std::tuple<std::vector<VertexPair>, std::vector<Subgraph>, std::vector<size_t>> get_closed_neighbors(Subgraph&& subgraph) {
+    std::tuple<std::vector<VertexPair>, std::vector<Subgraph>, std::vector<size_t>>
+    get_closed_neighbors(Subgraph &&subgraph) {
         std::vector<VertexPair> pairs;
         m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
             assert(!m_depleted_graph.hasEdge(uv));
@@ -186,6 +219,8 @@ public:
             VertexPair uv = pairs[i];
             assert(!m_depleted_graph.hasEdge(uv));
 
+            // Because the subgraph already contributes one to the subgraph count at uv, only search for near subgraphs
+            // if there is at least one more.
             if (m_subgraph_stats.subgraphCount(uv) > 1) {
                 m_finder->find_near_with_duplicates(uv, m_graph, m_depleted_graph, [&](Subgraph &&neighbor) {
 #ifndef NDEBUG
@@ -211,6 +246,35 @@ public:
         }
 
         return {std::move(pairs), std::move(candidates), std::move(border)};
+    }
+
+    std::vector<Subgraph> get_incident_subgraphs(const std::vector<VertexPair> &pairs) {
+        std::vector<Subgraph> subgraphs;
+        for (auto uv : pairs) {
+            assert(!m_depleted_graph.hasEdge(uv));
+
+            m_finder->find_near_with_duplicates(uv, m_graph, m_depleted_graph, [&](Subgraph &&neighbor) {
+#ifndef NDEBUG
+                m_finder->for_all_conversionless_edits(neighbor, [&](auto xy) {
+                    assert(!m_depleted_graph.hasEdge(xy));
+                    return false;
+                });
+#endif
+                subgraphs.push_back(std::move(neighbor));
+                return false;
+            });
+
+            // Prevent subgraphs including uv to be counted twice.
+            m_depleted_graph.setEdge(uv);
+        }
+
+        // Reset bound_graph.
+        for (VertexPair uv : pairs) {
+            assert(m_depleted_graph.hasEdge(uv));
+            m_depleted_graph.clearEdge(uv);
+        }
+
+        return subgraphs;
     }
 
     /**
