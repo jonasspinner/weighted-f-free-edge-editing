@@ -18,8 +18,9 @@ in commit [`fa537279`](https://github.com/jonasspinner/weighted-f-free-edge-edit
 
 ### Dependencies
 
-The required dependencies are [Boost](https://www.boost.org/) and [YAML CPP](https://github.com/jbeder/yaml-cpp/).
-To clone submodules and install dependencies execute the following commands:
+The required dependencies are [Boost](https://www.boost.org/), [YAML CPP](https://github.com/jbeder/yaml-cpp/) and
+[robin-hood-hashing](https://github.com/martinus/robin-hood-hashing).
+To clone submodules and install the dependencies execute the following commands:
 ```bash
 git submodule update --init --recursive
 sudo apt install libboost-all-dev libyaml-cpp-dev
@@ -31,9 +32,12 @@ sudo apt install libboost-all-dev libyaml-cpp-dev
 for [Linear Program Relaxation](src/lower_bound/LPRelaxation.h) to compute lower bounds for the
 [FPT algorithm](src/Editor.h). You can get Gurobi [here](https://www.gurobi.com/de/downloads/).
 
-[ILS MWIS](https://sites.google.com/site/nogueirabruno/software) is a Maximum Weight Independet Set (MWIS) solver.
+`nps_mwis` is a Maximum Weight Independet Set (MWIS) solver from [[NPS18]](https://doi.org/10.1007/s11590-017-1128-7) ([website](https://sites.google.com/site/nogueirabruno/software)).
 It is used for computing a subgraph packing to get lower bounds for the FPT algorithm. It can be downloaded by
-executing `extern/ils_mwis/get.sh`.
+executing `extern/nps_mwis/get.sh`.
+
+`lsswz_mwis` is also a MWIS solver used for lower bounds. It is from [[LSSWZ18]](https://arxiv.org/abs/1810.10834) and
+the code is note publicly available.
 
 ### Datasets
 
