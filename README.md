@@ -4,116 +4,92 @@
 ![example-edited](example-edited.png "Clustered output")
 
 > *Example of a protein-protein interaction network which is edited to be (C4, P4)-free. The connected components can be
-> used for clustering.*
+> interpreted as clusters of the original graph.*
 
-This is the source code for a bachelor thesis regarding the Weighted F-free Edge Editing Problem. We implement a FPT and
-an ILP algorithm to solve the problem exactly. The FPT algorithm and ideas are based on [GHS+19] for
-(unweighted) F-free Edge Editing. The license for their work can be found under [`extern/fpt-editing/LICENSE`](extern/fpt-editing/LICENSE).
+This is the source code for a bachelor thesis regarding the Weighted F-free Edge Editing Problem [[PDF]](https://i11www.iti.kit.edu/_media/teaching/theses/ba-spinner-19.pdf).
+We implement exact FPT and ILP algorithms. The FPT algorithm is based on work from 
+[[GHS+20]](https://arxiv.org/abs/2003.14317) for (unweighted) F-free Edge Editing.
 
-A detailed introduction to the problem and a description of the algorithms are given in the thesis.
+The code was further developed after the thesis was submitted. The project state at the time of submission can be found
+in commit [`fa537279`](https://github.com/jonasspinner/weighted-f-free-edge-editing/tree/fa537279e4dd750b91c5ceece56778981b5d60d6).
 
+
+## Setup and Installation
+
+### Dependencies
+
+The required dependencies are [Boost](https://www.boost.org/) and [YAML CPP](https://github.com/jbeder/yaml-cpp/).
+To clone submodules and install dependencies execute the following commands:
+```bash
+git submodule update --init --recursive
+sudo apt install libboost-all-dev libyaml-cpp-dev
 ```
-[GHS+19] Lars Gottesbüren, Michael Hamann, Philipp Schoch, Ben Strasser, Dorothea Wagner, and Sven Zühlsdorf.
-Engineering Exact F-free  Edge Editing. Unpublished, 2019.
+
+#### Optional Dependencies
+
+[Gurobi](https://www.gurobi.com/) is a commercial LP-Solver. It is used for an [ILP algorithm](src/solvers/ILPSolver.h) as an alternative solver and
+for [Linear Program Relaxation](src/lower_bound/LPRelaxation.h) to compute lower bounds for the
+[FPT algorithm](src/Editor.h). You can get Gurobi [here](https://www.gurobi.com/de/downloads/).
+
+[ILS MWIS](https://sites.google.com/site/nogueirabruno/software) is a Maximum Weight Independet Set (MWIS) solver.
+It is used for computing a subgraph packing to get lower bounds for the FPT algorithm. It can be downloaded by
+executing `extern/ils_mwis/get.sh`.
+
+### Datasets
+
+The datasets used are protein-protein interaction matrices derived from the
+[`biological` dataset](https://bio.informatik.uni-jena.de/data/#cluster_editing_data). The instances must follow the [METIS](https://people.sc.fsu.edu/~jburkardt/data/metis_graph/metis_graph.html) data format for graphs. The datasets can be downloaded and transformed using [snakemake](https://snakemake.readthedocs.io/en/stable/).
+```bash
+snakemake -j all \
+    data/bio \
+    data/bio-C4P4-subset \
+    data/bio-subset-A \
+    data/bio-subset-B \
+    data/bio-unweighted
 ```
 
+Alternatively, the required scripts can be executed by hand.
+```bash
+python3 scripts/download_dataset.py --dir data/bio --config data/bio.yaml --biological --max-size 1000
+python3 scripts/generate_dataset_subset.py data/bio-C4P4-subset.yaml
+...
+```
 
-## How to build
+### Building
+
+The project uses [CMake](https://cmake.org/) for building.
 
 ```bash
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make
+make fpt
 ```
 
-## Datasets
-
-Information about the datasets can be found in the `data` directory. Datasets can be downloaded, generated and filtered
-through Python scripts found in the `scripts` directory.
-
-
-## Dependencies
-
-* [Boost](https://www.boost.org/)
-
-* [Gurobi](https://www.gurobi.com/) *(optional)*
-
-  Used for an [ILP algorithm](src/solvers/ILPSolver.h) as an own solver and for
-  [Linear Program Relaxation](src/lower_bound/LPRelaxation.h) to compute lower bounds for the
-  [FPT algorithm](src/Editor.h).
-
-  You can get Gurobi [here](https://www.gurobi.com/de/downloads/).
-
-* [YAML CPP](https://github.com/jbeder/yaml-cpp/)
-
-  ```bash
-  sudo apt install libyaml-cpp-dev
-  ```
-
-* [ILS MWIS](https://sites.google.com/site/nogueirabruno/software)
-
-  Used to explicitly solve an MWIS instance to compute a subgraph packing for lower bounds for the FPT algorithm.
-
-  ```bash
-  extern/ils_mwis/get.sh
-  ```
-
-## FPT algorithm
-
-The fixed-parameter tractable (FPT) algorithm branches on the possible choices and recursively calls itself to explore a
-search tree. It uses 
-
-```
-Title:	FPT Algorithm for Weighted F-free Edge Editing
-Input:
-	A graph G = (V, E),
-	a set of forbidden subgraphs F,
-	a cost function c: (V choose 2) -> R_{>= 0},
-	a maximum editing cost k in R,
-	the set of marked vertex pairs M subset of (V choose 2) and
-	the set of currently edited vertex pairs L.
-	
-	F and c are fixed throughout the algorithm.
-Output:
-	Solutions to the F-free Editing Problem} with total editing costs of at most k.
-
-if k < LowerBound(G, k, M):
-	return
-
-S := FindForbiddenSubgraph(G, M)
-if S is none:
-	output L
-	return
-
-m := {}						// locally marked vertex pairs
-for all e in (S choose 2):
-	if e not in M:
-		M += {e}; m += {e}; L += {e}
-		G.toggle(e)
-		Edit(G, k - c(e), M, L) 	// recursive call
-		G.toggle(e)
-		L -= {e}
-
-M -= m						// unmark vertex pairs
-
+To try out the algorithm you can use this example.
+```bash
+build/fpt --multiplier 100 --F C4P4 \
+    --input data/bio/bio-nr-3-size-16.graph \
+    --lower-bound SortedGreedy \
+    --selector MostAdjacentSubgraphs \
+    --search-strategy Fixed --k 500
 ```
 
 ## How to cite
 
 ```
-Jonas Spinner.
-Weighted F-free Edge Editing. Bachelor's thesis, Karlsruhe, 2019.
+Jonas Spinner. Weighted F-free Edge Editing. Bachelor thesis, Karlsruhe, 2019.
 ```
 
 
 ```bibtex
 @thesis{Spinner2019,
-	title = {{Weighted} {F}-free {Edge} {Editing}},
-	language = {en},
-	school = {Karlsruhe Institute of Technology},
-	author = {Spinner, Jonas},
-	year = {2019},
-	type={Bachelor's thesis}
+    title = {{Weighted} {F}-free {Edge} {Editing}},
+    language = {en},
+    school = {Karlsruhe Institute of Technology},
+    author = {Spinner, Jonas},
+    date = {2019-11-29},
+    type={Bachelor thesis},
+    url={https://i11www.iti.kit.edu/_media/teaching/theses/ba-spinner-19.pdf}
 }
 ```
 
