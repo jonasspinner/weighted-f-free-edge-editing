@@ -1,7 +1,3 @@
-//
-// Created by jonas on 27.06.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_GRAPH_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_GRAPH_H
 
@@ -177,28 +173,28 @@ public:
             using value_type = Vertex;
             using iterator_category = std::forward_iterator_tag;
 
-            explicit Iterator(Vertex start) : v(start) {}
+            constexpr explicit Iterator(Vertex start) : v(start) {}
 
-            Vertex operator*() const { return v; }
+            constexpr Vertex operator*() const { return v; }
 
-            Iterator &operator++() {
+            constexpr Iterator &operator++() {
                 ++v;
                 return *this;
             }
 
-            bool operator==(const Iterator &other) const { return v == other.v; }
+            [[nodiscard]] constexpr bool operator==(const Iterator &other) const { return v == other.v; }
 
-            bool operator!=(const Iterator &other) const { return !(*this == other); }
+            [[nodiscard]] constexpr bool operator!=(const Iterator &other) const { return !(*this == other); }
         };
 
     private:
         Vertex n;
     public:
-        explicit Vertices(Vertex size) : n(size) {}
+        constexpr explicit Vertices(Vertex size) : n(size) {}
 
-        [[nodiscard]] Iterator begin() const { return Iterator(0); }
+        [[nodiscard]] constexpr Iterator begin() const { return Iterator(0); }
 
-        [[nodiscard]] Iterator end() const { return Iterator(n); }
+        [[nodiscard]] constexpr Iterator end() const { return Iterator(n); }
     };
 
     /**
@@ -301,11 +297,11 @@ public:
             using reference = const VertexPair &;
             using iterator_category = std::forward_iterator_tag;
 
-            Iterator(VertexPair start, Vertex size) : m_uv(start), n(size) {}
+            constexpr Iterator(VertexPair start, Vertex size) : m_uv(start), n(size) {}
 
-            VertexPair operator*() const { return m_uv; }
+            constexpr VertexPair operator*() const { return m_uv; }
 
-            Iterator &operator++() {
+            constexpr Iterator &operator++() {
                 ++m_uv.v;
                 if (m_uv.v == n) {
                     ++m_uv.u;
@@ -314,19 +310,19 @@ public:
                 return *this;
             }
 
-            bool operator==(const Iterator &other) const { return m_uv == other.m_uv && n == other.n; }
+            [[nodiscard]] constexpr bool operator==(const Iterator &other) const { return m_uv == other.m_uv && n == other.n; }
 
-            bool operator!=(const Iterator &other) const { return !(*this == other); }
+            [[nodiscard]] constexpr bool operator!=(const Iterator &other) const { return !(*this == other); }
         };
 
     private:
         Vertex n;
     public:
-        explicit VertexPairs(Vertex size) : n(size) {}
+        constexpr explicit VertexPairs(Vertex size) : n(size) {}
 
-        [[nodiscard]] Iterator begin() const { return Iterator({0, 1}, n); }
+        [[nodiscard]] constexpr Iterator begin() const { return Iterator({0, 1}, n); }
 
-        [[nodiscard]] Iterator end() const {
+        [[nodiscard]] constexpr Iterator end() const {
             if (n > 0) {
                 return Iterator({n - 1, n}, n);
             } else {
@@ -396,9 +392,9 @@ public:
                 return *this;
             }
 
-            bool operator==(const Iterator &other) const { return m_adj == other.m_adj && m_uv == other.m_uv; }
+            [[nodiscard]] bool operator==(const Iterator &other) const { return m_adj == other.m_adj && m_uv == other.m_uv; }
 
-            bool operator!=(const Iterator &other) const { return !(*this == other); }
+            [[nodiscard]] bool operator!=(const Iterator &other) const { return !(*this == other); }
 
         };
 

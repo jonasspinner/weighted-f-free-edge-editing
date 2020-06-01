@@ -1,7 +1,3 @@
-//
-// Created by jonas on 12.03.20.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_VERTEXPAIR_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_VERTEXPAIR_H
 
@@ -22,10 +18,10 @@ public:
      * @param x A vertex
      * @param y A vertex
      */
-    VertexPair(Vertex x, Vertex y) : u(x < y ? x : y), v(x < y ? y : x) { assert(x != y); }
+    constexpr VertexPair(Vertex x, Vertex y) : u(x < y ? x : y), v(x < y ? y : x) { assert(x != y); }
 
     struct Ordered {};
-    VertexPair(Vertex x, Vertex y, Ordered) : u(x), v(y) { assert(x < y); } // x < y as precondition
+    constexpr VertexPair(Vertex x, Vertex y, Ordered) : u(x), v(y) { assert(x < y); } // x < y as precondition
 
     friend std::ostream &operator<<(std::ostream &os, VertexPair uv) {
         return os << "{" << uv.u << ", " << uv.v << "}";
@@ -37,11 +33,15 @@ public:
         return out;
     }
 
-    friend bool operator==(const VertexPair &uv, const VertexPair &xy) {
+    [[nodiscard]] constexpr friend bool operator==(const VertexPair &uv, const VertexPair &xy) {
         return (uv.u == xy.u) && (uv.v == xy.v);
     }
 
-    friend bool operator<(const VertexPair &uv, const VertexPair &xy) {
+    [[nodiscard]] constexpr friend bool operator!=(const VertexPair &uv, const VertexPair &xy) {
+        return !(uv == xy);
+    }
+
+    [[nodiscard]] constexpr friend bool operator<(const VertexPair &uv, const VertexPair &xy) {
         return uv.u < xy.u || (uv.u == xy.u && uv.v < xy.v);
     }
 };
