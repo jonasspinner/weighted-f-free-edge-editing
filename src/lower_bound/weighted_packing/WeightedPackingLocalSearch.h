@@ -260,8 +260,8 @@ public:
         }
     }
 
-    Cost fast_lower_bound() override {
-        if (verbosity > 0) std::cout << "fast_lower_bound\n";
+    Cost calculate_lower_bound_no_edit_branch() override {
+        if (verbosity > 0) std::cout << "calculate_lower_bound_no_edit_branch\n";
         auto &state = current_state();
         if (state.is_solvable()) {
             assert(m_packing.is_maximal());

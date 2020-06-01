@@ -174,7 +174,7 @@ private:
 
             if (return_value) break;
 
-            if (k < m_lower_bound->fast_lower_bound()) break;
+            if (k < m_lower_bound->calculate_lower_bound_no_edit_branch()) break;
         }
 
         // Iterating in reverse order because SubgraphStats keeps the history on a stack.

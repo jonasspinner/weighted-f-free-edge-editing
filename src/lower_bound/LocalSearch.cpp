@@ -35,7 +35,7 @@ namespace lower_bound {
         return state.cost();
     }
 
-    Cost LocalSearch::fast_lower_bound() {
+    Cost LocalSearch::calculate_lower_bound_no_edit_branch() {
         auto &state = current_state();
         return state.cost();
     }
