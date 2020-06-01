@@ -1,7 +1,3 @@
-//
-// Created by jonas on 15.07.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_LOWERBOUNDI_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_LOWERBOUNDI_H
 
@@ -22,6 +18,10 @@ public:
      * @return
      */
     virtual Cost calculate_lower_bound(Cost k) = 0;
+
+    virtual Cost fast_lower_bound() {
+        return 0;
+    }
 
     /**
      * Returns a lower bound for the current state. The call should not improve the lower bound and must have O(1)

@@ -35,6 +35,11 @@ namespace lower_bound {
         return state.cost();
     }
 
+    Cost LocalSearch::fast_lower_bound() {
+        auto &state = current_state();
+        return state.cost();
+    }
+
     /**
      * Initializes the state by greedily constructing a maximal lower bound.
      *
@@ -213,7 +218,7 @@ namespace lower_bound {
         });
         bound_graph.setEdge(uv);
 
-        bool unsolvable = finder.for_all_conversionless_edits(removed_subgraph, [&](auto xy) {
+        bool early_exited = finder.for_all_conversionless_edits(removed_subgraph, [&](auto xy) {
             if (xy == uv) return false;
             assert(!bound_graph.hasEdge(xy));
 
@@ -232,7 +237,7 @@ namespace lower_bound {
             return false;
         });
 
-        if (unsolvable)
+        if (early_exited)
             return;
 
         finder.for_all_conversionless_edits(removed_subgraph, [&](auto xy) {
