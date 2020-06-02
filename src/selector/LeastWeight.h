@@ -28,7 +28,7 @@ namespace Selector {
             finder->find(m_graph, [&](Subgraph &&subgraph) {
                 solved = false;
 
-                Cost subgraph_cost = get_subgraph_cost(subgraph, m_marked, m_costs);
+                Cost subgraph_cost = finder->calculate_min_cost(subgraph, m_marked, m_costs);
 
                 if (subgraph_cost == invalid_cost) {
                     // if at least one forbidden subgraph has only marked vertex pairs, the problem is not solvable.

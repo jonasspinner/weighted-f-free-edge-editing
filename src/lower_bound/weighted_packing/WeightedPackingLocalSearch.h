@@ -72,7 +72,7 @@ class WeightedPackingLocalSearch : public LowerBoundI {
     const VertexPairMap<bool> &m_marked;
 
     WeightedPacking m_packing;
-    std::vector<std::unique_ptr<State>> m_states;
+    std::vector<State> m_states;
 
     std::mt19937_64 m_gen;
 
@@ -83,13 +83,13 @@ public:
                                const SubgraphStats &subgraph_stats, std::shared_ptr<FinderI> finder_ref) :
             LowerBoundI(finder_ref), m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
             m_packing(instance, marked, subgraph_stats, std::move(finder_ref)), m_gen(0) {
-        m_states.push_back(std::make_unique<State>());
+        m_states.emplace_back();
     }
 
     void push_state(Cost /*k*/) override {
         std::cout << "push_state(...) " << m_states.size() << "\n";
         assert(!m_states.empty());
-        m_states.push_back(std::make_unique<State>(*m_states.back()));
+        m_states.emplace_back(m_states.back());
     }
 
     void pop_state() override {
@@ -106,12 +106,12 @@ public:
 
     State &current_state() {
         assert(!m_states.empty());
-        return *m_states.back();
+        return m_states.back();
     }
 
     State &parent_state() {
         assert(m_states.size() > 1);
-        return *m_states[m_states.size() - 2];
+        return m_states[m_states.size() - 2];
     }
 
     /**
@@ -333,8 +333,6 @@ public:
             return initial_min_cost > k;
         });
 
-        if (verbosity > 0) std::cout << "subgraph_heap.size() = " << subgraph_heap.size() << "\n";
-
         if (unsolvable) {
             state.set_unsolvable();
             return;
@@ -405,28 +403,7 @@ public:
         auto[pairs, candidates, border] = m_packing.get_closed_neighbors(Subgraph(x));
         // Note: May change to open neighborhood. This is a change of the plateau search, in the sense that the bound is guaranteed to change if an alternative is available.
 
-        if (verbosity > 0) std::cout << "candidates.size() = " << candidates.size() << "\n";
-        if (verbosity > 0) {
-            for (size_t pair_i = 0; pair_i < pairs.size(); ++pair_i) {
-                std::cout << pairs[pair_i] << ": ";
-                for (size_t a_i = border[pair_i]; a_i < border[pair_i + 1]; ++a_i) {
-                    std::cout << candidates[a_i] << " ";
-                }
-                std::cout << "\n";
-            }
-        }
-        if (verbosity > 0) {
-            for (auto uv : x.vertexPairs()) {
-                std::cout << "(" << uv
-                          << " " << m_marked[uv]
-                          << " " << m_costs[uv]
-                          << " " << m_packing.potential(uv)
-                          << " " << m_packing.is_depleted(uv)
-                          << ") ";
-            }
-            std::cout << std::endl;
-        }
-        // Note: This is true, because of get_closed_neighbors. See the earlier fix notice for correct solution.
+        // Note: This is true, because of get_closed_neighbors. See the earlier notice for correct solution.
         assert(std::any_of(candidates.begin(), candidates.end(), [&](const auto &c) { return x == c; }));
 
         // The information about the best solution.
@@ -439,19 +416,8 @@ public:
             for (size_t a_i = border[pair_i]; a_i < border[pair_i + 1]; ++a_i) {
                 const Subgraph &a = candidates[a_i];
 
-                if (verbosity > 0) std::cout << "a = " << a << "\n";
-
                 auto a_cost = m_packing.calculate_min_cost(a);
                 assert(insertable(a_cost));
-
-                if (verbosity > 0) {
-                    std::cout << "a_cost = " << a_cost << "\n";
-                    for (auto uv : a.vertexPairs()) {
-                        std::cout << "(" << uv << " " << m_marked[uv] << " " << m_costs[uv] << " "
-                                  << m_packing.potential(uv) << ") ";
-                    }
-                    std::cout << std::endl;
-                }
 
                 m_packing.subtract_from_potential(a, a_cost);
 
@@ -474,17 +440,8 @@ public:
                         if (b_i == a_i) continue;
                         const Subgraph &b = candidates[b_i];
 
-                        if (verbosity > 0) std::cout << "b = " << b << "\n";
-
                         auto b_cost = m_packing.calculate_min_cost(b);
-                        if (verbosity > 0) {
-                            std::cout << "b_cost = " << b_cost << "\n";
-                            for (auto uv : b.vertexPairs()) {
-                                std::cout << "(" << uv << " " << m_marked[uv] << " " << m_costs[uv] << " "
-                                          << m_packing.potential(uv) << ") ";
-                            }
-                            std::cout << std::endl;
-                        }
+
                         if (insertable(b_cost)) {
                             // b can be inserted.
 
@@ -500,17 +457,9 @@ public:
                                 for (size_t c_i = border[pair_k]; c_i < border[pair_k + 1]; ++c_i) {
                                     if (c_i == a_i || c_i == b_i) continue;
                                     const Subgraph &c = candidates[c_i];
-                                    if (verbosity > 0) std::cout << "c = " << c << "\n";
 
                                     auto c_cost = m_packing.calculate_min_cost(c);
-                                    if (verbosity > 0) {
-                                        std::cout << "c_cost = " << c_cost << "\n";
-                                        for (auto uv : c.vertexPairs()) {
-                                            std::cout << "(" << uv << " " << m_marked[uv] << " " << m_costs[uv] << " "
-                                                      << m_packing.potential(uv) << ") ";
-                                        }
-                                        std::cout << std::endl;
-                                    }
+
                                     if (insertable(c_cost)) {
                                         additional_cost += c_cost;
                                         additional_subgraphs.emplace_back(c_i, c_cost);
@@ -552,23 +501,14 @@ public:
             assert(potential_copy[uv] == m_packing.potential(uv));
 #endif
 
-        if (verbosity > 0) std::cout << "max_sets.size() = " << max_sets.size() << "\n";
-        if (verbosity > 0) {
-            for (const auto &m : max_sets) {
-                for (auto[y_i, y_cost] : m) {
-                    std::cout << "(" << candidates[y_i] << ", " << y_cost << ") ";
-                }
-                std::cout << std::endl;
-            }
-        }
         assert(!max_sets.empty());
 
         std::uniform_int_distribution<size_t> sample(0, max_sets.size() - 1);
         size_t j = sample(m_gen);
 
         // Must be done here, because candidates will be moved into inserted_subgraphs.
-        bool changed = max_cost > x_cost
-                       || (max_sets[j].size() == 1 && candidates[max_sets[j].front().first] == x);
+        bool changed = max_cost > x_cost ||
+            !(max_sets[j].size() == 1 && candidates[max_sets[j].front().first] == x);
 
         for (auto[y_i, y_cost] : max_sets[j]) {
             auto &y = candidates[y_i];

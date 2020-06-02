@@ -87,6 +87,7 @@ file(GLOB SELECTOR_SRC_FILES src/selector/*.cpp)
 file(GLOB SEARCH_STRATEGY_SRC_FILES src/search_strategy/*.cpp)
 
 file(GLOB LOWER_BOUND_SRC_FILES src/lower_bound/*.cpp)
+#list(APPEND LOWER_BOUND_SRC_FILES src/lower_bound/weighted_packing/WeightedPackingLocalSearch2.cpp)
 list(FILTER LOWER_BOUND_SRC_FILES EXCLUDE REGEX "(.*/NPS_MWIS_Solver.cpp)|(.*/LSSWZ_MWIS_Solver.cpp)")
 
 if (NPS_MWIS_FOUND)
@@ -96,7 +97,7 @@ if (LSSWZ_MWIS_FOUND)
     list(APPEND LOWER_BOUND_SRC_FILES src/lower_bound/LSSWZ_MWIS_Solver.cpp)
 endif (LSSWZ_MWIS_FOUND)
 
-set(SRC_FILES ${FINDER_SRC_FILES} ${SELECTOR_SRC_FILES} ${LOWER_BOUND_SRC_FILES} ${SEARCH_STRATEGY_SRC_FILES} src/Configuration.cpp src/graph/Subgraph.cpp src/options.cpp ${NPS_MWIS_SRC_FILES})
+set(SRC_FILES ${FINDER_SRC_FILES} ${SELECTOR_SRC_FILES} ${LOWER_BOUND_SRC_FILES} ${SEARCH_STRATEGY_SRC_FILES} src/Configuration.cpp src/options.cpp ${NPS_MWIS_SRC_FILES})
 
 
 add_executable(fpt apps/run_fptsolver.cpp ${SRC_FILES})
@@ -117,7 +118,7 @@ add_dependencies(fpt_experiment version)
 
 
 if (GUROBI_FOUND)
-    add_executable(ilp apps/run_ilpsolver.cpp ${FINDER_SRC_FILES} src/Configuration.cpp src/graph/Subgraph.cpp src/options.cpp)
+    add_executable(ilp apps/run_ilpsolver.cpp ${FINDER_SRC_FILES} src/Configuration.cpp src/options.cpp)
     add_dependencies(ilp version)
     target_link_libraries(ilp LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 endif (GUROBI_FOUND)

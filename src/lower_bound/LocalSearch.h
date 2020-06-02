@@ -166,8 +166,6 @@ namespace lower_bound {
 
         Cost calculate_lower_bound_no_edit_branch() override;
 
-        Cost get_lower_bound() override { return current_state().cost(); }
-
         void initialize(Cost /*k*/) override;
 
         /**

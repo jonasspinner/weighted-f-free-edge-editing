@@ -129,9 +129,15 @@ public:
      *
      * @param index
      */
-    [[nodiscard]] const Vertex &operator[](size_t index) const { return m_vertices[index]; }
+    [[nodiscard]] const Vertex &operator[](size_t index) const {
+        assert(index < m_vertices.size());
+        return m_vertices[index];
+    }
 
-    [[nodiscard]] Vertex &operator[](size_t index) { return m_vertices[index]; }
+    [[nodiscard]] Vertex &operator[](size_t index) {
+        assert(index < m_vertices.size());
+        return m_vertices[index];
+    }
 
     friend std::ostream &operator<<(std::ostream &os, const Subgraph &subgraph) {
         os << "{";
@@ -163,6 +169,10 @@ public:
         return m_vertices == other.m_vertices;
     }
 
+    bool operator!=(const Subgraph &other) const {
+        return !(*this == other);
+    }
+
     bool operator<(const Subgraph &other) const {
         return std::lexicographical_compare(m_vertices.begin(), m_vertices.end(), other.m_vertices.begin(), other.m_vertices.end());
     }
@@ -187,11 +197,5 @@ struct std::hash<Subgraph> {
         return robin_hood::hash_bytes(ptr, len);
     }
 };
-
-constexpr Cost invalid_cost = std::numeric_limits<Cost>::max();
-
-Cost get_subgraph_cost(const Subgraph &subgraph, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs);
-
-
 
 #endif //WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPH_H

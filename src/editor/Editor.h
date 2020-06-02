@@ -1,7 +1,3 @@
-//
-// Created by jonas on 15.07.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_EDITOR_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_EDITOR_H
 
