@@ -87,13 +87,13 @@ public:
     }
 
     void push_state(Cost /*k*/) override {
-        std::cout << "push_state(...) " << m_states.size() << "\n";
+        if (verbosity > 0) std::cout << "push_state(...) " << m_states.size() << "\n";
         assert(!m_states.empty());
         m_states.emplace_back(m_states.back());
     }
 
     void pop_state() override {
-        std::cout << "pop_state() " << m_states.size() << "\n";
+        if (verbosity > 0) std::cout << "pop_state() " << m_states.size() << "\n";
         assert(!m_states.empty());
         m_states.pop_back();
         // initialize_bound_graph(*finder, current_state(), m_marked, m_bound_graph);
@@ -121,7 +121,7 @@ public:
      */
     void after_mark(VertexPair uv) override {
         assert(m_marked[uv]);
-        std::cout << "after_mark(" << uv << ")\n";
+        if (verbosity > 0) std::cout << "after_mark(" << uv << ")\n";
         auto &state = current_state();
 
         assert(m_packing.is_valid());
@@ -169,10 +169,10 @@ public:
      */
     void after_edit(VertexPair uv) override {
         assert(m_marked[uv]);
-        std::cout << "after_edit(" << uv << ")\n";
+        if (verbosity > 0) std::cout << "after_edit(" << uv << ")\n";
         auto &state = current_state();
 
-        std::cout << state.is_solvable() << "\n";
+        if (verbosity > 0) std::cout << "solvable = " << state.is_solvable() << "\n";
         //if (!state.is_solvable() && state.was_made_solvable_by(uv))
         state.set_solvable();
 
@@ -185,7 +185,10 @@ public:
 
         // Remove subgraphs which are destroyed.
         // Note: This can "free" subgraphs which now can be inserted. These are at pairs which were previously depleted.
-        std::vector<VertexPair> pairs = {uv};
+        std::vector<VertexPair> pairs;
+        if (!m_packing.is_depleted(uv))
+            pairs.push_back(uv);
+
         for (auto it = state.subgraphs().begin(); it != state.subgraphs().end();) {
             const auto &[subgraph, cost] = *it;
             if (finder->for_all_conversionless_edits(subgraph, [&](auto xy) { return xy == uv; })) {
@@ -210,9 +213,11 @@ public:
             std::cout << std::endl;
         }
 
+#ifndef NDEBUG
         for (auto xy : pairs) {
             assert(!m_packing.is_depleted(xy));
         }
+#endif
 
         // Note: Can be optimized by inserting subgraphs in a greedy order.
         auto subgraphs = m_packing.get_incident_subgraphs(pairs);
@@ -277,8 +282,8 @@ public:
 
     void local_search(State &state, Cost k) {
         if (verbosity > 0) std::cout << "local_search\n";
-        size_t max_iter = 2;
-        size_t max_rounds_no_improvement = 1;
+        size_t max_iter = 0;
+        size_t max_rounds_no_improvement = 5;
         size_t num_rounds_no_improvement = 0;
         std::vector<std::pair<Subgraph, Cost>> removed_subgraphs, inserted_subgraphs;
 
