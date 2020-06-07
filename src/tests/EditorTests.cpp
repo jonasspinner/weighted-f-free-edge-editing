@@ -22,6 +22,7 @@
 void EditorTests::configurations_have_same_output(Options::FSG fsg, const std::vector<Options::Selector> &selectors,
                                      const std::vector<Options::LB> &lower_bounds, const std::vector<int> &seeds,
                                      double multiplier) {
+    std::cout << "\n#\tconfigurations_have_same_output\n";
 
     auto orig_instance = GraphIO::read_instance(instance_path, multiplier);
     std::vector<std::tuple<Options::Selector, Options::LB, int, std::vector<Solution>>> results;
@@ -72,6 +73,63 @@ void EditorTests::configurations_have_same_output(Options::FSG fsg, const std::v
     }
 }
 
+
+void EditorTests::same_output_for_small_zero_cost_instance(const std::vector<Options::Selector> &selectors,
+                                                           const std::vector<Options::LB> &lower_bounds,
+                                                           const std::vector<int> &seeds) {
+    std::cout << "\n#\tsame_output_for_small_zero_cost_instance\n";
+    std::vector<std::tuple<Options::Selector, Options::LB, int, std::vector<Solution>>> results;
+
+    auto fsg = Options::FSG::C4P4;
+    auto graph = Graph::make_path_graph(5);
+    VertexPairMap<Cost> costs(graph.size());
+    for (auto uv : graph.vertexPairs()) {
+        costs[uv] = 0;
+    }
+    Instance orig_instance{"test-instance", std::move(graph), costs};
+
+    for (auto seed : seeds) {
+
+        Permutation P(orig_instance.graph.size(), seed);
+        Permutation P_r = P.reverse();
+
+        auto instance = P[orig_instance];
+
+        for (auto selector : selectors) {
+            for (auto lb : lower_bounds) {
+                auto config = Configuration(fsg, 1, Options::SolverType::FPT, selector, lb);
+                std::vector<Solution> solutions;
+
+                Editor editor(instance.copy(), config);
+
+                editor.edit(1, [&](const std::vector<VertexPair> &edits) {
+                    solutions.emplace_back(orig_instance, P_r[edits]);
+                }, [](Cost, Cost) {});
+
+                results.emplace_back(selector, lb, seed, std::move(solutions));
+            }
+        }
+    }
+
+    for (auto &[_0, _1, _2, solutions] : results)
+        Solution::filter_inclusion_minimal(solutions);
+
+    // Compare pairwise
+    for (size_t i = 0; i < results.size(); ++i) {
+        for (size_t j = i + 1; j < results.size(); ++j) {
+            const auto &[selector_i, lb_i, seed_i, solutions_i] = results[i];
+            const auto &[selector_j, lb_j, seed_j, solutions_j] = results[j];
+
+            std::stringstream name;
+            name << "Editor(" << selector_i << ", " << fsg << ", " << lb_i << ") seed=" << seed_i << " and "
+                 << "Editor(" << selector_j << ", " << fsg << ", " << lb_j << ") seed=" << seed_j << " "
+                 << "have the same solutions";
+            expect(name.str(), solutions_i, solutions_j);
+        }
+    }
+}
+
+
 /**
  * Tests if the Editor class has output independent of the chosen seed.
  * The output is filtered by only considering inclusion minimal solutions.
@@ -81,6 +139,8 @@ void EditorTests::configurations_have_same_output(Options::FSG fsg, const std::v
 void EditorTests::output_is_independent_of_seed(const std::vector<int> &seeds,
         Options::Selector selector = Options::Selector::FirstFound,
         Options::LB lb = Options::LB::SortedGreedy) {
+    std::cout << "\n#\toutput_is_independent_of_seed\n";
+
     auto orig_instance = GraphIO::read_instance(instance_path, 100);
 
     std::vector<std::tuple<int, std::vector<Solution>>> results;
@@ -130,17 +190,19 @@ void EditorTests::run() {
     using Options::LB;
     using Options::FSG;
 
-    auto all_selectors = {Selector::FirstFound, Selector::LeastWeight, Selector::MostMarkedPairs, Selector::MostAdjacentSubgraphs};
-    auto all_lower_bounds = {LB::LocalSearch, LB::Trivial, LB::Greedy, LB::SortedGreedy, LB::LPRelaxation, LB::NPS_MWIS_Solver};
+    // auto selectors = {Selector::FirstFound, Selector::LeastWeight, Selector::MostMarkedPairs, Selector::MostAdjacentSubgraphs};
+    // auto lower_bounds = {LB::LocalSearch, LB::Trivial, LB::Greedy, LB::SortedGreedy, LB::LPRelaxation, LB::NPS_MWIS_Solver};
 
-    // auto all_selectors = {Selector::MostAdjacentSubgraphs, Selector::SingleEdgeEditing};
-    // auto all_selectors = {Selector::MostAdjacentSubgraphs};
-    // auto all_lower_bounds = {LB::SortedGreedy, LB::LocalSearch};
-    // auto all_lower_bounds = {LB::NPS_MWIS_Solver};
+    auto selectors = {Selector::MostAdjacentSubgraphs};
+    auto lower_bounds = {LB::WeightedPackingLocalSearch, LB::SortedGreedy, LB::GreedyWeightedPacking};
 
+    configurations_have_same_output(FSG::C4P4, selectors, lower_bounds, {0, 1}, 100);
+    configurations_have_same_output(FSG::C4P4, selectors, lower_bounds, {0, 1}, 1);
 
-    configurations_have_same_output(FSG::C4P4, all_selectors, all_lower_bounds, {0, 1}, 100);
-    configurations_have_same_output(FSG::C4P4, all_selectors, all_lower_bounds, {0, 1}, 1);
+    //TODO: test case P4 with 0 cost vertex pairs.
+    same_output_for_small_zero_cost_instance(selectors, lower_bounds, {0, 1});
+    //configurations_have_same_output(FSG::C4P4, selectors, lower_bounds, {0}, 0);
 
     output_is_independent_of_seed({0, 1, 2, 3});
 }
+

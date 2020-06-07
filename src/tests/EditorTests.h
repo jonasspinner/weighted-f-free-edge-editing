@@ -22,6 +22,10 @@ public:
                                          const std::vector<Options::LB> &lower_bounds, const std::vector<int> &seeds,
                                          double multiplier);
 
+    static void same_output_for_small_zero_cost_instance(const std::vector<Options::Selector> &selectors,
+                                                         const std::vector<Options::LB> &lower_bounds,
+                                                         const std::vector<int> &seeds);
+
     void output_is_independent_of_seed(const std::vector<int> &seeds, Options::Selector selector, Options::LB lb);
 
     void run();
