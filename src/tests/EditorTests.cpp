@@ -81,7 +81,7 @@ void EditorTests::same_output_for_small_zero_cost_instance(const std::vector<Opt
     std::vector<std::tuple<Options::Selector, Options::LB, int, std::vector<Solution>>> results;
 
     auto fsg = Options::FSG::C4P4;
-    auto graph = Graph::make_path_graph(5);
+    auto graph = Graph::make_path_graph(8);
     VertexPairMap<Cost> costs(graph.size());
     for (auto uv : graph.vertexPairs()) {
         costs[uv] = 0;
@@ -102,7 +102,7 @@ void EditorTests::same_output_for_small_zero_cost_instance(const std::vector<Opt
 
                 Editor editor(instance.copy(), config);
 
-                editor.edit(1, [&](const std::vector<VertexPair> &edits) {
+                editor.edit(0, [&](const std::vector<VertexPair> &edits) {
                     solutions.emplace_back(orig_instance, P_r[edits]);
                 }, [](Cost, Cost) {});
 
