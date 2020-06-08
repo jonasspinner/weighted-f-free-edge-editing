@@ -248,6 +248,52 @@ public:
         return {std::move(pairs), std::move(candidates), std::move(border)};
     }
 
+    std::tuple<std::vector<VertexPair>, std::vector<Subgraph>, std::vector<size_t>>
+    get_open_neighbors(const Subgraph &subgraph, Cost remove_cost) {
+        std::vector<VertexPair> pairs;
+        m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
+            assert(!m_depleted_graph.hasEdge(uv));
+            if (!m_marked[uv] && m_costs[uv] == remove_cost) // uv is unmarked and was depleted before x was removed with this cost.
+                pairs.push_back(uv);
+            return false;
+        });
+
+        std::vector<Subgraph> candidates;
+        std::vector<size_t> border(pairs.size() + 1);
+
+        for (size_t i = 0; i < pairs.size(); ++i) {
+            VertexPair uv = pairs[i];
+            assert(!m_depleted_graph.hasEdge(uv));
+
+            // Because the subgraph already contributes one to the subgraph count at uv, only search for near subgraphs
+            // if there is at least one more.
+            if (m_subgraph_stats.subgraphCount(uv) > 1) {
+                m_finder->find_near_with_duplicates(uv, m_graph, m_depleted_graph, [&](Subgraph &&neighbor) {
+#ifndef NDEBUG
+                    m_finder->for_all_conversionless_edits(neighbor, [&](auto xy) {
+                        assert(!m_depleted_graph.hasEdge(xy));
+                        return false;
+                    });
+#endif
+                    candidates.push_back(std::move(neighbor));
+                    return false;
+                });
+            }
+            border[i + 1] = candidates.size();
+
+            // Prevent subgraphs including uv to be counted twice.
+            m_depleted_graph.setEdge(uv);
+        }
+
+        // Reset bound_graph.
+        for (VertexPair uv : pairs) {
+            assert(m_depleted_graph.hasEdge(uv));
+            m_depleted_graph.clearEdge(uv);
+        }
+
+        return {std::move(pairs), std::move(candidates), std::move(border)};
+    }
+
     std::vector<Subgraph> get_incident_subgraphs(const std::vector<VertexPair> &pairs) {
         std::vector<Subgraph> subgraphs;
         for (auto uv : pairs) {

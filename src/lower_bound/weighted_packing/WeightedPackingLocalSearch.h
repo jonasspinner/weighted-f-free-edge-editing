@@ -688,6 +688,50 @@ public:
     std::tuple<bool, bool> find_one_two_improvement_2(const Subgraph &x, Cost x_cost,
                                                      std::vector<std::pair<Subgraph, Cost>> &removed_subgraphs,
                                                      std::vector<std::pair<Subgraph, Cost>> &inserted_subgraphs) {
+
+        m_packing.add_to_potential(x, 1);
+        auto[pairs, candidates, border] = m_packing.get_open_neighbors(x, 1);
+
+
+        auto insertable = [&](const Subgraph &subgraph) {
+            return !finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
+                return !m_marked[uv] && m_packing.is_depleted(uv);
+            });
+        };
+
+        std::size_t a_found = std::numeric_limits<std::size_t>::max();
+        std::size_t b_found = std::numeric_limits<std::size_t>::max();
+
+        bool improvement_found = false;
+
+        for (size_t pair_i = 0; pair_i < pairs.size() && !improvement_found; ++pair_i) {
+            for (size_t a_i = border[pair_i]; a_i < border[pair_i + 1] && !improvement_found; ++a_i) {
+                const Subgraph &a = candidates[a_i];
+
+                assert(insertable(a));
+
+                m_packing.subtract_from_potential(a, 1);
+
+                for (size_t pair_j = pair_i + 1; pair_j < pairs.size() && !improvement_found; ++pair_j) {
+                    if (m_packing.is_depleted(pairs[pair_j]))
+                        continue;
+                    for (size_t b_i = border[pair_j]; b_i < border[pair_j + 1] && !improvement_found; ++b_i) {
+                        const Subgraph &b = candidates[b_i];
+
+                        if (insertable(b)) {
+                            a_found = a_i;
+                            b_found = b_i;
+                            improvement_found = true;
+                        }
+                    }
+                }
+
+                m_packing.add_to_potential(a, 1);
+            }
+        }
+
+        m_packing.add_to_potential(x, x_cost - 1);
+
         abort();
         return {false, false};
     }
