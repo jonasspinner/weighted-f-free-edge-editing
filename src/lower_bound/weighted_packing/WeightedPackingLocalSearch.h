@@ -547,6 +547,7 @@ public:
         // For a i (0..pairs.size()-1) the candidates in the range candidates[border[i]..border[i+1]-1] do not contain pairs[0..i-1] and do contain pairs[i].
         auto[pairs, candidates, border] = m_packing.get_closed_neighbors(Subgraph(x));
         // Note: May change to open neighborhood. This is a change of the plateau search, in the sense that the bound is guaranteed to change if an alternative is available.
+        // Note: Improvement: only list candidates incident to vertex pairs which became non-depleted by removing x.
 
         // Note: This is true, because of get_closed_neighbors. See the earlier notice for correct solution.
         assert(std::any_of(candidates.begin(), candidates.end(), [&](const auto &c) { return x == c; }));
@@ -573,13 +574,7 @@ public:
                     max_sets.push_back({{a_i, a_cost}});
                 }
 
-                // Note: The unweighted packing allows the following optimization.
-                // `pair_j` can be initialized with `pair_i + 1`. This can be done because the order of (a, b) does not
-                // matter and pairs[pair_i] is guaranteed to be blocked by a.
-                // This is not the case for weighted packing. pairs[pair_i] is only blocked if it is the pair with the
-                // smallest cost. Additionally the order in which the subgraphs are added can change their cost.
-                // TODO: Investigate whether `pair_i + 1` initialization is more efficient.
-                for (size_t pair_j = 0; pair_j < pairs.size(); ++pair_j) {
+                for (size_t pair_j = pair_i; pair_j < pairs.size(); ++pair_j) {
                     if (m_packing.is_depleted(pairs[pair_j]))
                         continue;
                     for (size_t b_i = border[pair_j]; b_i < border[pair_j + 1]; ++b_i) {
@@ -598,7 +593,7 @@ public:
                             Cost additional_cost = a_cost + b_cost;
                             std::vector<std::pair<size_t, Cost>> additional_subgraphs;
                             for (size_t pair_k = 0; pair_k < pairs.size(); ++pair_k) {
-                                if (m_packing.is_depleted(pairs[pair_k])) // Note: At least two pairs are depleted.
+                                if (m_packing.is_depleted(pairs[pair_k]))
                                     continue;
                                 for (size_t c_i = border[pair_k]; c_i < border[pair_k + 1]; ++c_i) {
                                     if (c_i == a_i || c_i == b_i) continue;
@@ -664,6 +659,37 @@ public:
 
         assert(m_packing.is_valid());
         return {changed, max_cost > x_cost};
+    }
+
+    /**
+     * Alternative version.
+     *
+     *  + Remove x with cost 1.
+     *  + List candidates which are incident to vertex pairs which became non-depleted by removing x. Do not list x as
+     *    candidate.
+     *  + Iterate over candidates a.
+     *  + If another candidate b also fits into a packing, then (a, b) is an improvement.
+     *  + Fully remove x.
+     *  + Insert (a, b).
+     *  + Make packing maximal by inserting additional candidates c_1, ...
+     *  + Insert x again.
+     *
+     *  If no subgraph b has been found, every candidate is a plateau-search candidate.
+     *  + Use an heuristic to choose one of the candidates. For example:
+     *    + A subgraph which is already in the packing.
+     *    + A subgraph which does deplete the fewest vertex pairs.
+     *
+     * @param x
+     * @param x_cost
+     * @param removed_subgraphs
+     * @param inserted_subgraphs
+     * @return
+     */
+    std::tuple<bool, bool> find_one_two_improvement_2(const Subgraph &x, Cost x_cost,
+                                                     std::vector<std::pair<Subgraph, Cost>> &removed_subgraphs,
+                                                     std::vector<std::pair<Subgraph, Cost>> &inserted_subgraphs) {
+        abort();
+        return {false, false};
     }
 };
 

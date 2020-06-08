@@ -18,6 +18,8 @@ public:
     //       needed.
     using SubgraphCallback = std::function<bool(Subgraph &&)>;
 
+    // TODO: std::function is a major performance bottleneck. Use tlx::Delegate or replace all finder and subgraph code
+    //       with templated classes.
     using VertexPairCallback = std::function<bool(VertexPair)>;
 
 public:
