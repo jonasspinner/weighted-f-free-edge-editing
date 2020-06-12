@@ -1,3 +1,6 @@
 [submodule "extern/robin-hood-hashing"]
 	path = extern/robin-hood-hashing
 	url = https://github.com/martinus/robin-hood-hashing
+[submodule "extern/tlx"]
+	path = extern/tlx
+	url = https://github.com/tlx/tlx.git
