@@ -1,10 +1,8 @@
-//
-// Created by jonas on 15.07.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_FINDERI_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_FINDERI_H
 
+
+#include <delegate.hpp>
 
 #include "../graph/Graph.h"
 #include "../graph/Subgraph.h"
@@ -16,11 +14,13 @@ class FinderI {
 public:
     // TODO: Maybe convert to (const Subgraph &). This allows using the same Subgraph for finding and only copy it if
     //       needed.
-    using SubgraphCallback = std::function<bool(Subgraph &&)>;
+    // using SubgraphCallback = std::function<bool(Subgraph &&)>;
+    using SubgraphCallback = tlx::Delegate<bool(Subgraph &&)>;
 
     // TODO: std::function is a major performance bottleneck. Use tlx::Delegate or replace all finder and subgraph code
     //       with templated classes.
-    using VertexPairCallback = std::function<bool(VertexPair)>;
+    //using VertexPairCallback = std::function<bool(VertexPair)>;
+    using VertexPairCallback = tlx::Delegate<bool(VertexPair)>;
 
 public:
     virtual ~FinderI() = default;
