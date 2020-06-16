@@ -1,7 +1,3 @@
-//
-// Created by jonas on 19.03.20.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_SINGLEEDGEEDITING_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_SINGLEEDGEEDITING_H
 
@@ -12,10 +8,13 @@ namespace Selector {
         const Graph &m_graph;
         const VertexPairMap<bool> &m_marked;
         const SubgraphStats &m_subgraph_stats;
+
+        std::shared_ptr<FinderI> finder;
     public:
         SingleEdgeEditing(std::shared_ptr<FinderI> finder_ptr, const Graph &graph, const VertexPairMap<bool> &marked,
                           const SubgraphStats &subgraph_stats) :
-                SelectorI(std::move(finder_ptr)), m_graph(graph), m_marked(marked), m_subgraph_stats(subgraph_stats) {}
+                m_graph(graph), m_marked(marked), m_subgraph_stats(subgraph_stats),
+                finder(std::move(finder_ptr)) {}
 
         [[nodiscard]] RecursionType recursion_type() const override { return RecursionType::VertexPair; }
 

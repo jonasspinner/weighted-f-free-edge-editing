@@ -1,7 +1,3 @@
-//
-// Created by jonas on 18.09.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_MOSTADJACENTSUBGRAPHS_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_MOSTADJACENTSUBGRAPHS_H
 
@@ -17,11 +13,12 @@ private:
     const SubgraphStats &m_subgraph_stats;
     Graph m_used;
 
+    std::shared_ptr<FinderI> finder;
 public:
     MostAdjacentSubgraphs(std::shared_ptr<FinderI> finder_ptr, const Graph &graph, const VertexPairMap<bool> &marked,
         const SubgraphStats &subgraph_stats) :
-            SelectorI(std::move(finder_ptr)), m_graph(graph), m_marked(marked), m_subgraph_stats(subgraph_stats),
-            m_used(m_marked.size()) {}
+            m_graph(graph), m_marked(marked), m_subgraph_stats(subgraph_stats),
+            m_used(m_marked.size()), finder(std::move(finder_ptr)) {}
 
     Problem select_problem(Cost /*k*/) override {
 

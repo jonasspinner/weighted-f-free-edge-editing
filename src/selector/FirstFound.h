@@ -1,9 +1,5 @@
-//
-// Created by jonas on 15.07.19.
-//
-
-#ifndef CONCEPT_FIRSTEDITABLE_H
-#define CONCEPT_FIRSTEDITABLE_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_FIRSTEDITABLE_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_FIRSTEDITABLE_H
 
 
 #include "../graph/VertexPairMap.h"
@@ -17,9 +13,10 @@ namespace Selector {
         const Graph &m_graph;
         const VertexPairMap<bool> &m_marked;
 
+        std::shared_ptr<FinderI> finder;
     public:
         explicit FirstFound(std::shared_ptr<FinderI> finder_ptr, const Graph &graph, const VertexPairMap<bool> &marked)
-                : SelectorI(std::move(finder_ptr)), m_graph(graph), m_marked(marked) {}
+                : m_graph(graph), m_marked(marked), finder(std::move(finder_ptr)) {}
 
         /**
          * Select the first forbidden subgraph found.
@@ -46,4 +43,4 @@ namespace Selector {
 }
 
 
-#endif //CONCEPT_FIRSTEDITABLE_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_FIRSTEDITABLE_H

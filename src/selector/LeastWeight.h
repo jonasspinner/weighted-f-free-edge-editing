@@ -1,9 +1,5 @@
-//
-// Created by jonas on 15.07.19.
-//
-
-#ifndef CONCEPT_LEASTWEIGHT_H
-#define CONCEPT_LEASTWEIGHT_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_LEASTWEIGHT_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_LEASTWEIGHT_H
 
 #include "../graph/VertexPairMap.h"
 
@@ -14,10 +10,11 @@ namespace Selector {
         const VertexPairMap<Cost> &m_costs;
         const VertexPairMap<bool> &m_marked;
 
+        std::shared_ptr<FinderI> finder;
     public:
         LeastWeight(const Graph &graph, const VertexPairMap<Cost> &costs, std::shared_ptr<FinderI> finder_ptr,
-                    const VertexPairMap<bool> &marked) : SelectorI(std::move(finder_ptr)), m_graph(graph),
-                                                         m_costs(costs), m_marked(marked) {}
+                    const VertexPairMap<bool> &marked) :
+                    m_graph(graph), m_costs(costs), m_marked(marked), finder(std::move(finder_ptr)) {}
 
         Problem select_problem(Cost /*k*/) override {
             Subgraph min_subgraph{};
@@ -58,4 +55,4 @@ namespace Selector {
 }
 
 
-#endif //CONCEPT_LEASTWEIGHT_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_LEASTWEIGHT_H

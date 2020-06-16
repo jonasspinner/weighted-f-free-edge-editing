@@ -1,7 +1,3 @@
-//
-// Created by jonas on 18.09.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_MOSTORONELEFTSUBGRAPH_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_MOSTORONELEFTSUBGRAPH_H
 
@@ -43,9 +39,11 @@ private:
 
     std::vector<std::unique_ptr<State>> m_states;
 
+    std::shared_ptr<FinderI> finder;
 public:
-    MostOrOneLeftSubgraph(std::shared_ptr <FinderI> finder_ptr, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) : SelectorI(
-            std::move(finder_ptr)), m_marked(marked), m_subgraph_stats(subgraph_stats) {
+    MostOrOneLeftSubgraph(std::shared_ptr <FinderI> finder_ptr,
+            const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) :
+            m_marked(marked), m_subgraph_stats(subgraph_stats), finder(std::move(finder_ptr)) {
         m_states.push_back(std::make_unique<State>());
         assert(false);
     }

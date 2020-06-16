@@ -1,8 +1,3 @@
-//
-// Created by jonas on 06.09.19.
-//
-
-
 #include "selector_utils.h"
 
 #include "FirstFound.h"
