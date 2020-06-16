@@ -35,7 +35,7 @@ namespace lower_bound {
         using Options::LB;
         switch (lower_bound) {
             case LB::Trivial:
-                return std::make_unique<Trivial>(finder);
+                return std::make_unique<Trivial>();
             case LB::LocalSearch:
                 return std::make_unique<LocalSearch>(instance, marked, subgraph_stats, finder);
             case LB::Greedy:

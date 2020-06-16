@@ -1,7 +1,3 @@
-//
-// Created by jonas on 03.09.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_LPRELAXATION_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_LPRELAXATION_H
 
@@ -35,6 +31,7 @@ namespace lower_bound {
 
         VertexPairMap<bool> m_edited;
 
+        std::shared_ptr<FinderI> finder;
     public:
         /**
          * The code is adapted from Michael Hamann.
@@ -48,7 +45,6 @@ namespace lower_bound {
          */
         LPRelaxation(const Instance &instance, const VertexPairMap<bool> &forbidden,
                      Configuration config, std::shared_ptr<FinderI> finder_ref) :
-                LowerBoundI(std::move(finder_ref)),
                 m_graph(instance.graph),
                 m_costs(instance.costs),
                 m_marked(forbidden),
@@ -58,7 +54,8 @@ namespace lower_bound {
                 k_initial(0),
                 m_shall_solve(true),
                 m_config(std::move(config)),
-                m_edited(m_costs.size(), false) {
+                m_edited(m_costs.size(), false),
+                finder(std::move(finder_ref)) {
             if (finder->forbidden_subgraphs() != Options::FSG::C4P4) {
                 throw std::runtime_error("Only C4P4 allowed as forbidden subgraphs.");
             }

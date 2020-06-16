@@ -18,11 +18,13 @@ namespace lower_bound {
         VertexPairMap<Cost> m_costs_remaining;
 
         std::vector<std::pair<Cost, Subgraph>> m_subgraph_heap;
+
+        std::shared_ptr<FinderI> finder;
     public:
         GreedyWeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked,
                               std::shared_ptr<FinderI> finder_ref) :
-                LowerBoundI(std::move(finder_ref)), m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
-                m_costs_remaining(m_costs.size()) {}
+                m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
+                m_costs_remaining(m_costs.size()), finder(std::move(finder_ref)) {}
 
         Cost calculate_lower_bound(Cost k) override {
             // The subgraphs are stored in a vector. The priority queue stores the subgraph costs and an index into the

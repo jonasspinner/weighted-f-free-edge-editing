@@ -6,11 +6,7 @@
 
 
 class LowerBoundI : public ConsumerI {
-protected:
-    std::shared_ptr<FinderI> finder;
 public:
-    explicit LowerBoundI(std::shared_ptr<FinderI> finder_ptr) : finder(std::move(finder_ptr)) {}
-
     /**
      * Calculate a lower bound for the current state. The search can be stopped when the lower bound is larger than k.
      *

@@ -1,7 +1,3 @@
-//
-// Created by jonas on 25.07.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_LOCALSEARCH_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_LOCALSEARCH_H
 
@@ -153,14 +149,15 @@ namespace lower_bound {
         constexpr static bool use_two_improvement = true;
         constexpr static bool use_omega_improvement = true;
 
+        std::shared_ptr<FinderI> finder;
     public:
         explicit LocalSearch(const Instance &instance, const VertexPairMap<bool> &marked,
                              const SubgraphStats &subgraph_stats, std::shared_ptr<FinderI> finder_ref,
                              int seed = 0, float alpha = 0.7, size_t max_rounds_no_improvements = 5) :
-                LowerBoundI(std::move(finder_ref)), m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
+                m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
                 m_subgraph_stats(subgraph_stats), m_bound_graph(instance.graph.size()),
                 m_gen(static_cast<unsigned long>(seed)), m_alpha(alpha),
-                m_max_rounds_no_improvement(max_rounds_no_improvements) {}
+                m_max_rounds_no_improvement(max_rounds_no_improvements), finder(std::move(finder_ref)) {}
 
         Cost calculate_lower_bound(Cost k) override;
 

@@ -1,7 +1,3 @@
-//
-// Created by jonas on 25.01.20.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_NPS_MWIS_SOLVER_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_NPS_MWIS_SOLVER_H
 
@@ -21,11 +17,12 @@ namespace lower_bound {
         const VertexPairMap<Cost> &m_costs;
         const VertexPairMap<bool> &m_marked;
 
+        std::shared_ptr<FinderI> finder;
     public:
         NPS_MWIS_Solver(const Instance &instance, const VertexPairMap<bool> &marked,
                         std::shared_ptr<FinderI> finder_ref) :
-                LowerBoundI(std::move(finder_ref)), m_graph(instance.graph), m_costs(instance.costs),
-                m_marked(marked) {}
+                m_graph(instance.graph), m_costs(instance.costs),
+                m_marked(marked), finder(std::move(finder_ref)) {}
 
         Cost calculate_lower_bound(Cost k) override;
 

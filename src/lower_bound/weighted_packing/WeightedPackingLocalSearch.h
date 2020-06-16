@@ -76,11 +76,13 @@ class WeightedPackingLocalSearch final : public LowerBoundI {
 
     int verbosity = 0;
 
+    std::shared_ptr<FinderI> finder;
 public:
     WeightedPackingLocalSearch(const Instance &instance, const VertexPairMap<bool> &marked,
                                const SubgraphStats &subgraph_stats, std::shared_ptr<FinderI> finder_ref) :
-            LowerBoundI(finder_ref), m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
-            m_packing(instance, marked, subgraph_stats, std::move(finder_ref)), m_gen(0) {
+            m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
+            m_packing(instance, marked, subgraph_stats, std::move(finder_ref)), m_gen(0),
+            finder(std::move(finder_ref)) {
         m_states.emplace_back();
     }
 

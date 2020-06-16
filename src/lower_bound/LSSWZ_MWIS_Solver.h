@@ -1,7 +1,3 @@
-//
-// Created by jonas on 06.02.20.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_LSSWZ_MWIS_SOLVER_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_LSSWZ_MWIS_SOLVER_H
 
@@ -23,11 +19,12 @@ namespace lower_bound {
         double time_limit = 10;
         bool disable_reduction = false;
 
+        std::shared_ptr<FinderI> finder;
     public:
         LSSWZ_MWIS_Solver(const Instance &instance, const VertexPairMap<bool> &marked, Configuration config,
                           std::shared_ptr<FinderI> finder_ref) :
-                LowerBoundI(std::move(finder_ref)), m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
-                m_config(std::move(config)) {}
+                m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
+                m_config(std::move(config)), finder(std::move(finder_ref)) {}
 
         Cost calculate_lower_bound(Cost k) override;
 
