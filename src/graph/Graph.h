@@ -466,6 +466,7 @@ public:
     }
 
     friend class FinderI;
+    friend class CenterC4P4Finder;
 };
 
 

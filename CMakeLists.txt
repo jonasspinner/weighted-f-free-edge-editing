@@ -5,6 +5,9 @@ project(Weighted_F-free_Edge_Editing)
 
 include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/extern/robin-hood-hashing/src/include")
 
+add_subdirectory(extern/tlx)
+include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/extern/tlx/tlx")
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
 set(CMAKE_CXX_STANDARD 17)
 
@@ -108,6 +111,7 @@ add_executable(fpt_experiment apps/run_fpt_experiment.cpp ${SRC_FILES})
 add_executable(lower_bound_inspection apps/run_lower_bound_inspection.cpp ${SRC_FILES})
 add_executable(instance_converter apps/run_instance_converter.cpp)
 add_executable(instance_packing_problem apps/run_instance_packing_problem.cpp ${FINDER_SRC_FILES} src/options.cpp)
+add_executable(templated_subgraph_test apps/run_templated_subgraph_test.cpp src/Configuration.cpp src/options.cpp)
 
 
 add_dependencies(fpt version)
@@ -132,6 +136,7 @@ target_link_libraries(fpt_experiment LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_L
 target_link_libraries(lower_bound_inspection LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(instance_converter LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(instance_packing_problem LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
+target_link_libraries(templated_subgraph_test LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 
 # Gurobi
 # TODO: Only link if necessary.
