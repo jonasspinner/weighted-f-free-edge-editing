@@ -434,7 +434,7 @@ public:
 
             for (const auto &[subgraph, cost] : state.subgraphs()) {
                 auto[changed, improved] = \
-                    find_one_two_improvement(subgraph, cost, removed_subgraphs, inserted_subgraphs);
+                    find_one_two_improvement_2(subgraph, cost, removed_subgraphs, inserted_subgraphs);
                 changed_in_round |= changed;
                 improved_in_round |= improved;
             }
@@ -454,6 +454,11 @@ public:
                     state.subgraphs().erase(it);
                 }
             }
+
+#ifndef NDEBUG
+            state.packing_is_same_as_initialized_by_state(m_packing);
+            assert(m_packing.is_maximal());
+#endif
 
             num_rounds_no_improvement = improved_in_round ? 0 : num_rounds_no_improvement + 1;
             if (!changed_in_round ||
@@ -688,9 +693,17 @@ public:
     std::tuple<bool, bool> find_one_two_improvement_2(const Subgraph &x, Cost x_cost,
                                                      std::vector<std::pair<Subgraph, Cost>> &removed_subgraphs,
                                                      std::vector<std::pair<Subgraph, Cost>> &inserted_subgraphs) {
+        std::cout << "---\n";
+        std::cout << "x = " << x << " " << x_cost << "\n";
 
         m_packing.add_to_potential(x, 1);
         auto[pairs, candidates, border] = m_packing.get_open_neighbors(x, 1);
+
+        std::cout << "candidates.size() = " << candidates.size() << "\n";
+        if (candidates.empty()) {
+            m_packing.subtract_from_potential(x, 1);
+            return {false, false};
+        }
 
 
         auto insertable = [&](const Subgraph &subgraph) {
@@ -730,10 +743,61 @@ public:
             }
         }
 
-        m_packing.add_to_potential(x, x_cost - 1);
 
-        abort();
-        return {false, false};
+
+
+        auto insert = [&](auto subgraph) {
+            auto cost = m_packing.calculate_min_cost(subgraph);
+            std::cout << "inserted " << subgraph << " " << cost << "\n";
+            m_packing.subtract_from_potential(subgraph, cost);
+            inserted_subgraphs.emplace_back(subgraph, cost);
+        };
+
+        auto try_insert = [&](auto subgraph) {
+            auto cost = m_packing.calculate_min_cost(subgraph);
+            if (cost > 0) {
+                std::cout << "inserted " << subgraph << " " << cost << "\n";
+                m_packing.subtract_from_potential(subgraph, cost);
+                inserted_subgraphs.emplace_back(subgraph, cost);
+            }
+        };
+
+
+        if (x_cost > 1) {
+            m_packing.add_to_potential(x, x_cost - 1);
+            removed_subgraphs.emplace_back(x, x_cost);
+        }
+
+        if (improvement_found) {
+            std::cout << "(1,2) improvement\n";
+            insert(candidates[a_found]);
+            insert(candidates[b_found]);
+        } else {
+            std::cout << "(1,1) plateau\n";
+            std::uniform_int_distribution<size_t> dist(0, candidates.size() - 1);
+            insert(candidates[dist(m_gen)]);
+        }
+
+        for (auto &c : candidates) {
+            try_insert(c);
+        }
+
+        auto cost = m_packing.calculate_min_cost(x);
+        if (cost > 0) {
+            std::cout << "inserted " << x << " " << cost << "\n";
+            m_packing.subtract_from_potential(x, cost);
+
+            if (cost < x_cost) {
+                removed_subgraphs.emplace_back(x, x_cost - cost);
+            } else if (cost > x_cost) {
+                inserted_subgraphs.emplace_back(x, cost - x_cost);
+            }
+        } else {
+            removed_subgraphs.emplace_back(x, 1);
+        }
+        // try_insert(x);
+
+        return {improvement_found, true};
     }
 };
 
