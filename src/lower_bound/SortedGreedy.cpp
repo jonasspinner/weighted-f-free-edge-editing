@@ -1,8 +1,3 @@
-//
-// Created by jonas on 29.07.19.
-//
-
-
 #include "SortedGreedy.h"
 
 #include <vector>
@@ -23,15 +18,16 @@ namespace lower_bound {
      * @param k Not used
      * @return A lower bound on the costs required to solve the current instance.
      */
-    Cost SortedGreedy::calculate_lower_bound(Cost k) {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    Cost SortedGreedy<SetOfForbiddenSubgraphs>::calculate_lower_bound(Cost k) {
         Cost max_min_cost = std::numeric_limits<Cost>::min();
 
         // Find all forbidden subgraphs with editable vertex pairs.
         // The cost for a single forbidden subgraph is the minimum edit cost for an editable vertex pair.
         std::vector<std::pair<Cost, Subgraph>> subgraphs;
 
-        finder->find_with_duplicates(m_graph, [&](Subgraph &&subgraph) {
-            Cost min_cost = finder->calculate_min_cost(subgraph, m_marked, m_costs);
+        m_finder.find(m_graph, [&](Subgraph subgraph) {
+            Cost min_cost = subgraph.calculate_min_cost(m_costs, m_marked);
             subgraphs.emplace_back(min_cost, std::move(subgraph));
             max_min_cost = std::max(max_min_cost, min_cost);
             return max_min_cost > k;
@@ -55,31 +51,36 @@ namespace lower_bound {
                 break;
 
             // Check if the subgraph is adjacent to one already used in the bound.
-            bool touches_bound = finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
-                return !m_marked[uv] && m_used_in_bound[uv];
-            });
+            bool touches_bound = false;
+            for (auto uv : subgraph.non_converting_edits()) {
+                if (!m_marked[uv] && m_used_in_bound[uv]) {
+                    touches_bound = true;
+                    break;
+                }
+            }
 
             if (!touches_bound) {
                 bound_size += cost;
-                finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
+                for (auto uv : subgraph.non_converting_edits()) {
                     if (!m_marked[uv])
                         m_used_in_bound[uv] = true;
-                    return false;
-                });
+                }
             }
         }
 
         return bound_size;
     }
 
-    std::tuple<Cost, VertexPairMap<bool>, std::vector<Subgraph>, std::vector<VertexPair>>
-    SortedGreedy::calculate_lower_bound_and_packing() const {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    [[nodiscard]] std::tuple<Cost, VertexPairMap<bool>, std::vector<typename SortedGreedy<SetOfForbiddenSubgraphs>::Subgraph>, std::vector<VertexPair>>
+    SortedGreedy<SetOfForbiddenSubgraphs>::calculate_lower_bound_and_packing() {
 
         // Find all forbidden subgraphs with editable vertex pairs.
         // The cost for a single forbidden subgraph is the minimum edit cost for an editable vertex pair.
         std::vector<std::pair<Cost, Subgraph>> subgraphs;
-        finder->find(m_graph, [&](Subgraph &&subgraph) {
-            Cost min_cost = finder->calculate_min_cost(subgraph, m_marked, m_costs);
+
+        m_finder.find(m_graph, [&](Subgraph subgraph) {
+            Cost min_cost = subgraph.calculate_min_cost(m_costs, m_marked);
             subgraphs.emplace_back(min_cost, std::move(subgraph));
             return false;
         });
@@ -99,16 +100,16 @@ namespace lower_bound {
 
             // Check if the subgraph is adjacent to one already used in the bound.
             bool touches_bound = false;
-            for (VertexPair uv : subgraph.vertexPairs())
+            for (VertexPair uv : subgraph.vertex_pairs())
                 if (!m_marked[uv] && covered_by_packing[uv]) {
                     touches_bound = true;
                     break;
                 }
 
             if (!touches_bound) {
-                VertexPair xy{-0, static_cast<Vertex>(-1)};
+                VertexPair xy{static_cast<Vertex>(-2), static_cast<Vertex>(-1)};
                 Cost min_cost = invalid_cost;
-                for (VertexPair uv : subgraph.vertexPairs()) {
+                for (VertexPair uv : subgraph.vertex_pairs()) {
                     if (!m_marked[uv]) {
                         covered_by_packing[uv] = true;
                         if (m_costs[uv] < min_cost) {
@@ -126,4 +127,6 @@ namespace lower_bound {
 
         return {packing_cost, covered_by_packing, packing, min_cost_vertex_pairs};
     }
+
+    template class SortedGreedy<Options::FSG::C4P4>;
 }

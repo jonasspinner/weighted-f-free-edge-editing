@@ -1,9 +1,10 @@
-#ifndef WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPH_H
-#define WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPH_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPHT_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPHT_H
 
 
 #include "../options.h"
 #include "../graph/Graph.h"
+#include "../graph/VertexPairMap.h"
 
 
 template<Options::FSG SetOfForbiddenSubgraphs>
@@ -23,6 +24,7 @@ public:
     VertexIt vertices() const;
     VertexPairIt vertex_pairs() const;
     NonConvertingEdits non_converting_edits() const;
+    Cost calculate_min_cost(const VertexPairMap<Cost> &costs, const VertexPairMap<bool> &marked) const;
     [[nodiscard]] bool operator==(const Subgraph &other) const;
     [[nodiscard]] bool operator!=(const Subgraph &other) const;
     [[nodiscard]] bool operator<(const Subgraph &other) const;
@@ -37,4 +39,4 @@ public:
 
 
 
-#endif //WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPH_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPHT_H

@@ -41,7 +41,12 @@ namespace lower_bound {
             case LB::Greedy:
                 return std::make_unique<Greedy>(instance, marked, finder);
             case LB::SortedGreedy:
-                return std::make_unique<SortedGreedy>(instance, marked, finder);
+            {
+                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
+                    return std::make_unique<SortedGreedy<Options::FSG::C4P4>>(instance, marked);
+                }
+                throw std::runtime_error("SortedGreedy not specialized for given forbidden subgraphs.");
+            }
             case LB::LPRelaxation:
 #ifdef GUROBI_FOUND
                 return std::make_unique<LPRelaxation>(instance, marked, std::move(config), finder);
