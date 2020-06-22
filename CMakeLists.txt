@@ -111,7 +111,7 @@ add_executable(fpt_experiment apps/run_fpt_experiment.cpp ${SRC_FILES})
 add_executable(lower_bound_inspection apps/run_lower_bound_inspection.cpp ${SRC_FILES})
 add_executable(instance_converter apps/run_instance_converter.cpp)
 add_executable(instance_packing_problem apps/run_instance_packing_problem.cpp ${FINDER_SRC_FILES} src/options.cpp)
-add_executable(templated_subgraph_test apps/run_templated_subgraph_test.cpp src/Configuration.cpp src/options.cpp)
+add_executable(templated_subgraph_test apps/run_templated_subgraph_test.cpp src/Configuration.cpp src/options.cpp src/finder/CenterC4P4.cpp)
 
 
 add_dependencies(fpt version)

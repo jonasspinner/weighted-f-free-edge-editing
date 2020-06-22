@@ -1,6 +1,10 @@
 #include "../src/forbidden_subgraphs/SubgraphC4P4.h"
 #include "../src/graph/GraphIO.h"
 
+
+#include "../src/tests/FinderTTests.h"
+
+
 template<Options::FSG Kind>
 class Test {
     using Subgraph = SubgraphT<Kind>;
@@ -20,7 +24,7 @@ public:
             std::cout << x << "\n";
         }
 
-        auto S{m_vector[0]};
+        constexpr auto S = SubgraphT<Options::FSG::C4P4>::C4({0, 1, 2, 3});
         for (auto u : S.vertices()) {
             std::cout << u << " ";
         }
@@ -85,13 +89,15 @@ int main() {
     auto &G = instance.graph;
 
     std::size_t n{0};
-    for (std::size_t i = 0; i < 1000; ++i) {
+    for (std::size_t i = 0; i < 100; ++i) {
         finder.find(G, [&](auto) {
             ++n;
             return false;
         });
     }
     std::cout << n << "\n";
+
+    FinderTTests().run();
 
     return 0;
 }
