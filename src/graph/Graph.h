@@ -39,7 +39,7 @@ public:
     }
 
     Graph copy() const {
-        Graph other(m_size);
+        Graph other(size());
         other.m_adj = m_adj;
         return other;
     }
@@ -78,16 +78,18 @@ public:
      *
      * @return
      */
-    [[nodiscard]] unsigned int size() const { return m_size; }
+    [[nodiscard]] inline unsigned int size() const { return m_size; }
 
-    [[nodiscard]] unsigned int number_of_vertices() const { return m_size; }
+    [[nodiscard]] inline unsigned int number_of_vertices() const { return size(); }
 
 
     /**
      * Clears all edges.
      */
     void clearEdges() {
-        for (auto &row: m_adj) { row.reset(); }
+        for (auto &row: m_adj) {
+            row.reset();
+        }
     }
 
     /**
@@ -95,10 +97,10 @@ public:
      *
      * @param edge
      */
-    void toggleEdge(VertexPair edge) {
+    inline void toggleEdge(VertexPair edge) {
         const auto[u, v] = edge;
-        assert(u < m_size);
-        assert(v < m_size);
+        assert(u < size());
+        assert(v < size());
         m_adj[u].flip(v);
         m_adj[v].flip(u);
     }
@@ -109,8 +111,8 @@ public:
      * @param u
      * @return
      */
-    [[nodiscard]] size_t degree(Vertex u) const {
-        assert(u < m_size);
+    [[nodiscard]] inline size_t degree(Vertex u) const {
+        assert(u < size());
         return m_adj[u].count();
     };
 
@@ -120,9 +122,9 @@ public:
      * @param edge
      * @return
      */
-    [[nodiscard]] bool hasEdge(VertexPair edge) const {
-        assert(edge.u < m_size);
-        assert(edge.v < m_size);
+    [[nodiscard]] inline bool hasEdge(VertexPair edge) const {
+        assert(edge.u < size());
+        assert(edge.v < size());
         return m_adj[edge.u][edge.v];
     }
 
@@ -131,10 +133,10 @@ public:
      *
      * @param edge
      */
-    void setEdge(VertexPair edge) {
+    void inline setEdge(VertexPair edge) {
         const auto[u, v] = edge;
-        assert(u < m_size);
-        assert(v < m_size);
+        assert(u < size());
+        assert(v < size());
         m_adj[u].set(v);
         m_adj[v].set(u);
     }
@@ -158,8 +160,8 @@ public:
      */
     void clearEdge(VertexPair edge) {
         const auto[u, v] = edge;
-        assert(u < m_size);
-        assert(v < m_size);
+        assert(u < size());
+        assert(v < size());
         m_adj[u].reset(v);
         m_adj[v].reset(u);
     }
@@ -203,7 +205,7 @@ public:
      * @return
      */
     [[nodiscard]] Vertices vertices() const {
-        return Vertices(m_size);
+        return Vertices(size());
     }
 
 
@@ -338,7 +340,7 @@ public:
      * @return
      */
     [[nodiscard]] VertexPairs vertexPairs() const {
-        return VertexPairs(m_size);
+        return VertexPairs(size());
     }
 
 
