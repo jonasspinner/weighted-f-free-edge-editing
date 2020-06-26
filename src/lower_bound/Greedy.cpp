@@ -1,8 +1,3 @@
-//
-// Created by jonas on 29.07.19.
-//
-
-
 #include "Greedy.h"
 
 
@@ -21,37 +16,40 @@ namespace lower_bound {
      * @param k Not used
      * @return A lower bound on the costs required to solve the current instance.
      */
-    Cost Greedy::calculate_lower_bound(Cost k) {
+    template <Options::FSG SetOfForbiddenSubgraphs>
+    Cost Greedy<SetOfForbiddenSubgraphs>::calculate_lower_bound(Cost k) {
         Cost bound_size = 0;
         m_used_in_bound.clear();
 
-        // Only use find and not find_with_duplicates because the first version of the subgraph will be inserted.
-        // This relies on the fact that all duplicate version have the same cost. Note: That may change.
-        finder->find(m_graph, [&](Subgraph &&subgraph) {
+        finder.find_unique(m_graph, [&](Subgraph subgraph) {
 
             // Check if the subgraph is adjacent to one already used in the bound.
-            bool touches_bound = finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
-                return !m_marked[uv] && m_used_in_bound[uv];
-            });
+            bool touches_bound = false;
+            for (auto uv : subgraph.non_converting_edits()) {
+                if (!m_marked[uv] && m_used_in_bound[uv]) {
+                    touches_bound = true;
+                    break;
+                }
+            }
 
             if (!touches_bound) {
-                Cost cost = finder->calculate_min_cost(subgraph, m_marked, m_costs);
+                Cost cost = subgraph.calculate_min_cost(m_costs, m_marked);
                 if (cost == invalid_cost) {
                     bound_size = invalid_cost;
                     return true;
                 }
                 bound_size += cost;
 
-
-                finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
+                for (auto uv : subgraph.non_converting_edits()) {
                     if (!m_marked[uv])
                         m_used_in_bound[uv] = true;
-                    return false;
-                });
+                }
             }
             return bound_size > k;
         });
 
         return bound_size;
     }
+
+    template class Greedy<Options::FSG::C4P4>;
 }

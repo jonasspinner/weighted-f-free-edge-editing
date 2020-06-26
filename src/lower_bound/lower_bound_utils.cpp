@@ -39,7 +39,12 @@ namespace lower_bound {
             case LB::LocalSearch:
                 return std::make_unique<LocalSearch>(instance, marked, subgraph_stats, finder);
             case LB::Greedy:
-                return std::make_unique<Greedy>(instance, marked, finder);
+            {
+                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
+                    return std::make_unique<Greedy<Options::FSG::C4P4>>(instance, marked);
+                }
+                throw std::runtime_error("Greedy not specialized for given forbidden subgraphs.");
+            }
             case LB::SortedGreedy:
             {
                 if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
@@ -66,7 +71,12 @@ namespace lower_bound {
                 throw std::runtime_error("lsswz_mwis has to be installed to use LB::LSSWZ_MWIS_Solver.");
 #endif
             case LB::GreedyWeightedPacking:
-                return std::make_unique<GreedyWeightedPacking>(instance, marked, finder);
+            {
+                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
+                    return std::make_unique<GreedyWeightedPacking<Options::FSG::C4P4>>(instance, marked);
+                }
+                throw std::runtime_error("GreedyWeightedPacking not specialized for given forbidden subgraphs.");
+            }
             case LB::WeightedPackingLocalSearch:
                 return std::make_unique<WeightedPackingLocalSearch>(instance, marked, subgraph_stats, finder);
             default:
