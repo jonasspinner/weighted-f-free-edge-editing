@@ -48,7 +48,7 @@ public:
             return m_vertices.end();
         }
     };
-    [[nodiscard]] constexpr VertexIt vertices() const noexcept {
+    [[nodiscard]] constexpr auto vertices() const noexcept {
         return VertexIt{m_vertices};
     }
 
@@ -58,7 +58,7 @@ public:
         class Iterator {
             Vertices::const_iterator m_u;
             Vertices::const_iterator m_v;
-            const Vertices::const_iterator m_end;
+            Vertices::const_iterator m_end;
         public:
             using value_type = VertexPair;
             using difference_type = std::ptrdiff_t;
@@ -66,7 +66,9 @@ public:
             using reference = const VertexPair &;
             using iterator_category = std::forward_iterator_tag;
 
-            constexpr explicit Iterator(Vertices::const_iterator u, Vertices::const_iterator v, Vertices::const_iterator end) : m_u(u), m_v(v), m_end(end) {}
+            constexpr Iterator() : m_u(), m_v(), m_end() {}
+
+            constexpr explicit Iterator(Vertices::const_iterator u, Vertices::const_iterator v, Vertices::const_iterator end) noexcept : m_u(u), m_v(v), m_end(end) {}
 
             constexpr VertexPair operator*() const { return {*m_u, *m_v, VertexPair::Ordered()}; }
             constexpr Iterator &operator++() {
@@ -92,7 +94,7 @@ public:
             return Iterator(end - 1, end, end);
         }
     };
-    [[nodiscard]] constexpr VertexPairIt vertex_pairs() const noexcept {
+    [[nodiscard]] constexpr auto vertex_pairs() const noexcept {
         return VertexPairIt{m_vertices};
     }
 
@@ -102,14 +104,16 @@ public:
         class Iterator {
             Vertices::const_iterator m_u;
             Vertices::const_iterator m_v;
-            const Vertices::const_iterator m_begin;
-            const Vertices::const_iterator m_end;
+            Vertices::const_iterator m_begin;
+            Vertices::const_iterator m_end;
         public:
             using value_type = VertexPair;
             using difference_type = std::ptrdiff_t;
             using pointer = const VertexPair *;
             using reference = const VertexPair &;
             using iterator_category = std::forward_iterator_tag;
+
+            constexpr Iterator() : m_u(), m_v(), m_begin(), m_end() {};
 
             constexpr explicit Iterator(Vertices::const_iterator u, Vertices::const_iterator v,
                     Vertices::const_iterator begin, Vertices::const_iterator end) : m_u(u), m_v(v), m_begin(begin), m_end(end) {}
@@ -141,7 +145,7 @@ public:
             return Iterator(end - 1, end, m_vertices.begin(), end);
         }
     };
-    [[nodiscard]] constexpr NonConvertingEdits non_converting_edits() const noexcept {
+    [[nodiscard]] constexpr auto non_converting_edits() const noexcept {
         return NonConvertingEdits{m_vertices};
     }
 

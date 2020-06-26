@@ -175,6 +175,8 @@ public:
             using value_type = Vertex;
             using iterator_category = std::forward_iterator_tag;
 
+            Iterator() = default;
+
             constexpr explicit Iterator(Vertex start) : v(start) {}
 
             constexpr Vertex operator*() const { return v; }
@@ -224,6 +226,8 @@ public:
             using pointer = const Vertex *;
             using reference = const Vertex &;
             using iterator_category = std::forward_iterator_tag;
+
+            Iterator() = default;
 
             explicit Iterator(const AdjRow *row) : m_row(row) {
                 assert(m_row != nullptr);
@@ -299,6 +303,8 @@ public:
             using reference = const VertexPair &;
             using iterator_category = std::forward_iterator_tag;
 
+            constexpr Iterator() : m_uv(), n(0) {};
+
             constexpr Iterator(VertexPair start, Vertex size) : m_uv(start), n(size) {}
 
             constexpr VertexPair operator*() const { return m_uv; }
@@ -355,6 +361,8 @@ public:
             using pointer = const VertexPair *;
             using reference = const VertexPair &;
             using iterator_category = std::forward_iterator_tag;
+
+            Iterator() = default;
 
             Iterator(const AdjMatrix *adj, VertexPair start) : m_adj(adj), m_uv(start) {
                 assert(m_adj != nullptr);

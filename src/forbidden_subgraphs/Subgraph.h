@@ -12,7 +12,7 @@ class SubgraphT {
     struct SubgraphFinder{};
     class VertexIt {};
     class VertexPairIt {};
-    class NonConvertingEdits{};
+    class NonConvertingEdits {};
     using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
 public:
     using Finder = SubgraphFinder;

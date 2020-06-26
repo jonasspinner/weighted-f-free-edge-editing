@@ -10,6 +10,8 @@ public:
     Vertex u;
     Vertex v;
 
+    constexpr VertexPair() : u(0), v(1) {}
+
     /**
      * An unordered pair of vertices. Represents an undirected edge.
      *
