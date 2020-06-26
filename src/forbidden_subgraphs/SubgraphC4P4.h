@@ -70,7 +70,7 @@ public:
 
             constexpr explicit Iterator(Vertices::const_iterator u, Vertices::const_iterator v, Vertices::const_iterator end) noexcept : m_u(u), m_v(v), m_end(end) {}
 
-            constexpr VertexPair operator*() const { return {*m_u, *m_v, VertexPair::Ordered()}; }
+            constexpr VertexPair operator*() const { return {*m_u, *m_v}; }
             constexpr Iterator &operator++() {
                 ++m_v;
                 if (m_v == m_end) {
