@@ -1,18 +1,19 @@
-#ifndef CONCEPT_VERTEXPAIRMAP_H
-#define CONCEPT_VERTEXPAIRMAP_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_VERTEXPAIRMAP_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_VERTEXPAIRMAP_H
 
 
 #include <iomanip>
 
 #include "Graph.h"
 
+
 template<typename T>
 class VertexPairMap {
     using reference = typename std::vector<T>::reference;
     using const_reference = typename std::vector<T>::const_reference;
 
-    Vertex n;
-    std::vector<T> values;
+    Vertex m_size;
+    std::vector<T> m_values;
 public:
 
     /**
@@ -21,23 +22,28 @@ public:
      * @param size The number of vertices. Vertices are indexed by 0..size-1.
      * @param initial An initial value. Default constructed if not given.
      */
-    explicit VertexPairMap(Vertex size, T initial = T()) : n(size),
-        values(idx({n - 2, n - 1}) + 1 /*last valid index plus 1 is the size*/, initial) {}
+    explicit VertexPairMap(Vertex size, T initial = T())
+            : m_size(size),
+              m_values(idx({m_size - 2, m_size - 1}) + 1 /*last valid index plus 1 is the size*/, initial) {}
 
-    const_reference operator[](VertexPair edge) const {
-        assert(edge.u < n && edge.v < n);
-        return values[idx(edge)];
+    [[nodiscard]] const_reference operator[](VertexPair edge) const {
+        assert(edge.u < m_size && edge.v < m_size);
+        return m_values[idx(edge)];
     }
 
-    reference operator[](VertexPair edge) {
-        assert(edge.u < n && edge.v < n);
-        return values[idx(edge)];
+    [[nodiscard]] reference operator[](VertexPair edge) {
+        assert(edge.u < m_size && edge.v < m_size);
+        return m_values[idx(edge)];
+    }
+
+    [[nodiscard]] auto keys() const {
+        return Graph::VertexPairs(m_size);
     }
 
     friend std::ostream &operator<<(std::ostream &os, const VertexPairMap &map) {
-        for (Vertex u = 0; u < map.n; ++u) {
+        for (Vertex u = 0; u < map.m_size; ++u) {
             os << "[ ";
-            for (Vertex v = 0; v < map.n; ++v) {
+            for (Vertex v = 0; v < map.m_size; ++v) {
                 T value = (u != v) ? map[{u, v}] : T();
                 os << std::fixed << std::setw(6) << std::setprecision(2) << value << " ";
             }
@@ -51,12 +57,12 @@ public:
         using namespace YAML;
         out << BeginMap;
         out << Key << "size";
-        out << Value << map.n;
+        out << Value << map.m_size;
         out << Key << "values";
         out << Value << BeginSeq;
-        for (Vertex u = 0; u < map.n; ++u) {
+        for (Vertex u = 0; u < map.m_size; ++u) {
             out << Flow << BeginSeq;
-            for (Vertex v = u + 1; v < map.n; ++v) {
+            for (Vertex v = u + 1; v < map.m_size; ++v) {
                 out << map[{u, v}];
             }
             out << EndSeq;
@@ -65,7 +71,7 @@ public:
         return out;
     }
 
-    [[nodiscard]] Vertex size() const { return n; }
+    [[nodiscard]] Vertex size() const { return m_size; }
 
 private:
     /**
@@ -87,52 +93,59 @@ class VertexPairMap<bool> {
     using AdjRow = boost::dynamic_bitset<>;
     using AdjMatrix = std::vector<AdjRow>;
 
-    unsigned int n;
-    AdjMatrix adj;
+    unsigned int m_size;
+    AdjMatrix m_values;
 
 public:
     using const_reference = AdjRow::const_reference;
 
     class reference {
+    private:
         VertexPairMap<bool> &m_map;
         VertexPair m_uv;
-    public:
-        reference(VertexPairMap<bool> &map, VertexPair uv) : m_map(map), m_uv(uv) {}
 
+        friend class VertexPairMap<bool>;
+
+        reference(VertexPairMap<bool> &map, VertexPair uv) : m_map(map), m_uv(uv) {}
+    public:
         reference &operator=(bool value) {
-            m_map.adj[m_uv.u][m_uv.v] = value;
-            m_map.adj[m_uv.v][m_uv.u] = value;
+            m_map.m_values[m_uv.u][m_uv.v] = value;
+            m_map.m_values[m_uv.v][m_uv.u] = value;
             return *this;
         }
 
         operator bool() const {
-            return m_map.adj[m_uv.u][m_uv.v];
+            return m_map.m_values[m_uv.u][m_uv.v];
         }
     };
 
 
-    explicit VertexPairMap(Vertex size, bool initial = false) : n(size), adj(n, AdjRow(n)) {
+    explicit VertexPairMap(Vertex size, bool initial = false) : m_size(size), m_values(m_size, AdjRow(m_size)) {
         if (initial) {
-            for (auto &row : adj) {
+            for (auto &row : m_values) {
                 row.set();
             }
         }
     }
 
-    const_reference operator[](VertexPair uv) const {
-        assert(uv.u < n && uv.v < n);
-        return adj[uv.u][uv.v];
+    [[nodiscard]] const_reference operator[](VertexPair uv) const {
+        assert(uv.u < m_size && uv.v < m_size);
+        return m_values[uv.u][uv.v];
     }
 
-    reference operator[](VertexPair uv) {
-        assert(uv.u < n && uv.v < n);
+    [[nodiscard]] reference operator[](VertexPair uv) {
+        assert(uv.u < m_size && uv.v < m_size);
         return reference(*this, uv);
     }
 
+    [[nodiscard]] auto keys() const {
+        return Graph::VertexPairs(m_size);
+    }
+
     friend std::ostream &operator<<(std::ostream &os, const VertexPairMap &map) {
-        for (Vertex u = 0; u < map.n; ++u) {
+        for (Vertex u = 0; u < map.m_size; ++u) {
             os << "[ ";
-            for (Vertex v = 0; v < map.n; ++v) {
+            for (Vertex v = 0; v < map.m_size; ++v) {
                 bool value = u == v ? false : map[{u, v}];
                 os << value << " ";
             }
@@ -145,12 +158,12 @@ public:
         using namespace YAML;
         out << BeginMap;
         out << Key << "size";
-        out << Value << map.n;
+        out << Value << map.m_size;
         out << Key << "values";
         out << Value << BeginSeq;
-        for (Vertex u = 0; u < map.n; ++u) {
+        for (Vertex u = 0; u < map.m_size; ++u) {
             out << Flow << BeginSeq;
-            for (Vertex v = u + 1; v < map.n; ++v) {
+            for (Vertex v = u + 1; v < map.m_size; ++v) {
                 out << map[{u, v}];
             }
             out << EndSeq;
@@ -159,16 +172,16 @@ public:
         return out;
     }
 
-    [[nodiscard]] Vertex size() const { return n; }
+    [[nodiscard]] Vertex size() const { return m_size; }
 
     /**
      * Sets all entries to false.
      */
     void clear() {
-        for (auto &row : adj) {
+        for (auto &row : m_values) {
             row.reset();
         }
     }
 };
 
-#endif //CONCEPT_VERTEXPAIRMAP_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_VERTEXPAIRMAP_H
