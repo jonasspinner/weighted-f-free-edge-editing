@@ -12,7 +12,6 @@ namespace lower_bound {
     template<Options::FSG SetOfForbiddenSubgraphs>
     class SortedGreedy : public LowerBoundI {
     private:
-        using VectorSubgraph = ::Subgraph;
         using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
         using Finder = typename Subgraph::Finder;
 

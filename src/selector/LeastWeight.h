@@ -2,30 +2,37 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_LEASTWEIGHT_H
 
 #include "../graph/VertexPairMap.h"
+#include "../forbidden_subgraphs/SubgraphC4P4.h"
 
-namespace Selector {
+
+namespace selector {
+
+    template<Options::FSG SetOfForbiddenSubgraphs>
     class LeastWeight : public SelectorI {
     private:
+        using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
+        using Finder = typename Subgraph::Finder;
+
         const Graph &m_graph;
         const VertexPairMap<Cost> &m_costs;
         const VertexPairMap<bool> &m_marked;
 
-        std::shared_ptr<FinderI> finder;
+        Finder finder;
     public:
-        LeastWeight(const Graph &graph, const VertexPairMap<Cost> &costs, std::shared_ptr<FinderI> finder_ptr,
+        LeastWeight(const Graph &graph, const VertexPairMap<Cost> &costs,
                     const VertexPairMap<bool> &marked) :
-                    m_graph(graph), m_costs(costs), m_marked(marked), finder(std::move(finder_ptr)) {}
+                m_graph(graph), m_costs(costs), m_marked(marked) {}
 
         Problem select_problem(Cost /*k*/) override {
-            Subgraph min_subgraph{};
+            std::optional<Subgraph> min_subgraph;
             Cost min_subgraph_cost = invalid_cost;
             bool solved = true;
             bool unsolveable = false;
 
-            finder->find(m_graph, [&](Subgraph &&subgraph) {
+            finder.find(m_graph, [&](Subgraph subgraph) {
                 solved = false;
 
-                Cost subgraph_cost = finder->calculate_min_cost(subgraph, m_marked, m_costs);
+                Cost subgraph_cost = subgraph.calculate_min_cost(m_costs, m_marked);
 
                 if (subgraph_cost == invalid_cost) {
                     // if at least one forbidden subgraph has only marked vertex pairs, the problem is not solvable.
@@ -42,7 +49,7 @@ namespace Selector {
                 return {{}, false};
 
             std::vector<VertexPair> pairs;
-            for (VertexPair uv : min_subgraph.vertexPairs())
+            for (VertexPair uv : min_subgraph->vertex_pairs())
                 if (!m_marked[uv])
                     pairs.push_back(uv);
 
@@ -52,6 +59,9 @@ namespace Selector {
             return {pairs, solved};
         }
     };
+
+    template
+    class LeastWeight<Options::FSG::C4P4>;
 }
 
 

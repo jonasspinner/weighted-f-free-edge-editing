@@ -2,19 +2,25 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_SINGLEEDGEEDITING_H
 
 
-namespace Selector {
+#include "../forbidden_subgraphs/SubgraphC4P4.h"
+
+
+namespace selector {
+
+    template<Options::FSG SetOfForbiddenSubgraphs>
     class SingleEdgeEditing : public SelectorI {
     private:
+        using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
+        using Finder = typename Subgraph::Finder;
+
         const Graph &m_graph;
         const VertexPairMap<bool> &m_marked;
         const SubgraphStats &m_subgraph_stats;
 
-        std::shared_ptr<FinderI> finder;
+        Finder finder;
     public:
-        SingleEdgeEditing(std::shared_ptr<FinderI> finder_ptr, const Graph &graph, const VertexPairMap<bool> &marked,
-                          const SubgraphStats &subgraph_stats) :
-                m_graph(graph), m_marked(marked), m_subgraph_stats(subgraph_stats),
-                finder(std::move(finder_ptr)) {}
+        SingleEdgeEditing(const Graph &graph, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) :
+                m_graph(graph), m_marked(marked), m_subgraph_stats(subgraph_stats) {}
 
         [[nodiscard]] RecursionType recursion_type() const override { return RecursionType::VertexPair; }
 
@@ -42,6 +48,9 @@ namespace Selector {
             }
         }
     };
+
+    template
+    class SingleEdgeEditing<Options::FSG::C4P4>;
 }
 
 #endif //WEIGHTED_F_FREE_EDGE_EDITING_SINGLEEDGEEDITING_H

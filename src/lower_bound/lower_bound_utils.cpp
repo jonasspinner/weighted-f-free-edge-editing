@@ -54,19 +54,34 @@ namespace lower_bound {
             }
             case LB::LPRelaxation:
 #ifdef GUROBI_FOUND
-                return std::make_unique<LPRelaxation>(instance, marked, std::move(config), finder);
+            {
+                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
+                    return std::make_unique<LPRelaxation<Options::FSG::C4P4>>(instance, marked, std::move(config));
+                }
+                throw std::runtime_error("LPRelaxation not specialized for given forbidden subgraphs.");
+            }
 #else
                 throw std::runtime_error("gurobi has to be installed to use LB::LinearProgram.");
 #endif
             case LB::NPS_MWIS_Solver:
 #ifdef NPS_MWIS_FOUND
-                return std::make_unique<NPS_MWIS_Solver>(instance, marked, finder);
+            {
+                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
+                    return std::make_unique<NPS_MWIS_Solver<Options::FSG::C4P4>>(instance, marked);
+                }
+                throw std::runtime_error("NPS_MWIS_Solver not specialized for given forbidden subgraphs.");
+            }
 #else
                 throw std::runtime_error("nps_mwis has to be installed to use LB::NPS_MWIS_Solver.");
 #endif
             case LB::LSSWZ_MWIS_Solver:
 #ifdef LSSWZ_MWIS_FOUND
-                return std::make_unique<LSSWZ_MWIS_Solver>(instance, marked, std::move(config), finder);
+            {
+                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
+                    return std::make_unique<LSSWZ_MWIS_Solver<Options::FSG::C4P4>>(instance, marked, std::move(config));
+                }
+                throw std::runtime_error("LSSWZ_MWIS_Solver not specialized for given forbidden subgraphs.");
+            }
 #else
                 throw std::runtime_error("lsswz_mwis has to be installed to use LB::LSSWZ_MWIS_Solver.");
 #endif

@@ -1,8 +1,3 @@
-//
-// Created by jonas on 25.01.20.
-//
-
-
 #include <random>
 
 #include "NPS_MWIS_Solver.h"
@@ -18,7 +13,8 @@ namespace nps_mwis {
 
 namespace lower_bound {
 
-    Cost NPS_MWIS_Solver::calculate_lower_bound(Cost k) {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    Cost NPS_MWIS_Solver<SetOfForbiddenSubgraphs>::calculate_lower_bound(Cost k) {
 
         // Configuration
         nps_mwis::ArgPack ap;
@@ -62,19 +58,19 @@ namespace lower_bound {
      *
      * @return
      */
-    std::optional<nps_mwis::Graph> NPS_MWIS_Solver::build_instance() {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    std::optional<nps_mwis::Graph> NPS_MWIS_Solver<SetOfForbiddenSubgraphs>::build_instance() {
         VertexPairMap<std::vector<Vertex>> cliques(m_graph.size());
 
         std::vector<int> weights;
 
         // The set of subgraphs which share a vertex pair form a clique in the MWIS instance.
-        auto unsolvable = finder->find_with_duplicates(m_graph, [&](const Subgraph &subgraph) {
+        auto unsolvable = finder.find(m_graph, [&](Subgraph subgraph) {
             const auto index = weights.size();
-            finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
+            for (auto uv : subgraph.non_converting_edits()) {
                 cliques[uv].push_back(index);
-                return false;
-            });
-            Cost cost = finder->calculate_min_cost(subgraph, m_marked, m_costs);
+            }
+            Cost cost = subgraph.calculate_min_cost(m_costs, m_marked);
             weights.push_back(cost);
             // If all vertex pairs are marked then the cost is invalid and the subgraph cannot be destroyed because no
             // vertex pairs can be edited.
@@ -121,4 +117,5 @@ namespace lower_bound {
         return ils_mwis_instance_graph;
     }
 
+    template class NPS_MWIS_Solver<Options::FSG::C4P4>;
 }

@@ -10,7 +10,7 @@
 #include "../consumer/SubgraphStats.h"
 
 
-namespace Selector {
+namespace selector {
     std::unique_ptr<SelectorI>
     make(Options::Selector selector, const std::shared_ptr<FinderI> &finder, const Instance &instance,
                    const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats);

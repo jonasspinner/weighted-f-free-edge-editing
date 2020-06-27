@@ -10,9 +10,10 @@
 
 namespace lower_bound {
 
-    Cost LSSWZ_MWIS_Solver::calculate_lower_bound(Cost /*k*/) {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    Cost LSSWZ_MWIS_Solver<SetOfForbiddenSubgraphs>::calculate_lower_bound(Cost /*k*/) {
 
-        auto instance = build_instance(*finder, m_graph, m_marked, m_costs);
+        auto instance = build_instance(finder, m_graph, m_marked, m_costs);
         if (!instance.has_value()) {
             if (m_config.verbosity > 0)
                 std::cout << "lsswz solve    n: - m: - cost: infty  # unsolvable\n";
@@ -126,21 +127,22 @@ namespace lower_bound {
      * @param costs
      * @return
      */
+    template<Options::FSG SetOfForbiddenSubgraphs>
     std::optional<std::pair<Graph, std::vector<Cost>>>
-    LSSWZ_MWIS_Solver::build_instance(FinderI &finder, const Graph &graph, const VertexPairMap<bool> &marked,
-                                      const VertexPairMap<Cost> &costs) {
+    LSSWZ_MWIS_Solver<SetOfForbiddenSubgraphs>::build_instance(Finder &finder, const Graph &graph,
+                                                               const VertexPairMap<bool> &marked,
+                                                               const VertexPairMap<Cost> &costs) {
         VertexPairMap<std::vector<Vertex>> cliques(graph.size());
 
         std::vector<Cost> weights;
 
         // The set of subgraphs which share a vertex pair form a clique in the MWIS instance.
-        bool unsolvable = finder.find_with_duplicates(graph, [&](const Subgraph &subgraph) {
+        bool unsolvable = finder.find(graph, [&](Subgraph subgraph) {
             const auto index = weights.size();
-            finder.for_all_conversionless_edits(subgraph, [&](auto uv) {
+            for (auto uv : subgraph.non_converting_edits()) {
                 cliques[uv].push_back(index);
-                return false;
-            });
-            Cost cost = finder.calculate_min_cost(subgraph, marked, costs);
+            }
+            Cost cost = subgraph.calculate_min_cost(costs, marked);
             weights.push_back(cost);
             return cost == invalid_cost;
         });
@@ -167,4 +169,5 @@ namespace lower_bound {
         return std::make_pair(std::move(instance_graph), std::move(weights));
     }
 
+    template class LSSWZ_MWIS_Solver<Options::FSG::C4P4>;
 }

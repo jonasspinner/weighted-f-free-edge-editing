@@ -7,22 +7,25 @@
 #include "LowerBoundI.h"
 #include "../../extern/nps_mwis/src/Graph.h"
 #include "../Instance.h"
+#include "../forbidden_subgraphs/SubgraphC4P4.h"
 
 
 namespace lower_bound {
 
+    template<Options::FSG SetOfForbiddenSubgraphs>
     class NPS_MWIS_Solver : public LowerBoundI {
     private:
+        using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
+        using Finder = typename Subgraph::Finder;
+
         const Graph &m_graph;
         const VertexPairMap<Cost> &m_costs;
         const VertexPairMap<bool> &m_marked;
 
-        std::shared_ptr<FinderI> finder;
+        Finder finder;
     public:
-        NPS_MWIS_Solver(const Instance &instance, const VertexPairMap<bool> &marked,
-                        std::shared_ptr<FinderI> finder_ref) :
-                m_graph(instance.graph), m_costs(instance.costs),
-                m_marked(marked), finder(std::move(finder_ref)) {}
+        NPS_MWIS_Solver(const Instance &instance, const VertexPairMap<bool> &marked) :
+                m_graph(instance.graph), m_costs(instance.costs), m_marked(marked) {}
 
         Cost calculate_lower_bound(Cost k) override;
 

@@ -6,21 +6,23 @@
 
 #include <utility>
 
-#include "../finder/finder_utils.h"
 #include "LowerBoundI.h"
 #include "../Instance.h"
 
 
 namespace lower_bound {
 
+    template<Options::FSG SetOfForbiddenSubgraphs>
     class LPRelaxation : public LowerBoundI {
+        using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
+        using Finder = typename Subgraph::Finder;
+
         const Graph &m_graph;
         const VertexPairMap<Cost> &m_costs;
         const VertexPairMap<bool> &m_marked;
         std::unique_ptr<GRBEnv> m_env;
         std::unique_ptr<GRBModel> m_model;
         VertexPairMap<GRBVar> m_variables;
-        Options::FSG m_fsg;
         Cost k_initial;
         bool m_shall_solve;
         std::vector<std::vector<GRBConstr>> m_constraint_stack;
@@ -30,8 +32,9 @@ namespace lower_bound {
         constexpr static bool variable_means_edit = false;
 
         VertexPairMap<bool> m_edited;
+        Graph m_empty_graph;
 
-        std::shared_ptr<FinderI> finder;
+        Finder finder;
     public:
         /**
          * The code is adapted from Michael Hamann.
@@ -43,22 +46,18 @@ namespace lower_bound {
          *
          *      \forall u, v \in V: x_{uv} = 1 \iff uv \in E'
          */
-        LPRelaxation(const Instance &instance, const VertexPairMap<bool> &forbidden,
-                     Configuration config, std::shared_ptr<FinderI> finder_ref) :
+        LPRelaxation(const Instance &instance, const VertexPairMap<bool> &forbidden, Configuration config) :
                 m_graph(instance.graph),
                 m_costs(instance.costs),
                 m_marked(forbidden),
                 m_env(std::make_unique<GRBEnv>()),
                 m_variables(m_graph.size()),
-                m_fsg(finder->forbidden_subgraphs()),
                 k_initial(0),
                 m_shall_solve(true),
                 m_config(std::move(config)),
                 m_edited(m_costs.size(), false),
-                finder(std::move(finder_ref)) {
-            if (finder->forbidden_subgraphs() != Options::FSG::C4P4) {
-                throw std::runtime_error("Only C4P4 allowed as forbidden subgraphs.");
-            }
+                m_empty_graph(m_graph.size()) {
+            static_assert(SetOfForbiddenSubgraphs == Options::FSG::C4P4);
         }
 
         /**
@@ -135,7 +134,7 @@ namespace lower_bound {
                 m_shall_solve = false;
             }
 
-            finder->find_near(uv, m_graph, [&](const Subgraph &subgraph) {
+            finder.find_near(uv, m_graph, m_empty_graph, [&](const Subgraph &subgraph) {
                 m_constraint_stack.back().push_back(add_constraint(subgraph));
                 if (!m_shall_solve && get_constraint_value(subgraph) < 0.999) {
                     m_shall_solve = true;
@@ -334,7 +333,7 @@ namespace lower_bound {
         size_t add_constraints_for_all_forbidden_subgraphs() {
             size_t num_found = 0;
 
-            finder->find_with_duplicates(m_graph, [&](const Subgraph &subgraph) {
+            finder.find(m_graph, [&](Subgraph subgraph) {
                 ++num_found;
                 add_constraint(subgraph);
                 return false;
