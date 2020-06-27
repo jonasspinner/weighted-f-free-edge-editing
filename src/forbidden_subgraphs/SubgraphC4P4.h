@@ -16,10 +16,14 @@ class SubgraphT<Options::FSG::C4P4> {
     using Vertices = std::array<Vertex, 4>;
     Vertices m_vertices;
 
-    constexpr SubgraphT(Type type, Vertex a, Vertex b, Vertex c, Vertex d) noexcept : m_type(type), m_vertices({a, b, c, d}) {}
-    constexpr SubgraphT(Type type, const Vertices &vertices) noexcept : m_type(type), m_vertices(vertices) {}
+    constexpr SubgraphT(Type type, Vertex a, Vertex b, Vertex c, Vertex d) noexcept:
+            m_type(type), m_vertices({a, b, c, d}) {}
+
+    constexpr SubgraphT(Type type, const Vertices &vertices) noexcept: m_type(type), m_vertices(vertices) {}
+
 public:
     friend struct std::hash<SubgraphT<Options::FSG::C4P4>>;
+
     friend class CenterC4P4Finder;
 
     using Subgraph = SubgraphT<Options::FSG::C4P4>;
@@ -40,14 +44,17 @@ public:
     class VertexIt {
         const Vertices &m_vertices;
     public:
-        constexpr VertexIt(const Vertices &vertices) noexcept : m_vertices(vertices) {}
+        constexpr VertexIt(const Vertices &vertices) noexcept: m_vertices(vertices) {}
+
         [[nodiscard]] constexpr auto begin() const {
             return m_vertices.begin();
         }
+
         [[nodiscard]] constexpr auto end() const {
             return m_vertices.end();
         }
     };
+
     [[nodiscard]] constexpr auto vertices() const noexcept {
         return VertexIt{m_vertices};
     }
@@ -68,9 +75,11 @@ public:
 
             constexpr Iterator() : m_u(), m_v(), m_end() {}
 
-            constexpr explicit Iterator(Vertices::const_iterator u, Vertices::const_iterator v, Vertices::const_iterator end) noexcept : m_u(u), m_v(v), m_end(end) {}
+            constexpr explicit Iterator(Vertices::const_iterator u, Vertices::const_iterator v,
+                                        Vertices::const_iterator end) noexcept: m_u(u), m_v(v), m_end(end) {}
 
             constexpr VertexPair operator*() const { return {*m_u, *m_v}; }
+
             constexpr Iterator &operator++() {
                 ++m_v;
                 if (m_v == m_end) {
@@ -80,20 +89,26 @@ public:
                 return *this;
             }
 
-            [[nodiscard]] constexpr bool operator==(const Iterator &other) const { return m_u == other.m_u && m_v == other.m_v; }
+            [[nodiscard]] constexpr bool operator==(const Iterator &other) const {
+                return m_u == other.m_u && m_v == other.m_v;
+            }
 
             [[nodiscard]] constexpr bool operator!=(const Iterator &other) const { return !(*this == other); }
         };
-        constexpr VertexPairIt(const Vertices &vertices) noexcept : m_vertices(vertices) {}
+
+        constexpr VertexPairIt(const Vertices &vertices) noexcept: m_vertices(vertices) {}
+
         [[nodiscard]] constexpr auto begin() const {
             auto begin = m_vertices.begin();
             return Iterator(begin, begin + 1, m_vertices.end());
         }
+
         [[nodiscard]] constexpr auto end() const {
             auto end = m_vertices.end();
             return Iterator(end - 1, end, end);
         }
     };
+
     [[nodiscard]] constexpr auto vertex_pairs() const noexcept {
         return VertexPairIt{m_vertices};
     }
@@ -116,9 +131,12 @@ public:
             constexpr Iterator() : m_u(), m_v(), m_begin(), m_end() {};
 
             constexpr explicit Iterator(Vertices::const_iterator u, Vertices::const_iterator v,
-                    Vertices::const_iterator begin, Vertices::const_iterator end) : m_u(u), m_v(v), m_begin(begin), m_end(end) {}
+                                        Vertices::const_iterator begin, Vertices::const_iterator end) : m_u(u), m_v(v),
+                                                                                                        m_begin(begin),
+                                                                                                        m_end(end) {}
 
             constexpr VertexPair operator*() const { return {*m_u, *m_v}; }
+
             constexpr Iterator &operator++() {
                 ++m_v;
                 if (m_v == m_end) {
@@ -131,26 +149,32 @@ public:
                 return *this;
             }
 
-            [[nodiscard]] constexpr bool operator==(const Iterator &other) const { return m_u == other.m_u && m_v == other.m_v; }
+            [[nodiscard]] constexpr bool operator==(const Iterator &other) const {
+                return m_u == other.m_u && m_v == other.m_v;
+            }
 
             [[nodiscard]] constexpr bool operator!=(const Iterator &other) const { return !(*this == other); }
         };
-        constexpr NonConvertingEdits(const Vertices &vertices) noexcept : m_vertices(vertices) {}
+
+        constexpr NonConvertingEdits(const Vertices &vertices) noexcept: m_vertices(vertices) {}
+
         [[nodiscard]] constexpr auto begin() const {
             auto begin = m_vertices.begin();
-            return Iterator(begin, begin + 1, begin,m_vertices.end());
+            return Iterator(begin, begin + 1, begin, m_vertices.end());
         }
+
         [[nodiscard]] constexpr auto end() const {
             auto end = m_vertices.end();
             return Iterator(end - 1, end, m_vertices.begin(), end);
         }
     };
+
     [[nodiscard]] constexpr auto non_converting_edits() const noexcept {
         return NonConvertingEdits{m_vertices};
     }
 
     [[nodiscard]] Cost calculate_min_cost(const VertexPairMap<Cost> &costs, const VertexPairMap<bool> &marked) const {
-        auto [a, b, c, d] = m_vertices;
+        auto[a, b, c, d] = m_vertices;
         auto x = [&](VertexPair uv) -> Cost { return marked[uv] ? invalid_cost : costs[uv]; };
         return std::min({x({a, b}), x({a, c}), x({b, c}), x({b, d}), x({c, d})});
     }
@@ -176,7 +200,7 @@ public:
     }
 
     friend std::ostream &operator<<(std::ostream &os, const Subgraph &subgraph) {
-        switch(subgraph.m_type) {
+        switch (subgraph.m_type) {
             case Type::C4:
                 os << "C4{";
                 break;
@@ -206,8 +230,8 @@ public:
         return m_vertices[index];
     }
 
-    static bool is_valid_C4(const Graph& graph, const Graph &forbidden_graph, const Vertices &vertices) {
-        auto [a, b, c, d] = vertices;
+    static bool is_valid_C4(const Graph &graph, const Graph &forbidden_graph, const Vertices &vertices) {
+        auto[a, b, c, d] = vertices;
         auto e = [&](VertexPair uv) { return graph.hasEdge(uv); };
         auto f = [&](VertexPair uv) { return forbidden_graph.hasEdge(uv); };
         bool valid = true;
@@ -216,8 +240,8 @@ public:
         return valid;
     }
 
-    static bool is_valid_P4(const Graph& graph, const Graph &forbidden_graph, const Vertices &vertices) {
-        auto [a, b, c, d] = vertices;
+    static bool is_valid_P4(const Graph &graph, const Graph &forbidden_graph, const Vertices &vertices) {
+        auto[a, b, c, d] = vertices;
         auto e = [&](VertexPair uv) { return graph.hasEdge(uv); };
         auto f = [&](VertexPair uv) { return forbidden_graph.hasEdge(uv); };
         bool valid = true;
@@ -227,11 +251,11 @@ public:
     }
 };
 
-template <>
+template<>
 struct std::hash<SubgraphT<Options::FSG::C4P4>> {
     size_t operator()(const SubgraphT<Options::FSG::C4P4> &subgraph) const noexcept {
         // hash_bytes has `void const* ptr` as first parameter type.
-        auto ptr = static_cast<void const*>(subgraph.m_vertices.data());
+        auto ptr = static_cast<void const *>(subgraph.m_vertices.data());
         auto len = subgraph.m_vertices.size() * sizeof(Vertex); // length of m_vertices in bytes.
         return robin_hood::hash_bytes(ptr, len);
     }
@@ -250,7 +274,7 @@ class CenterC4P4Finder {
     Graph::AdjRow B;
     Graph::AdjRow C;
 
-    static inline void init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph& graph) {
+    static inline void init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph &graph) {
         row = graph.m_adj[neighbor];
         row -= graph.m_adj[non_neighbor];
         row[non_neighbor] = false;
@@ -260,21 +284,24 @@ class CenterC4P4Finder {
      * For neighbor u and non neighbor v find x, such that ux is an edge, vx is a non-edge and both are not forbidden.
      * Assumes that uv is an edge and not forbidden.
      */
-    static inline void init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph& graph, const Graph &forbidden_graph) {
+    static inline void
+    init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph &graph, const Graph &forbidden_graph) {
         row = graph.m_adj[neighbor];
         row -= graph.m_adj[non_neighbor];
         row -= forbidden_graph.m_adj[neighbor];
         row -= forbidden_graph.m_adj[non_neighbor];
         row[non_neighbor] = false;
     }
+
 public:
     using Subgraph = SubgraphT<Options::FSG::C4P4>;
 
     template<class Callback>
     bool find(const Graph &graph, Callback callback) {
-        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>, "Callback must have bool(Subgraph) signature.");
+        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>,
+                      "Callback must have bool(Subgraph) signature.");
 
-        for (auto [u, v] : graph.edges()) {
+        for (auto[u, v] : graph.edges()) {
             init(A, u, v, graph);
             init(B, v, u, graph);
             for (auto a : Graph::iterate(A)) {
@@ -294,9 +321,10 @@ public:
 
     template<class Callback>
     bool find(const Graph &graph, const Graph &forbidden_graph, Callback callback) {
-        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>, "Callback must have bool(Subgraph) signature.");
+        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>,
+                      "Callback must have bool(Subgraph) signature.");
 
-        for (auto [u, v] : graph.edges()) {
+        for (auto[u, v] : graph.edges()) {
             if (forbidden_graph.hasEdge({u, v}))
                 continue;
             init(A, u, v, graph, forbidden_graph);
@@ -321,8 +349,9 @@ public:
 
     template<class Callback>
     bool find_near(VertexPair uv, const Graph &graph, const Graph &forbidden_graph, Callback callback) {
-        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>, "Callback must have bool(Subgraph) signature.");
-        auto [u, v] = uv;
+        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>,
+                      "Callback must have bool(Subgraph) signature.");
+        auto[u, v] = uv;
 
         auto ensure_direction = [](auto &vertices) {
             if (vertices[1] > vertices[2]) {
@@ -443,7 +472,8 @@ public:
             C -= B;
             for (auto a : Graph::iterate(A)) {
                 for (auto c : Graph::iterate(C)) {
-                    if (forbidden_graph.hasEdge({a, v}) || forbidden_graph.hasEdge({c, u}) || forbidden_graph.hasEdge({a, c}))
+                    if (forbidden_graph.hasEdge({a, v}) || forbidden_graph.hasEdge({c, u}) ||
+                        forbidden_graph.hasEdge({a, c}))
                         continue;
                     if (graph.hasEdge({a, c})) {
                         Subgraph::Vertices vertices{u, a, c, v};
@@ -480,10 +510,11 @@ public:
 
     template<class Callback>
     bool find_unique(const Graph &graph, Callback callback) {
-        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>, "Callback must have bool(Subgraph) signature.");
+        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>,
+                      "Callback must have bool(Subgraph) signature.");
 
         auto is_correct_cycle = [](const auto &subgraph) {
-            const auto [a, b, c, d] = subgraph.m_vertices;
+            const auto[a, b, c, d] = subgraph.m_vertices;
             return b < std::min({a, c, d}) && a < c;
         };
 
