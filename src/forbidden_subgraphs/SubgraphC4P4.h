@@ -4,7 +4,7 @@
 #include "robin_hood.h"
 
 #include "Subgraph.h"
-#include "../finder/CenterC4P4.h"
+
 
 class CenterC4P4Finder;
 
@@ -150,13 +150,9 @@ public:
     }
 
     [[nodiscard]] Cost calculate_min_cost(const VertexPairMap<Cost> &costs, const VertexPairMap<bool> &marked) const {
-        Cost min_cost = invalid_cost;
-        for (auto uv : non_converting_edits()) {
-            if (!marked[uv]) {
-                min_cost = std::min(min_cost, costs[uv]);
-            }
-        }
-        return min_cost;
+        auto [a, b, c, d] = m_vertices;
+        auto x = [&](VertexPair uv) -> Cost { return marked[uv] ? invalid_cost : costs[uv]; };
+        return std::min({x({a, b}), x({a, c}), x({b, c}), x({b, d}), x({c, d})});
     }
 
     [[nodiscard]] bool operator==(const Subgraph &other) const noexcept {
