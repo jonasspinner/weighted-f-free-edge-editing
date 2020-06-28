@@ -6,10 +6,16 @@
 #include "Subgraph.h"
 
 
+// Forward declaration.
 class CenterC4P4Finder;
+
 
 template<>
 class SubgraphT<Options::FSG::C4P4> {
+    friend class CenterC4P4Finder;
+
+    friend struct std::hash<SubgraphT<Options::FSG::C4P4>>;
+
     enum class Type {
         C4, P4
     } m_type;
@@ -22,10 +28,6 @@ class SubgraphT<Options::FSG::C4P4> {
     constexpr SubgraphT(Type type, const Vertices &vertices) noexcept: m_type(type), m_vertices(vertices) {}
 
 public:
-    friend struct std::hash<SubgraphT<Options::FSG::C4P4>>;
-
-    friend class CenterC4P4Finder;
-
     using Subgraph = SubgraphT<Options::FSG::C4P4>;
     using Finder = CenterC4P4Finder;
 
@@ -76,7 +78,8 @@ public:
             constexpr Iterator() : m_u(), m_v(), m_end() {}
 
             constexpr explicit Iterator(Vertices::const_iterator u, Vertices::const_iterator v,
-                                        Vertices::const_iterator end) noexcept: m_u(u), m_v(v), m_end(end) {}
+                                        Vertices::const_iterator end) noexcept:
+                    m_u(u), m_v(v), m_end(end) {}
 
             constexpr VertexPair operator*() const { return {*m_u, *m_v}; }
 
@@ -131,9 +134,8 @@ public:
             constexpr Iterator() : m_u(), m_v(), m_begin(), m_end() {};
 
             constexpr explicit Iterator(Vertices::const_iterator u, Vertices::const_iterator v,
-                                        Vertices::const_iterator begin, Vertices::const_iterator end) : m_u(u), m_v(v),
-                                                                                                        m_begin(begin),
-                                                                                                        m_end(end) {}
+                                        Vertices::const_iterator begin, Vertices::const_iterator end) :
+                    m_u(u), m_v(v), m_begin(begin), m_end(end) {}
 
             constexpr VertexPair operator*() const { return {*m_u, *m_v}; }
 
@@ -519,6 +521,27 @@ public:
         };
 
         return find(graph, [&](Subgraph subgraph) {
+            if (subgraph.m_type == Subgraph::Type::C4) {
+                if (!is_correct_cycle(subgraph))
+                    return false;
+            }
+            if (callback(subgraph))
+                return true;
+            return false;
+        });
+    }
+
+    template<class Callback>
+    bool find_near_unique(VertexPair uv, const Graph &graph, Callback callback) {
+        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>,
+                      "Callback must have bool(Subgraph) signature.");
+
+        auto is_correct_cycle = [](const auto &subgraph) {
+            const auto[a, b, c, d] = subgraph.m_vertices;
+            return b < std::min({a, c, d}) && a < c;
+        };
+
+        return find_near(uv, graph, [&](Subgraph subgraph) {
             if (subgraph.m_type == Subgraph::Type::C4) {
                 if (!is_correct_cycle(subgraph))
                     return false;
