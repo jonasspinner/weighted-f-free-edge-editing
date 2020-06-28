@@ -68,6 +68,7 @@ class WeightedPackingLocalSearch final : public LowerBoundI {
     const Graph &m_graph;
     const VertexPairMap<Cost> &m_costs;
     const VertexPairMap<bool> &m_marked;
+    const SubgraphStats &m_subgraph_stats;
 
     WeightedPacking m_packing;
     std::vector<State> m_states;
@@ -79,9 +80,10 @@ class WeightedPackingLocalSearch final : public LowerBoundI {
     std::shared_ptr<FinderI> finder;
 public:
     WeightedPackingLocalSearch(const Instance &instance, const VertexPairMap<bool> &marked,
-                               const SubgraphStats &subgraph_stats, std::shared_ptr<FinderI> finder_ref) :
-            m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
-            m_packing(instance, marked, subgraph_stats, std::move(finder_ref)), m_gen(0),
+                               const SubgraphStats &subgraph_stats, std::shared_ptr<FinderI> finder_ref,
+                               std::size_t seed = 0) :
+            m_graph(instance.graph), m_costs(instance.costs), m_marked(marked), m_subgraph_stats(subgraph_stats),
+            m_packing(instance, marked, subgraph_stats, finder_ref), m_gen(seed),
             finder(std::move(finder_ref)) {
         m_states.emplace_back();
     }
@@ -146,7 +148,7 @@ public:
 
         auto &parent = parent_state();
 
-        auto [solvable, inserted] = insert_incident_subgraphs_into_packing_greedy(uv, *finder, m_graph, m_packing);
+        auto [solvable, inserted] = insert_incident_subgraphs_into_packing_linear(uv, *finder, m_graph, m_packing);
 
         if (!solvable) {
             parent.set_unsolvable();
@@ -288,7 +290,7 @@ public:
 
         auto subgraphs = m_packing.get_incident_subgraphs(pairs);
 
-        bool solvable = insert_subgraphs_into_packing_and_map_greedy(subgraphs, m_packing, state.subgraphs());
+        bool solvable = insert_subgraphs_into_packing_and_map_linear(subgraphs, m_packing, state.subgraphs());
 
         if (!solvable) {
             state.set_unsolvable();
@@ -334,9 +336,10 @@ public:
             auto cost = packing.calculate_min_cost(subgraph);
             if (cost == invalid_cost) {
                 return false;
+            } else if (cost > 0) {
+                packing.subtract_from_potential(subgraph, cost);
+                map[std::move(subgraph)] += cost;
             }
-            packing.subtract_from_potential(subgraph, cost);
-            map[std::move(subgraph)] += cost;
         }
 
         return true;
@@ -424,16 +427,20 @@ public:
 
     void local_search(State &state, Cost k) {
         if (verbosity > 0) std::cout << "local_search\n";
-        size_t max_iter = 5;
-        size_t max_rounds_no_improvement = 1;
+        size_t max_iter = 20;
+        size_t max_rounds_no_improvement = 3;
         size_t num_rounds_no_improvement = 0;
         std::vector<std::pair<Subgraph, Cost>> removed_subgraphs, inserted_subgraphs;
 
-        for (size_t iter = 0; iter < max_iter; ++iter) {
+        if (state.subgraphs().empty())
+            return;
+
+        for (size_t iter = 0;; ++iter) {
             bool changed_in_round = false, improved_in_round = false;
             removed_subgraphs.clear();
             inserted_subgraphs.clear();
 
+            // std::cout << iter << " " << state.subgraphs().size() << " " << m_packing.cost() << "\n";
             for (const auto &[subgraph, cost] : state.subgraphs()) {
                 auto[changed, improved] = \
                     find_one_two_improvement_2(subgraph, cost, removed_subgraphs, inserted_subgraphs);
@@ -463,9 +470,16 @@ public:
 #endif
 
             num_rounds_no_improvement = improved_in_round ? 0 : num_rounds_no_improvement + 1;
-            if (!changed_in_round ||
+            if (iter >= max_iter ||
+                !changed_in_round ||
                 num_rounds_no_improvement > max_rounds_no_improvement ||
                 m_packing.cost() > k) {
+//                std::cout << iter + 1 << " ";
+//                std::cout << !changed_in_round << " ";
+//                std::cout << num_rounds_no_improvement;
+//                if (m_packing.cost() > k)
+//                    std::cout << " bound";
+//                std::cout << "\n";
                 break;
             }
         }
@@ -597,7 +611,7 @@ public:
                             // This ensures that each set in max_sets leads to a maximal packing.
                             m_packing.subtract_from_potential(b, b_cost);
 
-                            Cost additional_cost = a_cost + b_cost;
+                            Cost additional_cost = 0;
                             std::vector<std::pair<size_t, Cost>> additional_subgraphs;
                             for (size_t pair_k = 0; pair_k < pairs.size(); ++pair_k) {
                                 if (m_packing.is_depleted(pairs[pair_k]))
@@ -654,6 +668,14 @@ public:
         std::uniform_int_distribution<size_t> sample(0, max_sets.size() - 1);
         size_t j = sample(m_gen);
 
+#ifndef NDEBUG
+        Cost sum = 0;
+        for (auto[y_i, y_cost] : max_sets[j]) {
+            sum += y_cost;
+        }
+        assert(max_cost == sum);
+#endif
+
         // Must be done here, because candidates will be moved into inserted_subgraphs.
         bool changed = max_cost > x_cost ||
             !(max_sets[j].size() == 1 && candidates[max_sets[j].front().first] == x);
@@ -665,7 +687,7 @@ public:
         }
 
         assert(m_packing.is_valid());
-        return {changed, max_cost > x_cost};
+        return std::make_pair(changed, max_cost > x_cost);
     }
 
     /**
@@ -695,13 +717,13 @@ public:
     std::tuple<bool, bool> find_one_two_improvement_2(const Subgraph &x, Cost x_cost,
                                                      std::vector<std::pair<Subgraph, Cost>> &removed_subgraphs,
                                                      std::vector<std::pair<Subgraph, Cost>> &inserted_subgraphs) {
-        std::cout << "---\n";
-        std::cout << "x = " << x << " " << x_cost << "\n";
+        if (verbosity > 0) std::cout << "find_one_two_improvement_2 " << x << " " << x_cost << "\n";
 
+        assert(x_cost >= 1);
         m_packing.add_to_potential(x, 1);
         auto[pairs, candidates, border] = m_packing.get_open_neighbors(x, 1);
 
-        std::cout << "candidates.size() = " << candidates.size() << "\n";
+        if (verbosity > 0) std::cout << "candidates.size() = " << candidates.size() << "\n";
         if (candidates.empty()) {
             m_packing.subtract_from_potential(x, 1);
             return {false, false};
@@ -709,13 +731,16 @@ public:
 
 
         auto insertable = [&](const Subgraph &subgraph) {
-            return !finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
-                return !m_marked[uv] && m_packing.is_depleted(uv);
-            });
+            return m_packing.calculate_min_cost(subgraph) > 0;
+//            return !finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
+//                return !m_marked[uv] && m_packing.is_depleted(uv);
+//            });
         };
 
-        std::size_t a_found = std::numeric_limits<std::size_t>::max();
-        std::size_t b_found = std::numeric_limits<std::size_t>::max();
+
+        constexpr auto invalid_index = std::numeric_limits<std::size_t>::max();
+        std::size_t a_found = invalid_index;
+        std::size_t b_found = invalid_index;
 
         bool improvement_found = false;
 
@@ -724,6 +749,7 @@ public:
                 const Subgraph &a = candidates[a_i];
 
                 assert(insertable(a));
+                assert(m_packing.calculate_min_cost(a) == 1);
 
                 m_packing.subtract_from_potential(a, 1);
 
@@ -750,7 +776,7 @@ public:
 
         auto insert = [&](auto subgraph) {
             auto cost = m_packing.calculate_min_cost(subgraph);
-            std::cout << "inserted " << subgraph << " " << cost << "\n";
+            if (verbosity > 0) std::cout << "inserted " << subgraph << " " << cost << "\n";
             m_packing.subtract_from_potential(subgraph, cost);
             inserted_subgraphs.emplace_back(subgraph, cost);
         };
@@ -758,48 +784,77 @@ public:
         auto try_insert = [&](auto subgraph) {
             auto cost = m_packing.calculate_min_cost(subgraph);
             if (cost > 0) {
-                std::cout << "inserted " << subgraph << " " << cost << "\n";
+                if (verbosity > 0) std::cout << "inserted " << subgraph << " " << cost << "\n";
                 m_packing.subtract_from_potential(subgraph, cost);
                 inserted_subgraphs.emplace_back(subgraph, cost);
             }
         };
 
 
-        if (x_cost > 1) {
+        if (x_cost == 1) {
+            removed_subgraphs.emplace_back(x, 1);
+        } else {
+            assert(x_cost >= 1);
             m_packing.add_to_potential(x, x_cost - 1);
             removed_subgraphs.emplace_back(x, x_cost);
         }
 
         if (improvement_found) {
-            std::cout << "(1,2) improvement\n";
-            insert(candidates[a_found]);
+            if (verbosity > 0) std::cout << "(1,2) improvement\n";
+            assert(a_found != invalid_index);
+            assert(b_found != invalid_index);
+
+            // insert(candidates[a_found]);
+            m_packing.subtract_from_potential(candidates[a_found], 1);
+            inserted_subgraphs.emplace_back(candidates[a_found], 1);
+
             insert(candidates[b_found]);
+            try_insert(candidates[a_found]);
         } else {
-            std::cout << "(1,1) plateau\n";
-            std::uniform_int_distribution<size_t> dist(0, candidates.size() - 1);
-            insert(candidates[dist(m_gen)]);
+            if (verbosity > 0) std::cout << "(1,1) plateau\n";
+            auto candidate = find_plateau_candidate(candidates);
+            insert(candidate);
         }
 
         for (auto &c : candidates) {
             try_insert(c);
         }
 
-        auto cost = m_packing.calculate_min_cost(x);
-        if (cost > 0) {
-            std::cout << "inserted " << x << " " << cost << "\n";
-            m_packing.subtract_from_potential(x, cost);
+        try_insert(x);
 
-            if (cost < x_cost) {
-                removed_subgraphs.emplace_back(x, x_cost - cost);
-            } else if (cost > x_cost) {
-                inserted_subgraphs.emplace_back(x, cost - x_cost);
-            }
+        return {true, improvement_found};
+    }
+
+    Subgraph find_plateau_candidate(const std::vector<Subgraph>& candidates) {
+        constexpr auto plateau_search_use_min_degree = true;
+        if (plateau_search_use_min_degree) {
+            return find_plateau_candidate_min_degree(candidates);
         } else {
-            removed_subgraphs.emplace_back(x, 1);
+            return find_plateau_candidate_random(candidates);
         }
-        // try_insert(x);
+    }
 
-        return {improvement_found, true};
+    Subgraph find_plateau_candidate_random(const std::vector<Subgraph>& candidates) {
+        std::uniform_int_distribution<size_t> dist(0, candidates.size() - 1);
+        return candidates[dist(m_gen)];
+    }
+
+    Subgraph find_plateau_candidate_min_degree(const std::vector<Subgraph>& candidates) {
+        constexpr auto invalid = std::numeric_limits<std::size_t>::max();
+        std::size_t min_degree = invalid;
+        std::optional<Subgraph> subgraph;
+        for (const auto& c : candidates) {
+            std::size_t degree_ub = 0;
+            finder->for_all_conversionless_edits(c, [&](auto uv) {
+                degree_ub += m_subgraph_stats.subgraphCount(uv);;
+                return false;
+            });
+            if (degree_ub < min_degree) {
+                min_degree = degree_ub;
+                subgraph = c;
+            }
+        }
+        return *subgraph;
     }
 };
 

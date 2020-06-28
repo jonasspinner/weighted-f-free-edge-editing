@@ -254,7 +254,6 @@ public:
         m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
             assert(!m_depleted_graph.hasEdge(uv));
             if (!m_marked[uv] && m_potential[uv] == remove_cost) { // uv is unmarked and was depleted before x was removed with this cost.
-                std::cout << "pair " << uv << "\n";
                 pairs.push_back(uv);
             }
             return false;
@@ -277,7 +276,8 @@ public:
                         return false;
                     });
 #endif
-                    candidates.push_back(std::move(neighbor));
+                    if (neighbor != subgraph)
+                        candidates.push_back(std::move(neighbor));
                     return false;
                 });
             }
