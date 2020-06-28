@@ -26,12 +26,7 @@ namespace selector {
             std::optional<Subgraph> max_subgraph;
             int max_num_marked_pairs = std::numeric_limits<int>::min();
 
-
-            bool solved = true;
-
             finder.find(m_graph, [&](Subgraph subgraph) {
-                solved = false;
-
                 int num_marked_pairs = 0;
                 for (VertexPair uv : subgraph.vertex_pairs())
                     if (m_marked[uv])
@@ -44,6 +39,8 @@ namespace selector {
                 return false;
             });
 
+            if (!max_subgraph)
+                return {{}, true};
 
             std::vector<VertexPair> pairs;
             for (VertexPair uv : max_subgraph->vertex_pairs())
@@ -54,7 +51,7 @@ namespace selector {
                 return m_subgraph_stats.subgraphCount(uv) > m_subgraph_stats.subgraphCount(xy);
             });
 
-            return {pairs, solved};
+            return {pairs, false};
         }
     };
 
