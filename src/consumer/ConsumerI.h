@@ -1,14 +1,8 @@
-//
-// Created by jonas on 15.07.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_CONSUMERI_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_CONSUMERI_H
 
 
 #include "../graph/Graph.h"
-
-#include "../finder/FinderI.h"
 
 
 class ConsumerI {
@@ -34,8 +28,6 @@ public:
     virtual void after_unedit(VertexPair /*uv*/) {};            // subgraph_stats
 
     virtual void after_unmark(VertexPair /*uv*/) {};            // subgraph_stats
-
-    friend class Editor;
 };
 
 #endif //WEIGHTED_F_FREE_EDGE_EDITING_CONSUMERI_H

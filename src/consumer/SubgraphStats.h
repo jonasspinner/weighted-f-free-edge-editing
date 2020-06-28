@@ -1,7 +1,3 @@
-//
-// Created by jonas on 05.08.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPHSTATS_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPHSTATS_H
 
@@ -9,6 +5,8 @@
 #include "../consumer/ConsumerI.h"
 #include "../graph/VertexPairMap.h"
 #include "../Instance.h"
+#include "../finder/FinderI.h"
+
 
 class SubgraphStats : public ConsumerI {
 private:
