@@ -26,12 +26,9 @@ namespace selector {
         Problem select_problem(Cost /*k*/) override {
             std::optional<Subgraph> min_subgraph;
             Cost min_subgraph_cost = invalid_cost;
-            bool solved = true;
             bool unsolveable = false;
 
             finder.find(m_graph, [&](Subgraph subgraph) {
-                solved = false;
-
                 Cost subgraph_cost = subgraph.calculate_min_cost(m_costs, m_marked);
 
                 if (subgraph_cost == invalid_cost) {
@@ -47,6 +44,8 @@ namespace selector {
 
             if (unsolveable)
                 return {{}, false};
+            if (!min_subgraph)
+                return {{}, true};
 
             std::vector<VertexPair> pairs;
             for (VertexPair uv : min_subgraph->vertex_pairs())
@@ -56,7 +55,7 @@ namespace selector {
             std::sort(pairs.begin(), pairs.end(),
                       [&](VertexPair uv, VertexPair xy) { return m_costs[uv] < m_costs[xy]; });
 
-            return {pairs, solved};
+            return {pairs, false};
         }
     };
 
