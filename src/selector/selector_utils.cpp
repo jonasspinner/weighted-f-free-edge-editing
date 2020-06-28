@@ -19,45 +19,54 @@ namespace selector {
      * @return
      */
     std::unique_ptr<SelectorI>
-    make(Options::Selector selector, const std::shared_ptr<FinderI> &finder, const Instance &instance,
+    make(Options::Selector selector, Options::FSG fsg, const Instance &instance,
          const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) {
         switch (selector) {
             case Options::Selector::LeastWeight: {
-                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
-                    return std::make_unique<LeastWeight<Options::FSG::C4P4>>(instance.graph, instance.costs, marked);
+                switch (fsg) {
+                    case Options::FSG::C4P4:
+                        return std::make_unique<LeastWeight<Options::FSG::C4P4>>(instance.graph, instance.costs, marked);
+                    default:
+                        throw std::runtime_error("LeastWeight not specialized for given forbidden subgraphs.");
                 }
-                throw std::runtime_error("LeastWeight not specialized for given forbidden subgraphs.");
             }
             case Options::Selector::FirstFound: {
-                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
-                    return std::make_unique<FirstFound<Options::FSG::C4P4>>(instance.graph, marked);
+                switch (fsg) {
+                    case Options::FSG::C4P4:
+                        return std::make_unique<FirstFound<Options::FSG::C4P4>>(instance.graph, marked);
+                    default:
+                        throw std::runtime_error("FirstFound not specialized for given forbidden subgraphs.");
                 }
-                throw std::runtime_error("FirstFound not specialized for given forbidden subgraphs.");
             }
             case Options::Selector::MostMarkedPairs: {
-                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
-                    return std::make_unique<MostMarkedPairs<Options::FSG::C4P4>>(instance.graph, marked,
-                                                                                 subgraph_stats);
+                switch (fsg) {
+                    case Options::FSG::C4P4:
+                    return std::make_unique<MostMarkedPairs<Options::FSG::C4P4>>(
+                            instance.graph, marked, subgraph_stats);
+                    default:
+                        throw std::runtime_error("MostMarkedPairs not specialized for given forbidden subgraphs.");
                 }
-                throw std::runtime_error("MostMarkedPairs not specialized for given forbidden subgraphs.");
             }
             case Options::Selector::MostAdjacentSubgraphs: {
-                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
-                    return std::make_unique<MostAdjacentSubgraphs<Options::FSG::C4P4>>(instance.graph, marked,
-                                                                                       subgraph_stats);
+                switch (fsg) {
+                    case Options::FSG::C4P4:
+                        return std::make_unique<MostAdjacentSubgraphs<Options::FSG::C4P4>>(
+                                instance.graph, marked, subgraph_stats);
+                    default:
+                        throw std::runtime_error("MostAdjacentSubgraphs not specialized for given forbidden subgraphs.");
                 }
-                throw std::runtime_error("MostAdjacentSubgraphs not specialized for given forbidden subgraphs.");
             }
             case Options::Selector::SingleEdgeEditing: {
-                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
-                    return std::make_unique<SingleEdgeEditing<Options::FSG::C4P4>>(instance.graph, marked,
-                                                                                   subgraph_stats);
+                switch (fsg) {
+                    case Options::FSG::C4P4:
+                    return std::make_unique<SingleEdgeEditing<Options::FSG::C4P4>>(
+                            instance.graph, marked, subgraph_stats);
+                    default:
+                        throw std::runtime_error("SingleEdgeEditing not specialized for given forbidden subgraphs.");
                 }
-                throw std::runtime_error("SingleEdgeEditing not specialized for given forbidden subgraphs.");
             }
             default:
                 throw std::runtime_error("Invalid selector");
-                return nullptr;
         }
     }
 }
