@@ -2,6 +2,7 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_WEIGHTEDPACKING_H
 
 
+template <Options::FSG SetOfForbiddenSubgraphs>
 class WeightedPacking {
     /**
      * This class manages a weighted packing. A forbidden subgraph which is in the packing, has a cost associated with
@@ -31,6 +32,8 @@ class WeightedPacking {
      * depleted. In the context of finders this is when find_with_duplicates finds no forbidden subgraph in m_graph
      * with the vertex pairs of m_depleted_graph marked as forbidden.
      */
+    using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
+    using Finder = typename Subgraph::Finder;
 
     const Graph &m_graph;
     const VertexPairMap<Cost> &m_costs;
@@ -40,15 +43,14 @@ class WeightedPacking {
     VertexPairMap<Cost> m_potential;
     Graph m_depleted_graph;
     Cost m_total_cost = 0;
-    std::shared_ptr<FinderI> m_finder;
+    Finder m_finder;
 
     int verbosity = 0;
 
 public:
-    WeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats,
-                    std::shared_ptr<FinderI> finder)
+    WeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats)
             : m_graph(instance.graph), m_costs(instance.costs), m_marked(marked), m_subgraph_stats(subgraph_stats),
-              m_potential(m_graph.size()), m_depleted_graph(m_graph.size()), m_finder(std::move(finder)) {
+              m_potential(m_graph.size()), m_depleted_graph(m_graph.size()) {
         for (VertexPair uv : m_graph.vertexPairs()) {
             m_potential[uv] = m_costs[uv];
             if (m_potential[uv] == 0) {
@@ -95,8 +97,8 @@ public:
 
         m_total_cost += cost;
 
-        m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
-            if (m_marked[uv]) return false;
+        for (auto uv : subgraph.non_converting_edits()) {
+            if (m_marked[uv]) continue;
             assert(!m_depleted_graph.hasEdge(uv));
 
             if (verbosity > 0 && cost > m_potential[uv])
@@ -107,8 +109,7 @@ public:
             if (m_potential[uv] == 0) {
                 m_depleted_graph.setEdge(uv);
             }
-            return false;
-        });
+        }
     }
 
     /**
@@ -123,13 +124,12 @@ public:
 
         m_total_cost -= cost;
 
-        m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
-            if (m_marked[uv]) return false;
+        for (auto uv : subgraph.non_converting_edits()) {
+            if (m_marked[uv]) continue;
             m_potential[uv] += cost;
             m_depleted_graph.clearEdge(uv);
             assert(m_potential[uv] <= m_costs[uv]);
-            return false;
-        });
+        }
     }
 
     [[nodiscard]] Cost cost() const {
@@ -204,12 +204,11 @@ public:
     std::tuple<std::vector<VertexPair>, std::vector<Subgraph>, std::vector<size_t>>
     get_closed_neighbors(Subgraph &&subgraph) {
         std::vector<VertexPair> pairs;
-        m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
+        for (auto uv : subgraph.non_converting_edits()) {
             assert(!m_depleted_graph.hasEdge(uv));
             if (!m_marked[uv])
                 pairs.push_back(uv);
-            return false;
-        });
+        }
 
         std::vector<Subgraph> candidates;
         candidates.push_back(std::move(subgraph));
@@ -222,7 +221,7 @@ public:
             // Because the subgraph already contributes one to the subgraph count at uv, only search for near subgraphs
             // if there is at least one more.
             if (m_subgraph_stats.subgraphCount(uv) > 1) {
-                m_finder->find_near_with_duplicates(uv, m_graph, m_depleted_graph, [&](Subgraph &&neighbor) {
+                m_finder.find_near(uv, m_graph, m_depleted_graph, [&](Subgraph &&neighbor) {
 #ifndef NDEBUG
                     m_finder->for_all_conversionless_edits(neighbor, [&](auto xy) {
                         assert(!m_depleted_graph.hasEdge(xy));
@@ -251,13 +250,12 @@ public:
     std::tuple<std::vector<VertexPair>, std::vector<Subgraph>, std::vector<size_t>>
     get_open_neighbors(const Subgraph &subgraph, Cost remove_cost) {
         std::vector<VertexPair> pairs;
-        m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
+        for (auto uv : subgraph.non_converting_edits()) {
             assert(!m_depleted_graph.hasEdge(uv));
             if (!m_marked[uv] && m_potential[uv] == remove_cost) { // uv is unmarked and was depleted before x was removed with this cost.
                 pairs.push_back(uv);
             }
-            return false;
-        });
+        }
 
         std::vector<Subgraph> candidates;
         std::vector<size_t> border(pairs.size() + 1);
@@ -269,7 +267,7 @@ public:
             // Because the subgraph already contributes one to the subgraph count at uv, only search for near subgraphs
             // if there is at least one more.
             if (m_subgraph_stats.subgraphCount(uv) > 1) {
-                m_finder->find_near_with_duplicates(uv, m_graph, m_depleted_graph, [&](Subgraph &&neighbor) {
+                m_finder.find_near(uv, m_graph, m_depleted_graph, [&](Subgraph neighbor) {
 #ifndef NDEBUG
                     m_finder->for_all_conversionless_edits(neighbor, [&](auto xy) {
                         assert(!m_depleted_graph.hasEdge(xy));
@@ -301,7 +299,7 @@ public:
         for (auto uv : pairs) {
             assert(!m_depleted_graph.hasEdge(uv));
 
-            m_finder->find_near_with_duplicates(uv, m_graph, m_depleted_graph, [&](Subgraph &&neighbor) {
+            m_finder.find_near(uv, m_graph, m_depleted_graph, [&](Subgraph neighbor) {
 #ifndef NDEBUG
                 m_finder->for_all_conversionless_edits(neighbor, [&](auto xy) {
                     assert(!m_depleted_graph.hasEdge(xy));
@@ -331,7 +329,7 @@ public:
      * @return
      */
     [[nodiscard]] Cost calculate_min_cost(const Subgraph &subgraph) const {
-        return m_finder->calculate_min_cost(subgraph, m_marked, m_potential);
+        return subgraph.calculate_min_cost(m_potential, m_marked);
     }
 
     /**

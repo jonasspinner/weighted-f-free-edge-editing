@@ -7,7 +7,13 @@
 #include <unordered_set>
 
 
+namespace lower_bound {
+
+template <Options::FSG SetOfForbiddenSubgraphs>
 class WeightedPackingLocalSearch final : public LowerBoundI {
+    using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
+    using Finder = typename Subgraph::Finder;
+
     class State {
     public:
         using Map = robin_hood::unordered_map<Subgraph, Cost>;
@@ -33,8 +39,8 @@ class WeightedPackingLocalSearch final : public LowerBoundI {
 
 #ifndef NDEBUG
 
-        void packing_is_same_as_initialized_by_state(const WeightedPacking &packing) {
-            WeightedPacking other(packing);
+        void packing_is_same_as_initialized_by_state(const WeightedPacking<SetOfForbiddenSubgraphs> &packing) {
+            WeightedPacking<SetOfForbiddenSubgraphs> other(packing);
             other.clear();
 
             for (const auto &[subgraph, cost] : m_subgraphs_in_packing) {
@@ -70,21 +76,20 @@ class WeightedPackingLocalSearch final : public LowerBoundI {
     const VertexPairMap<bool> &m_marked;
     const SubgraphStats &m_subgraph_stats;
 
-    WeightedPacking m_packing;
+    WeightedPacking<SetOfForbiddenSubgraphs> m_packing;
     std::vector<State> m_states;
 
     std::mt19937_64 m_gen;
 
     int verbosity = 0;
 
-    std::shared_ptr<FinderI> finder;
+    Finder m_finder;
 public:
     WeightedPackingLocalSearch(const Instance &instance, const VertexPairMap<bool> &marked,
-                               const SubgraphStats &subgraph_stats, std::shared_ptr<FinderI> finder_ref,
+                               const SubgraphStats &subgraph_stats,
                                std::size_t seed = 0) :
             m_graph(instance.graph), m_costs(instance.costs), m_marked(marked), m_subgraph_stats(subgraph_stats),
-            m_packing(instance, marked, subgraph_stats, finder_ref), m_gen(seed),
-            finder(std::move(finder_ref)) {
+            m_packing(instance, marked, subgraph_stats), m_gen(seed) {
         m_states.emplace_back();
     }
 
@@ -148,7 +153,7 @@ public:
 
         auto &parent = parent_state();
 
-        auto [solvable, inserted] = insert_incident_subgraphs_into_packing_linear(uv, *finder, m_graph, m_packing);
+        auto [solvable, inserted] = insert_incident_subgraphs_into_packing_linear(uv, m_finder, m_graph, m_packing);
 
         if (!solvable) {
             parent.set_unsolvable();
@@ -174,11 +179,11 @@ public:
 
 
     [[maybe_unused]] static std::pair<bool, std::vector<std::pair<Cost, Subgraph>>>
-    insert_incident_subgraphs_into_packing_linear(VertexPair uv, FinderI &finder, const Graph &graph, WeightedPacking &packing) {
+    insert_incident_subgraphs_into_packing_linear(VertexPair uv, Finder &finder, const Graph &graph, WeightedPacking<SetOfForbiddenSubgraphs> &packing) {
         std::vector<std::pair<Cost, Subgraph>> inserted;
 
-        bool unsolvable = finder.find_near_with_duplicates(uv, graph, packing.depleted_graph(),
-               [&](Subgraph &&subgraph) {
+        bool unsolvable = finder.find_near(uv, graph, packing.depleted_graph(),
+                [&](Subgraph subgraph) {
             assert(subgraph.contains(uv));
             auto cost = packing.calculate_min_cost(subgraph);
             if (cost == 0) return false;
@@ -199,11 +204,11 @@ public:
 
 
     static std::pair<bool, std::vector<std::pair<Cost, Subgraph>>>
-            insert_incident_subgraphs_into_packing_greedy(VertexPair uv, FinderI &finder, const Graph &graph, WeightedPacking &packing) {
+            insert_incident_subgraphs_into_packing_greedy(VertexPair uv, Finder &finder, const Graph &graph, WeightedPacking<SetOfForbiddenSubgraphs> &packing) {
         std::vector<std::pair<Cost, Subgraph>> subgraph_heap;
 
-        bool unsolvable = finder.find_near_with_duplicates(uv, graph, packing.depleted_graph(),
-                [&](Subgraph &&subgraph) {
+        bool unsolvable = finder.find_near(uv, graph, packing.depleted_graph(),
+                [&](Subgraph subgraph) {
             assert(subgraph.contains(uv));
             auto cost = packing.calculate_min_cost(subgraph);
             if (cost == 0) return false;
@@ -270,7 +275,7 @@ public:
 
         // Remove subgraphs which are destroyed.
         // Note: This can "free" subgraphs which now can be inserted. These are at pairs which were previously depleted.
-        std::vector<VertexPair> pairs = remove_incident_subgraphs(uv, *finder, m_marked, state.subgraphs(), m_packing);
+        std::vector<VertexPair> pairs = remove_incident_subgraphs(uv, m_finder, m_marked, state.subgraphs(), m_packing);
         if (!m_packing.is_depleted(uv))
             pairs.push_back(uv);
 
@@ -304,19 +309,19 @@ public:
 #endif
     }
 
-    static std::vector<VertexPair> remove_incident_subgraphs(VertexPair uv, const FinderI &finder,
-            const VertexPairMap<bool> &marked, State::Map &map, WeightedPacking &packing) {
+    static std::vector<VertexPair> remove_incident_subgraphs(VertexPair uv, const Finder &finder,
+            const VertexPairMap<bool> &marked, typename State::Map &map, WeightedPacking<SetOfForbiddenSubgraphs> &packing) {
         std::vector<VertexPair> pairs;
 
         for (auto it = map.begin(); it != map.end();) {
             const auto &[subgraph, cost] = *it;
-            if (finder.for_all_conversionless_edits(subgraph, [&](auto xy) { return xy == uv; })) {
-                finder.for_all_conversionless_edits(subgraph, [&](auto xy) {
+            auto edits = subgraph.non_converting_edits();
+            if (std::any_of(edits.begin(), edits.end(), [&](auto xy) { return xy == uv; })) {
+                for (auto xy : edits) {
                     if (!marked[xy] && packing.is_depleted(xy)) {
                         pairs.push_back(xy);
                     }
-                    return false;
-                });
+                }
 
                 packing.add_to_potential(subgraph, cost);
                 it = map.erase(it);
@@ -329,7 +334,7 @@ public:
     }
 
     [[maybe_unused]] static bool insert_subgraphs_into_packing_and_map_linear(
-            std::vector<Subgraph> &subgraphs, WeightedPacking &packing, State::Map &map) {
+            std::vector<Subgraph> &subgraphs, WeightedPacking<SetOfForbiddenSubgraphs> &packing, typename State::Map &map) {
         std::vector<std::pair<Cost, Subgraph>> subgraph_heap;
 
         for (auto &subgraph : subgraphs) {
@@ -346,7 +351,7 @@ public:
     }
 
     static bool insert_subgraphs_into_packing_and_map_greedy(
-            std::vector<Subgraph> &subgraphs, WeightedPacking &packing, State::Map &map) {
+            std::vector<Subgraph> &subgraphs, WeightedPacking<SetOfForbiddenSubgraphs> &packing, typename State::Map &map) {
         std::vector<std::pair<Cost, Subgraph>> subgraph_heap;
 
         for (auto &subgraph : subgraphs) {
@@ -491,7 +496,7 @@ public:
 
         auto comp = [](const auto &lhs, const auto &rhs) { return lhs.second < rhs.second; };
 
-        bool unsolvable = finder->find_with_duplicates(m_graph, [&](Subgraph &&subgraph) {
+        bool unsolvable = m_finder.find(m_graph, m_packing.depleted_graph(), [&](Subgraph subgraph) {
             Cost initial_min_cost = m_packing.calculate_min_cost(subgraph);
 
             subgraph_heap.emplace_back(std::move(subgraph), initial_min_cost);
@@ -554,7 +559,7 @@ public:
         removed_subgraphs.emplace_back(x, x_cost);
 
 #ifndef NDEBUG
-        finder->for_all_conversionless_edits(x, [&](auto uv) {
+        m_finder->for_all_conversionless_edits(x, [&](auto uv) {
             assert(!m_packing.is_depleted(uv));
             return false;
         });
@@ -732,7 +737,7 @@ public:
 
         auto insertable = [&](const Subgraph &subgraph) {
             return m_packing.calculate_min_cost(subgraph) > 0;
-//            return !finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
+//            return !m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
 //                return !m_marked[uv] && m_packing.is_depleted(uv);
 //            });
         };
@@ -845,10 +850,9 @@ public:
         std::optional<Subgraph> subgraph;
         for (const auto& c : candidates) {
             std::size_t degree_ub = 0;
-            finder->for_all_conversionless_edits(c, [&](auto uv) {
-                degree_ub += m_subgraph_stats.subgraphCount(uv);;
-                return false;
-            });
+            for (auto uv : c.non_converting_edits()) {
+                degree_ub += m_subgraph_stats.subgraphCount(uv);
+            }
             if (degree_ub < min_degree) {
                 min_degree = degree_ub;
                 subgraph = c;
@@ -857,6 +861,8 @@ public:
         return *subgraph;
     }
 };
+
+}
 
 
 #endif //WEIGHTED_F_FREE_EDGE_EDITING_WEIGHTEDPACKINGLOCALSEARCH_H

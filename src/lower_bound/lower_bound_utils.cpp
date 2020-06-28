@@ -93,7 +93,12 @@ namespace lower_bound {
                 throw std::runtime_error("GreedyWeightedPacking not specialized for given forbidden subgraphs.");
             }
             case LB::WeightedPackingLocalSearch:
-                return std::make_unique<WeightedPackingLocalSearch>(instance, marked, subgraph_stats, finder);
+            {
+                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
+                    return std::make_unique<WeightedPackingLocalSearch<Options::FSG::C4P4>>(instance, marked, subgraph_stats);
+                }
+                throw std::runtime_error("WeightedPackingLocalSearch not specialized for given forbidden subgraphs.");
+            }
             default:
                 throw std::runtime_error("Lower bound not found.");
         }
