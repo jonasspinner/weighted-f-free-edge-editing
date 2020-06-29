@@ -5,40 +5,57 @@
 #include "../consumer/ConsumerI.h"
 #include "../graph/VertexPairMap.h"
 #include "../Instance.h"
-#include "../finder/FinderI.h"
+#include "../forbidden_subgraphs/SubgraphC4P4.h"
 
 
 class SubgraphStats : public ConsumerI {
+public:
+    [[nodiscard]] virtual size_t subgraphCount() const = 0;
+
+    [[nodiscard]] virtual size_t subgraphCount(VertexPair uv) const = 0;
+};
+
+
+namespace subgraph_stats {
+
+template <Options::FSG SetOfForbiddenSubgraphs>
+class SubgraphStatsT : public SubgraphStats {
 private:
-    std::shared_ptr<FinderI> finder;
+    using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
+    using Finder = typename Subgraph::Finder;
+
+    Finder m_finder;
 
     VertexPairMap<size_t> subgraph_count_per_vertex_pair;
     size_t subgraph_count_per_vertex_pair_sum;
     size_t subgraph_count;
     std::vector<size_t> before_mark_subgraph_count;
 
-    const Graph &graph;
+    const Graph &m_graph;
     const VertexPairMap<bool> &m_marked;
 
-public:
-    SubgraphStats(std::shared_ptr<FinderI> finder_ptr, const Instance &instance, const VertexPairMap<bool> &marked)
-            : finder(std::move(finder_ptr)), subgraph_count_per_vertex_pair(instance.graph.size()),
-              subgraph_count_per_vertex_pair_sum(0), subgraph_count(0), graph(instance.graph), m_marked(marked) {}
+    Graph m_empty_graph;
 
-    [[nodiscard]] size_t subgraphCount() const {
+public:
+    SubgraphStatsT(const Instance &instance, const VertexPairMap<bool> &marked)
+            : subgraph_count_per_vertex_pair(instance.graph.size()),
+              subgraph_count_per_vertex_pair_sum(0), subgraph_count(0), m_graph(instance.graph), m_marked(marked),
+              m_empty_graph(m_graph.size()) {}
+
+    [[nodiscard]] size_t subgraphCount() const override {
         return subgraph_count;
     }
 
-    [[nodiscard]] size_t subgraphCount(VertexPair uv) const {
+    [[nodiscard]] size_t subgraphCount(VertexPair uv) const override {
         return subgraph_count_per_vertex_pair[uv];
     }
 
     void initialize(Cost /*k*/) override {
-        subgraph_count_per_vertex_pair = VertexPairMap<size_t>(graph.size());
+        subgraph_count_per_vertex_pair = VertexPairMap<size_t>(m_graph.size());
         subgraph_count_per_vertex_pair_sum = 0;
         subgraph_count = 0;
 
-        finder->find(graph, [&](Subgraph &&subgraph) {
+        m_finder.find_unique(m_graph, [&](Subgraph subgraph) {
             register_subgraph(subgraph);
             return false;
         });
@@ -49,7 +66,7 @@ public:
     void remove_near_subgraphs(VertexPair uv) {
         assert(m_marked[uv]);
         verify();
-        finder->find_near(uv, graph, [&](Subgraph &&subgraph) {
+        m_finder.find_near_unique(uv, m_graph, m_empty_graph, [&](Subgraph subgraph) {
             remove_subgraph(subgraph);
             return false;
         });
@@ -57,7 +74,7 @@ public:
     }
 
     void register_near_subgraphs(VertexPair uv) {
-        finder->find_near(uv, graph, [&](Subgraph &&subgraph) {
+        m_finder.find_near_unique(uv, m_graph, m_empty_graph, [&](Subgraph subgraph) {
             register_subgraph(subgraph);
             return false;
         });
@@ -98,7 +115,7 @@ public:
 private:
     void register_subgraph(const Subgraph &subgraph) {
         subgraph_count++;
-        for (VertexPair uv : subgraph.vertexPairs()) {
+        for (VertexPair uv : subgraph.vertex_pairs()) {
             if (!m_marked[uv]) {
                 subgraph_count_per_vertex_pair[uv]++;
                 subgraph_count_per_vertex_pair_sum++;
@@ -108,7 +125,7 @@ private:
 
     void remove_subgraph(const Subgraph &subgraph) {
         subgraph_count--;
-        for (VertexPair uv : subgraph.vertexPairs()) {
+        for (VertexPair uv : subgraph.vertex_pairs()) {
             if (!m_marked[uv]) {
                 subgraph_count_per_vertex_pair[uv]--;
                 subgraph_count_per_vertex_pair_sum--;
@@ -116,15 +133,15 @@ private:
         }
     }
 
-    void verify() const {
+    void verify() {
 #ifndef NDEBUG
-        VertexPairMap<size_t> debug_sg_per_vertex_pair(graph.size());
+        VertexPairMap<size_t> debug_sg_per_vertex_pair(m_graph.size());
         size_t debug_sg_count = 0;
 
-        finder->find(graph, [&](Subgraph &&subgraph) {
+        m_finder.find_unique(m_graph, [&](Subgraph subgraph) {
             debug_sg_count++;
 
-            for (VertexPair uv : subgraph.vertexPairs()) {
+            for (VertexPair uv : subgraph.vertex_pairs()) {
                 if (!m_marked[uv]) {
                     debug_sg_per_vertex_pair[uv]++;
                 }
@@ -134,13 +151,25 @@ private:
 
         assert(debug_sg_count == subgraph_count);
 
-        for (VertexPair uv : graph.vertexPairs()) {
+        for (VertexPair uv : m_graph.vertexPairs()) {
             assert(debug_sg_per_vertex_pair[uv] == subgraph_count_per_vertex_pair[uv]);
             assert(!m_marked[uv] || debug_sg_per_vertex_pair[uv] == 0);
         }
 #endif
     }
 };
+
+
+inline std::unique_ptr<SubgraphStats> make(Options::FSG fsg, const Instance &instance, const VertexPairMap<bool> &marked) {
+    switch (fsg) {
+        case Options::FSG::C4P4:
+            return std::make_unique<SubgraphStatsT<Options::FSG::C4P4>>(instance, marked);
+        default:
+            throw std::runtime_error("SubgraphStatsT not specialized for given forbidden subgraphs.");
+    }
+}
+
+}
 
 
 #endif //WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPHSTATS_H

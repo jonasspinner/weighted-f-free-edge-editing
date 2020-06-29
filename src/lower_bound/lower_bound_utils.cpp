@@ -95,7 +95,11 @@ namespace lower_bound {
             case LB::WeightedPackingLocalSearch:
             {
                 if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
-                    return std::make_unique<WeightedPackingLocalSearch<Options::FSG::C4P4>>(instance, marked, subgraph_stats);
+                    using Stats = const subgraph_stats::SubgraphStatsT<Options::FSG::C4P4>;
+                    if (auto* s = dynamic_cast<Stats *>(std::addressof(subgraph_stats))) {
+                        return std::make_unique<WeightedPackingLocalSearch<Options::FSG::C4P4>>(instance, marked, *s);
+                    }
+                    throw std::runtime_error("SubgraphStats must have the correct type.");
                 }
                 throw std::runtime_error("WeightedPackingLocalSearch not specialized for given forbidden subgraphs.");
             }

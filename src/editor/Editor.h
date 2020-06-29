@@ -55,7 +55,7 @@ public:
             m_config(std::move(config)) {
 
         m_finder = Finder::make(m_config.forbidden_subgraphs);
-        m_subgraph_stats = std::make_unique<SubgraphStats>(m_finder, m_instance, m_marked);
+        m_subgraph_stats = subgraph_stats::make(m_config.forbidden_subgraphs, m_instance, m_marked);
         m_consumers.emplace_back(m_subgraph_stats.get());
 
         m_selector = selector::make(m_config.selector, config.forbidden_subgraphs, m_instance, m_marked, *m_subgraph_stats);

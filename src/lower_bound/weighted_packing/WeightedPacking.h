@@ -38,7 +38,7 @@ class WeightedPacking {
     const Graph &m_graph;
     const VertexPairMap<Cost> &m_costs;
     const VertexPairMap<bool> &m_marked;
-    const SubgraphStats &m_subgraph_stats;
+    const subgraph_stats::SubgraphStatsT<SetOfForbiddenSubgraphs> &m_subgraph_stats;
 
     VertexPairMap<Cost> m_potential;
     Graph m_depleted_graph;
@@ -48,7 +48,7 @@ class WeightedPacking {
     int verbosity = 0;
 
 public:
-    WeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats)
+    WeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked, const subgraph_stats::SubgraphStatsT<SetOfForbiddenSubgraphs> &subgraph_stats)
             : m_graph(instance.graph), m_costs(instance.costs), m_marked(marked), m_subgraph_stats(subgraph_stats),
               m_potential(m_graph.size()), m_depleted_graph(m_graph.size()) {
         for (VertexPair uv : m_graph.vertexPairs()) {
@@ -157,9 +157,9 @@ public:
 
 #ifndef NDEBUG
 
-    [[nodiscard]] bool is_maximal() const {
+    [[nodiscard]] bool is_maximal() {
         bool maximal = true;
-        m_finder->find(m_graph, m_depleted_graph, [&](auto &&subgraph) {
+        m_finder.find(m_graph, m_depleted_graph, [&](Subgraph subgraph) {
             auto cost = calculate_min_cost(subgraph);
             std::cerr << subgraph << " " << cost << " ";
             maximal = false;
@@ -269,10 +269,9 @@ public:
             if (m_subgraph_stats.subgraphCount(uv) > 1) {
                 m_finder.find_near(uv, m_graph, m_depleted_graph, [&](Subgraph neighbor) {
 #ifndef NDEBUG
-                    m_finder->for_all_conversionless_edits(neighbor, [&](auto xy) {
+                    for (auto xy : neighbor.non_converting_edits()) {
                         assert(!m_depleted_graph.hasEdge(xy));
-                        return false;
-                    });
+                    }
 #endif
                     if (neighbor != subgraph)
                         candidates.push_back(std::move(neighbor));
@@ -301,10 +300,9 @@ public:
 
             m_finder.find_near(uv, m_graph, m_depleted_graph, [&](Subgraph neighbor) {
 #ifndef NDEBUG
-                m_finder->for_all_conversionless_edits(neighbor, [&](auto xy) {
+                for (auto xy : neighbor.non_converting_edits()) {
                     assert(!m_depleted_graph.hasEdge(xy));
-                    return false;
-                });
+                }
 #endif
                 subgraphs.push_back(std::move(neighbor));
                 return false;

@@ -6,6 +6,7 @@
 #include "LowerBoundI.h"
 #include "../Instance.h"
 #include "../consumer/SubgraphStats.h"
+#include "../finder/FinderI.h"
 
 
 namespace lower_bound {

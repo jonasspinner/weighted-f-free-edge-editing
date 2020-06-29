@@ -86,7 +86,7 @@ class WeightedPackingLocalSearch final : public LowerBoundI {
     Finder m_finder;
 public:
     WeightedPackingLocalSearch(const Instance &instance, const VertexPairMap<bool> &marked,
-                               const SubgraphStats &subgraph_stats,
+                               const subgraph_stats::SubgraphStatsT<SetOfForbiddenSubgraphs> &subgraph_stats,
                                std::size_t seed = 0) :
             m_graph(instance.graph), m_costs(instance.costs), m_marked(marked), m_subgraph_stats(subgraph_stats),
             m_packing(instance, marked, subgraph_stats), m_gen(seed) {
@@ -180,20 +180,27 @@ public:
 
     [[maybe_unused]] static std::pair<bool, std::vector<std::pair<Cost, Subgraph>>>
     insert_incident_subgraphs_into_packing_linear(VertexPair uv, Finder &finder, const Graph &graph, WeightedPacking<SetOfForbiddenSubgraphs> &packing) {
+        std::vector<Subgraph> incident_subgraphs;
         std::vector<std::pair<Cost, Subgraph>> inserted;
 
-        bool unsolvable = finder.find_near(uv, graph, packing.depleted_graph(),
+        finder.find_near(uv, graph, packing.depleted_graph(),
                 [&](Subgraph subgraph) {
             assert(subgraph.contains(uv));
+            incident_subgraphs.push_back(std::move(subgraph));
+            return false;
+        });
+
+        bool unsolvable = false;
+        for (auto&& subgraph : incident_subgraphs) {
             auto cost = packing.calculate_min_cost(subgraph);
-            if (cost == 0) return false;
+            if (cost == 0) continue;
             if (cost == invalid_cost) {
-                return true;
+                unsolvable = true;
+                break;
             }
             packing.subtract_from_potential(subgraph, cost);
             inserted.emplace_back(cost, std::move(subgraph));
-            return false;
-        });
+        }
 
         if (unsolvable) {
             return {false, {}};
@@ -275,7 +282,7 @@ public:
 
         // Remove subgraphs which are destroyed.
         // Note: This can "free" subgraphs which now can be inserted. These are at pairs which were previously depleted.
-        std::vector<VertexPair> pairs = remove_incident_subgraphs(uv, m_finder, m_marked, state.subgraphs(), m_packing);
+        std::vector<VertexPair> pairs = remove_incident_subgraphs(uv, m_marked, state.subgraphs(), m_packing);
         if (!m_packing.is_depleted(uv))
             pairs.push_back(uv);
 
@@ -309,8 +316,8 @@ public:
 #endif
     }
 
-    static std::vector<VertexPair> remove_incident_subgraphs(VertexPair uv, const Finder &finder,
-            const VertexPairMap<bool> &marked, typename State::Map &map, WeightedPacking<SetOfForbiddenSubgraphs> &packing) {
+    static std::vector<VertexPair> remove_incident_subgraphs(VertexPair uv, const VertexPairMap<bool> &marked,
+            typename State::Map &map, WeightedPacking<SetOfForbiddenSubgraphs> &packing) {
         std::vector<VertexPair> pairs;
 
         for (auto it = map.begin(); it != map.end();) {
