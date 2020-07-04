@@ -9,12 +9,12 @@
 
 template<typename T>
 class VertexPairMap {
-    using reference = typename std::vector<T>::reference;
-    using const_reference = typename std::vector<T>::const_reference;
-
     Vertex m_size;
     std::vector<T> m_values;
 public:
+    using reference = typename std::vector<T>::reference;
+    using const_reference = typename std::vector<T>::const_reference;
+    using value_type = T;
 
     /**
      * A map from vertex pairs to values T. {V \choose 2} \mapsto T.
@@ -22,21 +22,21 @@ public:
      * @param size The number of vertices. Vertices are indexed by 0..size-1.
      * @param initial An initial value. Default constructed if not given.
      */
-    explicit VertexPairMap(Vertex size, T initial = T())
-            : m_size(size),
-              m_values(idx({m_size - 2, m_size - 1}) + 1 /*last valid index plus 1 is the size*/, initial) {}
+    explicit VertexPairMap(Vertex size, T initial = T()) noexcept:
+            m_size(size),
+            m_values(idx({m_size - 2, m_size - 1}) + 1 /*last valid index plus 1 is the size*/, initial) {}
 
-    [[nodiscard]] const_reference operator[](VertexPair edge) const {
-        assert(edge.u < m_size && edge.v < m_size);
-        return m_values[idx(edge)];
+    [[nodiscard]] constexpr const_reference operator[](VertexPair uv) const noexcept {
+        assert(uv.u < m_size && uv.v < m_size);
+        return m_values[idx(uv)];
     }
 
-    [[nodiscard]] reference operator[](VertexPair edge) {
-        assert(edge.u < m_size && edge.v < m_size);
-        return m_values[idx(edge)];
+    [[nodiscard]] constexpr reference operator[](VertexPair uv) noexcept {
+        assert(uv.u < m_size && uv.v < m_size);
+        return m_values[idx(uv)];
     }
 
-    [[nodiscard]] auto keys() const {
+    [[nodiscard]] auto keys() const noexcept {
         return Graph::VertexPairs(m_size);
     }
 
@@ -71,7 +71,7 @@ public:
         return out;
     }
 
-    [[nodiscard]] Vertex size() const { return m_size; }
+    [[nodiscard]] constexpr auto size() const noexcept { return m_size; }
 
 private:
     /**
@@ -82,7 +82,7 @@ private:
      * @param uv
      * @return
      */
-    static inline size_t idx(VertexPair uv) {
+    static constexpr size_t idx(VertexPair uv) noexcept {
         return uv.v * (uv.v - 1) / 2 + uv.u;
     }
 };
@@ -98,29 +98,35 @@ class VertexPairMap<bool> {
 
 public:
     using const_reference = AdjRow::const_reference;
+    using value_type = bool;
 
     class reference {
     private:
-        VertexPairMap<bool> &m_map;
-        VertexPair m_uv;
+        AdjRow::reference m_uv_ref;
+        AdjRow::reference m_vu_ref;
 
         friend class VertexPairMap<bool>;
 
-        reference(VertexPairMap<bool> &map, VertexPair uv) : m_map(map), m_uv(uv) {}
+        reference(AdjMatrix &values, VertexPair uv) noexcept:
+                m_uv_ref(values[uv.u][uv.v]), m_vu_ref(values[uv.v][uv.u]) {}
+
+        void operator&() = delete;
+
     public:
-        reference &operator=(bool value) {
-            m_map.m_values[m_uv.u][m_uv.v] = value;
-            m_map.m_values[m_uv.v][m_uv.u] = value;
+        reference &operator=(bool value) noexcept {
+            m_uv_ref = value;
+            m_vu_ref = value;
             return *this;
         }
 
-        operator bool() const {
-            return m_map.m_values[m_uv.u][m_uv.v];
+        operator bool() const noexcept {
+            return m_uv_ref;
         }
     };
 
 
-    explicit VertexPairMap(Vertex size, bool initial = false) : m_size(size), m_values(m_size, AdjRow(m_size)) {
+    explicit VertexPairMap(Vertex size, bool initial = false) noexcept:
+            m_size(size), m_values(m_size, AdjRow(m_size)) {
         if (initial) {
             for (auto &row : m_values) {
                 row.set();
@@ -128,17 +134,17 @@ public:
         }
     }
 
-    [[nodiscard]] const_reference operator[](VertexPair uv) const {
+    [[nodiscard]] const_reference operator[](VertexPair uv) const noexcept {
         assert(uv.u < m_size && uv.v < m_size);
         return m_values[uv.u][uv.v];
     }
 
-    [[nodiscard]] reference operator[](VertexPair uv) {
+    [[nodiscard]] reference operator[](VertexPair uv) noexcept {
         assert(uv.u < m_size && uv.v < m_size);
-        return reference(*this, uv);
+        return reference(m_values, uv);
     }
 
-    [[nodiscard]] auto keys() const {
+    [[nodiscard]] auto keys() const noexcept {
         return Graph::VertexPairs(m_size);
     }
 
@@ -172,12 +178,12 @@ public:
         return out;
     }
 
-    [[nodiscard]] Vertex size() const { return m_size; }
+    [[nodiscard]] constexpr auto size() const noexcept { return m_size; }
 
     /**
      * Sets all entries to false.
      */
-    void clear() {
+    void clear() noexcept {
         for (auto &row : m_values) {
             row.reset();
         }

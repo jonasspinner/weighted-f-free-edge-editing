@@ -4,6 +4,7 @@
 #include "robin_hood.h"
 
 #include "Subgraph.h"
+#include "IndexPairIterator.h"
 
 
 // Forward declaration.
@@ -22,174 +23,66 @@ class SubgraphT<Options::FSG::C4P4> {
     using Vertices = std::array<Vertex, 4>;
     Vertices m_vertices;
 
-    constexpr SubgraphT(Type type, Vertex a, Vertex b, Vertex c, Vertex d) noexcept:
-            m_type(type), m_vertices({a, b, c, d}) {}
-
     constexpr SubgraphT(Type type, const Vertices &vertices) noexcept: m_type(type), m_vertices(vertices) {}
 
+    constexpr SubgraphT(Type type, Vertices &&vertices) noexcept: m_type(type), m_vertices(std::move(vertices)) {}
+
 public:
-    using Subgraph = SubgraphT<Options::FSG::C4P4>;
     using Finder = CenterC4P4Finder;
 
-    static constexpr SubgraphT C4(const Vertices &vertices) noexcept {
+    static constexpr auto C4(const Vertices &vertices) noexcept {
         return SubgraphT{Type::C4, vertices};
     }
 
-    static constexpr SubgraphT P4(const Vertices &vertices) noexcept {
+    static constexpr auto C4(Vertices &&vertices) noexcept {
+        return SubgraphT{Type::C4, std::move(vertices)};
+    }
+
+    static constexpr auto P4(const Vertices &vertices) noexcept {
         return SubgraphT{Type::P4, vertices};
+    }
+
+    static constexpr auto P4(Vertices &&vertices) noexcept {
+        return SubgraphT{Type::P4, std::move(vertices)};
     }
 
     [[nodiscard]] constexpr auto size() const noexcept {
         return m_vertices.size();
     }
 
-    class VertexIt {
-        const Vertices &m_vertices;
-    public:
-        constexpr VertexIt(const Vertices &vertices) noexcept: m_vertices(vertices) {}
-
-        [[nodiscard]] constexpr auto begin() const {
-            return m_vertices.begin();
-        }
-
-        [[nodiscard]] constexpr auto end() const {
-            return m_vertices.end();
-        }
-    };
-
-    [[nodiscard]] constexpr auto vertices() const noexcept {
-        return VertexIt{m_vertices};
+    [[nodiscard]] constexpr const auto &vertices() const noexcept {
+        return m_vertices;
     }
 
-    class VertexPairIt {
-        const Vertices &m_vertices;
-    public:
-        class Iterator {
-            Vertices::const_iterator m_u;
-            Vertices::const_iterator m_v;
-            Vertices::const_iterator m_end;
-        public:
-            using value_type = VertexPair;
-            using difference_type = std::ptrdiff_t;
-            using pointer = const VertexPair *;
-            using reference = const VertexPair &;
-            using iterator_category = std::forward_iterator_tag;
-
-            constexpr Iterator() : m_u(), m_v(), m_end() {}
-
-            constexpr explicit Iterator(Vertices::const_iterator u, Vertices::const_iterator v,
-                                        Vertices::const_iterator end) noexcept:
-                    m_u(u), m_v(v), m_end(end) {}
-
-            constexpr VertexPair operator*() const { return {*m_u, *m_v}; }
-
-            constexpr Iterator &operator++() {
-                ++m_v;
-                if (m_v == m_end) {
-                    ++m_u;
-                    m_v = m_u + 1;
-                }
-                return *this;
-            }
-
-            [[nodiscard]] constexpr bool operator==(const Iterator &other) const {
-                return m_u == other.m_u && m_v == other.m_v;
-            }
-
-            [[nodiscard]] constexpr bool operator!=(const Iterator &other) const { return !(*this == other); }
-        };
-
-        constexpr VertexPairIt(const Vertices &vertices) noexcept: m_vertices(vertices) {}
-
-        [[nodiscard]] constexpr auto begin() const {
-            auto begin = m_vertices.begin();
-            return Iterator(begin, begin + 1, m_vertices.end());
-        }
-
-        [[nodiscard]] constexpr auto end() const {
-            auto end = m_vertices.end();
-            return Iterator(end - 1, end, end);
-        }
-    };
-
+private:
+    static constexpr std::array<IndexedVertexPairRange::IndexPair, 6> m_pair_indices{std::pair{0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {2, 3}};
+public:
     [[nodiscard]] constexpr auto vertex_pairs() const noexcept {
-        return VertexPairIt{m_vertices};
+        return IndexedVertexPairRange{m_vertices, m_pair_indices};
     }
 
-    class NonConvertingEdits {
-        const Vertices &m_vertices;
-    public:
-        class Iterator {
-            Vertices::const_iterator m_u;
-            Vertices::const_iterator m_v;
-            Vertices::const_iterator m_begin;
-            Vertices::const_iterator m_end;
-        public:
-            using value_type = VertexPair;
-            using difference_type = std::ptrdiff_t;
-            using pointer = const VertexPair *;
-            using reference = const VertexPair &;
-            using iterator_category = std::forward_iterator_tag;
-
-            constexpr Iterator() : m_u(), m_v(), m_begin(), m_end() {};
-
-            constexpr explicit Iterator(Vertices::const_iterator u, Vertices::const_iterator v,
-                                        Vertices::const_iterator begin, Vertices::const_iterator end) :
-                    m_u(u), m_v(v), m_begin(begin), m_end(end) {}
-
-            constexpr VertexPair operator*() const { return {*m_u, *m_v}; }
-
-            constexpr Iterator &operator++() {
-                ++m_v;
-                if (m_v == m_end) {
-                    ++m_u;
-                    m_v = m_u + 1;
-                } else if (m_u == m_begin && m_v + 1 == m_end) {
-                    ++m_u;
-                    m_v = m_u + 1;
-                }
-                return *this;
-            }
-
-            [[nodiscard]] constexpr bool operator==(const Iterator &other) const {
-                return m_u == other.m_u && m_v == other.m_v;
-            }
-
-            [[nodiscard]] constexpr bool operator!=(const Iterator &other) const { return !(*this == other); }
-        };
-
-        constexpr NonConvertingEdits(const Vertices &vertices) noexcept: m_vertices(vertices) {}
-
-        [[nodiscard]] constexpr auto begin() const {
-            auto begin = m_vertices.begin();
-            return Iterator(begin, begin + 1, begin, m_vertices.end());
-        }
-
-        [[nodiscard]] constexpr auto end() const {
-            auto end = m_vertices.end();
-            return Iterator(end - 1, end, m_vertices.begin(), end);
-        }
-    };
-
+private:
+    static constexpr std::array<IndexedVertexPairRange::IndexPair, 5> m_non_converting_edits_indices{std::pair{0, 1}, {0, 2}, {1, 2}, {1, 3}, {2, 3}};
+public:
     [[nodiscard]] constexpr auto non_converting_edits() const noexcept {
-        return NonConvertingEdits{m_vertices};
+        return IndexedVertexPairRange{m_vertices, m_non_converting_edits_indices};
     }
 
-    [[nodiscard]] Cost calculate_min_cost(const VertexPairMap<Cost> &costs, const VertexPairMap<bool> &marked) const {
+    [[nodiscard]] Cost calculate_min_cost(const VertexPairMap<Cost> &costs, const VertexPairMap<bool> &marked) const noexcept {
         auto[a, b, c, d] = m_vertices;
         auto x = [&](VertexPair uv) -> Cost { return marked[uv] ? invalid_cost : costs[uv]; };
         return std::min({x({a, b}), x({a, c}), x({b, c}), x({b, d}), x({c, d})});
     }
 
-    [[nodiscard]] bool operator==(const Subgraph &other) const noexcept {
-        return m_vertices == other.m_vertices;
+    [[nodiscard]] bool operator==(const SubgraphT &other) const noexcept {
+        return m_type == other.m_type && m_vertices == other.m_vertices;
     }
 
-    [[nodiscard]] bool operator!=(const Subgraph &other) const noexcept {
+    [[nodiscard]] bool operator!=(const SubgraphT &other) const noexcept {
         return !(*this == other);
     }
 
-    [[nodiscard]] bool operator<(const Subgraph &other) const noexcept {
+    [[nodiscard]] bool operator<(const SubgraphT &other) const noexcept {
         return m_vertices < other.m_vertices;
     }
 
@@ -201,7 +94,7 @@ public:
         return contains(uv.u) && contains(uv.v);
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const Subgraph &subgraph) {
+    friend std::ostream &operator<<(std::ostream &os, const SubgraphT &subgraph) {
         switch (subgraph.m_type) {
             case Type::C4:
                 os << "C4{";
@@ -210,15 +103,17 @@ public:
                 os << "P4{";
                 break;
         }
-        for (Vertex u : subgraph.m_vertices) os << " " << u;
+        for (Vertex u : subgraph.vertices())
+            os << " " << u;
         os << " }";
         return os;
     }
 
-    friend YAML::Emitter &operator<<(YAML::Emitter &out, const Subgraph &subgraph) {
+    friend YAML::Emitter &operator<<(YAML::Emitter &out, const SubgraphT &subgraph) {
         using namespace YAML;
         out << YAML::Flow << YAML::BeginSeq;
-        for (Vertex u : subgraph.vertices()) out << u;
+        for (Vertex u : subgraph.vertices())
+            out << u;
         return out << YAML::EndSeq;
     }
 
@@ -232,20 +127,20 @@ public:
         return m_vertices[index];
     }
 
-    static bool is_valid_C4(const Graph &graph, const Graph &forbidden_graph, const Vertices &vertices) {
-        auto[a, b, c, d] = vertices;
-        auto e = [&](VertexPair uv) { return graph.hasEdge(uv); };
-        auto f = [&](VertexPair uv) { return forbidden_graph.hasEdge(uv); };
+    static bool is_valid_C4(const Graph &graph, const Graph &forbidden_graph, const Vertices &vertices) noexcept {
+        const auto[a, b, c, d] = vertices;
+        const auto e = [&](VertexPair uv) { return graph.hasEdge(uv); };
+        const auto f = [&](VertexPair uv) { return forbidden_graph.hasEdge(uv); };
         bool valid = true;
         valid &=  e({a, b}) && !e({a, c}) &&  e({a, d}) &&  e({b, c}) && !e({b, d}) &&  e({c, d});
         valid &= !f({a, b}) && !f({a, c}) &&               !f({b, c}) && !f({b, d}) && !f({c, d});
         return valid;
     }
 
-    static bool is_valid_P4(const Graph &graph, const Graph &forbidden_graph, const Vertices &vertices) {
-        auto[a, b, c, d] = vertices;
-        auto e = [&](VertexPair uv) { return graph.hasEdge(uv); };
-        auto f = [&](VertexPair uv) { return forbidden_graph.hasEdge(uv); };
+    static bool is_valid_P4(const Graph &graph, const Graph &forbidden_graph, const Vertices &vertices) noexcept {
+        const auto[a, b, c, d] = vertices;
+        const auto e = [&](VertexPair uv) { return graph.hasEdge(uv); };
+        const auto f = [&](VertexPair uv) { return forbidden_graph.hasEdge(uv); };
         bool valid = true;
         valid &=  e({a, b}) && !e({a, c}) && !e({a, d}) &&  e({b, c}) && !e({b, d}) &&  e({c, d});
         valid &= !f({a, b}) && !f({a, c}) &&               !f({b, c}) && !f({b, d}) && !f({c, d});
@@ -257,14 +152,18 @@ template<>
 struct std::hash<SubgraphT<Options::FSG::C4P4>> {
     size_t operator()(const SubgraphT<Options::FSG::C4P4> &subgraph) const noexcept {
         // hash_bytes has `void const* ptr` as first parameter type.
-        auto ptr = static_cast<void const *>(subgraph.m_vertices.data());
-        auto len = subgraph.m_vertices.size() * sizeof(Vertex); // length of m_vertices in bytes.
+        const auto ptr = static_cast<void const *>(subgraph.m_vertices.data());
+        const auto len = subgraph.m_vertices.size() * sizeof(Vertex); // length of m_vertices in bytes.
         return robin_hood::hash_bytes(ptr, len);
     }
 };
 
 
 class CenterC4P4Finder {
+    /**
+     * find_near with forbidden graph: LocalSearch
+     * find_near_unique without forbidden graph: SubgraphStats
+     */
     /**
      * Only allocates if temporary adjacency array rows are too small for the current graph.
      *
@@ -297,6 +196,11 @@ class CenterC4P4Finder {
 
 public:
     using Subgraph = SubgraphT<Options::FSG::C4P4>;
+
+    enum class Control : bool {
+        Continue = 0,
+        Break = 1
+    };
 
     template<class Callback>
     bool find(const Graph &graph, Callback callback) {
@@ -351,8 +255,8 @@ public:
 
     template<class Callback>
     bool find_near(VertexPair uv, const Graph &graph, const Graph &forbidden_graph, Callback callback) {
-        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>,
-                      "Callback must have bool(Subgraph) signature.");
+        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph &>,
+                      "Callback must have bool(const Subgraph &) signature.");
         auto[u, v] = uv;
 
         auto ensure_direction = [](auto &vertices) {
@@ -361,11 +265,16 @@ public:
                 std::swap(vertices[1], vertices[2]);
             }
         };
+#ifndef NDEBUG
+        auto e = [&](VertexPair pair) { return graph.hasEdge(pair); };
+        auto f = [&](VertexPair pair) { return forbidden_graph.hasEdge(pair); };
+#endif
 
         if (graph.hasEdge(uv) && !forbidden_graph.hasEdge(uv)) {
 
             init(A, u, v, graph, forbidden_graph);
             init(B, v, u, graph, forbidden_graph);
+
             for (auto a : Graph::iterate(A)) {
                 for (auto b : Graph::iterate(B)) {
                     if (graph.hasEdge({a, b})) {
@@ -396,6 +305,13 @@ public:
                         if (callback(Subgraph::C4(vertices)))
                             return true;
                     } else {
+#ifndef NDEBUG
+                        auto[v0, v1, v2, v3] = vertices;
+                        auto e0 = e({v0, v1}), e1 = e({v0, v2}), e2 = e({v0, v3}), e3 = e({v1, v2}), e4 = e({v1, v3}), e5 = e({v2, v3});
+                        auto f0 = f({v0, v1}), f1 = f({v0, v2}), f2 = f({v0, v3}), f3 = f({v1, v2}), f4 = f({v1, v3}), f5 = f({v2, v3});
+                        assert( e0); assert(!e1); assert(!e2); assert( e3); assert(!e4); assert( e5);
+                        assert(!f0); assert(!f1);              assert(!f3); assert(!f4); assert(!f5);
+#endif
                         assert(Subgraph::is_valid_P4(graph, forbidden_graph, vertices));
                         if (callback(Subgraph::P4(vertices)))
                             return true;
@@ -413,6 +329,13 @@ public:
                         if (callback(Subgraph::C4(vertices)))
                             return true;
                     } else {
+#ifndef NDEBUG
+                        auto[v0, v1, v2, v3] = vertices;
+                        auto e0 = e({v0, v1}), e1 = e({v0, v2}), e2 = e({v0, v3}), e3 = e({v1, v2}), e4 = e({v1, v3}), e5 = e({v2, v3});
+                        auto f0 = f({v0, v1}), f1 = f({v0, v2}), f2 = f({v0, v3}), f3 = f({v1, v2}), f4 = f({v1, v3}), f5 = f({v2, v3});
+                        assert( e0); assert(!e1); assert(!e2); assert( e3); assert(!e4); assert( e5);
+                        assert(!f0); assert(!f1);              assert(!f3); assert(!f4); assert(!f5);
+#endif
                         assert(Subgraph::is_valid_P4(graph, forbidden_graph, vertices));
                         if (callback(Subgraph::P4(vertices)))
                             return true;
@@ -471,11 +394,12 @@ public:
 
             // u-a-c-v
             A -= B;
+            A -= forbidden_graph.m_adj[v];
             C -= B;
+            C -= forbidden_graph.m_adj[u];
             for (auto a : Graph::iterate(A)) {
                 for (auto c : Graph::iterate(C)) {
-                    if (forbidden_graph.hasEdge({a, v}) || forbidden_graph.hasEdge({c, u}) ||
-                        forbidden_graph.hasEdge({a, c}))
+                    if (forbidden_graph.hasEdge({a, c}))
                         continue;
                     if (graph.hasEdge({a, c})) {
                         Subgraph::Vertices vertices{u, a, c, v};
@@ -532,7 +456,7 @@ public:
     }
 
     template<class Callback>
-    bool find_near_unique(VertexPair uv, const Graph &graph, Callback callback) {
+    bool find_near_unique(VertexPair uv, const Graph &graph, const Graph &forbidden_graph, Callback callback) {
         static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>,
                       "Callback must have bool(Subgraph) signature.");
 
@@ -541,7 +465,7 @@ public:
             return b < std::min({a, c, d}) && a < c;
         };
 
-        return find_near(uv, graph, [&](Subgraph subgraph) {
+        return find_near(uv, graph, forbidden_graph, [&](const Subgraph &subgraph) {
             if (subgraph.m_type == Subgraph::Type::C4) {
                 if (!is_correct_cycle(subgraph))
                     return false;
