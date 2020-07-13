@@ -4,7 +4,7 @@
 #include "robin_hood.h"
 
 #include "Subgraph.h"
-#include "IndexPairIterator.h"
+#include "IndexedVertexPairRange.h"
 
 
 // Forward declaration.
@@ -23,9 +23,15 @@ class SubgraphT<Options::FSG::C4P4> {
     using Vertices = std::array<Vertex, 4>;
     Vertices m_vertices;
 
-    constexpr SubgraphT(Type type, const Vertices &vertices) noexcept: m_type(type), m_vertices(vertices) {}
+    SubgraphT() noexcept = default;
 
-    constexpr SubgraphT(Type type, Vertices &&vertices) noexcept: m_type(type), m_vertices(std::move(vertices)) {}
+    constexpr SubgraphT(Type type, const Vertices &vertices) noexcept: m_type(type), m_vertices(vertices) {
+        assert(m_vertices[1] < m_vertices[2]);
+    }
+
+    constexpr SubgraphT(Type type, Vertices &&vertices) noexcept: m_type(type), m_vertices(std::move(vertices)) {
+        assert(m_vertices[1] < m_vertices[2]);
+    }
 
 public:
     using Finder = CenterC4P4Finder;
@@ -69,16 +75,16 @@ public:
     }
 
     [[nodiscard]] Cost calculate_min_cost(const VertexPairMap<Cost> &costs, const VertexPairMap<bool> &marked) const noexcept {
-        auto[a, b, c, d] = m_vertices;
+        const auto &[a, b, c, d] = m_vertices;
         auto x = [&](VertexPair uv) -> Cost { return marked[uv] ? invalid_cost : costs[uv]; };
         return std::min({x({a, b}), x({a, c}), x({b, c}), x({b, d}), x({c, d})});
     }
 
-    [[nodiscard]] bool operator==(const SubgraphT &other) const noexcept {
+    [[nodiscard]] constexpr bool operator==(const SubgraphT &other) const noexcept {
         return m_type == other.m_type && m_vertices == other.m_vertices;
     }
 
-    [[nodiscard]] bool operator!=(const SubgraphT &other) const noexcept {
+    [[nodiscard]] constexpr bool operator!=(const SubgraphT &other) const noexcept {
         return !(*this == other);
     }
 
@@ -86,11 +92,13 @@ public:
         return m_vertices < other.m_vertices;
     }
 
-    [[nodiscard]] bool contains(Vertex u) const noexcept {
-        return std::any_of(m_vertices.begin(), m_vertices.end(), [&](Vertex y) { return y == u; });
+    [[nodiscard]] constexpr bool contains(Vertex u) const noexcept {
+        const auto &[a, b, c, d] = m_vertices;
+        return (a == u) || (b == u) || (c == u) || (d == u);
+        // return std::any_of(m_vertices.begin(), m_vertices.end(), [&](Vertex y) { return y == u; }); // not constexpr
     }
 
-    [[nodiscard]] bool contains(VertexPair uv) const noexcept {
+    [[nodiscard]] constexpr bool contains(VertexPair uv) const noexcept {
         return contains(uv.u) && contains(uv.v);
     }
 
@@ -150,7 +158,7 @@ public:
 
 template<>
 struct std::hash<SubgraphT<Options::FSG::C4P4>> {
-    size_t operator()(const SubgraphT<Options::FSG::C4P4> &subgraph) const noexcept {
+    inline size_t operator()(const SubgraphT<Options::FSG::C4P4> &subgraph) const noexcept {
         // hash_bytes has `void const* ptr` as first parameter type.
         const auto ptr = static_cast<void const *>(subgraph.m_vertices.data());
         const auto len = subgraph.m_vertices.size() * sizeof(Vertex); // length of m_vertices in bytes.
@@ -175,7 +183,7 @@ class CenterC4P4Finder {
     Graph::AdjRow B;
     Graph::AdjRow C;
 
-    static inline void init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph &graph) {
+    static inline void init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph &graph) noexcept {
         row = graph.m_adj[neighbor];
         row -= graph.m_adj[non_neighbor];
         row[non_neighbor] = false;
@@ -186,7 +194,7 @@ class CenterC4P4Finder {
      * Assumes that uv is an edge and not forbidden.
      */
     static inline void
-    init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph &graph, const Graph &forbidden_graph) {
+    init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph &graph, const Graph &forbidden_graph) noexcept {
         row = graph.m_adj[neighbor];
         row -= graph.m_adj[non_neighbor];
         row -= forbidden_graph.m_adj[neighbor];
@@ -199,13 +207,18 @@ public:
 
     enum class Control : bool {
         Continue = 0,
-        Break = 1
+        Break = 1,
+    };
+
+    enum class ExitState : bool {
+        Full = 0,
+        EarlyExit = 1,
     };
 
     template<class Callback>
     bool find(const Graph &graph, Callback callback) {
-        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>,
-                      "Callback must have bool(Subgraph) signature.");
+        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph &>,
+                      "Callback must have bool(const Subgraph &) signature.");
 
         for (auto[u, v] : graph.edges()) {
             init(A, u, v, graph);
@@ -227,12 +240,13 @@ public:
 
     template<class Callback>
     bool find(const Graph &graph, const Graph &forbidden_graph, Callback callback) {
-        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>,
-                      "Callback must have bool(Subgraph) signature.");
+        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph &>,
+                      "Callback must have bool(const Subgraph &) signature.");
 
-        for (auto[u, v] : graph.edges()) {
-            if (forbidden_graph.hasEdge({u, v}))
+        for (auto uv : graph.edges()) {
+            if (forbidden_graph.hasEdge(uv))
                 continue;
+            auto[u, v] = uv;
             init(A, u, v, graph, forbidden_graph);
             init(B, v, u, graph, forbidden_graph);
             for (auto a : Graph::iterate(A)) {
@@ -257,7 +271,7 @@ public:
     bool find_near(VertexPair uv, const Graph &graph, const Graph &forbidden_graph, Callback callback) {
         static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph &>,
                       "Callback must have bool(const Subgraph &) signature.");
-        auto[u, v] = uv;
+        const auto&[u, v] = uv;
 
         auto ensure_direction = [](auto &vertices) {
             if (vertices[1] > vertices[2]) {
@@ -307,8 +321,8 @@ public:
                     } else {
 #ifndef NDEBUG
                         auto[v0, v1, v2, v3] = vertices;
-                        auto e0 = e({v0, v1}), e1 = e({v0, v2}), e2 = e({v0, v3}), e3 = e({v1, v2}), e4 = e({v1, v3}), e5 = e({v2, v3});
-                        auto f0 = f({v0, v1}), f1 = f({v0, v2}), f2 = f({v0, v3}), f3 = f({v1, v2}), f4 = f({v1, v3}), f5 = f({v2, v3});
+                        auto e0 = e({v0, v1}), e1 = e({v0, v2}),   e2 = e({v0, v3}),   e3 = e({v1, v2}), e4 = e({v1, v3}), e5 = e({v2, v3});
+                        auto f0 = f({v0, v1}), f1 = f({v0, v2}), /*f2 = f({v0, v3}),*/ f3 = f({v1, v2}), f4 = f({v1, v3}), f5 = f({v2, v3});
                         assert( e0); assert(!e1); assert(!e2); assert( e3); assert(!e4); assert( e5);
                         assert(!f0); assert(!f1);              assert(!f3); assert(!f4); assert(!f5);
 #endif
@@ -331,8 +345,8 @@ public:
                     } else {
 #ifndef NDEBUG
                         auto[v0, v1, v2, v3] = vertices;
-                        auto e0 = e({v0, v1}), e1 = e({v0, v2}), e2 = e({v0, v3}), e3 = e({v1, v2}), e4 = e({v1, v3}), e5 = e({v2, v3});
-                        auto f0 = f({v0, v1}), f1 = f({v0, v2}), f2 = f({v0, v3}), f3 = f({v1, v2}), f4 = f({v1, v3}), f5 = f({v2, v3});
+                        auto e0 = e({v0, v1}), e1 = e({v0, v2}),   e2 = e({v0, v3}),   e3 = e({v1, v2}), e4 = e({v1, v3}), e5 = e({v2, v3});
+                        auto f0 = f({v0, v1}), f1 = f({v0, v2}), /*f2 = f({v0, v3}),*/ f3 = f({v1, v2}), f4 = f({v1, v3}), f5 = f({v2, v3});
                         assert( e0); assert(!e1); assert(!e2); assert( e3); assert(!e4); assert( e5);
                         assert(!f0); assert(!f1);              assert(!f3); assert(!f4); assert(!f5);
 #endif
@@ -436,11 +450,11 @@ public:
 
     template<class Callback>
     bool find_unique(const Graph &graph, Callback callback) {
-        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>,
-                      "Callback must have bool(Subgraph) signature.");
+        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph &>,
+                      "Callback must have bool(const Subgraph &) signature.");
 
         auto is_correct_cycle = [](const auto &subgraph) {
-            const auto[a, b, c, d] = subgraph.m_vertices;
+            const auto&[a, b, c, d] = subgraph.m_vertices;
             return b < std::min({a, c, d}) && a < c;
         };
 

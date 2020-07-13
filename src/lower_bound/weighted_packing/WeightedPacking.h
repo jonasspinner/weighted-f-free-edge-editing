@@ -91,19 +91,21 @@ public:
      * @param cost
      */
     void subtract_from_potential(const Subgraph &subgraph, Cost cost) {
-        if (verbosity > 0) std::cout << "subtract_from_potential subgraph = " << subgraph << " cost = " << cost << "\n";
         assert(cost > 0);
         assert(cost != invalid_cost);
 
         m_total_cost += cost;
 
         for (auto uv : subgraph.non_converting_edits()) {
-            if (m_marked[uv]) continue;
+            if (m_marked[uv])
+                continue;
             assert(!m_depleted_graph.hasEdge(uv));
 
-            if (verbosity > 0 && cost > m_potential[uv])
-                std::cout << "(" << uv << " " << m_marked[uv] << " " << m_costs[uv] << " " << m_potential[uv] << ") "
+#ifndef NDEBUG
+            if (cost > m_potential[uv])
+                std::cerr << "(" << uv << " " << m_marked[uv] << " " << m_costs[uv] << " " << m_potential[uv] << ") "
                           << std::endl;
+#endif
             assert(cost <= m_potential[uv]);
             m_potential[uv] -= cost;
             if (m_potential[uv] == 0) {
@@ -118,14 +120,14 @@ public:
      * @param cost
      */
     void add_to_potential(const Subgraph &subgraph, Cost cost) {
-        if (verbosity > 0) std::cout << "add_to_potential subgraph = " << subgraph << " cost = " << cost << "\n";
         assert(cost > 0);
         assert(cost != invalid_cost);
 
         m_total_cost -= cost;
 
         for (auto uv : subgraph.non_converting_edits()) {
-            if (m_marked[uv]) continue;
+            if (m_marked[uv])
+                continue;
             m_potential[uv] += cost;
             m_depleted_graph.clearEdge(uv);
             assert(m_potential[uv] <= m_costs[uv]);
@@ -159,7 +161,7 @@ public:
 
     [[nodiscard]] bool is_maximal() {
         bool maximal = true;
-        m_finder.find(m_graph, m_depleted_graph, [&](Subgraph subgraph) {
+        m_finder.find(m_graph, m_depleted_graph, [&](const Subgraph &subgraph) {
             auto cost = calculate_min_cost(subgraph);
             std::cerr << subgraph << " " << cost << " ";
             maximal = false;
@@ -221,14 +223,14 @@ public:
             // Because the subgraph already contributes one to the subgraph count at uv, only search for near subgraphs
             // if there is at least one more.
             if (m_subgraph_stats.subgraphCount(uv) > 1) {
-                m_finder.find_near(uv, m_graph, m_depleted_graph, [&](Subgraph &&neighbor) {
+                m_finder.find_near(uv, m_graph, m_depleted_graph, [&](const Subgraph &neighbor) {
 #ifndef NDEBUG
                     m_finder->for_all_conversionless_edits(neighbor, [&](auto xy) {
                         assert(!m_depleted_graph.hasEdge(xy));
                         return false;
                     });
 #endif
-                    candidates.push_back(std::move(neighbor));
+                    candidates.push_back(neighbor);
                     return false;
                 });
             }
@@ -253,8 +255,16 @@ public:
         for (auto uv : subgraph.non_converting_edits()) {
             assert(!m_depleted_graph.hasEdge(uv));
             if (!m_marked[uv] && m_potential[uv] == remove_cost) { // uv is unmarked and was depleted before x was removed with this cost.
-                pairs.push_back(uv);
+                // Because the subgraph already contributes one to the subgraph count at uv, only search for near subgraphs
+                // if there is at least one more.
+                if (m_subgraph_stats.subgraphCount(uv) > 1) {
+                    pairs.push_back(uv);
+                }
             }
+        }
+
+        if (pairs.size() <= 1) {
+            return {{}, {}, {}};
         }
 
         std::vector<Subgraph> candidates;
@@ -264,20 +274,17 @@ public:
             VertexPair uv = pairs[i];
             assert(!m_depleted_graph.hasEdge(uv));
 
-            // Because the subgraph already contributes one to the subgraph count at uv, only search for near subgraphs
-            // if there is at least one more.
-            if (m_subgraph_stats.subgraphCount(uv) > 1) {
-                m_finder.find_near(uv, m_graph, m_depleted_graph, [&](Subgraph neighbor) {
+            m_finder.find_near(uv, m_graph, m_depleted_graph, [&](const Subgraph &neighbor) {
 #ifndef NDEBUG
-                    for (auto xy : neighbor.non_converting_edits()) {
-                        assert(!m_depleted_graph.hasEdge(xy));
-                    }
+                for (auto xy : neighbor.non_converting_edits()) {
+                    assert(!m_depleted_graph.hasEdge(xy));
+                }
 #endif
-                    if (neighbor != subgraph)
-                        candidates.push_back(std::move(neighbor));
-                    return false;
-                });
-            }
+                if (neighbor != subgraph)
+                    candidates.push_back(neighbor);
+                return false;
+            });
+
             border[i + 1] = candidates.size();
 
             // Prevent subgraphs including uv to be counted twice.
@@ -298,13 +305,13 @@ public:
         for (auto uv : pairs) {
             assert(!m_depleted_graph.hasEdge(uv));
 
-            m_finder.find_near(uv, m_graph, m_depleted_graph, [&](Subgraph neighbor) {
+            m_finder.find_near(uv, m_graph, m_depleted_graph, [&](const Subgraph &neighbor) {
 #ifndef NDEBUG
                 for (auto xy : neighbor.non_converting_edits()) {
                     assert(!m_depleted_graph.hasEdge(xy));
                 }
 #endif
-                subgraphs.push_back(std::move(neighbor));
+                subgraphs.push_back(neighbor);
                 return false;
             });
 

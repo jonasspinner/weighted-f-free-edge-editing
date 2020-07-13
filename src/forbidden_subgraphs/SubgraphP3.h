@@ -6,7 +6,6 @@
 #include "robin_hood.h"
 
 #include "Subgraph.h"
-#include "IndexPairIterator.h"
 
 
 class CenterP3Finder;
@@ -58,16 +57,16 @@ public:
     }
 
     [[nodiscard]] Cost calculate_min_cost(const VertexPairMap<Cost> &costs, const VertexPairMap<bool> &marked) const noexcept {
-        auto [a, b, c] = m_vertices;
+        const auto &[a, b, c] = m_vertices;
         auto x = [&](VertexPair uv) -> Cost { return marked[uv] ? invalid_cost : costs[uv]; };
         return std::min({x({a, b}), x({a, c}), x({b, c})});
     }
 
-    [[nodiscard]] bool operator==(const Subgraph &other) const noexcept {
+    [[nodiscard]] constexpr bool operator==(const Subgraph &other) const noexcept {
         return m_vertices == other.m_vertices;
     }
 
-    [[nodiscard]] bool operator!=(const Subgraph &other) const noexcept {
+    [[nodiscard]] constexpr bool operator!=(const Subgraph &other) const noexcept {
         return !(*this == other);
     }
 
@@ -109,13 +108,13 @@ public:
         return m_vertices[index];
     }
 
-    static bool is_valid_P3(const Graph& graph, const Vertices &vertices) {
+    static bool is_valid_P3(const Graph& graph, const Vertices &vertices) noexcept {
         auto [a, b, c] = vertices;
         auto e = [&](VertexPair uv) { return graph.hasEdge(uv); };
         return e({a, b}) && !e({a, c}) &&  e({b, c});
     }
 
-    static bool is_valid_P3(const Graph& graph, const Graph &forbidden_graph, const Vertices &vertices) {
+    static bool is_valid_P3(const Graph& graph, const Graph &forbidden_graph, const Vertices &vertices) noexcept {
         auto [a, b, c] = vertices;
         auto e = [&](VertexPair uv) { return graph.hasEdge(uv); };
         auto f = [&](VertexPair uv) { return forbidden_graph.hasEdge(uv); };

@@ -10,7 +10,7 @@ public:
     Vertex u;
     Vertex v;
 
-    constexpr VertexPair() : u(0), v(1) {}
+    constexpr VertexPair() noexcept: u(0), v(1) {}
 
     /**
      * An unordered pair of vertices. Represents an undirected edge.
@@ -20,10 +20,10 @@ public:
      * @param x A vertex
      * @param y A vertex
      */
-    constexpr VertexPair(Vertex x, Vertex y) : u(x < y ? x : y), v(x < y ? y : x) { assert(x != y); }
+    constexpr VertexPair(Vertex x, Vertex y) noexcept: u(x < y ? x : y), v(x < y ? y : x) { assert(x != y); }
 
     struct Ordered {};
-    constexpr VertexPair(Vertex x, Vertex y, Ordered) : u(x), v(y) { assert(x < y); } // x < y as precondition
+    constexpr VertexPair(Vertex x, Vertex y, Ordered) noexcept: u(x), v(y) { assert(x < y); } // x < y as precondition
 
     friend std::ostream &operator<<(std::ostream &os, VertexPair uv) {
         return os << "{" << uv.u << ", " << uv.v << "}";
@@ -36,15 +36,27 @@ public:
     }
 
     [[nodiscard]] constexpr friend bool operator==(const VertexPair &uv, const VertexPair &xy) {
-        return (uv.u == xy.u) && (uv.v == xy.v);
+        return std::tie(uv.u, uv.v) == std::tie(xy.u, xy.v);
     }
 
     [[nodiscard]] constexpr friend bool operator!=(const VertexPair &uv, const VertexPair &xy) {
-        return !(uv == xy);
+        return std::tie(uv.u, uv.v) != std::tie(xy.u, xy.v);
     }
 
     [[nodiscard]] constexpr friend bool operator<(const VertexPair &uv, const VertexPair &xy) {
-        return uv.u < xy.u || (uv.u == xy.u && uv.v < xy.v);
+        return std::tie(uv.u, uv.v) < std::tie(xy.u, xy.v);
+    }
+
+    [[nodiscard]] constexpr friend bool operator<=(const VertexPair &uv, const VertexPair &xy) {
+        return std::tie(uv.u, uv.v) <= std::tie(xy.u, xy.v);
+    }
+
+    [[nodiscard]] constexpr friend bool operator>(const VertexPair &uv, const VertexPair &xy) {
+        return std::tie(uv.u, uv.v) > std::tie(xy.u, xy.v);
+    }
+
+    [[nodiscard]] constexpr friend bool operator>=(const VertexPair &uv, const VertexPair &xy) {
+        return std::tie(uv.u, uv.v) >= std::tie(xy.u, xy.v);
     }
 };
 

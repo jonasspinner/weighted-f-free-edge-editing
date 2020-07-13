@@ -36,8 +36,8 @@ public:
         return m_values[idx(uv)];
     }
 
-    [[nodiscard]] auto keys() const noexcept {
-        return Graph::VertexPairs(m_size);
+    [[nodiscard]] constexpr auto keys() const noexcept {
+        return Graph::VertexPairs{m_size};
     }
 
     friend std::ostream &operator<<(std::ostream &os, const VertexPairMap &map) {
@@ -141,11 +141,11 @@ public:
 
     [[nodiscard]] reference operator[](VertexPair uv) noexcept {
         assert(uv.u < m_size && uv.v < m_size);
-        return reference(m_values, uv);
+        return reference{m_values, uv};
     }
 
-    [[nodiscard]] auto keys() const noexcept {
-        return Graph::VertexPairs(m_size);
+    [[nodiscard]] constexpr auto keys() const noexcept {
+        return Graph::VertexPairs{m_size};
     }
 
     friend std::ostream &operator<<(std::ostream &os, const VertexPairMap &map) {

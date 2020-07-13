@@ -34,6 +34,7 @@ private:
     const Graph &m_graph;
     const VertexPairMap<bool> &m_marked;
 
+    // TODO: Remove dependency on empty graph, i.e. build find_near_unique variant without forbidden graph.
     Graph m_empty_graph;
 
 public:
@@ -55,7 +56,7 @@ public:
         subgraph_count_per_vertex_pair_sum = 0;
         subgraph_count = 0;
 
-        m_finder.find_unique(m_graph, [&](Subgraph subgraph) {
+        m_finder.find(m_graph, [&](Subgraph subgraph) {
             register_subgraph(subgraph);
             return false;
         });
@@ -66,7 +67,7 @@ public:
     void remove_near_subgraphs(VertexPair uv) {
         assert(m_marked[uv]);
         verify();
-        m_finder.find_near_unique(uv, m_graph, m_empty_graph, [&](Subgraph subgraph) {
+        m_finder.find_near(uv, m_graph, m_empty_graph, [&](Subgraph subgraph) {
             remove_subgraph(subgraph);
             return false;
         });
@@ -74,7 +75,7 @@ public:
     }
 
     void register_near_subgraphs(VertexPair uv) {
-        m_finder.find_near_unique(uv, m_graph, m_empty_graph, [&](Subgraph subgraph) {
+        m_finder.find_near(uv, m_graph, m_empty_graph, [&](Subgraph subgraph) {
             register_subgraph(subgraph);
             return false;
         });
@@ -115,7 +116,7 @@ public:
 private:
     void register_subgraph(const Subgraph &subgraph) {
         subgraph_count++;
-        for (VertexPair uv : subgraph.vertex_pairs()) {
+        for (VertexPair uv : subgraph.non_converting_edits()) {
             if (!m_marked[uv]) {
                 subgraph_count_per_vertex_pair[uv]++;
                 subgraph_count_per_vertex_pair_sum++;
@@ -125,7 +126,7 @@ private:
 
     void remove_subgraph(const Subgraph &subgraph) {
         subgraph_count--;
-        for (VertexPair uv : subgraph.vertex_pairs()) {
+        for (VertexPair uv : subgraph.non_converting_edits()) {
             if (!m_marked[uv]) {
                 subgraph_count_per_vertex_pair[uv]--;
                 subgraph_count_per_vertex_pair_sum--;
@@ -138,10 +139,10 @@ private:
         VertexPairMap<size_t> debug_sg_per_vertex_pair(m_graph.size());
         size_t debug_sg_count = 0;
 
-        m_finder.find_unique(m_graph, [&](Subgraph subgraph) {
+        m_finder.find(m_graph, [&](Subgraph subgraph) {
             debug_sg_count++;
 
-            for (VertexPair uv : subgraph.vertex_pairs()) {
+            for (VertexPair uv : subgraph.non_converting_edits()) {
                 if (!m_marked[uv]) {
                     debug_sg_per_vertex_pair[uv]++;
                 }

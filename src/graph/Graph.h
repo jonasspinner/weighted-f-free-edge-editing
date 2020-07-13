@@ -161,7 +161,7 @@ public:
             Vertex m_u{0};
         public:
             using value_type = Vertex;
-            using difference_type = Vertex;
+            using difference_type = std::make_signed_t<Vertex>;
             using pointer = void;
             using reference = Vertex;
             using iterator_category = std::random_access_iterator_tag;
@@ -174,7 +174,7 @@ public:
                 return m_u;
             }
 
-            [[nodiscard]] constexpr value_type operator[](std::size_t n) const noexcept {
+            [[nodiscard]] constexpr value_type operator[](difference_type n) const noexcept {
                 return *(*this + n);
             }
 
@@ -200,34 +200,34 @@ public:
                 return copy;
             }
 
-            constexpr Iterator &operator+=(unsigned int n) noexcept {
-                m_u += n;
+            constexpr Iterator &operator+=(difference_type n) noexcept {
+                m_u += static_cast<Vertex>(n);
                 return *this;
             }
 
-            constexpr Iterator &operator-=(unsigned int n) noexcept {
-                m_u -= n;
+            constexpr Iterator &operator-=(difference_type n) noexcept {
+                m_u -= static_cast<Vertex>(n);
                 return *this;
             }
 
-            [[nodiscard]] constexpr Iterator operator+(unsigned int n) const noexcept {
+            [[nodiscard]] constexpr Iterator operator+(difference_type n) const noexcept {
                 Iterator copy(*this);
                 copy += n;
                 return copy;
             }
 
-            [[nodiscard]] friend constexpr auto operator+(unsigned int n, const Iterator &it) noexcept {
+            [[nodiscard]] friend constexpr Iterator operator+(difference_type n, const Iterator &it) noexcept {
                 return it + n;
             }
 
-            [[nodiscard]] constexpr Iterator operator-(unsigned int n) const noexcept {
+            [[nodiscard]] constexpr Iterator operator-(difference_type n) const noexcept {
                 Iterator copy(*this);
                 copy -= n;
                 return copy;
             }
 
             [[nodiscard]] constexpr difference_type operator-(const Iterator &other) const noexcept {
-                return m_u - other.m_u;
+                return static_cast<difference_type>(m_u - other.m_u);
             }
 
             [[nodiscard]] constexpr bool operator==(const Iterator &other) const noexcept {
@@ -287,11 +287,9 @@ public:
         class Iterator {
             const AdjRow *m_row{nullptr};
             Vertex m_u{0};
-        public:
-#ifndef NDEBUG
-            static const Vertex end_vertex = static_cast<Vertex>(AdjRow::npos);
-#endif
 
+            static constexpr Vertex end_vertex = static_cast<Vertex>(AdjRow::npos);
+        public:
             using value_type = Vertex;
             using difference_type = std::ptrdiff_t;
             using pointer = void;
@@ -305,13 +303,12 @@ public:
                 m_u = m_row->find_first();
             }
 
-            constexpr Iterator(const AdjRow *row, Vertex start) noexcept: m_row(row), m_u(start) {
+            struct end_tag{};
+            constexpr Iterator(const AdjRow *row, end_tag) noexcept: m_row(row), m_u(end_vertex) {
                 assert(m_row != nullptr);
             }
 
-            Vertex operator*() const noexcept {
-                assert(m_u != end_vertex);
-                assert(m_u < m_row->size());
+            [[nodiscard]] constexpr value_type operator*() const noexcept {
                 return m_u;
             }
 
@@ -322,11 +319,13 @@ public:
                 return *this;
             }
 
-            constexpr bool operator==(const Iterator &other) const noexcept {
-                return m_row == other.m_row && m_u == other.m_u;
+            [[nodiscard]] constexpr bool operator==(const Iterator &other) const noexcept {
+                return m_u == other.m_u;
             }
 
-            constexpr bool operator!=(const Iterator &other) const noexcept { return !(*this == other); }
+            [[nodiscard]] constexpr bool operator!=(const Iterator &other) const noexcept {
+                return !(*this == other);
+            }
 
             [[nodiscard]] constexpr bool operator<(const Iterator &other) const noexcept {
                 return m_u < other.m_u;
@@ -356,7 +355,7 @@ public:
         [[nodiscard]] constexpr const_iterator begin() const noexcept { return Iterator{m_row}; }
 
         [[nodiscard]] constexpr const_iterator end() const noexcept {
-            return Iterator{m_row, static_cast<Vertex>(AdjRow::npos)};
+            return Iterator{m_row, Iterator::end_tag{}};
         }
 
         [[nodiscard]] constexpr bool empty() const noexcept { return begin() == end(); }
@@ -389,34 +388,119 @@ public:
     public:
         class Iterator {
             VertexPair m_uv{};
-            Vertex n{0};
+            Vertex m_size{0};
         public:
             using value_type = VertexPair;
             using difference_type = std::ptrdiff_t;
-            using pointer = const VertexPair *;
+            using pointer = void;
             using reference = const VertexPair &;
-            using iterator_category = std::forward_iterator_tag;
+            using iterator_category = std::random_access_iterator_tag;
 
             constexpr Iterator() noexcept {};
 
-            constexpr Iterator(VertexPair start, Vertex size) noexcept: m_uv(start), n(size) {}
+            constexpr Iterator(VertexPair start, Vertex size) noexcept: m_uv(start), m_size(size) {}
 
-            constexpr VertexPair operator*() const noexcept { return m_uv; }
+            [[nodiscard]] constexpr value_type operator*() const noexcept { return m_uv; }
+
+            [[nodiscard]] constexpr value_type operator[](difference_type n) const noexcept {
+                return *(*this + n);
+            }
 
             constexpr Iterator &operator++() noexcept {
                 ++m_uv.v;
-                if (m_uv.v == n) {
+                if (m_uv.v == m_size) {
                     ++m_uv.u;
                     m_uv.v = m_uv.u + 1;
                 }
                 return *this;
             }
+            [[nodiscard]] constexpr Iterator operator++(int) noexcept {
+                Iterator copy(*this);
+                ++(*this);
+                return copy;
+            }
+
+            constexpr Iterator &operator--() noexcept {
+                --m_uv.v;
+                if (m_uv.v == m_uv.u) {
+                    --m_uv.u;
+                    m_uv.v = m_size - 1;
+                }
+                return *this;
+            }
+
+            [[nodiscard]] constexpr Iterator operator--(int) noexcept {
+                Iterator copy(*this);
+                --(*this);
+                return copy;
+            }
+
+            constexpr Iterator &operator+=(difference_type n) noexcept {
+                while (m_uv.v + n >= m_size) {
+                    n -= m_size - m_uv.v;
+                    ++m_uv.u;
+                    m_uv.v = m_uv.u + 1;
+                }
+                m_uv.v += n;
+                return *this;
+            }
+
+            constexpr Iterator &operator-=(difference_type n) noexcept {
+                while (m_uv.v <= m_uv.u + n) {
+                    n -= m_uv.v - m_uv.u;
+                    --m_uv.u;
+                    m_uv.v = m_size - 1;
+                }
+                m_uv.v += n;
+                return *this;
+            }
+
+            [[nodiscard]] constexpr Iterator operator+(difference_type n) const noexcept {
+                Iterator copy(*this);
+                copy += n;
+                return copy;
+            }
+
+            [[nodiscard]] friend constexpr Iterator operator+(difference_type n, const Iterator &it) noexcept {
+                return it + n;
+            }
+
+            [[nodiscard]] constexpr Iterator operator-(difference_type n) const noexcept {
+                Iterator copy(*this);
+                copy -= n;
+                return copy;
+            }
+
+            [[nodiscard]] constexpr difference_type operator-(const Iterator &other) const noexcept {
+                const auto idx = [&](VertexPair uv) constexpr {
+                    auto v_ = m_size - 1 - uv.u;
+                    auto u_ = m_size - 1 - uv.v;
+                    return v_ * (v_ - 1) / 2 + u_;
+                };
+                return idx(other.m_uv) - idx(m_uv);
+            }
 
             [[nodiscard]] constexpr bool operator==(const Iterator &other) const noexcept {
-                return m_uv == other.m_uv && n == other.n;
+                return m_uv == other.m_uv;
             }
 
             [[nodiscard]] constexpr bool operator!=(const Iterator &other) const noexcept { return !(*this == other); }
+
+            [[nodiscard]] constexpr bool operator<(const Iterator &other) const noexcept {
+                return m_uv < other.m_uv;
+            }
+
+            [[nodiscard]] constexpr bool operator<=(const Iterator &other) const noexcept {
+                return m_uv <= other.m_uv;
+            }
+
+            [[nodiscard]] constexpr bool operator>(const Iterator &other) const noexcept {
+                return m_uv > other.m_uv;
+            }
+
+            [[nodiscard]] constexpr bool operator>=(const Iterator &other) const noexcept {
+                return m_uv >= other.m_uv;
+            }
         };
 
     private:
@@ -427,14 +511,14 @@ public:
 
         constexpr explicit VertexPairs(Vertex size) noexcept: m_number_of_nodes(size) {}
 
-        [[nodiscard]] constexpr Iterator begin() const noexcept {
-            return Iterator({0, 1}, m_number_of_nodes);
+        [[nodiscard]] constexpr const_iterator begin() const noexcept {
+            return Iterator{{0, 1}, m_number_of_nodes};
         }
 
-        [[nodiscard]] constexpr Iterator end() const noexcept {
+        [[nodiscard]] constexpr const_iterator end() const noexcept {
             return m_number_of_nodes == 0 ?
                 begin() :
-                Iterator({m_number_of_nodes - 1, m_number_of_nodes}, m_number_of_nodes);
+                Iterator{{m_number_of_nodes - 1, m_number_of_nodes}, m_number_of_nodes};
         }
 
         [[nodiscard]] constexpr size_type size() const noexcept {
@@ -469,7 +553,10 @@ public:
 
             constexpr Iterator() noexcept {};
 
-            constexpr Iterator(const AdjMatrix *adj, VertexPair start) noexcept: m_adj(adj), m_uv(start) {
+            struct end_tag{};
+            Iterator(const AdjMatrix *adj, end_tag) noexcept:
+                    m_adj(adj),
+                    m_uv({static_cast<Vertex>(adj->size() - 1), static_cast<Vertex>(adj->size())}) {
                 assert(m_adj != nullptr);
             }
 
@@ -510,10 +597,26 @@ public:
             }
 
             [[nodiscard]] constexpr bool operator==(const Iterator &other) const noexcept {
-                return m_adj == other.m_adj && m_uv == other.m_uv;
+                return m_uv == other.m_uv;
             }
 
             [[nodiscard]] constexpr bool operator!=(const Iterator &other) const noexcept { return !(*this == other); }
+
+            [[nodiscard]] constexpr bool operator<(const Iterator &other) const noexcept {
+                return m_uv < other.m_uv;
+            }
+
+            [[nodiscard]] constexpr bool operator<=(const Iterator &other) const noexcept {
+                return m_uv <= other.m_uv;
+            }
+
+            [[nodiscard]] constexpr bool operator>(const Iterator &other) const noexcept {
+                return m_uv > other.m_uv;
+            }
+
+            [[nodiscard]] constexpr bool operator>=(const Iterator &other) const noexcept {
+                return m_uv >= other.m_uv;
+            }
 
         };
 
@@ -525,9 +628,8 @@ public:
         const_iterator m_end;
     public:
         explicit Edges(const AdjMatrix &adj) noexcept:
-                m_begin(Iterator{std::addressof(adj)}),
-                m_end(Iterator{std::addressof(adj), {static_cast<Vertex>(adj.size() - 1),
-                                       static_cast<Vertex>(adj.size())}}) {}
+                m_begin(std::addressof(adj)),
+                m_end(std::addressof(adj), Iterator::end_tag{}) {}
 
         [[nodiscard]] const_iterator begin() const noexcept { return m_begin; }
 

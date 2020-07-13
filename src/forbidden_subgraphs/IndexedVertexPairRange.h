@@ -1,6 +1,6 @@
 
-#ifndef WEIGHTED_F_FREE_EDGE_EDITING_INDEXPAIRITERATOR_H
-#define WEIGHTED_F_FREE_EDGE_EDITING_INDEXPAIRITERATOR_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_INDEXEDVERTEXPAIRRANGE_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_INDEXEDVERTEXPAIRRANGE_H
 
 
 class IndexedVertexPairRange {
@@ -115,19 +115,35 @@ private:
     const IndexPair *m_pairs_begin;
     const IndexPair *m_pairs_end;
 public:
+    using const_iterator = Iterator;
+    using size_type = std::size_t;
 
     template<class V, class P>
-    constexpr explicit IndexedVertexPairRange(V &&vertices, P &&pairs) noexcept:
-            m_vertices_begin(std::begin(vertices)), m_pairs_begin(std::begin(pairs)), m_pairs_end(std::end(pairs)) {}
+    constexpr explicit IndexedVertexPairRange(const V &vertices, const P &pairs) noexcept:
+            m_vertices_begin(std::begin(vertices)), m_pairs_begin(std::begin(pairs)), m_pairs_end(std::end(pairs)) {
+#ifndef NDEBUG
+                auto size = std::size(vertices);
+                for (auto [i, j] : pairs) {
+                    assert(i < size);
+                    assert(j < size);
+                }
+#endif
+            }
 
-    [[nodiscard]] constexpr auto begin() const noexcept {
+    [[nodiscard]] constexpr const_iterator begin() const noexcept {
         return Iterator{m_vertices_begin, m_pairs_begin};
     }
 
-    [[nodiscard]] constexpr auto end() const noexcept {
+    [[nodiscard]] constexpr const_iterator end() const noexcept {
         return Iterator{m_vertices_begin, m_pairs_end};
     }
+
+    [[nodiscard]] constexpr size_type size() const noexcept {
+        return static_cast<size_type>(m_pairs_end - m_pairs_begin);
+    }
+
+    [[nodiscard]] constexpr bool empty() const noexcept { return size() == 0; }
 };
 
 
-#endif //WEIGHTED_F_FREE_EDGE_EDITING_INDEXPAIRITERATOR_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_INDEXEDVERTEXPAIRRANGE_H
