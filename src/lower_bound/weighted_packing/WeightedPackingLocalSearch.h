@@ -407,9 +407,9 @@ public:
         constexpr bool use_greedy_insertions = false;
 
         if constexpr (use_greedy_insertions) {
-            return insert_incident_subgraphs_into_packing_greedy(subgraphs, packing, map);
+            return insert_subgraphs_into_packing_and_map_greedy(subgraphs, packing, map);
         } else {
-            return insert_incident_subgraphs_into_packing_linear(subgraphs, packing, map);
+            return insert_subgraphs_into_packing_and_map_linear(subgraphs, packing, map);
         }
     }
 
