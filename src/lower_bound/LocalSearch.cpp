@@ -766,8 +766,27 @@ namespace lower_bound {
                 insert_into_graph(*finder, subgraph, m_marked, m_bound_graph);
             }
         }
-        if (state.solvable())
+
+
+        for (size_t pair_i = 0; pair_i < pairs.size(); ++pair_i) {
+            if (m_bound_graph.hasEdge(pairs[pair_i]))
+                continue;
+            for (size_t a_i = border[pair_i]; a_i < border[pair_i + 1]; ++a_i) {
+                if (candidates[a_i].size() == 0)
+                    continue;
+
+                auto inserted = try_insert_into_graph(*finder, candidates[a_i], m_marked, m_bound_graph);
+                if (inserted) {
+                    state.insert({candidate_costs[a_i], std::move(candidates[a_i])});
+                }
+            }
+        }
+
+
+        if (state.solvable()) {
             assert(bound_graph_is_valid(*finder, state, m_marked, m_bound_graph));
+            assert(bound_is_maximal(*finder, m_graph, m_bound_graph));
+        }
 
         return found_improvement;
     }
@@ -919,8 +938,26 @@ namespace lower_bound {
             return state.cost() > k || !state.solvable();
         });
 
-        //if (state.solvable())
-        //    assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
+        if (state.cost() <= k && state.solvable()) {
+            std::vector<std::pair<Cost, Subgraph>> remaining_subgraphs;
+            finder->find_with_duplicates(m_graph, m_bound_graph, [&](Subgraph &&subgraph) {
+                auto cost = finder->calculate_min_cost(subgraph, m_marked, m_costs);
+                remaining_subgraphs.emplace_back(cost, std::move(subgraph));
+                return false;
+            });
+
+            for (auto &&[cost, subgraph] : remaining_subgraphs) {
+                bool inserted = try_insert_into_graph(*finder, subgraph, m_marked, m_bound_graph);
+                if (inserted) {
+                    state.insert({cost, std::move(subgraph)});
+                }
+            }
+        }
+
+        if (state.cost() <= k &&state.solvable()) {
+            assert(bound_graph_is_valid(*finder, state, m_marked, m_bound_graph));
+            assert(bound_is_maximal(*finder, m_graph, m_bound_graph));
+        }
 
         return found_improvement;
     }
