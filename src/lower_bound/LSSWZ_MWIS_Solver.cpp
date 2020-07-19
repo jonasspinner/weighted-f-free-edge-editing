@@ -132,7 +132,7 @@ namespace lower_bound {
     LSSWZ_MWIS_Solver<SetOfForbiddenSubgraphs>::build_instance(Finder &finder, const Graph &graph,
                                                                const VertexPairMap<bool> &marked,
                                                                const VertexPairMap<Cost> &costs) {
-        VertexPairMap<std::vector<Vertex>> cliques(graph.size());
+        VertexPairMap<std::vector<std::size_t>> cliques(graph.size());
 
         std::vector<Cost> weights;
 
@@ -150,7 +150,7 @@ namespace lower_bound {
         if (unsolvable)
             return std::nullopt;
 
-        const auto n = weights.size();
+        const auto n = static_cast<unsigned>(weights.size());
 
         Graph instance_graph(n);
 
@@ -161,7 +161,7 @@ namespace lower_bound {
             const auto &clique = cliques[uv];
             for (size_t i = 0; i < clique.size(); ++i) {
                 for (size_t j = i + 1; j < clique.size(); ++j) {
-                    instance_graph.setEdge({clique[i], clique[j]});
+                    instance_graph.setEdge({static_cast<Vertex>(clique[i]), static_cast<Vertex>(clique[j])});
                 }
             }
         }

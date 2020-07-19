@@ -30,7 +30,7 @@ private:
             return {m_vertices[i], m_vertices[j]};
         }
 
-        [[nodiscard]] constexpr value_type operator[](std::size_t n) const noexcept {
+        [[nodiscard]] constexpr value_type operator[](difference_type n) const noexcept {
             return *(*this + n);
         }
 
@@ -56,23 +56,23 @@ private:
             return copy;
         }
 
-        constexpr Iterator &operator+=(int n) noexcept {
+        constexpr Iterator &operator+=(difference_type n) noexcept {
             m_idx += n;
             return *this;
         }
 
-        constexpr Iterator &operator-=(int n) noexcept {
+        constexpr Iterator &operator-=(difference_type n) noexcept {
             m_idx -= n;
             return *this;
         }
 
-        [[nodiscard]] constexpr Iterator operator+(int n) const noexcept {
+        [[nodiscard]] constexpr Iterator operator+(difference_type n) const noexcept {
             Iterator copy(*this);
             copy += n;
             return copy;
         }
 
-        [[nodiscard]] friend constexpr auto operator+(int n, const Iterator &it) noexcept {
+        [[nodiscard]] friend constexpr auto operator+(difference_type n, const Iterator &it) noexcept {
             return it + n;
         }
 
@@ -118,6 +118,15 @@ public:
     using const_iterator = Iterator;
     using size_type = std::size_t;
 
+    /**
+     * Precondition:
+     *      - all indices in pairs are valid for the container vertices.
+     *
+     * @tparam V
+     * @tparam P
+     * @param vertices
+     * @param pairs
+     */
     template<class V, class P>
     constexpr explicit IndexedVertexPairRange(const V &vertices, const P &pairs) noexcept:
             m_vertices_begin(std::begin(vertices)), m_pairs_begin(std::begin(pairs)), m_pairs_end(std::end(pairs)) {

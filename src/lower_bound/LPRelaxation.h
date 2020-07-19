@@ -8,6 +8,9 @@
 
 #include "LowerBoundI.h"
 #include "../Instance.h"
+#include "../Configuration.h"
+#include "../forbidden_subgraphs/SubgraphC4P4.h"
+
 
 
 namespace lower_bound {
@@ -244,12 +247,12 @@ namespace lower_bound {
             assert(m_model->get(GRB_IntAttr_Status) == GRB_OPTIMAL);
 
             double found_objective = m_model->get(GRB_DoubleAttr_ObjVal);
-            Cost result = std::ceil(found_objective);
+            Cost result = static_cast<Cost>(std::ceil(found_objective));
 
             if (result - found_objective > 0.99) {
                 if (m_config.verbosity)
                     std::cout << "found_objective: " << found_objective << " rounded result: " << result << std::endl;
-                result = std::floor(found_objective);
+                result = static_cast<Cost>(std::floor(found_objective));
             }
 
 #ifndef NDEBUG

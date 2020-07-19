@@ -82,8 +82,10 @@ private:
      * @param uv
      * @return
      */
-    static constexpr size_t idx(VertexPair uv) noexcept {
-        return uv.v * (uv.v - 1) / 2 + uv.u;
+    static constexpr std::size_t idx(VertexPair uv) noexcept {
+        auto u = static_cast<std::size_t>(uv.u);
+        auto v = static_cast<std::size_t>(uv.v);
+        return v * (v - 1) / 2 + u;
     }
 };
 
