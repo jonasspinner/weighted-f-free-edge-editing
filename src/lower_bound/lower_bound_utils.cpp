@@ -30,35 +30,54 @@ namespace lower_bound {
      * @return
      */
     std::unique_ptr<LowerBoundI>
-    make(Options::LB lower_bound, const std::shared_ptr<FinderI> &finder, const Instance &instance,
+    make(Options::LB lower_bound, Options::FSG fsg, const Instance &instance,
          const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats, Configuration config) {
         using Options::LB;
         switch (lower_bound) {
             case LB::Trivial:
                 return std::make_unique<Trivial>();
             case LB::LocalSearch:
-                return std::make_unique<LocalSearch>(instance, marked, subgraph_stats, finder);
+            {
+                switch (fsg) {
+                    case Options::FSG::C4P4:
+                    {
+                        using Stats = const subgraph_stats::SubgraphStatsT<Options::FSG::C4P4>;
+                        if (auto* s = dynamic_cast<Stats *>(std::addressof(subgraph_stats))) {
+                            return std::make_unique<LocalSearch<Options::FSG::C4P4>>(instance, marked, *s, config.seed);
+                        }
+                        throw std::runtime_error("SubgraphStats must have the correct type.");
+                    }
+                    default:
+                        throw std::runtime_error("LocalSearch not specialized for given forbidden subgraphs.");
+                }
+            }
             case LB::Greedy:
             {
-                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
-                    return std::make_unique<Greedy<Options::FSG::C4P4>>(instance, marked);
+                switch (fsg) {
+                    case Options::FSG::C4P4:
+                        return std::make_unique<Greedy<Options::FSG::C4P4>>(instance, marked);
+                    default:
+                        throw std::runtime_error("Greedy not specialized for given forbidden subgraphs.");
                 }
-                throw std::runtime_error("Greedy not specialized for given forbidden subgraphs.");
             }
             case LB::SortedGreedy:
             {
-                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
-                    return std::make_unique<SortedGreedy<Options::FSG::C4P4>>(instance, marked);
+                switch (fsg) {
+                    case Options::FSG::C4P4:
+                        return std::make_unique<SortedGreedy<Options::FSG::C4P4>>(instance, marked);
+                    default:
+                        throw std::runtime_error("SortedGreedy not specialized for given forbidden subgraphs.");
                 }
-                throw std::runtime_error("SortedGreedy not specialized for given forbidden subgraphs.");
             }
             case LB::LPRelaxation:
 #ifdef GUROBI_FOUND
             {
-                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
-                    return std::make_unique<LPRelaxation<Options::FSG::C4P4>>(instance, marked, std::move(config));
+                switch (fsg) {
+                    case Options::FSG::C4P4:
+                        return std::make_unique<LPRelaxation<Options::FSG::C4P4>>(instance, marked, std::move(config));
+                    default:
+                        throw std::runtime_error("LPRelaxation not specialized for given forbidden subgraphs.");
                 }
-                throw std::runtime_error("LPRelaxation not specialized for given forbidden subgraphs.");
             }
 #else
                 throw std::runtime_error("gurobi has to be installed to use LB::LinearProgram.");
@@ -66,10 +85,12 @@ namespace lower_bound {
             case LB::NPS_MWIS_Solver:
 #ifdef NPS_MWIS_FOUND
             {
-                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
-                    return std::make_unique<NPS_MWIS_Solver<Options::FSG::C4P4>>(instance, marked);
+                switch (fsg) {
+                    case Options::FSG::C4P4:
+                        return std::make_unique<NPS_MWIS_Solver<Options::FSG::C4P4>>(instance, marked);
+                    default:
+                        throw std::runtime_error("NPS_MWIS_Solver not specialized for given forbidden subgraphs.");
                 }
-                throw std::runtime_error("NPS_MWIS_Solver not specialized for given forbidden subgraphs.");
             }
 #else
                 throw std::runtime_error("nps_mwis has to be installed to use LB::NPS_MWIS_Solver.");
@@ -77,31 +98,39 @@ namespace lower_bound {
             case LB::LSSWZ_MWIS_Solver:
 #ifdef LSSWZ_MWIS_FOUND
             {
-                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
-                    return std::make_unique<LSSWZ_MWIS_Solver<Options::FSG::C4P4>>(instance, marked, std::move(config));
+                switch (fsg) {
+                    case Options::FSG::C4P4:
+                        return std::make_unique<LSSWZ_MWIS_Solver<Options::FSG::C4P4>>(instance, marked, std::move(config));
+                    default:
+                        throw std::runtime_error("LSSWZ_MWIS_Solver not specialized for given forbidden subgraphs.");
                 }
-                throw std::runtime_error("LSSWZ_MWIS_Solver not specialized for given forbidden subgraphs.");
             }
 #else
                 throw std::runtime_error("lsswz_mwis has to be installed to use LB::LSSWZ_MWIS_Solver.");
 #endif
             case LB::GreedyWeightedPacking:
             {
-                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
-                    return std::make_unique<GreedyWeightedPacking<Options::FSG::C4P4>>(instance, marked);
+                switch (fsg) {
+                    case Options::FSG::C4P4:
+                        return std::make_unique<GreedyWeightedPacking<Options::FSG::C4P4>>(instance, marked);
+                    default:
+                        throw std::runtime_error("GreedyWeightedPacking not specialized for given forbidden subgraphs.");
                 }
-                throw std::runtime_error("GreedyWeightedPacking not specialized for given forbidden subgraphs.");
             }
             case LB::WeightedPackingLocalSearch:
             {
-                if (finder->forbidden_subgraphs() == Options::FSG::C4P4) {
-                    using Stats = const subgraph_stats::SubgraphStatsT<Options::FSG::C4P4>;
-                    if (auto* s = dynamic_cast<Stats *>(std::addressof(subgraph_stats))) {
-                        return std::make_unique<WeightedPackingLocalSearch<Options::FSG::C4P4>>(instance, marked, *s);
+                switch (fsg) {
+                    case Options::FSG::C4P4:
+                    {
+                        using Stats = const subgraph_stats::SubgraphStatsT<Options::FSG::C4P4>;
+                        if (auto* s = dynamic_cast<Stats *>(std::addressof(subgraph_stats))) {
+                            return std::make_unique<WeightedPackingLocalSearch<Options::FSG::C4P4>>(instance, marked, *s);
+                        }
+                        throw std::runtime_error("SubgraphStats must have the correct type.");
                     }
-                    throw std::runtime_error("SubgraphStats must have the correct type.");
+                    default:
+                        throw std::runtime_error("WeightedPackingLocalSearch not specialized for given forbidden subgraphs.");
                 }
-                throw std::runtime_error("WeightedPackingLocalSearch not specialized for given forbidden subgraphs.");
             }
             default:
                 throw std::runtime_error("Lower bound not found.");

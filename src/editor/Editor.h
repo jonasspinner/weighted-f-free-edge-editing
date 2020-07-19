@@ -13,9 +13,7 @@
 #include "../selector/SelectorI.h"
 #include "../lower_bound/LowerBoundI.h"
 #include "../consumer/ConsumerI.h"
-#include "../finder/FinderI.h"
 
-#include "../finder/finder_utils.h"
 #include "../lower_bound/lower_bound_utils.h"
 #include "../selector/selector_utils.h"
 
@@ -35,7 +33,6 @@ private:
     std::unique_ptr<SubgraphStats> m_subgraph_stats;
 
     std::vector<ConsumerI *> m_consumers;
-    std::shared_ptr<FinderI> m_finder;
 
     std::vector<VertexPair> edits;
     bool m_found_solution;
@@ -54,12 +51,11 @@ public:
             m_found_solution(false), m_ordered_vertex_pairs(m_instance.graph, m_instance.costs, m_consumers, m_marked),
             m_config(std::move(config)) {
 
-        m_finder = Finder::make(m_config.forbidden_subgraphs);
         m_subgraph_stats = subgraph_stats::make(m_config.forbidden_subgraphs, m_instance, m_marked);
         m_consumers.emplace_back(m_subgraph_stats.get());
 
         m_selector = selector::make(m_config.selector, config.forbidden_subgraphs, m_instance, m_marked, *m_subgraph_stats);
-        m_lower_bound = lower_bound::make(m_config.lower_bound, m_finder, m_instance, m_marked, *m_subgraph_stats,
+        m_lower_bound = lower_bound::make(m_config.lower_bound, m_config.forbidden_subgraphs, m_instance, m_marked, *m_subgraph_stats,
                                           m_config);
 
         m_consumers.emplace_back(m_lower_bound.get());

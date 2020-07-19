@@ -12,15 +12,16 @@ namespace lower_bound {
      * @param k Remaining editing cost.
      * @return A lower bound on the costs required to solve the current instance.
      */
-    Cost LocalSearch::calculate_lower_bound(Cost k) {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    Cost  LocalSearch<SetOfForbiddenSubgraphs>::calculate_lower_bound(Cost k) {
         auto &state = current_state();
         if (!state.solvable()) return state.cost();
 
 
-        state.recalculate(*finder, m_marked, m_costs);
-        initialize_bound_graph(*finder, state, m_marked, m_bound_graph);
-        assert(state_is_valid(*finder, state, m_marked, m_costs));
-        assert(bound_graph_is_valid(*finder, state, m_marked, m_bound_graph));
+        state.recalculate(m_marked, m_costs);
+        initialize_bound_graph(state, m_marked, m_bound_graph);
+        assert(state_is_valid(state, m_marked, m_costs));
+        assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
 
         if (state.cost() <= k)
             local_search(state, k);
@@ -30,7 +31,8 @@ namespace lower_bound {
         return state.cost();
     }
 
-    Cost LocalSearch::calculate_lower_bound_no_edit_branch() {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    Cost  LocalSearch<SetOfForbiddenSubgraphs>::calculate_lower_bound_no_edit_branch() {
         auto &state = current_state();
         return state.cost();
     }
@@ -40,7 +42,9 @@ namespace lower_bound {
      *
      * @return
      */
-    void LocalSearch::initialize(Cost /*k*/) {
+     
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    void  LocalSearch<SetOfForbiddenSubgraphs>::initialize(Cost /*k*/) {
 
         m_states.clear();
         m_states.push_back(std::make_unique<State>());
@@ -54,14 +58,10 @@ namespace lower_bound {
             }
         }
 
-
         std::vector<std::pair<Cost, Subgraph>> subgraphs;
-        bool unsolveable = finder->find(m_graph, m_bound_graph,[&](::Subgraph &&v_subgraph) {
-            auto subgraph = to_array_subgraph(v_subgraph, m_graph);
+        bool unsolveable = m_finder.find(m_graph, m_bound_graph,[&](const auto &subgraph) {
             Cost min_cost = subgraph.calculate_min_cost(m_costs, m_marked);
             subgraphs.emplace_back(min_cost, subgraph);
-
-            // If a subgraph exists with fully marked vertex pairs, the instance is not solvable.
             return min_cost == invalid_cost;
         });
 
@@ -77,16 +77,18 @@ namespace lower_bound {
             bool inserted = try_insert_into_graph(subgraph, m_marked, m_bound_graph);
 
             if (inserted) {
+                assert(cost == subgraph.calculate_min_cost(m_costs, m_marked));
                 assert(cost != invalid_cost);
                 state.insert({cost, subgraph});
             }
         }
 
-        assert(bound_graph_is_valid(*finder, state, m_marked, m_bound_graph));
-        assert(bound_is_maximal(*finder, m_graph, m_bound_graph));
+        assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
+        assert(bound_is_maximal(m_finder, m_graph, m_bound_graph));
     }
 
-    bool LocalSearch::bound_graph_is_valid(const FinderI &finder, State &state, const VertexPairMap<bool> &marked,
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    bool  LocalSearch<SetOfForbiddenSubgraphs>::bound_graph_is_valid(State &state, const VertexPairMap<bool> &marked,
                                            const Graph &bound_graph) {
         if (!state.solvable())
             return true;
@@ -128,8 +130,9 @@ namespace lower_bound {
         return valid;
     }
 
-    bool
-    LocalSearch::state_is_valid(const FinderI &finder, State &state, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs) {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    bool LocalSearch<SetOfForbiddenSubgraphs>::state_is_valid(
+            State &state, const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs) {
         if (!state.solvable()) return true;
 
         bool valid = true;
@@ -147,9 +150,10 @@ namespace lower_bound {
         return valid;
     }
 
-    bool LocalSearch::bound_is_maximal(FinderI &finder, const Graph &graph, const Graph &bound_graph) {
-        std::vector<::Subgraph> subgraphs;
-        finder.find(graph, bound_graph, [&](::Subgraph &&subgraph) {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    bool  LocalSearch<SetOfForbiddenSubgraphs>::bound_is_maximal(Finder &finder, const Graph &graph, const Graph &bound_graph) {
+        std::vector<Subgraph> subgraphs;
+        finder.find(graph, bound_graph, [&](const Subgraph &subgraph) {
             subgraphs.push_back(std::move(subgraph));
             return false;
         });
@@ -164,23 +168,6 @@ namespace lower_bound {
         return subgraphs.empty();
     }
 
-    void LocalSearch::remove_near_subgraphs_from_bound(State &state, VertexPair uv) {
-        assert(state.solvable());
-        for (size_t i = 0; i < state.bound().size();) {
-            const auto &[cost, subgraph] = state.bound(i);
-            if (subgraph.contains(uv)) {
-                state.remove(i);
-            } else {
-                ++i;
-            }
-        }
-
-#ifndef NDEBUG
-        for (const auto &[cost, subgraph] : state.bound())
-            assert(!subgraph.contains(uv));
-#endif
-    }
-
 
     /**
      * Removes the subgraph from the bound containing u and v, if it exists.
@@ -190,7 +177,8 @@ namespace lower_bound {
      * @param state
      * @param uv
      */
-    void LocalSearch::update_near_subgraphs(State &state, VertexPair uv, FinderI &finder,
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    void  LocalSearch<SetOfForbiddenSubgraphs>::update_near_subgraphs(State &state, VertexPair uv, Finder &finder,
                                             const VertexPairMap<bool> &marked, const VertexPairMap<Cost> &costs,
                                             const Graph &graph, Graph &bound_graph) {
         assert(state.solvable());
@@ -224,8 +212,7 @@ namespace lower_bound {
                 continue;
             assert(!bound_graph.hasEdge(xy));
 
-            unsolvable = finder.find_near_with_duplicates(xy, graph, bound_graph, [&](::Subgraph &&v_subgraph) {  // TODO: Fix shadowing
-                auto subgraph = to_array_subgraph(v_subgraph, graph);
+            unsolvable = finder.find_near(xy, graph, bound_graph, [&](const Subgraph &subgraph) {
                 Cost min_cost = subgraph.calculate_min_cost(costs, marked);
                 subgraphs.emplace_back(min_cost, subgraph);
                 return min_cost == invalid_cost;
@@ -268,7 +255,8 @@ namespace lower_bound {
      *
      * If a fully marked subgraph is found, the state is marked as unsolvable.
      */
-    void LocalSearch::insert_near_subgraphs_into_bound(State &state, VertexPair uv, FinderI &finder,
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    void  LocalSearch<SetOfForbiddenSubgraphs>::insert_near_subgraphs_into_bound(State &state, VertexPair uv, Finder &finder,
                                                        const VertexPairMap<bool> &marked,
                                                        const VertexPairMap<Cost> &costs, const Graph &graph,
                                                        Graph &bound_graph) {
@@ -277,8 +265,7 @@ namespace lower_bound {
         std::vector<std::pair<Cost, Subgraph>> subgraphs;
 
         // The finder iterates over subgraphs having u and v as vertices.
-        bool unsolvable = finder.find_near_with_duplicates(uv, graph, bound_graph, [&](::Subgraph &&v_subgraph) {
-            auto subgraph = to_array_subgraph(v_subgraph, graph);
+        bool unsolvable = finder.find_near(uv, graph, bound_graph, [&](const Subgraph &subgraph) {
             Cost min_cost = subgraph.calculate_min_cost(costs, marked);  // Only consider conversionless edits.
             subgraphs.emplace_back(min_cost, subgraph);
             return min_cost == invalid_cost;
@@ -297,13 +284,14 @@ namespace lower_bound {
             // Therefore it has to checked whether subgraph is still valid and does not share a vertex pair with bound_graph.
             bool inserted = try_insert_into_graph(subgraph, marked, bound_graph);
             if (inserted) {
+                assert(cost == subgraph.calculate_min_cost(costs, marked));
                 state.insert({cost, subgraph});
             }
         }
 
 #ifndef NDEBUG
         // local
-        bool has_nearby_subgraph = finder.find_near_with_duplicates(uv, graph, bound_graph, [](::Subgraph &&) { return true; });
+        bool has_nearby_subgraph = finder.find_near(uv, graph, bound_graph, [](const Subgraph &) { return true; });
         assert(!has_nearby_subgraph);
 #endif
     }
@@ -316,7 +304,8 @@ namespace lower_bound {
      * @param state
      * @param bound_graph
      */
-    void LocalSearch::insert_subgraphs_into_bound(std::vector<std::pair<Cost, Subgraph>> &&subgraphs,
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    void  LocalSearch<SetOfForbiddenSubgraphs>::insert_subgraphs_into_bound(std::vector<std::pair<Cost, Subgraph>> &&subgraphs,
                                                   const VertexPairMap<bool> &marked, State &state, Graph &bound_graph) {
         for (auto &&[cost, subgraph] : subgraphs) {
             // In the for loop a subgraph can be invalidated when bound_graph is modified.
@@ -335,7 +324,8 @@ namespace lower_bound {
      * @param marked
      * @param bound_graph
      */
-    void LocalSearch::initialize_bound_graph(const FinderI &finder, const State &state,
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    void  LocalSearch<SetOfForbiddenSubgraphs>::initialize_bound_graph(const State &state,
                                              const VertexPairMap<bool> &marked, Graph &bound_graph) {
         bound_graph.clearEdges();
         for (const auto &[cost, subgraph] : state.bound())
@@ -353,14 +343,15 @@ namespace lower_bound {
      *
      * @param uv
      */
-    void LocalSearch::before_mark(VertexPair uv) {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    void  LocalSearch<SetOfForbiddenSubgraphs>::before_mark(VertexPair uv) {
         auto &state = current_state();
 
         if (!state.solvable()) return;
 
         // Either only remove the subgraph at uv (I) or remove it and fill the "hole" with subgraphs not containing uv (II).
         // remove_near_subgraphs_from_bound(state, uv); // I
-        update_near_subgraphs(state, uv, *finder, m_marked, m_costs, m_graph, m_bound_graph); // II
+        update_near_subgraphs(state, uv, m_finder, m_marked, m_costs, m_graph, m_bound_graph); // II
 
 #ifndef NDEBUG  // TODO: Adapt to conversionless edit optimization.
 //        for (const auto &[cost, subgraph] : state.bound())
@@ -373,26 +364,28 @@ namespace lower_bound {
      *
      * @param uv
      */
-    void LocalSearch::before_edit(VertexPair uv) {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    void  LocalSearch<SetOfForbiddenSubgraphs>::before_edit(VertexPair uv) {
         auto &state = parent_state();
 
         if (!state.solvable()) return;
 
-        initialize_bound_graph(*finder, state, m_marked, m_bound_graph);
-        insert_near_subgraphs_into_bound(state, uv, *finder, m_marked, m_costs, m_graph, m_bound_graph);
+        initialize_bound_graph(state, m_marked, m_bound_graph);
+        insert_near_subgraphs_into_bound(state, uv, m_finder, m_marked, m_costs, m_graph, m_bound_graph);
     }
 
     /**
      * Update the current state. Insert the new created forbidden subgraphs. They contain u and v.
      * @param uv
      */
-    void LocalSearch::after_edit(VertexPair uv) {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    void  LocalSearch<SetOfForbiddenSubgraphs>::after_edit(VertexPair uv) {
         auto &state = current_state();
 
         if (!state.solvable()) return;
 
-        initialize_bound_graph(*finder, state, m_marked, m_bound_graph);
-        insert_near_subgraphs_into_bound(state, uv, *finder, m_marked, m_costs, m_graph, m_bound_graph);
+        initialize_bound_graph(state, m_marked, m_bound_graph);
+        insert_near_subgraphs_into_bound(state, uv, m_finder, m_marked, m_costs, m_graph, m_bound_graph);
     }
 
     /**
@@ -401,7 +394,8 @@ namespace lower_bound {
      * @param state
      * @param k
      */
-    void LocalSearch::local_search(State &state, Cost k) {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    void  LocalSearch<SetOfForbiddenSubgraphs>::local_search(State &state, Cost k) {
         // TODO: Remove ugly debug output
 // #define stats
 #ifdef stats
@@ -493,7 +487,7 @@ namespace lower_bound {
 
 #ifndef NDEBUG
         if (state.cost() <= k) {
-            assert(bound_is_maximal(*finder, m_graph, m_bound_graph));
+            assert(bound_is_maximal(m_finder, m_graph, m_bound_graph));
         }
 #endif
     }
@@ -510,7 +504,8 @@ namespace lower_bound {
      * @param state
      * @param index
      */
-    bool LocalSearch::find_one_improvements(State &state, size_t index) {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    bool  LocalSearch<SetOfForbiddenSubgraphs>::find_one_improvements(State &state, size_t index) {
         bool found_improvement = false;
 
         const auto &[subgraph_cost, subgraph] = state.bound(index);
@@ -546,8 +541,7 @@ namespace lower_bound {
 
             if (m_subgraph_stats.subgraphCount(uv) > 1) {
 
-                finder->find_near_with_duplicates(uv, m_graph, m_bound_graph, [&](::Subgraph &&v_neighbor) {
-                    auto neighbor = to_array_subgraph(v_neighbor, m_graph);
+                m_finder.find_near(uv, m_graph, m_bound_graph, [&](const Subgraph &neighbor) {
 #ifndef NDEBUG
                     {
                         auto edits = neighbor.non_converting_edits();
@@ -580,6 +574,7 @@ namespace lower_bound {
                       << " => " << max_cost << ", " << subgraph << " => " << max_subgraph << "\n";
 
         insert_into_graph(max_subgraph, m_marked, m_bound_graph);
+        assert(max_cost == max_subgraph.calculate_min_cost(m_costs, m_marked));
         state.replace(index, {max_cost, max_subgraph});
 
         if (max_cost == invalid_cost) {
@@ -588,7 +583,7 @@ namespace lower_bound {
         }
 
         if (state.solvable())
-            assert(bound_graph_is_valid(*finder, state, m_marked, m_bound_graph));
+            assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
 
         return found_improvement;
     }
@@ -612,7 +607,8 @@ namespace lower_bound {
      * @param bound_changed
      * @return
      */
-    bool LocalSearch::find_two_improvement(State &state, size_t index, bool &bound_changed) {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    bool  LocalSearch<SetOfForbiddenSubgraphs>::find_two_improvement(State &state, size_t index, bool &bound_changed) {
         constexpr Cost invalid_max_cost = std::numeric_limits<Cost>::min();
         constexpr size_t invalid_index = std::numeric_limits<size_t>::max();
 
@@ -633,7 +629,7 @@ namespace lower_bound {
 
         // Candidates are subgraphs which are only adjacent to subgraph but no other subgraph in the lower bound.
         const auto pairs = get_pairs(subgraph, m_marked);
-        auto[candidates, border] = get_candidates(*finder, pairs, m_graph, m_bound_graph, m_subgraph_stats);
+        auto[candidates, border] = get_candidates(m_finder, pairs, m_graph, m_bound_graph, m_subgraph_stats);
 
 #ifndef NDEBUG
         {
@@ -720,12 +716,14 @@ namespace lower_bound {
 
             // better candidates found
             insert_into_graph(candidates[a_i], m_marked, m_bound_graph);
+            assert(candidate_costs[a_i] == candidates[a_i].calculate_min_cost(m_costs, m_marked));
             state.replace(index, {candidate_costs[a_i], candidates[a_i]});
 
             if (max_subgraphs.size() == 2) {
                 size_t b_i = max_subgraphs[1];
 
                 insert_into_graph(candidates[b_i], m_marked, m_bound_graph);
+                assert(candidate_costs[b_i] == candidates[b_i].calculate_min_cost(m_costs, m_marked));
                 state.insert({candidate_costs[b_i], candidates[b_i]});
             }
 
@@ -765,6 +763,7 @@ namespace lower_bound {
                               << " => " << candidates[a_i] << "\n";
 
                 insert_into_graph(candidates[a_i], m_marked, m_bound_graph);
+                assert(candidate_costs[a_i] == candidates[a_i].calculate_min_cost(m_costs, m_marked));
                 state.replace(index, {candidate_costs[a_i], candidates[a_i]});
             } else {
                 insert_into_graph(subgraph, m_marked, m_bound_graph);
@@ -781,6 +780,7 @@ namespace lower_bound {
 
                 auto inserted = try_insert_into_graph(candidates[a_i], m_marked, m_bound_graph);
                 if (inserted) {
+                    assert(candidate_costs[a_i] == candidates[a_i].calculate_min_cost(m_costs, m_marked));
                     state.insert({candidate_costs[a_i], candidates[a_i]});
                 }
             }
@@ -788,8 +788,8 @@ namespace lower_bound {
 
 
         if (state.solvable()) {
-            assert(bound_graph_is_valid(*finder, state, m_marked, m_bound_graph));
-            assert(bound_is_maximal(*finder, m_graph, m_bound_graph));
+            assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
+            assert(bound_is_maximal(m_finder, m_graph, m_bound_graph));
         }
 
         return found_improvement;
@@ -807,7 +807,8 @@ namespace lower_bound {
      * @param k
      * @return
      */
-    bool LocalSearch::find_omega_improvement(State &state, Cost k) {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    bool  LocalSearch<SetOfForbiddenSubgraphs>::find_omega_improvement(State &state, Cost k) {
         constexpr size_t invalid_index = std::numeric_limits<size_t>::max();
 
         assert(state.solvable());
@@ -853,9 +854,7 @@ namespace lower_bound {
         }
 #endif
 
-        finder->find_with_duplicates(m_graph, [&](::Subgraph &&v_subgraph) {
-            // assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
-            auto subgraph = to_array_subgraph(v_subgraph, m_graph);
+        m_finder.find(m_graph, [&](const Subgraph &subgraph) {
 
             auto subgraph_cost = subgraph.calculate_min_cost(m_costs, m_marked);
 
@@ -902,7 +901,7 @@ namespace lower_bound {
                 }
 
 #ifndef NDEBUG
-                if (!bound_graph_is_valid(*finder, state, m_marked, m_bound_graph)) {
+                if (!bound_graph_is_valid(state, m_marked, m_bound_graph)) {
                     for (auto uv : subgraph.non_converting_edits()) {
                         auto i = subgraph_index[uv];
                         if (i != invalid_index) {
@@ -918,6 +917,7 @@ namespace lower_bound {
                 // Insert the subgraph into subgraph_index, m_bound_graph and the bound.
                 index_assign(subgraph, state.bound().size());
                 insert_into_graph(subgraph, m_marked, m_bound_graph);
+                assert(subgraph_cost == subgraph.calculate_min_cost(m_costs, m_marked));
                 state.insert({subgraph_cost, subgraph});
 
 #ifndef NDEBUG
@@ -939,8 +939,7 @@ namespace lower_bound {
 
         if (state.cost() <= k && state.solvable()) {
             std::vector<std::pair<Cost, Subgraph>> remaining_subgraphs;
-            finder->find_with_duplicates(m_graph, m_bound_graph, [&](::Subgraph &&v_subgraph) {
-                auto subgraph = to_array_subgraph(v_subgraph, m_graph);
+            m_finder.find(m_graph, m_bound_graph, [&](const Subgraph &subgraph) {
                 auto cost = subgraph.calculate_min_cost(m_costs, m_marked);
                 remaining_subgraphs.emplace_back(cost, subgraph);
                 return false;
@@ -949,14 +948,15 @@ namespace lower_bound {
             for (auto &&[cost, subgraph] : remaining_subgraphs) {
                 bool inserted = try_insert_into_graph(subgraph, m_marked, m_bound_graph);
                 if (inserted) {
+                    assert(cost == subgraph.calculate_min_cost(m_costs, m_marked));
                     state.insert({cost, subgraph});
                 }
             }
         }
 
         if (state.cost() <= k &&state.solvable()) {
-            assert(bound_graph_is_valid(*finder, state, m_marked, m_bound_graph));
-            assert(bound_is_maximal(*finder, m_graph, m_bound_graph));
+            assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
+            assert(bound_is_maximal(m_finder, m_graph, m_bound_graph));
         }
 
         return found_improvement;
@@ -969,18 +969,8 @@ namespace lower_bound {
      * @param forbidden
      * @param graph
      */
-    void LocalSearch::insert_into_graph(const FinderI &finder, const ::Subgraph &subgraph,
-                                        const VertexPairMap<bool> &marked, Graph &graph) {
-        finder.for_all_conversionless_edits(subgraph, [&](auto uv) {
-            if (!marked[uv]) {
-                assert(!graph.hasEdge(uv));
-                graph.setEdge(uv);
-            }
-            return false;
-        });
-    }
-
-    void LocalSearch::insert_into_graph(const LocalSearch::Subgraph &subgraph,
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    void LocalSearch<SetOfForbiddenSubgraphs>::insert_into_graph(const LocalSearch::Subgraph &subgraph,
                                         const VertexPairMap<bool> &marked, Graph &graph) {
         for (auto uv : subgraph.non_converting_edits()) {
             if (!marked[uv]) {
@@ -999,7 +989,8 @@ namespace lower_bound {
      * @param forbidden
      * @param graph
      */
-    void LocalSearch::remove_from_graph(const LocalSearch::Subgraph &subgraph,
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    void LocalSearch<SetOfForbiddenSubgraphs>::remove_from_graph(const Subgraph &subgraph,
                                         const VertexPairMap<bool> &marked, Graph &graph) {
         for (auto uv : subgraph.non_converting_edits()) {
             if (!marked[uv]) {
@@ -1007,17 +998,6 @@ namespace lower_bound {
                 graph.clearEdge(uv);
             }
         }
-    }
-
-    void LocalSearch::remove_from_graph(const FinderI &finder, const ::Subgraph &subgraph,
-                                        const VertexPairMap<bool> &marked, Graph &graph) {
-        finder.for_all_conversionless_edits(subgraph, [&](auto uv) {
-            if (!marked[uv]) {
-                assert(graph.hasEdge(uv));
-                graph.clearEdge(uv);
-            }
-            return false;
-        });
     }
 
     /**
@@ -1029,13 +1009,13 @@ namespace lower_bound {
      * @param graph
      * @return
      */
-    bool LocalSearch::try_insert_into_graph(const LocalSearch::Subgraph &subgraph,
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    bool LocalSearch<SetOfForbiddenSubgraphs>::try_insert_into_graph(const Subgraph &subgraph,
                                             const VertexPairMap<bool> &marked, Graph &graph) {
-        bool touches = false;
-        for (auto uv : subgraph.non_converting_edits()) {
-            if (!marked[uv] && graph.hasEdge(uv))
-                touches = true;
-        }
+        auto edits = subgraph.non_converting_edits();
+        bool touches = std::any_of(edits.begin(), edits.end(), [&](auto uv) {
+            return !marked[uv] && graph.hasEdge(uv);
+        });
 
 
         if (!touches) {
@@ -1043,25 +1023,6 @@ namespace lower_bound {
                 if (!marked[uv])
                     graph.setEdge(uv);
             }
-            return true;
-        }
-        return false;
-    }
-
-    bool LocalSearch::try_insert_into_graph(const FinderI &finder, const ::Subgraph &subgraph,
-                                            const VertexPairMap<bool> &marked, Graph &graph) {
-        bool touches = finder.for_all_conversionless_edits(subgraph, [&](auto uv) {
-            return !marked[uv] && graph.hasEdge(uv);
-        });
-
-
-        if (!touches) {
-            finder.for_all_conversionless_edits(subgraph, [&](auto uv) {
-                if (!marked[uv])
-                    graph.setEdge(uv);
-                return false;
-            });
-
             return true;
         }
         return false;
@@ -1076,8 +1037,9 @@ namespace lower_bound {
      * @param bound_graph
      * @return candidates and a border array partitioning the candidates by vertex pairs.
      */
-    std::pair<std::vector<LocalSearch::Subgraph>, std::vector<size_t>>
-    LocalSearch::get_candidates(FinderI &finder, const std::vector<VertexPair> &pairs, const Graph &graph,
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    std::pair<std::vector<typename LocalSearch<SetOfForbiddenSubgraphs>::Subgraph>, std::vector<size_t>>
+    LocalSearch<SetOfForbiddenSubgraphs>::get_candidates(Finder &finder, const std::vector<VertexPair> &pairs, const Graph &graph,
                                 Graph &bound_graph, const SubgraphStats &subgraph_stats) {
 
         // Precondition: subgraph is removed from bound_graph.
@@ -1095,14 +1057,13 @@ namespace lower_bound {
             assert(!bound_graph.hasEdge(uv));
 
             if (subgraph_stats.subgraphCount(uv) > 1) {
-                finder.find_near_with_duplicates(uv, graph, bound_graph, [&](::Subgraph &&neighbor) {
+                finder.find_near(uv, graph, bound_graph, [&](const Subgraph &neighbor) {
 #ifndef NDEBUG
-                    finder.for_all_conversionless_edits(neighbor, [&](auto xy) {
+                    for (auto xy : neighbor.non_converting_edits()) {
                         assert(!bound_graph.hasEdge(xy));
-                        return false;
-                    });
+                    }
 #endif
-                    candidates.push_back(to_array_subgraph(neighbor, graph));
+                    candidates.push_back(neighbor);
                     return false;
                 });
             }
@@ -1128,7 +1089,8 @@ namespace lower_bound {
      * @param marked
      * @return
      */
-    std::vector<VertexPair> LocalSearch::get_pairs(const Subgraph &subgraph,
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    std::vector<VertexPair>  LocalSearch<SetOfForbiddenSubgraphs>::get_pairs(const Subgraph &subgraph,
                                                    const VertexPairMap<bool> &marked) {
         std::vector<VertexPair> pairs;
         for (auto uv : subgraph.non_converting_edits()) {
@@ -1147,9 +1109,9 @@ namespace lower_bound {
      * @param subgraph
      * @return
      */
-    std::tuple<size_t, size_t>
-    LocalSearch::count_neighbors(const SubgraphStats &subgraph_stats,
-                                 const VertexPairMap<bool> &marked, const Subgraph &subgraph) {
+    template<Options::FSG SetOfForbiddenSubgraphs>
+    std::tuple<size_t, size_t> LocalSearch<SetOfForbiddenSubgraphs>::count_neighbors(
+            const SubgraphStats &subgraph_stats, const VertexPairMap<bool> &marked, const Subgraph &subgraph) {
         size_t num_pairs = 0, num_neighbors_ub = 0;
         for (auto uv : subgraph.non_converting_edits()) {
             if (!marked[uv]) {
@@ -1160,5 +1122,7 @@ namespace lower_bound {
         }
         return {num_pairs, num_neighbors_ub};
     }
+
+    template class LocalSearch<Options::FSG::C4P4>;
 
 }
