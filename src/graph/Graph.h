@@ -28,9 +28,9 @@ public:
      */
     explicit Graph(unsigned int size) noexcept: m_size(size), m_adj(m_size, AdjRow(m_size)) {}
 
-    Graph(const Graph&) = delete;
+    Graph(const Graph &) = delete;
 
-    Graph(Graph&& other) noexcept: m_size(other.m_size), m_adj(std::move(other.m_adj)) {}
+    Graph(Graph &&other) noexcept: m_size(other.m_size), m_adj(std::move(other.m_adj)) {}
 
     friend void swap(Graph &a, Graph &b) noexcept {
         using std::swap;
@@ -70,7 +70,7 @@ public:
     }
 
     static Graph make_empty_graph(unsigned int size) noexcept {
-        return Graph(size);
+        return Graph{size};
     }
 
     /**
@@ -300,10 +300,12 @@ public:
 
             constexpr explicit Iterator(const AdjRow *row) noexcept: m_row(row) {
                 assert(m_row != nullptr);
-                m_u = m_row->find_first();
+                m_u = static_cast<Vertex>(m_row->find_first());
             }
 
-            struct end_tag{};
+            struct end_tag {
+            };
+
             constexpr Iterator(const AdjRow *row, end_tag) noexcept: m_row(row), m_u(end_vertex) {
                 assert(m_row != nullptr);
             }
@@ -315,7 +317,7 @@ public:
             Iterator &operator++() noexcept {
                 assert(m_u != end_vertex);
                 assert(m_u < m_row->size());
-                m_u = m_row->find_next(m_u);
+                m_u = static_cast<Vertex>(m_row->find_next(m_u));
                 return *this;
             }
 
@@ -348,7 +350,9 @@ public:
         const AdjRow *m_row;
 
         friend class Graph;
+
         constexpr explicit RowVertices(const AdjRow &row) noexcept: m_row(std::addressof(row)) {}
+
     public:
         using const_iterator = Iterator;
 
@@ -414,9 +418,10 @@ public:
                 }
                 return *this;
             }
+
             [[nodiscard]] constexpr Iterator operator++(int) noexcept {
                 Iterator copy(*this);
-                ++(*this);
+                ++*this;
                 return copy;
             }
 
@@ -431,28 +436,26 @@ public:
 
             [[nodiscard]] constexpr Iterator operator--(int) noexcept {
                 Iterator copy(*this);
-                --(*this);
+                --*this;
                 return copy;
             }
 
             constexpr Iterator &operator+=(difference_type n) noexcept {
-                while (m_uv.v + n >= m_size) {
-                    n -= m_size - m_uv.v;
-                    ++m_uv.u;
-                    m_uv.v = m_uv.u + 1;
+                const auto new_v = m_uv.v + static_cast<Vertex>(n);
+
+                if (m_uv.u < new_v && new_v < m_size) {
+                    m_uv.v = new_v;
+                } else {
+                    auto index = pair_to_index(m_uv, m_size);
+                    index += static_cast<unsigned long>(n);
+                    m_uv = index_to_pair(index, m_size);
                 }
-                m_uv.v += n;
+
                 return *this;
             }
 
             constexpr Iterator &operator-=(difference_type n) noexcept {
-                while (m_uv.v <= m_uv.u + n) {
-                    n -= m_uv.v - m_uv.u;
-                    --m_uv.u;
-                    m_uv.v = m_size - 1;
-                }
-                m_uv.v += n;
-                return *this;
+                return *this += -n;
             }
 
             [[nodiscard]] constexpr Iterator operator+(difference_type n) const noexcept {
@@ -472,9 +475,10 @@ public:
             }
 
             [[nodiscard]] constexpr difference_type operator-(const Iterator &other) const noexcept {
-                const auto idx = [&](VertexPair uv) constexpr {
-                    auto v_ = m_size - 1 - uv.u;
-                    auto u_ = m_size - 1 - uv.v;
+                // This index is the reverse order. Therefore the operands are switched in the return statement.
+                const auto idx = [&](const auto &uv) constexpr {
+                    auto v_ = m_size - 1 - static_cast<difference_type>(uv.u);
+                    auto u_ = m_size - 1 - static_cast<difference_type>(uv.v);
                     return v_ * (v_ - 1) / 2 + u_;
                 };
                 return idx(other.m_uv) - idx(m_uv);
@@ -484,7 +488,9 @@ public:
                 return m_uv == other.m_uv;
             }
 
-            [[nodiscard]] constexpr bool operator!=(const Iterator &other) const noexcept { return !(*this == other); }
+            [[nodiscard]] constexpr bool operator!=(const Iterator &other) const noexcept {
+                return !(*this == other);
+            }
 
             [[nodiscard]] constexpr bool operator<(const Iterator &other) const noexcept {
                 return m_uv < other.m_uv;
@@ -501,6 +507,37 @@ public:
             [[nodiscard]] constexpr bool operator>=(const Iterator &other) const noexcept {
                 return m_uv >= other.m_uv;
             }
+
+            /**
+             * Reference: https://stackoverflow.com/a/27088560
+             *
+             * @param uv
+             * @param size
+             * @return
+             */
+            static constexpr unsigned long pair_to_index(VertexPair uv, unsigned int size) noexcept {
+                const unsigned long i = uv.u, j = uv.v, n = size;
+                const auto k = (n * (n - 1) / 2) - (n - i) * ((n - i) - 1) / 2 + j - i - 1;
+                return k;
+            }
+
+            /**
+             * Both pair_to_index and index_to_pair were experimentally verified for all vertex pairs for size up to
+             * 10000.
+             *
+             * Reference: https://stackoverflow.com/a/27088560
+             *
+             * @param index
+             * @param size
+             * @return
+             */
+            static constexpr VertexPair index_to_pair(unsigned long index, unsigned int size) noexcept {
+                const auto k = static_cast<long>(index);
+                const auto n = static_cast<long>(size);
+                const auto i = n - 2 - static_cast<long>(std::sqrt(-8 * k + 4 * n * (n - 1) - 7) / 2.0 - 0.5);
+                const auto j = k + i + 1 - n * (n - 1) / 2 + (n - i) * ((n - i) - 1) / 2;
+                return {static_cast<Vertex>(i), static_cast<Vertex>(j)};
+            }
         };
 
     private:
@@ -516,16 +553,19 @@ public:
         }
 
         [[nodiscard]] constexpr const_iterator end() const noexcept {
-            return m_number_of_nodes == 0 ?
-                begin() :
-                Iterator{{m_number_of_nodes - 1, m_number_of_nodes}, m_number_of_nodes};
+            const auto n = m_number_of_nodes;
+            const auto one_after_last = n == 0 ? VertexPair{0, 1} : VertexPair{n - 1, n};
+            return Iterator{one_after_last, m_number_of_nodes};
         }
 
         [[nodiscard]] constexpr size_type size() const noexcept {
-            return m_number_of_nodes * (m_number_of_nodes - 1) / 2;
+            const auto n = static_cast<size_type>(m_number_of_nodes);
+            return n * (n - 1) / 2;
         }
 
-        [[nodiscard]] constexpr bool empty() const noexcept { return size() == 0; }
+        [[nodiscard]] constexpr bool empty() const noexcept {
+            return size() == 0;
+        }
     };
 
     /**
@@ -542,8 +582,11 @@ public:
     class Edges {
     public:
         class Iterator {
+            static constexpr auto end_vertex = static_cast<Vertex>(AdjRow::npos);
+            static_assert(end_vertex == std::numeric_limits<Vertex>::max());
+
             const AdjMatrix *m_adj{nullptr};
-            VertexPair m_uv{};
+            VertexPair m_uv{0, end_vertex};  // default is end iterator for size <= 1
         public:
             using value_type = VertexPair;
             using difference_type = std::ptrdiff_t;
@@ -553,46 +596,54 @@ public:
 
             constexpr Iterator() noexcept {};
 
-            struct end_tag{};
-            Iterator(const AdjMatrix *adj, end_tag) noexcept:
-                    m_adj(adj),
-                    m_uv({static_cast<Vertex>(adj->size() - 1), static_cast<Vertex>(adj->size())}) {
+            struct end_tag {
+            };
+
+            Iterator(const AdjMatrix *adj, end_tag) noexcept: m_adj(adj) {
                 assert(m_adj != nullptr);
+                const auto size = static_cast<Vertex>(adj->size());
+                if (size >= 1) {
+                    // The last possible edge is (n-2, n-1). Therefore, n-1 is the end position of u.
+                    m_uv.u = size - 1;
+                }
             }
 
-            explicit Iterator(const AdjMatrix *adj) noexcept: m_adj(adj), m_uv({0, 1}) {
+            explicit Iterator(const AdjMatrix *adj) noexcept: m_adj(adj) {
                 assert(m_adj != nullptr);
-                const Vertex size = m_adj->size();
-                while (m_uv.u < size && (*m_adj)[m_uv.u].none()) {
+                const auto size = m_adj->size();
+                if (size < 2)  // For tiny (0 or 1) graphs, this is already equal to the end iterator.
+                    return;
+                assert(size >= 2);
+
+                m_uv.v = static_cast<Vertex>((*m_adj)[m_uv.u].find_first());
+                while (m_uv.u <= size - 2 && m_uv.v == end_vertex) {
                     ++m_uv.u;
+                    m_uv.v = static_cast<Vertex>((*m_adj)[m_uv.u].find_next(m_uv.u));
                 }
-                if (m_uv.u < size) {
-                    m_uv.v = (*m_adj)[m_uv.u].find_first();
-                    assert(m_uv.u < size - 1);
-                    assert(m_uv.v < size);
-                } else {
-                    m_uv = {size - 1, size};
-                }
+
+                assert((m_uv.u <= size - 2 && m_uv.v <= size - 1) ||
+                       (m_uv.u == size - 1 && m_uv.v == end_vertex));
             }
 
-            value_type operator*() const noexcept {
-                assert(m_adj->empty() || m_uv.u < m_adj->size() - 1);
-                assert(m_uv.v < m_adj->size());
+            [[nodiscard]] value_type operator*() const noexcept {
+                assert(m_adj->size() >= 2);
+                assert(m_uv.u <= m_adj->size() - 2 && m_uv.v <= m_adj->size() - 1);
                 return m_uv;
             }
 
             Iterator &operator++() noexcept {
-                const Vertex size = m_adj->size();
-                assert(m_uv.u < size - 1);
-                assert(m_uv.v < size);
-                m_uv.v = (*m_adj)[m_uv.u].find_next(m_uv.v);
-                while (m_uv.u < size - 1 && m_uv.v >= size) {
+                const auto size = m_adj->size();
+                assert(size >= 2);
+                assert(m_uv.u <= size - 2 && m_uv.v <= size - 1);
+
+                m_uv.v = static_cast<Vertex>((*m_adj)[m_uv.u].find_next(m_uv.v));
+                while (m_uv.u <= size - 2 && m_uv.v == end_vertex) {
                     ++m_uv.u;
-                    m_uv.v = (*m_adj)[m_uv.u].find_next(m_uv.u);
+                    m_uv.v = static_cast<Vertex>((*m_adj)[m_uv.u].find_next(m_uv.u));
                 }
-                if (m_uv.u >= size - 1 || m_uv.v >= size) {
-                    m_uv = {size - 1, size};
-                }
+
+                assert((m_uv.u <= size - 2 && m_uv.v <= size - 1) ||
+                       (m_uv.u == size - 1 && m_uv.v == end_vertex));
                 return *this;
             }
 
@@ -600,7 +651,9 @@ public:
                 return m_uv == other.m_uv;
             }
 
-            [[nodiscard]] constexpr bool operator!=(const Iterator &other) const noexcept { return !(*this == other); }
+            [[nodiscard]] constexpr bool operator!=(const Iterator &other) const noexcept {
+                return !(*this == other);
+            }
 
             [[nodiscard]] constexpr bool operator<(const Iterator &other) const noexcept {
                 return m_uv < other.m_uv;
@@ -631,11 +684,11 @@ public:
                 m_begin(std::addressof(adj)),
                 m_end(std::addressof(adj), Iterator::end_tag{}) {}
 
-        [[nodiscard]] const_iterator begin() const noexcept { return m_begin; }
+        [[nodiscard]] constexpr const_iterator begin() const noexcept { return m_begin; }
 
-        [[nodiscard]] const_iterator end() const noexcept { return m_end; }
+        [[nodiscard]] constexpr const_iterator end() const noexcept { return m_end; }
 
-        [[nodiscard]] bool empty() const noexcept { return begin() == end(); }
+        [[nodiscard]] constexpr bool empty() const noexcept { return begin() == end(); }
     };
 
     /**
@@ -660,7 +713,7 @@ public:
 
     friend YAML::Emitter &operator<<(YAML::Emitter &out, const Graph &graph) {
         using namespace YAML;
-        unsigned num_edges = 0;
+        std::size_t num_edges = 0;
         for (Vertex u : graph.vertices())
             num_edges += graph.degree(u);
         num_edges /= 2;
@@ -687,12 +740,13 @@ public:
      * @return
      */
     [[nodiscard]] AdjRow full_adjacency_row() const noexcept {
-        AdjRow row(m_size);
+        AdjRow row(size());
         row.set();
         return row;
     }
 
     friend class FinderI;
+
     friend class CenterC4P4Finder;
 };
 
