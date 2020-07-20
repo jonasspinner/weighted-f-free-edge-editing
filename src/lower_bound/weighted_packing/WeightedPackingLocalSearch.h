@@ -74,7 +74,7 @@ class WeightedPackingLocalSearch final : public LowerBoundI {
     const Graph &m_graph;
     const VertexPairMap<Cost> &m_costs;
     const VertexPairMap<bool> &m_marked;
-    const SubgraphStats &m_subgraph_stats;
+    const subgraph_stats::SubgraphStatsT<SetOfForbiddenSubgraphs> &m_subgraph_stats;
 
     WeightedPacking<SetOfForbiddenSubgraphs> m_packing;
     std::vector<State> m_states;
@@ -494,7 +494,7 @@ public:
             // std::cout << "# " << k << " " << before << " " << (m_packing.cost() - before) << " " << (k - m_packing.cost()) << "\n";
             return m_packing.cost();
         } else {
-            std::cout << k << "unsolvable\n";
+            // std::cout << k << "unsolvable\n";
             return invalid_cost;
         }
     }
@@ -519,8 +519,8 @@ public:
     void local_search(State &state, Cost k) {
         if (verbosity > 0) std::cout << "local_search\n";
 
-        size_t max_iter = 10;
-        size_t max_rounds_no_improvement = 3;
+        size_t max_iter = std::numeric_limits<std::size_t>::max();
+        size_t max_rounds_no_improvement = 5;
         size_t num_rounds_no_improvement = 0;
 
         if (state.subgraphs().empty())
