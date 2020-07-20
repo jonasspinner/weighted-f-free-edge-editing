@@ -6,7 +6,10 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_PERMUTATION_H
 
 
-#include "graph/Subgraph.h"
+#include "graph/Graph.h"
+#include "forbidden_subgraphs/Subgraph.h"
+#include "forbidden_subgraphs/SubgraphC4P4.h"
+#include "Instance.h"
 
 class Permutation {
 private:
@@ -38,10 +41,12 @@ public:
         return {P[uv.u], P[uv.v]};
     }
 
-    Subgraph operator[](const Subgraph &subgraph) const {
-        Subgraph result{};
-        for (Vertex u : subgraph.vertices())
-            result.push_back(P[u]);
+    SubgraphT<Options::FSG::C4P4> operator[](const SubgraphT<Options::FSG::C4P4> &subgraph) const {
+        auto result{subgraph};
+        result[0] = P[result[0]];
+        result[1] = P[result[1]];
+        result[2] = P[result[2]];
+        result[3] = P[result[3]];
         return result;
     }
 
