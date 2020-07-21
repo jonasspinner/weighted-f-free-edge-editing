@@ -74,7 +74,7 @@ class WeightedPackingLocalSearch final : public LowerBoundI {
     const Graph &m_graph;
     const VertexPairMap<Cost> &m_costs;
     const VertexPairMap<bool> &m_marked;
-    const subgraph_stats::SubgraphStatsT<SetOfForbiddenSubgraphs> &m_subgraph_stats;
+    const SubgraphStats<SetOfForbiddenSubgraphs> &m_subgraph_stats;
 
     WeightedPacking<SetOfForbiddenSubgraphs> m_packing;
     std::vector<State> m_states;
@@ -92,7 +92,7 @@ class WeightedPackingLocalSearch final : public LowerBoundI {
     std::vector<std::pair<Subgraph, Cost>> m_removed_subgraphs, m_inserted_subgraphs;
 public:
     WeightedPackingLocalSearch(const Instance &instance, const VertexPairMap<bool> &marked,
-                               const subgraph_stats::SubgraphStatsT<SetOfForbiddenSubgraphs> &subgraph_stats,
+                               const SubgraphStats<SetOfForbiddenSubgraphs> &subgraph_stats,
                                std::size_t seed = 0) :
             m_graph(instance.graph), m_costs(instance.costs), m_marked(marked), m_subgraph_stats(subgraph_stats),
             m_packing(instance, marked, subgraph_stats), m_gen(seed) {

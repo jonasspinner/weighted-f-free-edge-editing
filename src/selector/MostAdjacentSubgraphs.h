@@ -17,13 +17,13 @@ namespace selector {
 
         const Graph &m_graph;
         const VertexPairMap<bool> &m_marked;
-        const SubgraphStats &m_subgraph_stats;
+        const SubgraphStats<SetOfForbiddenSubgraphs> &m_subgraph_stats;
         Graph m_used;
 
-        Finder finder;
+        Finder m_finder;
     public:
         MostAdjacentSubgraphs(const Graph &graph, const VertexPairMap<bool> &marked,
-                              const SubgraphStats &subgraph_stats) :
+                              const SubgraphStats<SetOfForbiddenSubgraphs> &subgraph_stats) :
                 m_graph(graph), m_marked(marked), m_subgraph_stats(subgraph_stats),
                 m_used(m_marked.size()) {}
 
@@ -31,7 +31,7 @@ namespace selector {
 
             size_t max_subgraph_count = 0;
             std::vector<VertexPair> pairs;
-            for (VertexPair uv : Graph::VertexPairs(m_marked.size())) {
+            for (VertexPair uv : m_graph.vertexPairs()) {
                 size_t subgraph_count = m_subgraph_stats.subgraphCount(uv);
                 if (subgraph_count > max_subgraph_count) {
                     max_subgraph_count = subgraph_count;
@@ -43,7 +43,7 @@ namespace selector {
 
             std::vector<std::pair<size_t, VertexPair>> best_pairs, current_pairs;
             for (VertexPair uv : pairs) {
-                finder.find_near(uv, m_graph, m_used, [&](Subgraph subgraph) {
+                m_finder.find_near(uv, m_graph, m_used, [&](const Subgraph &subgraph) {
                     current_pairs.clear();
 
                     for (VertexPair xy : subgraph.vertex_pairs())

@@ -15,11 +15,12 @@ namespace selector {
 
         const Graph &m_graph;
         const VertexPairMap<bool> &m_marked;
-        const SubgraphStats &m_subgraph_stats;
+        const SubgraphStats<SetOfForbiddenSubgraphs> &m_subgraph_stats;
 
         Finder finder;
     public:
-        SingleEdgeEditing(const Graph &graph, const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats) :
+        SingleEdgeEditing(const Graph &graph, const VertexPairMap<bool> &marked,
+                          const SubgraphStats<SetOfForbiddenSubgraphs> &subgraph_stats) :
                 m_graph(graph), m_marked(marked), m_subgraph_stats(subgraph_stats) {}
 
         [[nodiscard]] RecursionType recursion_type() const override { return RecursionType::VertexPair; }

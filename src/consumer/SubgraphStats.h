@@ -8,18 +8,8 @@
 #include "../forbidden_subgraphs/SubgraphC4P4.h"
 
 
-class SubgraphStats : public ConsumerI {
-public:
-    [[nodiscard]] virtual size_t subgraphCount() const = 0;
-
-    [[nodiscard]] virtual size_t subgraphCount(VertexPair uv) const = 0;
-};
-
-
-namespace subgraph_stats {
-
 template <Options::FSG SetOfForbiddenSubgraphs>
-class SubgraphStatsT : public SubgraphStats {
+class SubgraphStats final : public ConsumerI {
 private:
     using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
     using Finder = typename Subgraph::Finder;
@@ -38,16 +28,16 @@ private:
     Graph m_empty_graph;
 
 public:
-    SubgraphStatsT(const Instance &instance, const VertexPairMap<bool> &marked)
+    SubgraphStats(const Instance &instance, const VertexPairMap<bool> &marked)
             : subgraph_count_per_vertex_pair(instance.graph.size()),
               subgraph_count_per_vertex_pair_sum(0), subgraph_count(0), m_graph(instance.graph), m_marked(marked),
               m_empty_graph(m_graph.size()) {}
 
-    [[nodiscard]] size_t subgraphCount() const override {
+    [[nodiscard]] constexpr size_t subgraphCount() const {
         return subgraph_count;
     }
 
-    [[nodiscard]] size_t subgraphCount(VertexPair uv) const override {
+    [[nodiscard]] constexpr size_t subgraphCount(VertexPair uv) const {
         return subgraph_count_per_vertex_pair[uv];
     }
 
@@ -159,18 +149,6 @@ private:
 #endif
     }
 };
-
-
-inline std::unique_ptr<SubgraphStats> make(Options::FSG fsg, const Instance &instance, const VertexPairMap<bool> &marked) {
-    switch (fsg) {
-        case Options::FSG::C4P4:
-            return std::make_unique<SubgraphStatsT<Options::FSG::C4P4>>(instance, marked);
-        default:
-            throw std::runtime_error("SubgraphStatsT not specialized for given forbidden subgraphs.");
-    }
-}
-
-}
 
 
 #endif //WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPHSTATS_H

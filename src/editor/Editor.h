@@ -30,7 +30,7 @@ private:
 
     std::unique_ptr<LowerBoundI> m_lower_bound;
     std::unique_ptr<SelectorI> m_selector;
-    std::unique_ptr<SubgraphStats> m_subgraph_stats;
+    std::unique_ptr<ConsumerI> m_subgraph_stats;
 
     std::vector<ConsumerI *> m_consumers;
 
@@ -51,15 +51,26 @@ public:
             m_found_solution(false), m_ordered_vertex_pairs(m_instance.graph, m_instance.costs, m_consumers, m_marked),
             m_config(std::move(config)) {
 
-        m_subgraph_stats = subgraph_stats::make(m_config.forbidden_subgraphs, m_instance, m_marked);
-        m_consumers.emplace_back(m_subgraph_stats.get());
+        switch (config.forbidden_subgraphs) {
+            case Options::FSG::C4P4:
+                init_consumers<Options::FSG::C4P4>();
+                break;
+            default:
+                throw std::runtime_error("Cannot initialize consumers for given set of forbidden subgraphs.");
+        }
+    }
 
-        m_selector = selector::make(m_config.selector, config.forbidden_subgraphs, m_instance, m_marked, *m_subgraph_stats);
-        m_lower_bound = lower_bound::make(m_config.lower_bound, m_config.forbidden_subgraphs, m_instance, m_marked, *m_subgraph_stats,
-                                          m_config);
+    template<Options::FSG FSG>
+    void init_consumers() {
+        auto stats = std::make_unique<SubgraphStats<FSG>>(m_instance, m_marked);
+        m_selector = selector::make<FSG>(m_config.selector, m_instance, m_marked, *stats);
+        m_lower_bound = lower_bound::make<FSG>(m_config.lower_bound, m_instance, m_marked, *stats, m_config);
 
-        m_consumers.emplace_back(m_lower_bound.get());
-        m_consumers.emplace_back(m_selector.get());
+        m_subgraph_stats = std::move(stats);
+
+        m_consumers.push_back(m_subgraph_stats.get());
+        m_consumers.push_back(m_lower_bound.get());
+        m_consumers.push_back(m_selector.get());
     }
 
     [[nodiscard]] Cost initial_lower_bound() const {

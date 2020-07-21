@@ -10,9 +10,9 @@
 
 
 namespace lower_bound {
-    std::unique_ptr<LowerBoundI>
-    make(Options::LB lower_bound, Options::FSG fsg, const Instance &instance,
-         const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats, Configuration config);
+    template<Options::FSG FSG>
+    std::unique_ptr<LowerBoundI> make(Options::LB lower_bound, const Instance &instance,
+         const VertexPairMap<bool> &marked, const SubgraphStats<FSG> &subgraph_stats, Configuration config);
 }
 
 #endif //WEIGHTED_F_FREE_EDGE_EDITING_LB_UTILS_H

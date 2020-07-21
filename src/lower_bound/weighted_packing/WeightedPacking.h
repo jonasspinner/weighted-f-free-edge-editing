@@ -2,7 +2,7 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_WEIGHTEDPACKING_H
 
 
-template <Options::FSG SetOfForbiddenSubgraphs>
+template<Options::FSG SetOfForbiddenSubgraphs>
 class WeightedPacking {
     /**
      * This class manages a weighted packing. A forbidden subgraph which is in the packing, has a cost associated with
@@ -38,7 +38,7 @@ class WeightedPacking {
     const Graph &m_graph;
     const VertexPairMap<Cost> &m_costs;
     const VertexPairMap<bool> &m_marked;
-    const subgraph_stats::SubgraphStatsT<SetOfForbiddenSubgraphs> &m_subgraph_stats;
+    const SubgraphStats<SetOfForbiddenSubgraphs> &m_subgraph_stats;
 
     VertexPairMap<Cost> m_potential;
     Graph m_depleted_graph;
@@ -48,7 +48,8 @@ class WeightedPacking {
     int verbosity = 0;
 
 public:
-    WeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked, const subgraph_stats::SubgraphStatsT<SetOfForbiddenSubgraphs> &subgraph_stats)
+    WeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked,
+                    const SubgraphStats<SetOfForbiddenSubgraphs> &subgraph_stats)
             : m_graph(instance.graph), m_costs(instance.costs), m_marked(marked), m_subgraph_stats(subgraph_stats),
               m_potential(m_graph.size()), m_depleted_graph(m_graph.size()) {
         for (VertexPair uv : m_graph.vertexPairs()) {
@@ -254,7 +255,8 @@ public:
         std::vector<VertexPair> pairs;
         for (auto uv : subgraph.non_converting_edits()) {
             assert(!m_depleted_graph.hasEdge(uv));
-            if (!m_marked[uv] && m_potential[uv] == remove_cost) { // uv is unmarked and was depleted before x was removed with this cost.
+            if (!m_marked[uv] && m_potential[uv] ==
+                                 remove_cost) { // uv is unmarked and was depleted before x was removed with this cost.
                 // Because the subgraph already contributes one to the subgraph count at uv, only search for near subgraphs
                 // if there is at least one more.
                 if (m_subgraph_stats.subgraphCount(uv) > 1) {
@@ -264,7 +266,9 @@ public:
         }
 
         if (pairs.size() <= 1) {
-            return {{}, {}, {}};
+            return {{},
+                    {},
+                    {}};
         }
 
         std::vector<Subgraph> candidates;

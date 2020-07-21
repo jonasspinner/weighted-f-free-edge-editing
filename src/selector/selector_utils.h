@@ -11,9 +11,9 @@
 
 
 namespace selector {
-    std::unique_ptr<SelectorI>
-    make(Options::Selector selector, Options::FSG fsg, const Instance &instance,
-                   const VertexPairMap<bool> &marked, const SubgraphStats &subgraph_stats);
+    template<Options::FSG FSG>
+    std::unique_ptr<SelectorI> make(Options::Selector selector, const Instance &instance,
+                                    const VertexPairMap<bool> &marked, const SubgraphStats<FSG> &subgraph_stats);
 
 }
 

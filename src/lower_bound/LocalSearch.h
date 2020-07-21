@@ -138,7 +138,7 @@ namespace lower_bound {
         const Graph &m_graph;
         const VertexPairMap<Cost> &m_costs;
         const VertexPairMap<bool> &m_marked;
-        const subgraph_stats::SubgraphStatsT<SetOfForbiddenSubgraphs> &m_subgraph_stats;
+        const SubgraphStats<SetOfForbiddenSubgraphs> &m_subgraph_stats;
 
         Graph m_bound_graph;
         std::vector<std::unique_ptr<State>> m_states;
@@ -155,7 +155,7 @@ namespace lower_bound {
         Finder m_finder;
     public:
         explicit LocalSearch(const Instance &instance, const VertexPairMap<bool> &marked,
-                             const subgraph_stats::SubgraphStatsT<SetOfForbiddenSubgraphs> &subgraph_stats,
+                             const SubgraphStats<SetOfForbiddenSubgraphs> &subgraph_stats,
                              int seed = 0, float alpha = 0.7f, size_t max_rounds_no_improvements = 5) :
                 m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
                 m_subgraph_stats(subgraph_stats), m_bound_graph(instance.graph.size()),
@@ -238,7 +238,7 @@ namespace lower_bound {
         bool find_omega_improvement(State &state, Cost k);
 
         static void insert_into_graph(const LocalSearch::Subgraph &subgraph,
-                const VertexPairMap<bool> &marked, Graph &graph);
+                                      const VertexPairMap<bool> &marked, Graph &graph);
 
         static void remove_from_graph(const LocalSearch::Subgraph &subgraph,
                                       const VertexPairMap<bool> &marked, Graph &graph);
@@ -248,11 +248,11 @@ namespace lower_bound {
 
         static std::pair<std::vector<Subgraph>, std::vector<size_t>> get_candidates(
                 Finder &finder, const std::vector<VertexPair> &pairs, const Graph &graph, Graph &bound_graph,
-                const SubgraphStats &subgraph_stats);
+                const SubgraphStats<SetOfForbiddenSubgraphs> &subgraph_stats);
 
         static std::vector<VertexPair> get_pairs(const Subgraph &subgraph, const VertexPairMap<bool> &marked);
 
-        static std::tuple<size_t, size_t> count_neighbors(const SubgraphStats &subgraph_stats,
+        static std::tuple<size_t, size_t> count_neighbors(const SubgraphStats<SetOfForbiddenSubgraphs> &subgraph_stats,
                                                           const VertexPairMap<bool> &marked, const Subgraph &subgraph);
     };
 
