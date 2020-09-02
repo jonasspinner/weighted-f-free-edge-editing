@@ -94,58 +94,31 @@ private:
 
 template<>
 class VertexPairMap<bool> {
-    using AdjRow = boost::dynamic_bitset<>;
-    using AdjMatrix = std::vector<AdjRow>;
+    using Values = boost::dynamic_bitset<>;
 
     unsigned int m_size;
-    AdjMatrix m_values;
+    Values m_values;
 
 public:
-    using const_reference = AdjRow::const_reference;
+    using reference = Values::reference;
+    using const_reference = Values::const_reference;
     using value_type = bool;
 
-    class reference {
-    private:
-        AdjRow::reference m_uv_ref;
-        AdjRow::reference m_vu_ref;
-
-        friend class VertexPairMap<bool>;
-
-        reference(AdjMatrix &values, VertexPair uv) noexcept:
-                m_uv_ref(values[uv.u][uv.v]), m_vu_ref(values[uv.v][uv.u]) {}
-
-        void operator&() = delete;
-
-    public:
-        reference &operator=(bool value) noexcept {
-            m_uv_ref = value;
-            m_vu_ref = value;
-            return *this;
-        }
-
-        operator bool() const noexcept {
-            return m_uv_ref;
-        }
-    };
-
-
     explicit VertexPairMap(Vertex size, bool initial = false) noexcept:
-            m_size(size), m_values(m_size, AdjRow(m_size)) {
-        if (initial) {
-            for (auto &row : m_values) {
-                row.set();
-            }
-        }
+            m_size(size),
+            m_values(idx({m_size - 2, m_size - 1}) + 1) {
+        if (initial)
+            m_values.set();
     }
 
     [[nodiscard]] const_reference operator[](VertexPair uv) const noexcept {
         assert(uv.u < m_size && uv.v < m_size);
-        return m_values[uv.u][uv.v];
+        return m_values[idx(uv)];
     }
 
     [[nodiscard]] reference operator[](VertexPair uv) noexcept {
         assert(uv.u < m_size && uv.v < m_size);
-        return reference{m_values, uv};
+        return m_values[idx(uv)];
     }
 
     [[nodiscard]] constexpr auto keys() const noexcept {
@@ -188,9 +161,21 @@ public:
      * Sets all entries to false.
      */
     void clear() noexcept {
-        for (auto &row : m_values) {
-            row.reset();
-        }
+        m_values.reset();
+    }
+
+    /**
+ * Returns the index for the given pair of vertices.
+ *
+ * For u, v \in 0..n-1 returns indices from 0 to n * (n - 1) / 2 - 1. The formula assumes that u < v.
+ *
+ * @param uv
+ * @return
+ */
+    static constexpr std::size_t idx(VertexPair uv) noexcept {
+        auto u = static_cast<std::size_t>(uv.u);
+        auto v = static_cast<std::size_t>(uv.v);
+        return v * (v - 1) / 2 + u;
     }
 };
 
