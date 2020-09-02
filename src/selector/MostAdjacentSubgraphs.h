@@ -80,7 +80,7 @@ namespace selector {
 
 #ifndef NDEBUG
             if (problem.solved) {
-                assert(!finder.find(m_graph, [](Subgraph) { return true; }));
+                assert(!m_finder.find(m_graph, [](Subgraph) { return true; }));
             }
 #endif
 
