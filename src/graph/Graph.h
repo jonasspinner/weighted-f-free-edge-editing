@@ -734,9 +734,9 @@ public:
         return row;
     }
 
-    friend class FinderI;
-
-    friend class CenterC4P4Finder;
+    [[nodiscard]] const auto &adj(Vertex u) const {
+        return m_adj[u];
+    }
 };
 
 

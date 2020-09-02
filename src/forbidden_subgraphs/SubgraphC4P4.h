@@ -161,7 +161,7 @@ struct std::hash<SubgraphT<Options::FSG::C4P4>> {
     inline size_t operator()(const SubgraphT<Options::FSG::C4P4> &subgraph) const noexcept {
         // hash_bytes has `void const* ptr` as first parameter type.
         const auto ptr = static_cast<void const *>(subgraph.m_vertices.data());
-        const auto len = subgraph.m_vertices.size() * sizeof(Vertex); // length of m_vertices in bytes.
+        constexpr auto len = subgraph.m_vertices.size() * sizeof(Vertex); // length of m_vertices in bytes.
         return robin_hood::hash_bytes(ptr, len);
     }
 };
@@ -184,8 +184,8 @@ class CenterC4P4Finder {
     Graph::AdjRow C;
 
     static inline void init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph &graph) noexcept {
-        row = graph.m_adj[neighbor];
-        row -= graph.m_adj[non_neighbor];
+        row = graph.adj(neighbor);
+        row -= graph.adj(non_neighbor);
         row[non_neighbor] = false;
     }
 
@@ -195,10 +195,10 @@ class CenterC4P4Finder {
      */
     static inline void
     init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph &graph, const Graph &forbidden_graph) noexcept {
-        row = graph.m_adj[neighbor];
-        row -= graph.m_adj[non_neighbor];
-        row -= forbidden_graph.m_adj[neighbor];
-        row -= forbidden_graph.m_adj[non_neighbor];
+        row = graph.adj(neighbor);
+        row -= graph.adj(non_neighbor);
+        row -= forbidden_graph.adj(neighbor);
+        row -= forbidden_graph.adj(non_neighbor);
         row[non_neighbor] = false;
     }
 
@@ -359,19 +359,19 @@ public:
         } else if (!graph.hasEdge(uv) && !forbidden_graph.hasEdge(uv)) {
             // a-u-b-v-c
 
-            B = graph.m_adj[u];
-            B &= graph.m_adj[v];
-            B -= forbidden_graph.m_adj[u];
-            B -= forbidden_graph.m_adj[v];
+            B = graph.adj(u);
+            B &= graph.adj(v);
+            B -= forbidden_graph.adj(u);
+            B -= forbidden_graph.adj(v);
             B[u] = false;
             B[v] = false;
 
 
-            A = graph.m_adj[u];
-            A -= forbidden_graph.m_adj[u];
+            A = graph.adj(u);
+            A -= forbidden_graph.adj(u);
 
-            C = graph.m_adj[v];
-            C -= forbidden_graph.m_adj[v];
+            C = graph.adj(v);
+            C -= forbidden_graph.adj(v);
 
             for (auto b : Graph::iterate(B)) {
                 for (auto a : Graph::iterate(A)) {
@@ -408,9 +408,9 @@ public:
 
             // u-a-c-v
             A -= B;
-            A -= forbidden_graph.m_adj[v];
+            A -= forbidden_graph.adj(v);
             C -= B;
-            C -= forbidden_graph.m_adj[u];
+            C -= forbidden_graph.adj(u);
             for (auto a : Graph::iterate(A)) {
                 for (auto c : Graph::iterate(C)) {
                     if (forbidden_graph.hasEdge({a, c}))

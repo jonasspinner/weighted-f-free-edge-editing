@@ -160,21 +160,21 @@ protected:
      */
 
     static inline auto neighbors(const Graph &graph) {
-        return [&](Vertex u) -> const Graph::AdjRow & { return graph.m_adj[u]; };
+        return [&](Vertex u) -> const Graph::AdjRow & { return graph.adj(u); };
     }
 
     static inline auto neighbors(const Graph &graph, const Graph &forbidden) {
         assert(graph.size() == forbidden.size());
         return [&](Vertex u) {
-            auto result = graph.m_adj[u];
-            result -= forbidden.m_adj[u];
+            auto result = graph.adj(u);
+            result -= forbidden.adj(u);
             return result;
         };
     }
 
     static inline auto non_neighbors(const Graph &graph) {
         return [&](Vertex u) {
-            auto result = graph.m_adj[u];
+            auto result = graph.adj(u);
             result.flip();
             result[u] = false;
             return result;
@@ -184,9 +184,9 @@ protected:
     static inline auto non_neighbors(const Graph &graph, const Graph &forbidden) {
         assert(graph.size() == forbidden.size());
         return [&](Vertex u) {
-            auto result = graph.m_adj[u];
+            auto result = graph.adj(u);
             result.flip();
-            result -= forbidden.m_adj[u];
+            result -= forbidden.adj(u);
             result[u] = false;
             return result;
         };
