@@ -4,15 +4,16 @@
 #include <iostream>
 #include <vector>
 
-#include <boost/dynamic_bitset.hpp>
 #include <yaml-cpp/yaml.h>
+#include <cmath>
 
 #include "VertexPair.h"
+#include "DynamicBitset.h"
 
 
 class Graph {
 public:
-    using AdjRow = boost::dynamic_bitset<>;
+    using AdjRow = dynamic_bitset::DynamicBitset<>;
     using AdjMatrix = std::vector<AdjRow>;
 
 private:
@@ -175,7 +176,7 @@ public:
             }
 
             [[nodiscard]] constexpr value_type operator[](difference_type n) const noexcept {
-                return *(*this + n);
+                return m_u + static_cast<Vertex>(n);
             }
 
             constexpr Iterator &operator++() noexcept {
@@ -281,14 +282,11 @@ public:
         return Vertices{size()};
     }
 
-
     class RowVertices {
     public:
         class Iterator {
-            const AdjRow *m_row{nullptr};
-            Vertex m_u{0};
-
-            static constexpr Vertex end_vertex = static_cast<Vertex>(AdjRow::npos);
+            using InnerIt = dynamic_bitset::IndexIterator<AdjRow::block_type>;
+            InnerIt m_it{};
         public:
             using value_type = Vertex;
             using difference_type = std::ptrdiff_t;
@@ -296,33 +294,26 @@ public:
             using reference = Vertex;
             using iterator_category = std::forward_iterator_tag;
 
-            constexpr Iterator() noexcept {};
+            constexpr Iterator() noexcept = default;
 
-            constexpr explicit Iterator(const AdjRow *row) noexcept: m_row(row) {
-                assert(m_row != nullptr);
-                m_u = static_cast<Vertex>(m_row->find_first());
-            }
+            explicit Iterator(const AdjRow &row) noexcept: m_it(row) {}
 
             struct end_tag {
             };
 
-            constexpr Iterator(const AdjRow *row, end_tag) noexcept: m_row(row), m_u(end_vertex) {
-                assert(m_row != nullptr);
-            }
+            constexpr Iterator(const AdjRow &row, end_tag) noexcept: m_it(row, row.size()) {}
 
             [[nodiscard]] constexpr value_type operator*() const noexcept {
-                return m_u;
+                return static_cast<Vertex>(*m_it);
             }
 
-            Iterator &operator++() noexcept {
-                assert(m_u != end_vertex);
-                assert(m_u < m_row->size());
-                m_u = static_cast<Vertex>(m_row->find_next(m_u));
+            inline Iterator &operator++() noexcept {
+                ++m_it;
                 return *this;
             }
 
             [[nodiscard]] constexpr bool operator==(const Iterator &other) const noexcept {
-                return m_u == other.m_u;
+                return m_it == other.m_it;
             }
 
             [[nodiscard]] constexpr bool operator!=(const Iterator &other) const noexcept {
@@ -330,39 +321,39 @@ public:
             }
 
             [[nodiscard]] constexpr bool operator<(const Iterator &other) const noexcept {
-                return m_u < other.m_u;
+                return m_it < other.m_it;
             }
 
             [[nodiscard]] constexpr bool operator<=(const Iterator &other) const noexcept {
-                return m_u <= other.m_u;
+                return m_it <= other.m_it;
             }
 
             [[nodiscard]] constexpr bool operator>(const Iterator &other) const noexcept {
-                return m_u > other.m_u;
+                return m_it > other.m_it;
             }
 
             [[nodiscard]] constexpr bool operator>=(const Iterator &other) const noexcept {
-                return m_u >= other.m_u;
+                return m_it >= other.m_it;
             }
         };
 
     private:
-        const AdjRow *m_row;
+        const AdjRow &m_row;
 
         friend class Graph;
 
-        constexpr explicit RowVertices(const AdjRow &row) noexcept: m_row(std::addressof(row)) {}
+        constexpr explicit RowVertices(const AdjRow &row) noexcept: m_row(row) {}
 
     public:
         using const_iterator = Iterator;
 
-        [[nodiscard]] constexpr const_iterator begin() const noexcept { return Iterator{m_row}; }
+        [[nodiscard]] const_iterator begin() const noexcept {
+            return Iterator{m_row};
+        }
 
         [[nodiscard]] constexpr const_iterator end() const noexcept {
             return Iterator{m_row, Iterator::end_tag{}};
         }
-
-        [[nodiscard]] constexpr bool empty() const noexcept { return begin() == end(); }
     };
 
     /**
@@ -599,17 +590,15 @@ public:
             struct end_tag {
             };
 
-            Iterator(const AdjMatrix *adj, end_tag) noexcept: m_adj(adj) {
-                assert(m_adj != nullptr);
-                const auto size = static_cast<Vertex>(adj->size());
+            Iterator(const AdjMatrix &adj, end_tag) noexcept: m_adj(std::addressof(adj)) {
+                const auto size = static_cast<Vertex>(m_adj->size());
                 if (size >= 1) {
                     // The last possible edge is (n-2, n-1). Therefore, n-1 is the end position of u.
                     m_uv.u = size - 1;
                 }
             }
 
-            explicit Iterator(const AdjMatrix *adj) noexcept: m_adj(adj) {
-                assert(m_adj != nullptr);
+            explicit Iterator(const AdjMatrix &adj) noexcept: m_adj(std::addressof(adj)) {
                 const auto size = m_adj->size();
                 if (size < 2)  // For tiny (0 or 1) graphs, this is already equal to the end iterator.
                     return;
@@ -681,8 +670,8 @@ public:
         const_iterator m_end;
     public:
         explicit Edges(const AdjMatrix &adj) noexcept:
-                m_begin(std::addressof(adj)),
-                m_end(std::addressof(adj), Iterator::end_tag{}) {}
+                m_begin(adj),
+                m_end(adj, Iterator::end_tag{}) {}
 
         [[nodiscard]] constexpr const_iterator begin() const noexcept { return m_begin; }
 
