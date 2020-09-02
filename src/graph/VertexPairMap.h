@@ -4,6 +4,8 @@
 
 #include <iomanip>
 
+#include <boost/dynamic_bitset.hpp>
+
 #include "Graph.h"
 
 

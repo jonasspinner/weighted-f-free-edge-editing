@@ -2,6 +2,8 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_VERTEXPAIR_H
 
 
+#include <cassert>
+
 #include "../definitions.h"
 
 
