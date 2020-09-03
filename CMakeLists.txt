@@ -85,7 +85,7 @@ endif ()
 
 # Source files
 file(GLOB TEST_SRC_FILES src/tests/*.cpp)
-file(GLOB FINDER_SRC_FILES src/finder/*.cpp)
+file(GLOB FINDER_SRC_FILES src/legacy/finder/*.cpp)
 file(GLOB SELECTOR_SRC_FILES src/selector/*.cpp)
 file(GLOB SEARCH_STRATEGY_SRC_FILES src/search_strategy/*.cpp)
 
@@ -100,18 +100,18 @@ if (LSSWZ_MWIS_FOUND)
     list(APPEND LOWER_BOUND_SRC_FILES src/lower_bound/LSSWZ_MWIS_Solver.cpp)
 endif (LSSWZ_MWIS_FOUND)
 
-set(SRC_FILES ${FINDER_SRC_FILES} ${SELECTOR_SRC_FILES} ${LOWER_BOUND_SRC_FILES} ${SEARCH_STRATEGY_SRC_FILES} src/Configuration.cpp src/options.cpp ${NPS_MWIS_SRC_FILES})
+set(SRC_FILES ${SELECTOR_SRC_FILES} ${LOWER_BOUND_SRC_FILES} ${SEARCH_STRATEGY_SRC_FILES} src/Configuration.cpp src/options.cpp ${NPS_MWIS_SRC_FILES})
 
 
 add_executable(fpt apps/run_fptsolver.cpp ${SRC_FILES})
 add_executable(tests apps/run_tests.cpp ${SRC_FILES} ${TEST_SRC_FILES})
-add_executable(finder_benchmark apps/run_finder_benchmark.cpp ${SRC_FILES})
+add_executable(finder_benchmark apps/run_finder_benchmark.cpp ${SRC_FILES} ${FINDER_SRC_FILES} )
 add_executable(lower_bound_benchmark apps/run_lower_bound_benchmark.cpp ${SRC_FILES})
 add_executable(fpt_experiment apps/run_fpt_experiment.cpp ${SRC_FILES})
 add_executable(lower_bound_inspection apps/run_lower_bound_inspection.cpp ${SRC_FILES})
 add_executable(instance_converter apps/run_instance_converter.cpp)
 add_executable(instance_packing_problem apps/run_instance_packing_problem.cpp ${FINDER_SRC_FILES} src/options.cpp)
-add_executable(templated_subgraph_test apps/run_templated_subgraph_test.cpp src/Configuration.cpp src/options.cpp src/finder/CenterC4P4.cpp)
+add_executable(templated_subgraph_test apps/run_templated_subgraph_test.cpp src/Configuration.cpp src/options.cpp src/legacy/finder/CenterC4P4.cpp)
 
 
 add_dependencies(fpt version)
