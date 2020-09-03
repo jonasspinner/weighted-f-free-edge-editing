@@ -1,7 +1,3 @@
-//
-// Created by jonas on 19.08.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_SOLUTION_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_SOLUTION_H
 
@@ -9,6 +5,7 @@
 #include "graph/VertexPairMap.h"
 #include "graph/Graph.h"
 #include "Configuration.h"
+#include "forbidden_subgraphs/SubgraphC4P4.h"
 
 
 class Solution {
