@@ -1,8 +1,3 @@
-//
-// Created by jonas on 12.08.19.
-//
-
-
 #include "EditorTests.h"
 #include "../graph/GraphIO.h"
 #include "../Solution.h"
@@ -192,11 +187,13 @@ void EditorTests::run() {
 
     // auto selectors = {Selector::FirstFound, Selector::LeastWeight, Selector::MostMarkedPairs, Selector::MostAdjacentSubgraphs};
     // auto lower_bounds = {LB::LocalSearch, LB::Trivial, LB::Greedy, LB::SortedGreedy, LB::LPRelaxation, LB::NPS_MWIS_Solver};
+    // auto lower_bounds = {LB::LocalSearch, LB::Greedy, LB::SortedGreedy, LB::LPRelaxation, LB::NPS_MWIS_Solver, LB::WeightedPackingLocalSearch, LB::GreedyWeightedPacking};
+
 
     auto selectors = {Selector::MostAdjacentSubgraphs};
-    auto lower_bounds = {LB::WeightedPackingLocalSearch, LB::SortedGreedy, LB::GreedyWeightedPacking};
+    auto lower_bounds = {LB::LocalSearch, LB::SortedGreedy, LB::WeightedPackingLocalSearch};
 
-    configurations_have_same_output(FSG::C4P4, selectors, lower_bounds, {0, 1}, 100);
+    configurations_have_same_output(FSG::C4P4, selectors, lower_bounds, {0, 1, 2, 3}, 100);
     configurations_have_same_output(FSG::C4P4, selectors, lower_bounds, {0, 1}, 1);
 
     //TODO: test case P4 with 0 cost vertex pairs.

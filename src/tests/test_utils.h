@@ -1,7 +1,3 @@
-//
-// Created by jonas on 29.07.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_TEST_UTILS_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_TEST_UTILS_H
 
@@ -11,7 +7,8 @@
 #include <algorithm>
 #include <random>
 
-#include "../graph/Subgraph.h"
+#include "../graph/VertexPair.h"
+#include "../graph/Graph.h"
 
 template <class T>
 std::ostream &operator<<(std::ostream &os, const std::vector<T> &vec) {
@@ -71,13 +68,8 @@ void expect(const std::string &name, std::vector<std::vector<T>> expected, std::
 template <typename T>
 std::vector<std::vector<T>> normalize(std::vector<std::vector<T>> list);
 
-std::vector<Subgraph> normalize(std::vector<Subgraph> list);
-
 VertexPair random_vertex_pair(unsigned size, std::mt19937 &gen);
 
 Graph random_graph(unsigned size, int n_edges, std::mt19937 &gen);
-
-Subgraph random_subgraph(unsigned size, unsigned graph_size, std::mt19937 &gen);
-
 
 #endif //WEIGHTED_F_FREE_EDGE_EDITING_TEST_UTILS_H

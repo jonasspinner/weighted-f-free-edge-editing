@@ -4,6 +4,8 @@
 
 #include <cassert>
 
+#include <yaml-cpp/yaml.h>
+
 #include "../definitions.h"
 
 

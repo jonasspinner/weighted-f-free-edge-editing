@@ -2,7 +2,6 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_SELECTORI_H
 
 #include "../consumer/ConsumerI.h"
-#include "../graph/Subgraph.h"
 
 
 class Problem {

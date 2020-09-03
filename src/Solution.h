@@ -9,8 +9,6 @@
 #include "graph/VertexPairMap.h"
 #include "graph/Graph.h"
 #include "Configuration.h"
-#include "finder/FinderI.h"
-#include "finder/finder_utils.h"
 
 
 class Solution {
@@ -43,17 +41,23 @@ public:
 
     [[nodiscard]] bool is_valid(const Instance &instance, Options::FSG fsg) const {
         Graph graph = instance.graph.copy();
-        std::unique_ptr<FinderI> finder = Finder::make(fsg);
-        Cost sum = 0;
 
-        for (VertexPair uv : edits) {
-            graph.toggleEdge(uv);
-            sum += instance.costs[uv];
+        switch (fsg) {
+            case Options::FSG::C4P4: {
+                Cost sum{0};
+                for (VertexPair uv : edits) {
+                    graph.toggleEdge(uv);
+                    sum += instance.costs[uv];
+                }
+
+                SubgraphT<Options::FSG::C4P4>::Finder finder;
+                bool found_forbidden_subgraph = finder.find(graph, [&](const auto &) { return true; });
+
+                return !found_forbidden_subgraph;
+            }
+            default:
+                throw std::runtime_error("Solution::is_valid is not specialized for given set of forbidden subgraphs.");
         }
-
-        bool found_forbidden_subgraph = finder->find(graph, [&](const Subgraph &) { return true; });
-
-        return !found_forbidden_subgraph;
     }
 
     bool operator<(const Solution &other) const {

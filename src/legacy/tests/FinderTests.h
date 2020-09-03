@@ -9,7 +9,7 @@
 #include "../graph/Graph.h"
 #include "../graph/GraphIO.h"
 #include "../Configuration.h"
-#include "../Solution.h"
+#include "../Solution.h"m
 #include "test_utils.h"
 
 #include "../finder/FinderI.h"
@@ -18,7 +18,6 @@
 #include "../finder/CenterC4P4.h"
 #include "../finder/CenterP3.h"
 #include "../finder/Center.h"
-#include "../finder/finder_utils.h"
 #include "../Permutation.h"
 #include "../finder/Endpoint.h"
 #include "../finder/Naive.h"

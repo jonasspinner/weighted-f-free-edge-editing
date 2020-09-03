@@ -1,9 +1,8 @@
-//
-// Created by jonas on 20.08.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_PERMUTATIONTEST_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_PERMUTATIONTEST_H
+
+
+#include "../Permutation.h"
 
 
 class PermutationTest {
