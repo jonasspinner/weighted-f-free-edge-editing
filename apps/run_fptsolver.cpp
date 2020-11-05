@@ -1,8 +1,3 @@
-//
-// Created by jonas on 19.08.19.
-//
-
-
 #include <chrono>
 #include <boost/program_options.hpp>
 
@@ -12,7 +7,7 @@
 
 
 void write_output_file(const std::string &path, const Configuration &config, const Instance &instance,
-                       const std::vector<Solution> &solutions, Cost solution_cost, long long solve_time,
+                       const std::vector<Solution> &solutions, Cost solution_cost, std::chrono::nanoseconds solve_time,
                        const std::vector<FPTSolver::Stat> &stats, bool print_stdout = false) {
     using namespace YAML;
 
@@ -46,7 +41,7 @@ void write_output_file(const std::string &path, const Configuration &config, con
     out << Key << "forbidden_subgraphs" << Value << config.forbidden_subgraphs;
     out << Key << "solutions" << Value << solutions;
     out << Key << "solution_cost" << Value << solution_cost;
-    out << Key << "time" << Value << solve_time << Comment("ns");
+    out << Key << "time" << Value << solve_time.count() << Comment("ns");
     out << Key << "timelimit" << Value << config.timelimit << Comment("s");
     out << EndMap << EndDoc;
     
@@ -85,14 +80,31 @@ int main(int argc, char* argv[]) {
 
     double multiplier = 100;
 
-    Configuration config(Options::FSG::P3, multiplier, Options::SolverType::FPT, Options::Selector::MostAdjacentSubgraphs, Options::LB::Trivial);
-
-    config.input_path = "../data/bio/bio-nr-405-size-10.graph";
-    config.multiplier = 1;
+    Configuration config(Options::FSG::C4P4, multiplier, Options::SolverType::FPT, Options::Selector::MostAdjacentSubgraphs, Options::LB::Trivial);
 
     config.find_all_solutions = true;
     config.pre_mark_vertex_pairs = false;
-    config.search_strategy = Options::FPTSearchStrategy::PrunedDelta;
+
+    config.verbosity = 2;
+
+    config.selector = Options::Selector::MostAdjacentSubgraphs;
+    config.lower_bound = Options::LB::WeightedPackingLocalSearch;
+    config.search_strategy = Options::FPTSearchStrategy::Fixed;
+    //config.input_path = paths[0]; config.k_max = 0;
+    //config.input_path = paths[0]; config.k_max = 426;
+    //config.input_path = paths[1]; config.k_max = 1253;
+    //config.input_path = "../data/bio/bio-nr-1020-size-44.graph"; config.k_max = 6730;
+    // config.input_path = "../data/bio/bio-nr-1585-size-88.graph"; config.k_max = 56236; // 863 s
+    // config.find_all_solutions = false;
+    //config.input_path = "../data/bio/bio-nr-915-size-68.graph"; config.k_max = 14486 - 0; //14257;
+    // config.input_path = "../data/bio/bio-nr-613-size-52.graph"; config.k_max = 22567;
+    config.input_path = "../data/bio/bio-nr-782-size-17.graph"; config.k_max = 3833;
+    config.input_path = "../data/bio/bio-nr-167-size-64.graph"; config.k_max = 13972;
+    config.input_path = "../data/bio/bio-nr-1793-size-50.graph"; config.k_max = 18141;
+    config.input_path = "../data/bio/bio-nr-32-size-50.graph"; config.k_max = 21184;
+    //config.input_path = "../data/bio/bio-nr-1936-size-68.graph"; config.k_max = 43161;
+
+    config.input_path = "../data/bio/bio-nr-1020-size-44.graph"; config.k_max = 6730;
 
     auto options = config.options({Options::SolverType::FPT});
 
@@ -120,7 +132,7 @@ int main(int argc, char* argv[]) {
 
     auto instance = GraphIO::read_instance(config);
 
-    write_output_file(config.output_path, config, instance, {}, -1, -1, {});
+    write_output_file(config.output_path, config, instance, {}, -1, nanoseconds(-1), {});
 
     if (config.search_strategy == Options::FPTSearchStrategy::Fixed && config.k_max == -1)
         return 0;
@@ -133,8 +145,7 @@ int main(int argc, char* argv[]) {
     auto result = solver.solve(instance);
 
     auto t2 = steady_clock::now();
-    auto solve_time = duration_cast<nanoseconds>(t2 - t1).count();
-
+    nanoseconds solve_time(t2 - t1);
 
     auto solutions = result.solutions;
     std::sort(solutions.begin(), solutions.end());

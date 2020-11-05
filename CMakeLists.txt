@@ -5,8 +5,6 @@ project(Weighted_F-free_Edge_Editing)
 
 include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/extern/robin-hood-hashing/src/include")
 
-add_subdirectory(extern/tlx)
-include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/extern/tlx/tlx")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
 set(CMAKE_CXX_STANDARD 17)
@@ -85,7 +83,7 @@ endif ()
 
 # Source files
 file(GLOB TEST_SRC_FILES src/tests/*.cpp)
-file(GLOB FINDER_SRC_FILES src/legacy/finder/*.cpp)
+file(GLOB LEGACY_FINDER_SRC_FILES src/legacy/finder/*.cpp)
 file(GLOB SELECTOR_SRC_FILES src/selector/*.cpp)
 file(GLOB SEARCH_STRATEGY_SRC_FILES src/search_strategy/*.cpp)
 
@@ -104,25 +102,25 @@ set(SRC_FILES ${SELECTOR_SRC_FILES} ${LOWER_BOUND_SRC_FILES} ${SEARCH_STRATEGY_S
 
 
 add_executable(fpt apps/run_fptsolver.cpp ${SRC_FILES})
-add_executable(tests apps/run_tests.cpp ${SRC_FILES} ${TEST_SRC_FILES})
-add_executable(finder_benchmark apps/run_finder_benchmark.cpp ${SRC_FILES} ${FINDER_SRC_FILES} )
-add_executable(lower_bound_benchmark apps/run_lower_bound_benchmark.cpp ${SRC_FILES})
+add_executable(tests apps/tests/run_tests.cpp ${SRC_FILES} ${TEST_SRC_FILES})
+add_executable(legacy_finder_benchmark apps/legacy/run_legacy_finder_benchmark.cpp ${SRC_FILES} ${LEGACY_FINDER_SRC_FILES} )
+add_executable(lower_bound_benchmark apps/benchmarks/run_lower_bound_benchmark.cpp ${SRC_FILES})
 add_executable(fpt_experiment apps/run_fpt_experiment.cpp ${SRC_FILES})
 add_executable(lower_bound_inspection apps/run_lower_bound_inspection.cpp ${SRC_FILES})
 add_executable(instance_converter apps/run_instance_converter.cpp)
-add_executable(instance_packing_problem apps/run_instance_packing_problem.cpp ${FINDER_SRC_FILES} src/options.cpp)
-add_executable(templated_subgraph_test apps/run_templated_subgraph_test.cpp src/Configuration.cpp src/options.cpp src/legacy/finder/CenterC4P4.cpp)
+add_executable(instance_packing_problem apps/run_instance_packing_problem.cpp src/options.cpp)
+add_executable(templated_vs_legacy_subgraph_test apps/run_templated_vs_legacy_subgraph_test.cpp src/Configuration.cpp src/options.cpp src/legacy/finder/CenterC4P4.cpp)
 
 
 add_dependencies(fpt version)
 add_dependencies(tests version)
-add_dependencies(finder_benchmark version)
+add_dependencies(legacy_finder_benchmark version)
 add_dependencies(lower_bound_benchmark version)
 add_dependencies(fpt_experiment version)
 
 
 if (GUROBI_FOUND)
-    add_executable(ilp apps/run_ilpsolver.cpp ${FINDER_SRC_FILES} src/Configuration.cpp src/options.cpp)
+    add_executable(ilp apps/run_ilpsolver.cpp src/Configuration.cpp src/options.cpp)
     add_dependencies(ilp version)
     target_link_libraries(ilp LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 endif (GUROBI_FOUND)
@@ -130,13 +128,13 @@ endif (GUROBI_FOUND)
 # Boost, YAML
 target_link_libraries(fpt LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(tests LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
-target_link_libraries(finder_benchmark LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
+target_link_libraries(legacy_finder_benchmark LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(lower_bound_benchmark LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(fpt_experiment LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(lower_bound_inspection LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(instance_converter LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(instance_packing_problem LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
-target_link_libraries(templated_subgraph_test LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
+target_link_libraries(templated_vs_legacy_subgraph_test LINK_PUBLIC ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES})
 
 # Gurobi
 # TODO: Only link if necessary.
@@ -144,7 +142,7 @@ if (GUROBI_FOUND)
     target_link_libraries(fpt LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
     target_link_libraries(ilp LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
     target_link_libraries(tests LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
-    target_link_libraries(finder_benchmark LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
+    target_link_libraries(legacy_finder_benchmark LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
     target_link_libraries(lower_bound_benchmark LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
     target_link_libraries(fpt_experiment LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})
     target_link_libraries(lower_bound_inspection LINK_PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARIES} ${GUROBI_CXX_LIBRARY})

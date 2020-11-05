@@ -1,12 +1,6 @@
-//
-// Created by jonas on 09.03.20.
-//
-
-
 #include "../src/lower_bound/LPRelaxation.h"
 #include "../src/lower_bound/SortedGreedy.h"
 
-#include "../src/finder/finder_utils.h"
 #include "../src/graph/GraphIO.h"
 
 
@@ -46,7 +40,8 @@ void output_matrix(YAML::Emitter &out, const std::string &key, const VertexPairM
 
 void write_output(const VertexPairMap<bool> &adjacency, const VertexPairMap<Cost> &costs, Cost relaxation_lb,
                   const VertexPairMap<double> &values, Cost packing_lb, const VertexPairMap<bool> &covered_by_packing,
-                  const std::vector<Subgraph> &packing, const std::vector<VertexPair> &min_cost_vertex_pairs) {
+                  const std::vector<SubgraphT<Options::FSG::C4P4>> &packing,
+                  const std::vector<VertexPair> &min_cost_vertex_pairs) {
     using namespace YAML;
 
     Emitter out;
@@ -101,20 +96,13 @@ int main(int argc, char *argv[]) {
     VertexPairMap<bool> marked(instance.graph.size());
 
 
-    std::shared_ptr<FinderI> finder = Finder::make(config.forbidden_subgraphs);
-
-    lower_bound::LPRelaxation lp_algorithm(instance, marked, config, finder);
+    lower_bound::LPRelaxation<Options::FSG::C4P4> lp_algorithm(instance, marked, config);
     lp_algorithm.initialize(max_cost);
     auto relaxation_lb = lp_algorithm.calculate_lower_bound(max_cost);
 
-    lower_bound::SortedGreedy packing_algorithm(instance, marked, finder);
+    lower_bound::SortedGreedy<Options::FSG::C4P4> packing_algorithm(instance, marked);
     packing_algorithm.initialize(max_cost);
-//    auto packing_lb = packing_algorithm.calculate_lower_bound(max_cost);
-
     auto [packing_lb, covered_by_packing, packing, min_cost_vertex_pairs] = packing_algorithm.calculate_lower_bound_and_packing();
-
-    //std::cout << relaxation_lb << "\n";
-    //std::cout << packing_lb << "\n";
 
     VertexPairMap<bool> adjacency(instance.graph.size());
     for (VertexPair uv : instance.graph.edges()) {

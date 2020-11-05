@@ -3,8 +3,8 @@
 
 #include "robin_hood.h"
 
-#include "Graph.h"
-#include "VertexPairMap.h"
+#include "../../graph/Graph.h"
+#include "../../graph/VertexPairMap.h"
 
 
 class Subgraph {

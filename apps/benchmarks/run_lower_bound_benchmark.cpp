@@ -1,18 +1,12 @@
-//
-// Created by jonas on 04.09.19.
-//
-
-
 #include <iostream>
 #include <chrono>
 #include <boost/program_options.hpp>
 
-#include "../src/graph/GraphIO.h"
-#include "../src/options.h"
+#include "../../src/graph/GraphIO.h"
+#include "../../src/options.h"
 
-#include "../src/lower_bound/lower_bound_utils.h"
-#include "../src/finder/finder_utils.h"
-#include "../src/version.h"
+#include "../../src/lower_bound/lower_bound_utils.h"
+#include "../../src/version.h"
 
 
 void
@@ -64,14 +58,14 @@ int main(int argc, char *argv[]) {
             "../data/misc/karate.graph"
     };
 
-    constexpr Cost max_k = std::numeric_limits<Cost>::max();
+    constexpr auto max_k = std::numeric_limits<Cost>::max();
 
     Configuration config(Options::FSG::C4P4, 100, Options::SolverType::FPT, Options::Selector::FirstFound, LB::Trivial);
     config.input_path = inputs[0];
-    config.lower_bound = LB::LSSWZ_MWIS_Solver;
+    config.lower_bound = LB::SortedGreedy;
     config.permutation = 0;
     config.timelimit = -1;
-    size_t iterations = 10;
+    size_t iterations = 2;
 
 
     po::options_description desc("Allowed options");
@@ -108,10 +102,16 @@ int main(int argc, char *argv[]) {
     write_output_file(config.output_path, config, instance, {}, {}, {}, {});
 
 
-    std::shared_ptr<FinderI> finder = Finder::make(config.forbidden_subgraphs);
-    SubgraphStats subgraph_stats(finder, instance, marked);
+
+    constexpr auto FSG = Options::FSG::C4P4;
+
+    if (config.forbidden_subgraphs != FSG) {
+        throw std::runtime_error("Only C4P4 are currently supported.");
+    }
+
+    SubgraphStats<FSG> subgraph_stats(instance, marked);
     subgraph_stats.initialize(max_k);
-    auto lb = lower_bound::make(config.lower_bound, finder, instance, marked, subgraph_stats, config);
+    auto lb = lower_bound::make<FSG>(config.lower_bound, instance, marked, subgraph_stats, config);
 
 
     std::vector<double> initialization_times, result_times, complete_times;

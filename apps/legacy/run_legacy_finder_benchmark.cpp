@@ -1,22 +1,17 @@
-//
-// Created by jonas on 30.08.19.
-//
-
-
 #include <boost/program_options.hpp>
 #include <chrono>
 
-#include "../src/finder/FinderI.h"
-#include "../src/finder/Center.h"
-#include "../src/finder/CenterC4P4.h"
-#include "../src/finder/CenterP3.h"
-#include "../src/finder/NaiveC4P4.h"
-#include "../src/finder/NaiveP3.h"
-#include "../src/finder/Endpoint.h"
-#include "../src/graph/GraphIO.h"
-#include "../src/version.h"
-#include "../src/finder/Naive.h"
-#include "../src/finder/OuterP3.h"
+#include "../../src/legacy/finder/FinderI.h"
+#include "../../src/legacy/finder/Center.h"
+#include "../../src/legacy/finder/CenterC4P4.h"
+#include "../../src/legacy/finder/CenterP3.h"
+#include "../../src/legacy/finder/NaiveC4P4.h"
+#include "../../src/legacy/finder/NaiveP3.h"
+#include "../../src/legacy/finder/Endpoint.h"
+#include "../../src/legacy/finder/Naive.h"
+#include "../../src/legacy/finder/OuterP3.h"
+#include "../../src/graph/GraphIO.h"
+#include "../../src/version.h"
 
 
 std::unique_ptr<FinderI> make_finder(const std::string &name) {

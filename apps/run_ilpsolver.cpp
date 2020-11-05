@@ -1,8 +1,3 @@
-//
-// Created by jonas on 17.08.19.
-//
-
-
 #include <vector>
 #include <string>
 #include <chrono>
@@ -18,14 +13,14 @@ void write_output_file(const std::string &path, const Configuration &config, con
                        const std::vector<Solution> &solutions, Cost solution_cost, long long solve_time,
                        bool print_stdout = false) {
     using namespace YAML;
-    
+
     Emitter out;
     out << BeginDoc << BeginMap;
     out << Key << "config" << Value << BeginMap;
     out << Key << "single_constraints" << Value << config.single_constraints;
     out << Key << "sparse_constraints" << Value << config.sparse_constraints;
     out << Key << "num_threads" << Value << config.num_threads;
-    out << Key << "timelimit"<< Value << config.timelimit;
+    out << Key << "timelimit" << Value << config.timelimit;
     out << EndMap;
     out << Key << "commit_hash" << Value << GIT_COMMIT_HASH;
     out << Key << "instance" << Value << instance;
@@ -50,11 +45,11 @@ void write_output_file(const std::string &path, const Configuration &config, con
 }
 
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     namespace po = boost::program_options;
     using namespace std::chrono;
 
-    const std::vector<std::string> paths {
+    const std::vector<std::string> paths{
             "../data/bio/bio-nr-3-size-16.graph",
             "../data/bio/bio-nr-11-size-22.graph",
             "../data/bio/bio-nr-4-size-39.graph",
@@ -67,11 +62,13 @@ int main(int argc, char* argv[]) {
             "../data/misc/dolphins.graph",
             "../data/misc/grass_web.graph"};
 
-    std::string input = paths[2];
+    std::string input = paths[3];
     double multiplier = 100;
 
-    Configuration config(Options::FSG::C4P4, multiplier, Options::SolverType::ILP, Options::Selector::MostMarkedPairs, Options::LB::LocalSearch);
+    Configuration config(Options::FSG::C4P4, multiplier, Options::SolverType::ILP, Options::Selector::MostMarkedPairs,
+                         Options::LB::LocalSearch);
     config.input_path = input;
+    config.sparse_constraints = true;
 
     auto options = config.options({Options::SolverType::ILP});
 
@@ -84,30 +81,39 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    auto instance = GraphIO::read_instance(config);
+    try {
 
-    write_output_file(config.output_path, config, instance, {}, -1, -1);
+        auto instance = GraphIO::read_instance(config);
 
-    ILPSolver solver(config);
+        write_output_file(config.output_path, config, instance, {}, -1, -1);
 
-
-    auto t1 = steady_clock::now();
-
-    auto result = solver.solve(instance);
-
-    auto t2 = steady_clock::now();
-    auto solve_time = duration_cast<nanoseconds>(t2 - t1).count();
+        ILPSolver solver(config);
 
 
-    auto solutions = result.solutions;
-    std::sort(solutions.begin(), solutions.end());
+        auto t1 = steady_clock::now();
 
-    Cost solution_cost = -1;
-    if (!solutions.empty())
-        solution_cost = solutions[0].cost;
+        auto result = solver.solve(instance);
+
+        auto t2 = steady_clock::now();
+        auto solve_time = duration_cast<nanoseconds>(t2 - t1).count();
 
 
-    write_output_file(config.output_path, config, instance, solutions, solution_cost, solve_time, true);
+        auto solutions = result.solutions;
+        std::sort(solutions.begin(), solutions.end());
 
-    return 0;
+        Cost solution_cost = -1;
+        if (!solutions.empty())
+            solution_cost = solutions[0].cost;
+
+
+        write_output_file(config.output_path, config, instance, solutions, solution_cost, solve_time, true);
+
+    } catch (std::exception &e) {
+        std::cout << e.what() << "\n";
+        return EXIT_FAILURE;
+    } catch (GRBException &e) {
+        std::cout << e.getMessage() << "\n";
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
 }

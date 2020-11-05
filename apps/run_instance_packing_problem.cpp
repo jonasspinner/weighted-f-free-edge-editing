@@ -1,31 +1,29 @@
-//
-// Created by jonas on 06.04.20.
-//
-
-
 #include <boost/program_options.hpp>
 #include <iostream>
 
 #include "../src/graph/GraphIO.h"
-#include "../src/finder/finder_utils.h"
+// #include "../src/legacy/finder/finder_utils.h"
 
 
-std::vector<Subgraph> get_all_forbidden_subgraphs(const Graph &graph, Options::FSG fsg) {
-    auto finder = Finder::make(fsg);
+template <Options::FSG FSG>
+std::vector<SubgraphT<FSG>> get_all_forbidden_subgraphs(const Graph &graph) {
+    using Subgraph = SubgraphT<FSG>;
+    typename Subgraph::Finder finder;
     std::vector<Subgraph> result;
-    finder->find(graph, [&](Subgraph &&subgraph) {
-        result.push_back(std::move(subgraph));
+    finder.find(graph, [&](const Subgraph &subgraph) {
+        result.push_back(subgraph);
         return false;
     });
     return result;
 }
 
 
+template <Options::FSG FSG>
 std::pair<std::vector<VertexPair>, std::vector<Cost>>
-get_covered_edges_and_costs(const Graph &graph, const std::vector<Subgraph> &subgraphs, const VertexPairMap<Cost> &costs) {
+get_covered_edges_and_costs(const Graph &graph, const std::vector<SubgraphT<FSG>> &subgraphs, const VertexPairMap<Cost> &costs) {
     VertexPairMap<bool> covered(costs.size());
     for (const auto &subgraph : subgraphs) {
-        for (auto uv : subgraph.vertexPairs()) {
+        for (auto uv : subgraph.vertex_pairs()) {
             covered[uv] = true;
         }
     }
@@ -93,9 +91,13 @@ int main(int argc, char *argv[]) {
             os = &output_file;
         }
 
+        if (fsg != Options::FSG::C4P4) {
+            throw std::runtime_error("Only C4P4 currently supported.");
+        }
+
         auto instance = GraphIO::read_instance(input_path, multiplier, permutation);
 
-        auto forbidden_subgraphs = get_all_forbidden_subgraphs(instance.graph, fsg);
+        auto forbidden_subgraphs = get_all_forbidden_subgraphs<Options::FSG::C4P4>(instance.graph);
         auto[covered_edges, covered_edges_costs] =
             get_covered_edges_and_costs(instance.graph, forbidden_subgraphs, instance.costs);
 
