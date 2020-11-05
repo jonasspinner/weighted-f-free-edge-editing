@@ -1,7 +1,3 @@
-//
-// Created by jonas on 19.08.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_ILPSOLVER_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_ILPSOLVER_H
 
@@ -10,7 +6,6 @@
 
 #include <utility>
 
-#include "../finder/finder_utils.h"
 #include "Solver.h"
 #include "../Instance.h"
 #include "../Configuration.h"
@@ -20,10 +15,13 @@ class ILPSolver : public Solver {
 private:
     // constexpr static bool restrict_solution_by_k = false;
 
+    template <Options::FSG FSG>
     class FSGCallback : public GRBCallback {
     private:
+        using Subgraph = SubgraphT<Options::FSG::C4P4>;
+
         Graph m_graph;
-        std::unique_ptr<FinderI> m_finder;
+        Subgraph::Finder m_finder;
         const VertexPairMap<GRBVar> &m_vars;
         VertexPairMap<bool> m_edited;
 
@@ -32,7 +30,10 @@ private:
     public:
         FSGCallback(const Configuration &config, Graph graph, const VertexPairMap<GRBVar> &vars) :
             m_graph(std::move(graph)), m_vars(vars), m_edited(m_graph.size()), m_config(config) {
-            m_finder = Finder::make(m_config.forbidden_subgraphs);
+            static_assert(FSG == Options::FSG::C4P4, "Only C4P4 currently supported.");
+            if (config.forbidden_subgraphs != Options::FSG::C4P4) {
+                throw std::runtime_error("Only C4P4 currently supported.");
+            }
         };
 
     protected:
@@ -56,10 +57,10 @@ private:
 
                  if (m_config.sparse_constraints) {
                     VertexPairMap<bool> used_pairs(m_graph.size());
-                    m_finder->find(m_graph, [&](const Subgraph& subgraph) {
+                    m_finder.find(m_graph, [&](const Subgraph& subgraph) {
 
                         bool not_covered = false;
-                        for (VertexPair uv : subgraph.vertexPairs())
+                        for (VertexPair uv : subgraph.vertex_pairs())
                             if (!used_pairs[uv]) {
                                 not_covered = true;
                                 break;
@@ -67,7 +68,7 @@ private:
 
 
                         if (not_covered) {
-                            for (VertexPair uv : subgraph.vertexPairs())
+                            for (VertexPair uv : subgraph.vertex_pairs())
                                 used_pairs[uv] = true;
                             ++num_added;
                             addSubgraphConstraint(subgraph);
@@ -75,14 +76,14 @@ private:
                         return false;
                     });
                 } else if (m_config.single_constraints) {
-                     m_finder->find(m_graph, [&](const Subgraph& subgraph) {
+                     m_finder.find(m_graph, [&](const Subgraph& subgraph) {
                          addSubgraphConstraint(subgraph);
                          ++num_added;
                          return true;
                      });
                  } else {
                     // Find forbidden subgraphs in current solution and add additional constraints.
-                    m_finder->find(m_graph, [&](Subgraph &&subgraph) {
+                    m_finder.find(m_graph, [&](const Subgraph &subgraph) {
                         addSubgraphConstraint(subgraph);
                         ++num_added;
                         return false;
@@ -102,7 +103,7 @@ private:
     private:
         void addSubgraphConstraint(const Subgraph &subgraph) {
             GRBLinExpr pairs;
-            for (VertexPair uv : subgraph.vertexPairs()) {
+            for (VertexPair uv : subgraph.vertex_pairs()) {
                 if (m_edited[uv]) {
                     pairs += (1 - m_vars[uv]);
                 } else {
@@ -121,6 +122,9 @@ public:
     explicit ILPSolver(Configuration config) : m_config(std::move(config)), m_env() {
         if (m_config.sparse_constraints && m_config.single_constraints) {
             throw std::runtime_error("Either sparse or single constraint options allowed, not both.");
+        }
+        if (m_config.forbidden_subgraphs != Options::FSG::C4P4) {
+            throw std::runtime_error("Only C4P4 currently supported.");
         }
     }
 
@@ -150,10 +154,10 @@ public:
 
             model.setObjective(obj, GRB_MINIMIZE);
 
-            addConstraints(model, vars, graph);
+            addConstraints<Options::FSG::C4P4>(model, vars, graph);
 
             // Register callback
-            FSGCallback cb(m_config, graph.copy(), vars);
+            FSGCallback<Options::FSG::C4P4> cb(m_config, graph.copy(), vars);
             model.setCallback(&cb);
 
 
@@ -185,13 +189,15 @@ private:
         return value > 0.5;
     }
 
+    template <Options::FSG FSG>
     size_t addConstraints(GRBModel &model, const VertexPairMap<GRBVar> &vars, const Graph &graph) {
-        auto finder = Finder::make(m_config.forbidden_subgraphs);
+        using Subgraph = SubgraphT<FSG>;
+        typename Subgraph::Finder finder;
         size_t num_added = 0;
 
-        finder->find(graph, [&](const Subgraph& subgraph) {
+        finder.find(graph, [&](const Subgraph& subgraph) {
             GRBLinExpr expr;
-            for (VertexPair xy : subgraph.vertexPairs())
+            for (VertexPair xy : subgraph.vertex_pairs())
                 expr += vars[xy];
             model.addConstr(expr >= 1);
 

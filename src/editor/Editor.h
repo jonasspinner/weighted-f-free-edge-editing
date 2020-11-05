@@ -19,8 +19,6 @@
 
 #include "../consumer/SubgraphStats.h"
 
-#include "VertexPairPreMarker.h"
-
 
 class Editor {
 private:
@@ -37,10 +35,8 @@ private:
     std::vector<VertexPair> edits;
     bool m_found_solution;
 
-    // The idea was/is to mark all vertex pairs which editing cost is larger than the current available cost in advance
-    // for each recursion call. This could potentially increase the quality of packing based lower bounds as more vertex
-    // pairs are marked and therefore subgraphs which have these marked pairs are not considered adjacent.
-    VertexPairPreMarker m_ordered_vertex_pairs;
+    Cost m_initial_lower_bound = 0;
+    bool m_is_initialized = false;
 
     Statistics m_stats;
 
@@ -48,20 +44,20 @@ private:
 public:
     explicit Editor(Instance instance, Configuration config) :
             m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_edited(m_instance.graph.size()),
-            m_found_solution(false), m_ordered_vertex_pairs(m_instance.graph, m_instance.costs, m_consumers, m_marked),
-            m_config(std::move(config)) {
+            m_found_solution(false), m_config(std::move(config)) {
 
         switch (config.forbidden_subgraphs) {
             case Options::FSG::C4P4:
-                init_consumers<Options::FSG::C4P4>();
+                make_consumers<Options::FSG::C4P4>();
                 break;
             default:
                 throw std::runtime_error("Cannot initialize consumers for given set of forbidden subgraphs.");
         }
     }
 
+private:
     template<Options::FSG FSG>
-    void init_consumers() {
+    void make_consumers() {
         auto stats = std::make_unique<SubgraphStats<FSG>>(m_instance, m_marked);
         m_selector = selector::make<FSG>(m_config.selector, m_instance, m_marked, *stats);
         m_lower_bound = lower_bound::make<FSG>(m_config.lower_bound, m_instance, m_marked, *stats, m_config);
@@ -73,10 +69,22 @@ public:
         m_consumers.push_back(m_selector.get());
     }
 
-    [[nodiscard]] Cost initial_lower_bound() const {
-        auto k = std::numeric_limits<Cost>::max();
-        for (auto &c : m_consumers) c->initialize(k);
-        return m_lower_bound->calculate_lower_bound(k);
+    void initalize_consumers(Cost k) {
+        for (auto &c : m_consumers) {
+            c->initialize(k);
+        }
+        m_is_initialized = true;
+    }
+
+public:
+
+    [[nodiscard]] Cost initial_lower_bound() {
+        if (!m_is_initialized) {
+            auto k = std::numeric_limits<Cost>::max();
+            initalize_consumers(k);
+            m_initial_lower_bound = m_lower_bound->calculate_lower_bound(k);
+        }
+        return m_initial_lower_bound;
     }
 
     /**
@@ -101,7 +109,10 @@ public:
         m_stats = Statistics(-k / 2, k, 100);
         m_found_solution = false;
 
-        for (auto &c : m_consumers) c->initialize(k);
+        if (!m_is_initialized) {
+            initalize_consumers(k);
+        }
+
         switch (m_selector->recursion_type()) {
             case SelectorI::RecursionType::Subgraph:
                 edit_recursive_subgraph(k, result_cb2, prune_cb, call_cb);
@@ -130,17 +141,13 @@ private:
      */
     //template<typename ResultCallback, typename PrunedCallback>
     bool edit_recursive_subgraph(Cost k,
-                        const std::function<bool(const std::vector<VertexPair> &)> &result_cb,
-                        const std::function<void(Cost, Cost)> &prune_cb,
-                        const std::function<bool(Cost)> &call_cb) {
+                                 const std::function<bool(const std::vector<VertexPair> &)> &result_cb,
+                                 const std::function<void(Cost, Cost)> &prune_cb,
+                                 const std::function<bool(Cost)> &call_cb) {
         const VertexPairMap<Cost> &costs = m_instance.costs;
 
         m_stats.calls(k)++;
         if (call_cb(k)) return false;
-
-        PreMarkerGuard guard(m_ordered_vertex_pairs);
-        if (m_config.pre_mark_vertex_pairs)
-            guard.mark(k);
 
         auto lb = m_lower_bound->calculate_lower_bound(k);
         if (k < lb) {
@@ -200,17 +207,13 @@ private:
      */
     //template<typename ResultCallback, typename PrunedCallback>
     bool edit_recursive_vertex_pair(Cost k,
-                        const std::function<bool(const std::vector<VertexPair> &)> &result_cb,
-                        const std::function<void(Cost, Cost)> &prune_cb,
-                        const std::function<bool(Cost)> &call_cb) {
+                                    const std::function<bool(const std::vector<VertexPair> &)> &result_cb,
+                                    const std::function<void(Cost, Cost)> &prune_cb,
+                                    const std::function<bool(Cost)> &call_cb) {
         const VertexPairMap<Cost> &costs = m_instance.costs;
 
         m_stats.calls(k)++;
         if (call_cb(k)) return false;
-
-        PreMarkerGuard guard(m_ordered_vertex_pairs);
-        if (m_config.pre_mark_vertex_pairs)
-            guard.mark(k);
 
         auto lb = m_lower_bound->calculate_lower_bound(k);
         if (k < lb) {
