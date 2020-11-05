@@ -1,5 +1,6 @@
-cmake-build-release/
-cmake-build-debug/
+experiments/
+
+# Snakemake
 .snakemake/
 
 # Python
@@ -11,7 +12,7 @@ venv/
 # Clion
 .idea/
 cmake-build-debug/
-
+cmake-build-release/
 
 # Prerequisites
 *.d
