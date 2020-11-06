@@ -322,10 +322,12 @@ namespace dynamic_bitset {
         }
 
         [[nodiscard]] reference operator[](size_type pos) {
+            assert(pos < m_num_bits);
             return reference(m_blocks[block_index(pos)], bit_index(pos));
         }
 
         [[nodiscard]] const_reference operator[](size_type pos) const {
+            assert(pos < m_num_bits);
             return test(pos);
         }
 
@@ -469,20 +471,25 @@ namespace dynamic_bitset {
                 m_bitset(std::addressof(bitset)) {
             const auto &blocks = m_bitset->m_blocks;
             const auto num_blocks = blocks.size();
+            const auto num_bits = m_bitset->size();
 
             size_type block_idx = 0;
             while (block_idx < num_blocks && (blocks[block_idx] == 0))
                 ++block_idx;
 
             m_pos = block_idx >= num_blocks
-                    ? m_bitset->size()
+                    ? num_bits
                     : block_idx * Bitset::bits_per_block + static_cast<size_type>(detail::ctz(blocks[block_idx]));
+            assert(m_pos <= num_bits);
         };
 
         constexpr IndexIterator(const Bitset &bitset, size_type pos) noexcept:
-                m_bitset(std::addressof(bitset)), m_pos(pos) {};
+                m_bitset(std::addressof(bitset)), m_pos(pos) {
+            assert(m_pos <= m_bitset->size());
+        };
 
         [[nodiscard]] constexpr value_type operator*() const noexcept {
+            assert(m_pos < m_bitset->size());
             return m_pos;
         }
 
@@ -490,15 +497,20 @@ namespace dynamic_bitset {
             assert(m_pos < m_bitset->size());
             const auto &blocks = m_bitset->m_blocks;
             const auto num_blocks = blocks.size();
+            const auto num_bits = m_bitset->size();
 
             ++m_pos;
+            if (m_pos == num_bits)
+                return *this;
 
             auto block_idx = Bitset::block_index(m_pos);
             const auto idx = Bitset::bit_index(m_pos);
 
+            assert(block_idx < num_blocks);
             const auto current_block_rest = blocks[block_idx] >> idx;
             if (current_block_rest != 0) {
                 m_pos += static_cast<size_type>(detail::ctz(current_block_rest));
+                assert(m_pos <= num_bits);
                 return *this;
             }
 
@@ -507,9 +519,10 @@ namespace dynamic_bitset {
                 ++block_idx;
 
             m_pos = block_idx >= num_blocks
-                    ? m_bitset->size()
+                    ? num_bits
                     : block_idx * Bitset::bits_per_block + static_cast<size_type>(detail::ctz(blocks[block_idx]));
 
+            assert(m_pos <= num_bits);
             return *this;
         }
 
