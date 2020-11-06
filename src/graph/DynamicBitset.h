@@ -144,7 +144,7 @@ namespace dynamic_bitset {
 
     private:
         size_type m_num_bits;
-        std::vector<Block> m_bits;
+        std::vector<Block> m_blocks;
 
     public:
 
@@ -226,7 +226,7 @@ namespace dynamic_bitset {
         constexpr DynamicBitset() noexcept: m_num_bits(0) {}
 
         explicit DynamicBitset(size_type num_bits) :
-                m_num_bits(num_bits), m_bits(num_bits ? block_index(num_bits - 1) + 1 : 0) {}
+                m_num_bits(num_bits), m_blocks(num_bits ? block_index(num_bits - 1) + 1 : 0) {}
 
         DynamicBitset(const DynamicBitset &b) = default;
 
@@ -236,7 +236,7 @@ namespace dynamic_bitset {
 
         void swap(DynamicBitset &other) {
             using std::swap;
-            swap(m_bits, other.m_bits);
+            swap(m_blocks, other.m_blocks);
             swap(m_num_bits, other.m_num_bits);
         }
 
@@ -247,82 +247,82 @@ namespace dynamic_bitset {
         DynamicBitset &operator=(DynamicBitset &&src) noexcept = default;
 
         void clear() {
-            m_bits.clear();
+            m_blocks.clear();
             m_num_bits = 0;
         }
 
         DynamicBitset &operator&=(const DynamicBitset &rhs) {
             assert(size() == rhs.size());
             for (size_type i = 0; i < num_blocks(); ++i)
-                m_bits[i] &= rhs.m_bits[i];
+                m_blocks[i] &= rhs.m_blocks[i];
             return *this;
         }
 
         DynamicBitset &operator|=(const DynamicBitset &rhs) {
             assert(size() == rhs.size());
             for (size_type i = 0; i < num_blocks(); ++i)
-                m_bits[i] |= rhs.m_bits[i];
+                m_blocks[i] |= rhs.m_blocks[i];
             return *this;
         }
 
         DynamicBitset &operator^=(const DynamicBitset &rhs) {
             assert(size() == rhs.size());
             for (size_type i = 0; i < num_blocks(); ++i)
-                m_bits[i] ^= rhs.m_bits[i];
+                m_blocks[i] ^= rhs.m_blocks[i];
             return *this;
         }
 
         DynamicBitset &operator-=(const DynamicBitset &rhs) {
             assert(size() == rhs.size());
             for (size_type i = 0; i < num_blocks(); ++i)
-                m_bits[i] &= ~rhs.m_bits[i];
+                m_blocks[i] &= ~rhs.m_blocks[i];
             return *this;
         }
 
 
         DynamicBitset &set() {
-            std::fill(m_bits.begin(), m_bits.end(), ~static_cast<Block>(0));
+            std::fill(m_blocks.begin(), m_blocks.end(), ~static_cast<Block>(0));
             zero_unused_bits();
             return *this;
         }
 
         DynamicBitset &set(size_type pos) {
             assert(pos < m_num_bits);
-            m_bits[block_index(pos)] |= bit_mask(pos);
+            m_blocks[block_index(pos)] |= bit_mask(pos);
             return *this;
         }
 
         DynamicBitset &reset() {
-            std::fill(m_bits.begin(), m_bits.end(), Block(0));
+            std::fill(m_blocks.begin(), m_blocks.end(), Block(0));
             return *this;
         }
 
         DynamicBitset &reset(size_type pos) {
             assert(pos < m_num_bits);
-            m_bits[block_index(pos)] &= ~bit_mask(pos);
+            m_blocks[block_index(pos)] &= ~bit_mask(pos);
             return *this;
         }
 
         DynamicBitset &flip() {
             for (size_type i = 0; i < num_blocks(); ++i)
-                m_bits[i] = ~m_bits[i];
+                m_blocks[i] = ~m_blocks[i];
             zero_unused_bits();
             return *this;
         }
 
         DynamicBitset &flip(size_type pos) {
             assert(pos < m_num_bits);
-            m_bits[block_index(pos)] ^= bit_mask(pos);
+            m_blocks[block_index(pos)] ^= bit_mask(pos);
             return *this;
         }
 
         [[nodiscard]] bool test(size_type pos) const {
             assert(pos < m_num_bits);
-            return (m_bits[block_index(pos)] & bit_mask(pos)) != 0;
+            return (m_blocks[block_index(pos)] & bit_mask(pos)) != 0;
         }
 
         [[nodiscard]] reference operator[](size_type pos) {
-            return reference(m_bits[block_index(pos)], bit_index(pos));
+            return reference(m_blocks[block_index(pos)], bit_index(pos));
         }
 
         [[nodiscard]] const_reference operator[](size_type pos) const {
@@ -334,7 +334,7 @@ namespace dynamic_bitset {
         }
 
         [[nodiscard]] constexpr size_type num_blocks() const noexcept {
-            return m_bits.size();
+            return m_blocks.size();
         }
 
         [[nodiscard]] constexpr bool empty() const noexcept {
@@ -344,7 +344,7 @@ namespace dynamic_bitset {
         [[nodiscard]] size_type count() const noexcept {
             size_type count = 0;
             for (size_type i = 0; i < num_blocks(); ++i)
-                count += static_cast<size_type>(detail::popcount(m_bits[i]));
+                count += static_cast<size_type>(detail::popcount(m_blocks[i]));
             return count;
         }
 
@@ -361,7 +361,7 @@ namespace dynamic_bitset {
             const auto blk = block_index(pos);
             const auto idx = bit_index(pos);
 
-            const Block fore = m_bits[blk] >> idx;
+            const Block fore = m_blocks[blk] >> idx;
 
             return fore
                    ? pos + static_cast<size_type>(detail::ctz(fore))
@@ -371,13 +371,13 @@ namespace dynamic_bitset {
     private:
         [[nodiscard]] size_type find_from(size_type first_block) const noexcept {
             size_type i = first_block;
-            while (i < m_bits.size() && !m_bits[i])
+            while (i < m_blocks.size() && !m_blocks[i])
                 ++i;
 
-            if (i >= m_bits.size())
+            if (i >= m_blocks.size())
                 return npos;
 
-            return i * bits_per_block + static_cast<size_type>(detail::ctz(m_bits[i]));
+            return i * bits_per_block + static_cast<size_type>(detail::ctz(m_blocks[i]));
         }
 
         void zero_unused_bits() {
@@ -397,7 +397,7 @@ namespace dynamic_bitset {
                 if ((highest_block() & mask) != 0)
                     return false;
             }
-            if (m_bits.size() > m_bits.capacity() || num_blocks() != calc_num_blocks(size()))
+            if (m_blocks.size() > m_blocks.capacity() || num_blocks() != calc_num_blocks(size()))
                 return false;
 
             return true;
@@ -426,12 +426,12 @@ namespace dynamic_bitset {
 
         [[nodiscard]] Block &highest_block() {
             assert(size() > 0 && num_blocks() > 0);
-            return m_bits.back();
+            return m_blocks.back();
         }
 
         [[nodiscard]] const Block &highest_block() const {
             assert(size() > 0 && num_blocks() > 0);
-            return m_bits.back();
+            return m_blocks.back();
         }
 
         friend class IndexIterator<Block>;
@@ -454,8 +454,7 @@ namespace dynamic_bitset {
 
     private:
         const Bitset *m_bitset{nullptr};
-        typename Bitset::size_type m_pos{};
-        Block m_current_block{};
+        size_type m_pos{};
 
     public:
         using value_type = typename Bitset::size_type;
@@ -468,23 +467,16 @@ namespace dynamic_bitset {
 
         [[maybe_unused]] constexpr explicit IndexIterator(const Bitset &bitset) noexcept:
                 m_bitset(std::addressof(bitset)) {
-            const auto &bits = m_bitset->m_bits;
-            const auto num_blocks = bits.size();
+            const auto &blocks = m_bitset->m_blocks;
+            const auto num_blocks = blocks.size();
 
-            size_type i = 0;
-            while (i < num_blocks && !bits[i]) {
-                ++i;
-            }
-            if (i == num_blocks) {
-                m_pos = m_bitset->size();
-                return;
-            }
-            m_current_block = bits[i];
-            assert(m_current_block);
+            size_type block_idx = 0;
+            while (block_idx < num_blocks && (blocks[block_idx] == 0))
+                ++block_idx;
 
-            const auto bit_pos = static_cast<size_type>(detail::ctz(m_current_block));
-            m_pos = i * Bitset::bits_per_block + bit_pos;
-            m_current_block >>= bit_pos + 1;
+            m_pos = block_idx >= num_blocks
+                    ? m_bitset->size()
+                    : block_idx * Bitset::bits_per_block + static_cast<size_type>(detail::ctz(blocks[block_idx]));
         };
 
         constexpr IndexIterator(const Bitset &bitset, size_type pos) noexcept:
@@ -496,26 +488,28 @@ namespace dynamic_bitset {
 
         IndexIterator &operator++() noexcept {
             assert(m_pos < m_bitset->size());
-            const auto &bits = m_bitset->m_bits;
-            const auto num_blocks = bits.size();
+            const auto &blocks = m_bitset->m_blocks;
+            const auto num_blocks = blocks.size();
 
-            if (!m_current_block) {
-                auto i = Bitset::block_index(m_pos) + 1;
-                while (i < num_blocks && !bits[i]) {
-                    ++i;
-                }
-                if (i == num_blocks) {
-                    m_pos = m_bitset->m_num_bits;
-                    return *this;
-                }
-                m_current_block = bits[i];
-                m_pos = i * Bitset::bits_per_block - 1;
+            ++m_pos;
+
+            auto block_idx = Bitset::block_index(m_pos);
+            const auto idx = Bitset::bit_index(m_pos);
+
+            const auto current_block_rest = blocks[block_idx] >> idx;
+            if (current_block_rest != 0) {
+                m_pos += static_cast<size_type>(detail::ctz(current_block_rest));
+                return *this;
             }
-            assert(m_current_block);
 
-            const auto bit_shift = static_cast<size_type>(detail::ctz(m_current_block)) + 1;
-            m_pos += bit_shift;
-            m_current_block >>= bit_shift;
+            ++block_idx;
+            while (block_idx < num_blocks && (blocks[block_idx] == 0))
+                ++block_idx;
+
+            m_pos = block_idx >= num_blocks
+                    ? m_bitset->size()
+                    : block_idx * Bitset::bits_per_block + static_cast<size_type>(detail::ctz(blocks[block_idx]));
+
             return *this;
         }
 

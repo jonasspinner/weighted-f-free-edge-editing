@@ -296,7 +296,7 @@ public:
 
             constexpr Iterator() noexcept = default;
 
-            explicit Iterator(const AdjRow &row) noexcept: m_it(row) {}
+            explicit constexpr Iterator(const AdjRow &row) noexcept: m_it(row) {}
 
             struct end_tag {
             };
@@ -342,12 +342,13 @@ public:
 
         friend class Graph;
 
+    public:
         constexpr explicit RowVertices(const AdjRow &row) noexcept: m_row(row) {}
 
     public:
         using const_iterator = Iterator;
 
-        [[nodiscard]] const_iterator begin() const noexcept {
+        [[nodiscard]] constexpr const_iterator begin() const noexcept {
             return Iterator{m_row};
         }
 

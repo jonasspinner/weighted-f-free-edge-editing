@@ -3,7 +3,7 @@
 #include "../../src/tests/GraphTests.h"
 #include "../../src/tests/EditorTests.h"
 #include "../../src/tests/PermutationTest.h"
-
+#include "../../src/tests/AdjacencyTests.h"
 
 int main(int argc, char* argv[]) {
     namespace po = boost::program_options;
@@ -28,6 +28,7 @@ int main(int argc, char* argv[]) {
     GraphTests(seed).run();
     EditorTests(seed).run();
     PermutationTest(seed).run();
+    AdjacencyTests().run();
 
     return 0;
 }
