@@ -30,7 +30,8 @@ namespace lower_bound {
         bool m_shall_solve;
         std::vector<std::vector<GRBConstr>> m_constraint_stack;
 
-        Configuration m_config;
+        int m_verbosity;
+        int m_timelimit;
 
         constexpr static bool variable_means_edit = false;
 
@@ -49,7 +50,7 @@ namespace lower_bound {
          *
          *      \forall u, v \in V: x_{uv} = 1 \iff uv \in E'
          */
-        LPRelaxation(const Instance &instance, const VertexPairMap<bool> &forbidden, Configuration config) :
+        LPRelaxation(const Instance &instance, const VertexPairMap<bool> &forbidden, int verbosity, int timelimit) :
                 m_graph(instance.graph),
                 m_costs(instance.costs),
                 m_marked(forbidden),
@@ -57,7 +58,8 @@ namespace lower_bound {
                 m_variables(m_graph.size()),
                 k_initial(0),
                 m_shall_solve(true),
-                m_config(std::move(config)),
+                m_verbosity(verbosity),
+                m_timelimit(timelimit),
                 m_edited(m_costs.size(), false),
                 m_empty_graph(m_graph.size()) {
             static_assert(SetOfForbiddenSubgraphs == Options::FSG::C4P4);
@@ -74,9 +76,9 @@ namespace lower_bound {
                 m_model = std::make_unique<GRBModel>(*m_env);
                 m_model->set(GRB_IntParam_Threads, 1);
                 m_model->getEnv().set(GRB_IntParam_OutputFlag, 1);
-                m_model->getEnv().set(GRB_IntParam_LogToConsole, (m_config.verbosity > 0) ? 1 : 0);
-                if (m_config.timelimit >= 0)
-                    m_model->set(GRB_DoubleParam_TimeLimit, m_config.timelimit);
+                m_model->getEnv().set(GRB_IntParam_LogToConsole, (m_verbosity > 0) ? 1 : 0);
+                if (m_timelimit >= 0)
+                    m_model->set(GRB_DoubleParam_TimeLimit, m_timelimit);
 
                 GRBLinExpr objective = 0;
                 for (VertexPair uv : m_graph.vertexPairs()) {
@@ -250,7 +252,7 @@ namespace lower_bound {
             Cost result = static_cast<Cost>(std::ceil(found_objective));
 
             if (result - found_objective > 0.99) {
-                if (m_config.verbosity)
+                if (m_verbosity)
                     std::cout << "found_objective: " << found_objective << " rounded result: " << result << std::endl;
                 result = static_cast<Cost>(std::floor(found_objective));
             }
@@ -269,7 +271,7 @@ namespace lower_bound {
             Cost sum = 0;
             for (VertexPair uv : edits)
                 sum += m_costs[uv];
-            if (m_config.verbosity) {
+            if (m_verbosity) {
                 std::cout << "lower bound ";
                 for (VertexPair uv : edits)
                     std::cout << uv << " " << m_costs[uv] << "  ";
@@ -342,7 +344,7 @@ namespace lower_bound {
                 return false;
             });
 
-            if (m_config.verbosity)
+            if (m_verbosity)
                 std::cout << "added " << num_found << " constraints" << std::endl;
             return num_found;
         }

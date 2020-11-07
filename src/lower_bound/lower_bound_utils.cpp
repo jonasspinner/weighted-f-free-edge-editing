@@ -51,7 +51,7 @@ namespace lower_bound {
                 return std::make_unique<SortedGreedy<FSG>>(instance, marked);
             case LB::LPRelaxation:
 #ifdef GUROBI_FOUND
-                return std::make_unique<LPRelaxation<FSG>>(instance, marked, std::move(config));
+                return std::make_unique<LPRelaxation<FSG>>(instance, marked, config.verbosity, config.timelimit);
 #else
                 throw std::runtime_error("gurobi has to be installed to use LB::LinearProgram.");
 #endif
@@ -63,7 +63,7 @@ namespace lower_bound {
 #endif
             case LB::LSSWZ_MWIS_Solver:
 #ifdef LSSWZ_MWIS_FOUND
-                return std::make_unique<LSSWZ_MWIS_Solver<FSG>>(instance, marked, std::move(config));
+                return std::make_unique<LSSWZ_MWIS_Solver<FSG>>(instance, marked, config.verbosity);
 #else
                 throw std::runtime_error("lsswz_mwis has to be installed to use LB::LSSWZ_MWIS_Solver.");
 #endif

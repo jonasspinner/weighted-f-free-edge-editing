@@ -21,16 +21,15 @@ namespace lower_bound {
         const VertexPairMap<Cost> &m_costs;
         const VertexPairMap<bool> &m_marked;
 
-        Configuration m_config;
+        int m_verbosity;
 
         double time_limit = 10;
         bool disable_reduction = false;
 
         Finder finder;
     public:
-        LSSWZ_MWIS_Solver(const Instance &instance, const VertexPairMap<bool> &marked, Configuration config) :
-                m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
-                m_config(std::move(config)) {}
+        LSSWZ_MWIS_Solver(const Instance &instance, const VertexPairMap<bool> &marked, int verbosity) :
+                m_graph(instance.graph), m_costs(instance.costs), m_marked(marked), m_verbosity(verbosity) {}
 
         Cost calculate_lower_bound(Cost k) override;
 

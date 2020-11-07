@@ -1,8 +1,3 @@
-//
-// Created by jonas on 06.02.20.
-//
-
-
 #include <fstream>
 #include "LSSWZ_MWIS_Solver.h"
 #include "../version.h"
@@ -15,7 +10,7 @@ namespace lower_bound {
 
         auto instance = build_instance(finder, m_graph, m_marked, m_costs);
         if (!instance.has_value()) {
-            if (m_config.verbosity > 0)
+            if (m_verbosity > 0)
                 std::cout << "lsswz solve    n: - m: - cost: infty  # unsolvable\n";
             return invalid_cost;
         }
@@ -37,22 +32,14 @@ namespace lower_bound {
                 cost += vertex_weights[u];
             }
 
-            if (m_config.verbosity > 0)
+            if (m_verbosity > 0)
                 std::cout << "lsswz solve    n: " << graph.size() << " m: " << m << " cost: " << cost
                           << "  # early exit\n";
             return cost;
         }
 
 
-        auto path = m_config.input_path;
-        auto pos = path.find_last_of('/');
-        std::string tmp_file_prefix = TMP_DIR + "/";
-        if (pos == std::string::npos) {
-            tmp_file_prefix += path;
-        } else {
-            tmp_file_prefix += path.substr(pos + 1);
-        }
-        tmp_file_prefix += ".tmp";
+        std::string tmp_file_prefix = TMP_DIR + "/mwis.tmp";
 
         auto instance_filename = tmp_file_prefix + ".instance";
         auto output_filename = tmp_file_prefix + ".output";
@@ -95,7 +82,7 @@ namespace lower_bound {
         Cost cost = 0;
         do {
             std::getline(output, line);
-            if (m_config.verbosity > 1 && !line.empty()) {
+            if (m_verbosity > 1 && !line.empty()) {
                 std::cout << "    " << line << "\n";
             }
             std::string prefix("%MIS_weight ");
@@ -109,7 +96,7 @@ namespace lower_bound {
         std::remove(instance_filename.c_str());
         std::remove(output_filename.c_str());
 
-        if (m_config.verbosity > 0)
+        if (m_verbosity > 0)
             std::cout << "lsswz solve    n: " << graph.size() << " m: " << m << " cost: " << cost << "\n";
 
         return cost;
