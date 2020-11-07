@@ -65,7 +65,7 @@ namespace lower_bound {
         std::vector<int> weights;
 
         // The set of subgraphs which share a vertex pair form a clique in the MWIS instance.
-        auto unsolvable = finder.find(m_graph, [&](Subgraph subgraph) {
+        auto exit_state = finder.find(m_graph, [&](Subgraph subgraph) {
             const auto index = weights.size();
             for (auto uv : subgraph.non_converting_edits()) {
                 cliques[uv].push_back(index);
@@ -74,10 +74,10 @@ namespace lower_bound {
             weights.push_back(cost);
             // If all vertex pairs are marked then the cost is invalid and the subgraph cannot be destroyed because no
             // vertex pairs can be edited.
-            return cost == invalid_cost;
+            return subgraph_iterators::break_if(cost == invalid_cost);
         });
 
-        if (unsolvable)
+        if (exit_state == subgraph_iterators::IterationExit::Break)
             return {};
 
         const auto n = weights.size();

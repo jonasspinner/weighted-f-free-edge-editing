@@ -65,7 +65,7 @@ namespace selector {
                             best_pairs = std::move(current_pairs);
                     }
 
-                    return false;
+                    return subgraph_iterators::IterationControl::Continue;
                 });
 
                 m_used.setEdge(uv);
@@ -80,7 +80,7 @@ namespace selector {
 
 #ifndef NDEBUG
             if (problem.solved) {
-                assert(!m_finder.find(m_graph, [](Subgraph) { return true; }));
+                assert(subgraph_iterators::IterationExit::Normal == m_finder.find(m_graph, [](Subgraph) { return subgraph_iterators::IterationControl::Break; }));
             }
 #endif
 

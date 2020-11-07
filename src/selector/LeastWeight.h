@@ -39,7 +39,7 @@ namespace selector {
                     min_subgraph_cost = subgraph_cost;
                     min_subgraph = std::move(subgraph);
                 }
-                return unsolveable;
+                return subgraph_iterators::break_if(unsolveable);
             });
 
             if (unsolveable)

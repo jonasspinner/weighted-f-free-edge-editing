@@ -25,6 +25,10 @@ class WeightedPackingLocalSearch final : public LowerBoundI {
             return m_subgraphs_in_packing;
         }
 
+        [[nodiscard]] inline auto &inserted_cost(Subgraph &subgraph) {
+            return m_subgraphs_in_packing[subgraph];
+        }
+
         [[nodiscard]] inline const auto &subgraphs() const {
             return m_subgraphs_in_packing;
         }
@@ -206,7 +210,7 @@ public:
             m_packing.add_to_potential(subgraph, cost);
 
             // Commit insertions to parent_state();
-            parent.subgraphs()[subgraph] += cost;
+            parent.inserted_cost(subgraph) += cost;
         }
 
 #ifndef NDEBUG
@@ -235,7 +239,7 @@ public:
                 [&](const Subgraph &subgraph) noexcept {
             assert(subgraph.contains(uv));
             incident_subgraphs.push_back(std::move(subgraph));
-            return false;
+            return subgraph_iterators::IterationControl::Continue;
         });
 
         bool unsolvable = false;
@@ -587,15 +591,15 @@ public:
 
         auto comp = [](const auto &lhs, const auto &rhs) { return lhs.second < rhs.second; };
 
-        bool unsolvable = m_finder.find(m_graph, m_packing.depleted_graph(), [&](const Subgraph &subgraph) {
+        auto exit_state = m_finder.find(m_graph, m_packing.depleted_graph(), [&](const Subgraph &subgraph) {
             Cost initial_min_cost = m_packing.calculate_min_cost(subgraph);
 
             subgraph_heap.emplace_back(subgraph, initial_min_cost);
 
-            return initial_min_cost > k;
+            return subgraph_iterators::break_if(initial_min_cost > k);
         });
 
-        if (unsolvable) {
+        if (exit_state == subgraph_iterators::IterationExit::Break) {
             state.set_unsolvable();
             return;
         }
@@ -650,10 +654,9 @@ public:
         removed_subgraphs.emplace_back(x, x_cost);
 
 #ifndef NDEBUG
-        m_finder->for_all_conversionless_edits(x, [&](auto uv) {
+        for (auto uv : x.non_converting_edits()) {
             assert(!m_packing.is_depleted(uv));
-            return false;
-        });
+        }
 
         VertexPairMap<Cost> potential_copy(m_graph.size());
         for (auto uv : m_graph.vertexPairs())

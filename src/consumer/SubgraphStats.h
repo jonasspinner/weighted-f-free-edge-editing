@@ -48,7 +48,7 @@ public:
 
         m_finder.find(m_graph, [&](Subgraph subgraph) {
             register_subgraph(subgraph);
-            return false;
+            return subgraph_iterators::IterationControl::Continue;
         });
 
         verify();
@@ -59,7 +59,7 @@ public:
         verify();
         m_finder.find_near(uv, m_graph, m_empty_graph, [&](Subgraph subgraph) {
             remove_subgraph(subgraph);
-            return false;
+            return subgraph_iterators::IterationControl::Continue;
         });
         assert(subgraph_count_per_vertex_pair[uv] == 0);
     }
@@ -67,7 +67,7 @@ public:
     void register_near_subgraphs(VertexPair uv) {
         m_finder.find_near(uv, m_graph, m_empty_graph, [&](Subgraph subgraph) {
             register_subgraph(subgraph);
-            return false;
+            return subgraph_iterators::IterationControl::Continue;
         });
         verify();
         assert(subgraph_count_per_vertex_pair[uv] == 0);
@@ -137,7 +137,7 @@ private:
                     debug_sg_per_vertex_pair[uv]++;
                 }
             }
-            return false;
+            return subgraph_iterators::IterationControl::Continue;
         });
 
         assert(debug_sg_count == subgraph_count);

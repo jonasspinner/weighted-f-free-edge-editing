@@ -7,13 +7,14 @@
 #include "IndexedVertexPairRange.h"
 
 
-// Forward declaration.
-class CenterC4P4Finder;
-
+namespace subgraph_iterators {
+    // Forward declaration.
+    class CenterC4P4Finder;
+}
 
 template<>
 class SubgraphT<Options::FSG::C4P4> {
-    friend class CenterC4P4Finder;
+    friend class subgraph_iterators::CenterC4P4Finder;
 
     friend struct std::hash<SubgraphT<Options::FSG::C4P4>>;
 
@@ -34,7 +35,7 @@ class SubgraphT<Options::FSG::C4P4> {
     }
 
 public:
-    using Finder = CenterC4P4Finder;
+    using Finder = subgraph_iterators::CenterC4P4Finder;
 
     static constexpr auto C4(const Vertices &vertices) noexcept {
         return SubgraphT{Type::C4, vertices};
@@ -166,6 +167,7 @@ struct std::hash<SubgraphT<Options::FSG::C4P4>> {
     }
 };
 
+namespace subgraph_iterators {
 
 class CenterC4P4Finder {
     /**
@@ -205,20 +207,10 @@ class CenterC4P4Finder {
 public:
     using Subgraph = SubgraphT<Options::FSG::C4P4>;
 
-    enum class Control : bool {
-        Continue = 0,
-        Break = 1,
-    };
-
-    enum class ExitState : bool {
-        Full = 0,
-        EarlyExit = 1,
-    };
-
     template<class Callback>
-    bool find(const Graph &graph, Callback callback) {
-        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph &>,
-                      "Callback must have bool(const Subgraph &) signature.");
+    IterationExit find(const Graph &graph, Callback callback) {
+        static_assert(std::is_invocable_r_v<IterationControl, Callback, const Subgraph &>,
+                      "Callback must have IterationControl(const Subgraph &) signature.");
 
         for (auto[u, v] : graph.edges()) {
             init(A, u, v, graph);
@@ -226,22 +218,22 @@ public:
             for (auto a : Graph::iterate(A)) {
                 for (auto b : Graph::iterate(B)) {
                     if (graph.hasEdge({a, b})) {
-                        if (callback(Subgraph::C4({a, u, v, b})))
-                            return true;
+                        if (callback(Subgraph::C4({a, u, v, b})) == IterationControl::Break)
+                            return IterationExit::Break;
                     } else {
-                        if (callback(Subgraph::P4({a, u, v, b})))
-                            return true;
+                        if (callback(Subgraph::P4({a, u, v, b})) == IterationControl::Break)
+                            return IterationExit::Break;
                     }
                 }
             }
         }
-        return false;
+        return IterationExit::Normal;
     }
 
     template<class Callback>
-    bool find(const Graph &graph, const Graph &forbidden_graph, Callback callback) {
-        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph &>,
-                      "Callback must have bool(const Subgraph &) signature.");
+    IterationExit find(const Graph &graph, const Graph &forbidden_graph, Callback callback) {
+        static_assert(std::is_invocable_r_v<IterationControl, Callback, const Subgraph &>,
+                      "Callback must have IterationControl(const Subgraph &) signature.");
 
         for (auto uv : graph.edges()) {
             if (forbidden_graph.hasEdge(uv))
@@ -254,23 +246,24 @@ public:
                     // ab is allowed to be forbidden
                     if (graph.hasEdge({a, b})) {
                         assert(Subgraph::is_valid_C4(graph, forbidden_graph, {a, u, v, b}));
-                        if (callback(Subgraph::C4({a, u, v, b})))
-                            return true;
+                        if (callback(Subgraph::C4({a, u, v, b})) == IterationControl::Break)
+                            return IterationExit::Break;
                     } else {
                         assert(Subgraph::is_valid_P4(graph, forbidden_graph, {a, u, v, b}));
-                        if (callback(Subgraph::P4({a, u, v, b})))
-                            return true;
+                        if (callback(Subgraph::P4({a, u, v, b})) == IterationControl::Break)
+                            return IterationExit::Break;
                     }
                 }
             }
         }
-        return false;
+        return IterationExit::Normal;
     }
 
     template<class Callback>
-    bool find_near(VertexPair uv, const Graph &graph, const Graph &forbidden_graph, Callback callback) {
-        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph &>,
-                      "Callback must have bool(const Subgraph &) signature.");
+    IterationExit find_near(VertexPair uv, const Graph &graph, const Graph &forbidden_graph, Callback callback) {
+        static_assert(std::is_invocable_r_v<IterationControl, Callback, const Subgraph &>,
+                      "Callback must have IterationControl(const Subgraph &) signature.");
+
         const auto&[u, v] = uv;
 
         auto ensure_direction = [](auto &vertices) {
@@ -293,20 +286,20 @@ public:
                 for (auto b : Graph::iterate(B)) {
                     if (graph.hasEdge({a, b})) {
                         assert(Subgraph::is_valid_C4(graph, forbidden_graph, {a, u, v, b}));
-                        if (callback(Subgraph::C4({a, u, v, b})))
-                            return true;
+                        if (callback(Subgraph::C4({a, u, v, b})) == IterationControl::Break)
+                            return IterationExit::Break;
 
                         if (!forbidden_graph.hasEdge({a, b})) {
                             Subgraph::Vertices vertices{u, a, b, v};
                             ensure_direction(vertices);
                             assert(Subgraph::is_valid_C4(graph, forbidden_graph, vertices));
-                            if (callback(Subgraph::C4(vertices)))
-                                return true;
+                            if (callback(Subgraph::C4(vertices)) == IterationControl::Break)
+                                return IterationExit::Break;
                         }
                     } else {
                         assert(Subgraph::is_valid_P4(graph, forbidden_graph, {a, u, v, b}));
-                        if (callback(Subgraph::P4({a, u, v, b})))
-                            return true;
+                        if (callback(Subgraph::P4({a, u, v, b})) == IterationControl::Break)
+                            return IterationExit::Break;
                     }
                 }
 
@@ -316,8 +309,8 @@ public:
                     ensure_direction(vertices);
                     if (graph.hasEdge({c, v})) {
                         assert(Subgraph::is_valid_C4(graph, forbidden_graph, vertices));
-                        if (callback(Subgraph::C4(vertices)))
-                            return true;
+                        if (callback(Subgraph::C4(vertices)) == IterationControl::Break)
+                            return IterationExit::Break;
                     } else {
 #ifndef NDEBUG
                         auto[v0, v1, v2, v3] = vertices;
@@ -327,8 +320,8 @@ public:
                         assert(!f0); assert(!f1);              assert(!f3); assert(!f4); assert(!f5);
 #endif
                         assert(Subgraph::is_valid_P4(graph, forbidden_graph, vertices));
-                        if (callback(Subgraph::P4(vertices)))
-                            return true;
+                        if (callback(Subgraph::P4(vertices)) == IterationControl::Break)
+                            return IterationExit::Break;
                     }
                 }
             }
@@ -340,8 +333,8 @@ public:
                     ensure_direction(vertices);
                     if (graph.hasEdge({c, u})) {
                         assert(Subgraph::is_valid_C4(graph, forbidden_graph, vertices));
-                        if (callback(Subgraph::C4(vertices)))
-                            return true;
+                        if (callback(Subgraph::C4(vertices)) == IterationControl::Break)
+                            return IterationExit::Break;
                     } else {
 #ifndef NDEBUG
                         auto[v0, v1, v2, v3] = vertices;
@@ -351,8 +344,8 @@ public:
                         assert(!f0); assert(!f1);              assert(!f3); assert(!f4); assert(!f5);
 #endif
                         assert(Subgraph::is_valid_P4(graph, forbidden_graph, vertices));
-                        if (callback(Subgraph::P4(vertices)))
-                            return true;
+                        if (callback(Subgraph::P4(vertices)) == IterationControl::Break)
+                            return IterationExit::Break;
                     }
                 }
             }
@@ -381,12 +374,12 @@ public:
                     ensure_direction(vertices);
                     if (graph.hasEdge({a, v})) {
                         assert(Subgraph::is_valid_C4(graph, forbidden_graph, vertices));
-                        if (callback(Subgraph::C4(vertices)))
-                            return true;
+                        if (callback(Subgraph::C4(vertices)) == IterationControl::Break)
+                            return IterationExit::Break;
                     } else {
                         assert(Subgraph::is_valid_P4(graph, forbidden_graph, vertices));
-                        if (callback(Subgraph::P4(vertices)))
-                            return true;
+                        if (callback(Subgraph::P4(vertices)) == IterationControl::Break)
+                            return IterationExit::Break;
                     }
                 }
                 for (auto c : Graph::iterate(C)) {
@@ -396,12 +389,12 @@ public:
                     ensure_direction(vertices);
                     if (graph.hasEdge({u, c})) {
                         assert(Subgraph::is_valid_C4(graph, forbidden_graph, vertices));
-                        if (callback(Subgraph::C4(vertices)))
-                            return true;
+                        if (callback(Subgraph::C4(vertices)) == IterationControl::Break)
+                            return IterationExit::Break;
                     } else {
                         assert(Subgraph::is_valid_P4(graph, forbidden_graph, vertices));
-                        if (callback(Subgraph::P4(vertices)))
-                            return true;
+                        if (callback(Subgraph::P4(vertices)) == IterationControl::Break)
+                            return IterationExit::Break;
                     }
                 }
             }
@@ -418,8 +411,8 @@ public:
                     if (graph.hasEdge({a, c})) {
                         Subgraph::Vertices vertices{u, a, c, v};
                         ensure_direction(vertices);
-                        if (callback(Subgraph::P4(vertices)))
-                            return true;
+                        if (callback(Subgraph::P4(vertices)) == IterationControl::Break)
+                            return IterationExit::Break;
                     }
                 }
             }
@@ -434,24 +427,24 @@ public:
                         ensure_direction(vertices);
                         if (graph.hasEdge(uv)) {
                             assert(Subgraph::is_valid_C4(graph, forbidden_graph, vertices));
-                            if (callback(Subgraph::C4(vertices)))
-                                return true;
+                            if (callback(Subgraph::C4(vertices)) == IterationControl::Break)
+                                return IterationExit::Break;
                         } else {
                             assert(Subgraph::is_valid_P4(graph, forbidden_graph, vertices));
-                            if (callback(Subgraph::P4(vertices)))
-                                return true;
+                            if (callback(Subgraph::P4(vertices)) == IterationControl::Break)
+                                return IterationExit::Break;
                         }
                     }
                 }
             }
         }
-        return false;
+        return IterationExit::Normal;
     }
 
     template<class Callback>
-    bool find_unique(const Graph &graph, Callback callback) {
-        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph &>,
-                      "Callback must have bool(const Subgraph &) signature.");
+    IterationExit find_unique(const Graph &graph, Callback callback) {
+        static_assert(std::is_invocable_r_v<IterationControl, Callback, const Subgraph &>,
+                      "Callback must have IterationControl(const Subgraph &) signature.");
 
         auto is_correct_cycle = [](const auto &subgraph) {
             const auto&[a, b, c, d] = subgraph.m_vertices;
@@ -461,18 +454,16 @@ public:
         return find(graph, [&](Subgraph subgraph) {
             if (subgraph.m_type == Subgraph::Type::C4) {
                 if (!is_correct_cycle(subgraph))
-                    return false;
+                    return IterationControl::Continue;
             }
-            if (callback(subgraph))
-                return true;
-            return false;
+            return callback(subgraph);
         });
     }
 
     template<class Callback>
-    bool find_near_unique(VertexPair uv, const Graph &graph, const Graph &forbidden_graph, Callback callback) {
-        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>,
-                      "Callback must have bool(Subgraph) signature.");
+    IterationExit find_near_unique(VertexPair uv, const Graph &graph, const Graph &forbidden_graph, Callback callback) {
+        static_assert(std::is_invocable_r_v<IterationControl, Callback, const Subgraph>,
+                      "Callback must have IterationControl(Subgraph) signature.");
 
         auto is_correct_cycle = [](const auto &subgraph) {
             const auto[a, b, c, d] = subgraph.m_vertices;
@@ -482,14 +473,13 @@ public:
         return find_near(uv, graph, forbidden_graph, [&](const Subgraph &subgraph) {
             if (subgraph.m_type == Subgraph::Type::C4) {
                 if (!is_correct_cycle(subgraph))
-                    return false;
+                    return IterationControl::Continue;
             }
-            if (callback(subgraph))
-                return true;
-            return false;
+            return callback(subgraph);
         });
     }
 };
 
+}
 
 #endif //WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPHC4P4_H

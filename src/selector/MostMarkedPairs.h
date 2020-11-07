@@ -37,7 +37,7 @@ namespace selector {
                     max_num_marked_pairs = num_marked_pairs;
                     max_subgraph = std::move(subgraph);
                 }
-                return false;
+                return subgraph_iterators::IterationControl::Continue;
             });
 
             if (!max_subgraph)

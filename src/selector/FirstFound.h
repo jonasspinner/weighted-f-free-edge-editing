@@ -39,7 +39,7 @@ namespace selector {
                     if (!m_marked[uv])
                         problem.pairs.push_back(uv);
 
-                return true;
+                return subgraph_iterators::IterationControl::Break;
             });
 
             return problem;

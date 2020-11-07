@@ -42,19 +42,19 @@ namespace lower_bound {
                 m_costs_remaining[uv] = m_costs[uv];
 
 
-            bool early_exit = finder.find(m_graph, [&](Subgraph subgraph) {
+            auto exit_state = finder.find(m_graph, [&](Subgraph subgraph) {
                 Cost initial_min_cost = subgraph.calculate_min_cost(m_costs_remaining, m_marked);
 
                 m_subgraph_heap.emplace_back(initial_min_cost, std::move(subgraph));
 
                 max_min_cost = std::max(max_min_cost, initial_min_cost);
-                return max_min_cost > k;
+                return subgraph_iterators::break_if(max_min_cost > k);
             });
 
             // If a single subgraph has an editing cost larger than k, or has an invalid edititing cost (i.e. only has
             // edits that are either marked, or lead to a conversion to another forbidden subgraph), the current
             // instance is no longer solvable.
-            if (early_exit)
+            if (exit_state == subgraph_iterators::IterationExit::Break)
                 return max_min_cost;
 
             std::make_heap(m_subgraph_heap.begin(), m_subgraph_heap.end());

@@ -145,7 +145,7 @@ namespace lower_bound {
                     m_shall_solve = true;
                 }
 
-                return false;
+                return subgraph_iterators::IterationControl::Continue;
             });
         }
 
@@ -341,7 +341,7 @@ namespace lower_bound {
             finder.find(m_graph, [&](Subgraph subgraph) {
                 ++num_found;
                 add_constraint(subgraph);
-                return false;
+                return subgraph_iterators::IterationControl::Continue;
             });
 
             if (m_verbosity)

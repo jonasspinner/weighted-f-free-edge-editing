@@ -48,9 +48,9 @@ public:
                 }
 
                 SubgraphT<Options::FSG::C4P4>::Finder finder;
-                bool found_forbidden_subgraph = finder.find(graph, [&](const auto &) { return true; });
+                auto exit_state = finder.find(graph, [&](const auto &) { return subgraph_iterators::IterationControl::Break; });
 
-                return !found_forbidden_subgraph;
+                return exit_state == subgraph_iterators::IterationExit::Normal;
             }
             default:
                 throw std::runtime_error("Solution::is_valid is not specialized for given set of forbidden subgraphs.");

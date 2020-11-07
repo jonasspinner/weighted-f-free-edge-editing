@@ -59,13 +59,13 @@ namespace lower_bound {
         }
 
         std::vector<std::pair<Cost, Subgraph>> subgraphs;
-        bool unsolveable = m_finder.find(m_graph, m_bound_graph, [&](const auto &subgraph) {
+        auto exit_state = m_finder.find(m_graph, m_bound_graph, [&](const auto &subgraph) {
             Cost min_cost = subgraph.calculate_min_cost(m_costs, m_marked);
             subgraphs.emplace_back(min_cost, subgraph);
-            return min_cost == invalid_cost;
+            return subgraph_iterators::break_if(min_cost == invalid_cost);
         });
 
-        if (unsolveable) {
+        if (exit_state == subgraph_iterators::IterationExit::Break) {
             state.set_unsolvable();
             return;
         }
@@ -156,7 +156,7 @@ namespace lower_bound {
         std::vector<Subgraph> subgraphs;
         finder.find(graph, bound_graph, [&](const Subgraph &subgraph) {
             subgraphs.push_back(std::move(subgraph));
-            return false;
+            return subgraph_iterators::IterationControl::Continue;
         });
 #ifndef NDEBUG
         if (!subgraphs.empty()) {
@@ -214,11 +214,13 @@ namespace lower_bound {
                 continue;
             assert(!bound_graph.hasEdge(xy));
 
-            unsolvable = finder.find_near(xy, graph, bound_graph, [&](const Subgraph &subgraph) {
+            auto exit_state = finder.find_near(xy, graph, bound_graph, [&](const Subgraph &subgraph) {
                 Cost min_cost = subgraph.calculate_min_cost(costs, marked);
                 subgraphs.emplace_back(min_cost, subgraph);
-                return min_cost == invalid_cost;
+                return subgraph_iterators::break_if(min_cost == invalid_cost);
             });
+
+            unsolvable = exit_state == subgraph_iterators::IterationExit::Break;
 
             if (unsolvable) {
                 state.set_unsolvable();
@@ -269,13 +271,13 @@ namespace lower_bound {
         std::vector<std::pair<Cost, Subgraph>> subgraphs;
 
         // The finder iterates over subgraphs having u and v as vertices.
-        bool unsolvable = finder.find_near(uv, graph, bound_graph, [&](const Subgraph &subgraph) {
+        auto exit_state = finder.find_near(uv, graph, bound_graph, [&](const Subgraph &subgraph) {
             Cost min_cost = subgraph.calculate_min_cost(costs, marked);  // Only consider conversionless edits.
             subgraphs.emplace_back(min_cost, subgraph);
-            return min_cost == invalid_cost;
+            return subgraph_iterators::break_if(min_cost == invalid_cost);
         });
 
-        if (unsolvable) {
+        if (exit_state == subgraph_iterators::IterationExit::Break) {
             state.set_unsolvable();
             return;
         }
@@ -295,7 +297,9 @@ namespace lower_bound {
 
 #ifndef NDEBUG
         // local
-        bool has_nearby_subgraph = finder.find_near(uv, graph, bound_graph, [](const Subgraph &) { return true; });
+        bool has_nearby_subgraph =
+                subgraph_iterators::IterationExit::Break == finder.find_near(uv, graph, bound_graph,
+                    [](const Subgraph &) { return subgraph_iterators::IterationControl::Break; });
         assert(!has_nearby_subgraph);
 #endif
     }
@@ -564,7 +568,7 @@ namespace lower_bound {
                         max_subgraph = std::move(neighbor);
                     }
 
-                    return false;
+                    return subgraph_iterators::IterationControl::Continue;
                 });
             }
 
@@ -867,7 +871,7 @@ namespace lower_bound {
             if (subgraph_cost == invalid_cost) {
                 found_improvement = true;
                 state.set_unsolvable();
-                return true;
+                return subgraph_iterators::IterationControl::Break;
             }
             assert(subgraph_cost != invalid_cost);
 
@@ -940,7 +944,7 @@ namespace lower_bound {
 
                 // assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
             }
-            return state.cost() > k || !state.solvable();
+            return subgraph_iterators::break_if(state.cost() > k || !state.solvable());
         });
 
         if (state.cost() <= k && state.solvable()) {
@@ -948,7 +952,7 @@ namespace lower_bound {
             m_finder.find(m_graph, m_bound_graph, [&](const Subgraph &subgraph) {
                 auto cost = subgraph.calculate_min_cost(m_costs, m_marked);
                 remaining_subgraphs.emplace_back(cost, subgraph);
-                return false;
+                return subgraph_iterators::IterationControl::Continue;
             });
 
             for (auto &&[cost, subgraph] : remaining_subgraphs) {
@@ -1071,7 +1075,7 @@ namespace lower_bound {
                     }
 #endif
                     candidates.push_back(neighbor);
-                    return false;
+                    return subgraph_iterators::IterationControl::Continue;
                 });
             }
             border[i + 1] = candidates.size();

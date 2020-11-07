@@ -166,7 +166,7 @@ public:
             auto cost = calculate_min_cost(subgraph);
             std::cerr << subgraph << " " << cost << " ";
             maximal = false;
-            return false;
+            return subgraph_iterators::IterationControl::Continue;
         });
         if (!maximal)
             std::cerr << std::endl;
@@ -226,10 +226,9 @@ public:
             if (m_subgraph_stats.subgraphCount(uv) > 1) {
                 m_finder.find_near(uv, m_graph, m_depleted_graph, [&](const Subgraph &neighbor) {
 #ifndef NDEBUG
-                    m_finder->for_all_conversionless_edits(neighbor, [&](auto xy) {
+                    for (auto xy : neighbor.non_converting_edits()) {
                         assert(!m_depleted_graph.hasEdge(xy));
-                        return false;
-                    });
+                    }
 #endif
                     candidates.push_back(neighbor);
                     return false;
@@ -286,7 +285,7 @@ public:
 #endif
                 if (neighbor != subgraph)
                     candidates.push_back(neighbor);
-                return false;
+                return subgraph_iterators::IterationControl::Continue;
             });
 
             border[i + 1] = candidates.size();
@@ -316,7 +315,7 @@ public:
                 }
 #endif
                 subgraphs.push_back(neighbor);
-                return false;
+                return subgraph_iterators::IterationControl::Continue;
             });
 
             // Prevent subgraphs including uv to be counted twice.
@@ -350,14 +349,13 @@ public:
      */
     std::tuple<size_t, size_t> get_neighbor_count_estimate(const Subgraph &subgraph) {
         size_t num_pairs = 0, num_neighbors_ub = 0;
-        m_finder->for_all_conversionless_edits(subgraph, [&](auto uv) {
+        for (auto uv : subgraph.non_converting_edits()) {
             if (!m_marked[uv]) {
                 size_t uv_count = m_subgraph_stats.subgraphCount(uv) - 1; // Exclude the subgraph itself.
                 num_neighbors_ub += uv_count;
                 if (uv_count > 0) ++num_pairs;
             }
-            return false;
-        });
+        }
         return {num_pairs, num_neighbors_ub};
     }
 };

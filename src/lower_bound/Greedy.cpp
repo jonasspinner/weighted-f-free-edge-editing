@@ -36,7 +36,7 @@ namespace lower_bound {
                 Cost cost = subgraph.calculate_min_cost(m_costs, m_marked);
                 if (cost == invalid_cost) {
                     bound_size = invalid_cost;
-                    return true;
+                    return subgraph_iterators::IterationControl::Break;
                 }
                 bound_size += cost;
 
@@ -45,7 +45,7 @@ namespace lower_bound {
                         m_used_in_bound[uv] = true;
                 }
             }
-            return bound_size > k;
+            return subgraph_iterators::break_if(bound_size > k);
         });
 
         return bound_size;

@@ -30,7 +30,7 @@ namespace lower_bound {
             Cost min_cost = subgraph.calculate_min_cost(m_costs, m_marked);
             subgraphs.emplace_back(min_cost, std::move(subgraph));
             max_min_cost = std::max(max_min_cost, min_cost);
-            return max_min_cost > k;
+            return subgraph_iterators::break_if(max_min_cost > k);
         });
 
         // If one subgraph has an already large enough cost or if a subgraph is fully marked.
@@ -82,7 +82,7 @@ namespace lower_bound {
         m_finder.find(m_graph, [&](Subgraph subgraph) {
             Cost min_cost = subgraph.calculate_min_cost(m_costs, m_marked);
             subgraphs.emplace_back(min_cost, std::move(subgraph));
-            return false;
+            return subgraph_iterators::IterationControl::Continue;
         });
 
         // Sort subgraphs with decreasing costs.
