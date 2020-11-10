@@ -20,17 +20,17 @@ private:
         using reference = VertexPair;
         using iterator_category = std::random_access_iterator_tag;
 
-        constexpr Iterator() noexcept {};
+        constexpr Iterator() noexcept = default;
 
         constexpr explicit Iterator(const Vertex *vertices, const IndexPair *pairs) noexcept:
                 m_vertices(vertices), m_idx(pairs) {};
 
-        [[nodiscard]] constexpr value_type operator*() const noexcept {
+        [[nodiscard]] constexpr value_type operator*() const {
             const auto[i, j] = *m_idx;
             return {m_vertices[i], m_vertices[j]};
         }
 
-        [[nodiscard]] constexpr value_type operator[](difference_type n) const noexcept {
+        [[nodiscard]] constexpr value_type operator[](difference_type n) const {
             return *(*this + n);
         }
 

@@ -26,31 +26,37 @@ class SubgraphT<Options::FSG::C4P4> {
 
     SubgraphT() noexcept = default;
 
-    constexpr SubgraphT(Type type, const Vertices &vertices) noexcept: m_type(type), m_vertices(vertices) {
+    constexpr SubgraphT(Type type, const Vertices &vertices): m_type(type), m_vertices(vertices) {
         assert(m_vertices[1] < m_vertices[2]);
     }
 
-    constexpr SubgraphT(Type type, Vertices &&vertices) noexcept: m_type(type), m_vertices(std::move(vertices)) {
+    constexpr SubgraphT(Type type, Vertices &&vertices): m_type(type), m_vertices(std::move(vertices)) {
         assert(m_vertices[1] < m_vertices[2]);
     }
 
 public:
     using Finder = subgraph_iterators::CenterC4P4Finder;
 
-    static constexpr auto C4(const Vertices &vertices) noexcept {
+    static constexpr auto C4(const Vertices &vertices) {
         return SubgraphT{Type::C4, vertices};
     }
 
-    static constexpr auto C4(Vertices &&vertices) noexcept {
+    static constexpr auto C4(Vertices &&vertices) {
         return SubgraphT{Type::C4, std::move(vertices)};
     }
 
-    static constexpr auto P4(const Vertices &vertices) noexcept {
+    static constexpr auto P4(const Vertices &vertices) {
         return SubgraphT{Type::P4, vertices};
     }
 
-    static constexpr auto P4(Vertices &&vertices) noexcept {
+    static constexpr auto P4(Vertices &&vertices) {
         return SubgraphT{Type::P4, std::move(vertices)};
+    }
+
+    void swap(SubgraphT &other) noexcept {
+        using std::swap;
+        swap(m_type, other.m_type);
+        swap(m_vertices, other.m_vertices);
     }
 
     [[nodiscard]] constexpr auto size() const noexcept {
@@ -75,7 +81,7 @@ public:
         return IndexedVertexPairRange{m_vertices, m_non_converting_edits_indices};
     }
 
-    [[nodiscard]] Cost calculate_min_cost(const VertexPairMap<Cost> &costs, const VertexPairMap<bool> &marked) const noexcept {
+    [[nodiscard]] Cost calculate_min_cost(const VertexPairMap<Cost> &costs, const VertexPairMap<bool> &marked) const {
         const auto &[a, b, c, d] = m_vertices;
         auto x = [&](VertexPair uv) -> Cost { return marked[uv] ? invalid_cost : costs[uv]; };
         return std::min({x({a, b}), x({a, c}), x({b, c}), x({b, d}), x({c, d})});
@@ -126,17 +132,17 @@ public:
         return out << YAML::EndSeq;
     }
 
-    [[nodiscard]] constexpr Vertex &operator[](std::size_t index) noexcept {
+    [[nodiscard]] constexpr Vertex &operator[](std::size_t index) {
         assert(index < size());
         return m_vertices[index];
     }
 
-    [[nodiscard]] constexpr Vertex operator[](std::size_t index) const noexcept {
+    [[nodiscard]] constexpr Vertex operator[](std::size_t index) const {
         assert(index < size());
         return m_vertices[index];
     }
 
-    static bool is_valid_C4(const Graph &graph, const Graph &forbidden_graph, const Vertices &vertices) noexcept {
+    static bool is_valid_C4(const Graph &graph, const Graph &forbidden_graph, const Vertices &vertices) {
         const auto[a, b, c, d] = vertices;
         const auto e = [&](VertexPair uv) { return graph.hasEdge(uv); };
         const auto f = [&](VertexPair uv) { return forbidden_graph.hasEdge(uv); };
@@ -146,7 +152,7 @@ public:
         return valid;
     }
 
-    static bool is_valid_P4(const Graph &graph, const Graph &forbidden_graph, const Vertices &vertices) noexcept {
+    static bool is_valid_P4(const Graph &graph, const Graph &forbidden_graph, const Vertices &vertices) {
         const auto[a, b, c, d] = vertices;
         const auto e = [&](VertexPair uv) { return graph.hasEdge(uv); };
         const auto f = [&](VertexPair uv) { return forbidden_graph.hasEdge(uv); };
@@ -167,6 +173,11 @@ struct std::hash<SubgraphT<Options::FSG::C4P4>> {
     }
 };
 
+template<>
+inline void std::swap<SubgraphT<Options::FSG::C4P4>>(SubgraphT<Options::FSG::C4P4> &lhs, SubgraphT<Options::FSG::C4P4> &rhs) noexcept {
+    lhs.swap(rhs);
+}
+
 namespace subgraph_iterators {
 
 class CenterC4P4Finder {
@@ -185,7 +196,7 @@ class CenterC4P4Finder {
     Graph::AdjRow B;
     Graph::AdjRow C;
 
-    static inline void init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph &graph) noexcept {
+    static inline void init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph &graph) {
         row = graph.adj(neighbor);
         row -= graph.adj(non_neighbor);
         row[non_neighbor] = false;
@@ -196,7 +207,7 @@ class CenterC4P4Finder {
      * Assumes that uv is an edge and not forbidden.
      */
     static inline void
-    init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph &graph, const Graph &forbidden_graph) noexcept {
+    init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph &graph, const Graph &forbidden_graph) {
         row = graph.adj(neighbor);
         row -= graph.adj(non_neighbor);
         row -= forbidden_graph.adj(neighbor);
@@ -212,7 +223,7 @@ public:
         static_assert(std::is_invocable_r_v<IterationControl, Callback, const Subgraph &>,
                       "Callback must have IterationControl(const Subgraph &) signature.");
 
-        for (auto[u, v] : graph.edges()) {
+        for (const auto[u, v] : graph.edges()) {
             init(A, u, v, graph);
             init(B, v, u, graph);
             for (auto a : Graph::iterate(A)) {
@@ -238,7 +249,7 @@ public:
         for (auto uv : graph.edges()) {
             if (forbidden_graph.hasEdge(uv))
                 continue;
-            auto[u, v] = uv;
+            const auto[u, v] = uv;
             init(A, u, v, graph, forbidden_graph);
             init(B, v, u, graph, forbidden_graph);
             for (auto a : Graph::iterate(A)) {
@@ -263,18 +274,17 @@ public:
     IterationExit find_near(VertexPair uv, const Graph &graph, const Graph &forbidden_graph, Callback callback) {
         static_assert(std::is_invocable_r_v<IterationControl, Callback, const Subgraph &>,
                       "Callback must have IterationControl(const Subgraph &) signature.");
+        const auto[u, v] = uv;
 
-        const auto&[u, v] = uv;
-
-        auto ensure_direction = [](auto &vertices) {
+        constexpr auto ensure_direction = [](auto &vertices) constexpr noexcept {
             if (vertices[1] > vertices[2]) {
                 std::swap(vertices[0], vertices[3]);
                 std::swap(vertices[1], vertices[2]);
             }
         };
 #ifndef NDEBUG
-        auto e = [&](VertexPair pair) { return graph.hasEdge(pair); };
-        auto f = [&](VertexPair pair) { return forbidden_graph.hasEdge(pair); };
+        const auto e = [&](VertexPair pair) { return graph.hasEdge(pair); };
+        const auto f = [&](VertexPair pair) { return forbidden_graph.hasEdge(pair); };
 #endif
 
         if (graph.hasEdge(uv) && !forbidden_graph.hasEdge(uv)) {
@@ -446,12 +456,12 @@ public:
         static_assert(std::is_invocable_r_v<IterationControl, Callback, const Subgraph &>,
                       "Callback must have IterationControl(const Subgraph &) signature.");
 
-        auto is_correct_cycle = [](const auto &subgraph) {
+        constexpr auto is_correct_cycle = [](const auto &subgraph) {
             const auto&[a, b, c, d] = subgraph.m_vertices;
             return b < std::min({a, c, d}) && a < c;
         };
 
-        return find(graph, [&](Subgraph subgraph) {
+        return find(graph, [&](const Subgraph &subgraph) {
             if (subgraph.m_type == Subgraph::Type::C4) {
                 if (!is_correct_cycle(subgraph))
                     return IterationControl::Continue;
@@ -465,7 +475,7 @@ public:
         static_assert(std::is_invocable_r_v<IterationControl, Callback, const Subgraph>,
                       "Callback must have IterationControl(Subgraph) signature.");
 
-        auto is_correct_cycle = [](const auto &subgraph) {
+        constexpr auto is_correct_cycle = [](const auto &subgraph) {
             const auto[a, b, c, d] = subgraph.m_vertices;
             return b < std::min({a, c, d}) && a < c;
         };

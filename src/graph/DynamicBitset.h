@@ -155,9 +155,9 @@ namespace dynamic_bitset {
 
             friend class DynamicBitset<Block>;
 
-            constexpr reference(block_type &b, block_width_type pos) noexcept:
-                    m_block(b), m_mask(block_type(1) << pos) {
-                assert(pos < bits_per_block);
+            constexpr reference(block_type &b, block_width_type bit_pos) :
+                    m_block(b), m_mask(block_type(1) << bit_pos) {
+                assert(bit_pos < bits_per_block);
             }
 
             // NOLINTNEXTLINE
@@ -226,7 +226,7 @@ namespace dynamic_bitset {
         constexpr DynamicBitset() noexcept: m_num_bits(0) {}
 
         explicit DynamicBitset(size_type num_bits) :
-                m_num_bits(num_bits), m_blocks(num_bits ? block_index(num_bits - 1) + 1 : 0) {}
+                m_num_bits(num_bits), m_blocks(calc_num_blocks(m_num_bits)) {}
 
         DynamicBitset(const DynamicBitset &b) = default;
 
@@ -234,7 +234,7 @@ namespace dynamic_bitset {
             assert(check_invariants());
         };
 
-        void swap(DynamicBitset &other) {
+        void swap(DynamicBitset &other) noexcept {
             using std::swap;
             swap(m_blocks, other.m_blocks);
             swap(m_num_bits, other.m_num_bits);
@@ -246,7 +246,7 @@ namespace dynamic_bitset {
 
         DynamicBitset &operator=(DynamicBitset &&src) noexcept = default;
 
-        void clear() {
+        void clear() noexcept {
             m_blocks.clear();
             m_num_bits = 0;
         }
@@ -280,7 +280,7 @@ namespace dynamic_bitset {
         }
 
 
-        DynamicBitset &set() {
+        DynamicBitset &set() noexcept {
             std::fill(m_blocks.begin(), m_blocks.end(), ~static_cast<Block>(0));
             zero_unused_bits();
             return *this;
@@ -292,7 +292,7 @@ namespace dynamic_bitset {
             return *this;
         }
 
-        DynamicBitset &reset() {
+        DynamicBitset &reset() noexcept {
             std::fill(m_blocks.begin(), m_blocks.end(), Block(0));
             return *this;
         }
@@ -303,7 +303,7 @@ namespace dynamic_bitset {
             return *this;
         }
 
-        DynamicBitset &flip() {
+        DynamicBitset &flip() noexcept {
             for (size_type i = 0; i < num_blocks(); ++i)
                 m_blocks[i] = ~m_blocks[i];
             zero_unused_bits();
@@ -382,8 +382,8 @@ namespace dynamic_bitset {
             return i * bits_per_block + static_cast<size_type>(detail::ctz(m_blocks[i]));
         }
 
-        void zero_unused_bits() {
-            assert (num_blocks() == calc_num_blocks(m_num_bits));
+        void zero_unused_bits() noexcept {
+            assert(num_blocks() == calc_num_blocks(m_num_bits));
 
             // if != 0 this is the number of bits used in the last block
             const block_width_type extra_bits = count_extra_bits();
@@ -392,7 +392,7 @@ namespace dynamic_bitset {
                 highest_block() &= (Block(1) << extra_bits) - 1;
         }
 
-        [[nodiscard]] bool check_invariants() const {
+        [[nodiscard]] bool check_invariants() const noexcept {
             const block_width_type extra_bits = count_extra_bits();
             if (extra_bits > 0) {
                 const block_type mask = (~block_type(0)) << extra_bits;
@@ -421,9 +421,9 @@ namespace dynamic_bitset {
             return Block(1) << bit_index(pos);
         }
 
-        [[nodiscard]] constexpr static size_type calc_num_blocks(size_type num_bits) {
+        [[nodiscard]] constexpr static size_type calc_num_blocks(size_type num_bits) noexcept {
             return num_bits / bits_per_block
-                   + static_cast<size_type>( num_bits % bits_per_block != 0 );
+                   + static_cast<size_type>(num_bits % bits_per_block != 0);
         }
 
         [[nodiscard]] Block &highest_block() {
@@ -441,16 +441,15 @@ namespace dynamic_bitset {
 
 
     template<typename Block>
-    inline void swap(DynamicBitset<Block> &left, DynamicBitset<Block> &right) noexcept {
-        left.swap(right);
+    inline void swap(DynamicBitset<Block> &lhs, DynamicBitset<Block> &rhs) noexcept(noexcept(lhs.swap(rhs))) {
+        lhs.swap(rhs);
     }
 
 
-    template<typename T>
+    template<typename Block>
     class IndexIterator {
     private:
-        using Bitset = DynamicBitset<T>;
-        using Block = T;
+        using Bitset = DynamicBitset<Block>;
     public:
         using size_type = typename Bitset::size_type;
 
@@ -474,7 +473,7 @@ namespace dynamic_bitset {
             const auto num_bits = m_bitset->size();
 
             size_type block_idx = 0;
-            while (block_idx < num_blocks && (blocks[block_idx] == 0))
+            while (block_idx < num_blocks && (blocks[block_idx] == Block(0)))
                 ++block_idx;
 
             m_pos = block_idx >= num_blocks
@@ -483,7 +482,7 @@ namespace dynamic_bitset {
             assert(m_pos <= num_bits);
         };
 
-        constexpr IndexIterator(const Bitset &bitset, size_type pos) noexcept:
+        constexpr IndexIterator(const Bitset &bitset, size_type pos):
                 m_bitset(std::addressof(bitset)), m_pos(pos) {
             assert(m_pos <= m_bitset->size());
         };
@@ -499,23 +498,24 @@ namespace dynamic_bitset {
             const auto num_blocks = blocks.size();
             const auto num_bits = m_bitset->size();
 
-            ++m_pos;
-            if (m_pos == num_bits)
+            if (m_pos >= num_bits - 1)
                 return *this;
+
+            ++m_pos;
 
             auto block_idx = Bitset::block_index(m_pos);
             const auto idx = Bitset::bit_index(m_pos);
 
             assert(block_idx < num_blocks);
-            const auto current_block_rest = blocks[block_idx] >> idx;
-            if (current_block_rest != 0) {
-                m_pos += static_cast<size_type>(detail::ctz(current_block_rest));
+            const auto remaining_block = blocks[block_idx] >> idx;
+            if (remaining_block != Block(0)) {
+                m_pos += static_cast<size_type>(detail::ctz(remaining_block));
                 assert(m_pos <= num_bits);
                 return *this;
             }
 
             ++block_idx;
-            while (block_idx < num_blocks && (blocks[block_idx] == 0))
+            while (block_idx < num_blocks && (blocks[block_idx] == Block(0)))
                 ++block_idx;
 
             m_pos = block_idx >= num_blocks

@@ -27,7 +27,7 @@ public:
      *
      * @param size
      */
-    explicit Graph(unsigned int size) noexcept: m_size(size), m_adj(m_size, AdjRow(m_size)) {}
+    explicit Graph(unsigned int size): m_size(size), m_adj(m_size, AdjRow(m_size)) {}
 
     Graph(const Graph &) = delete;
 
@@ -39,13 +39,13 @@ public:
         swap(a.m_adj, b.m_adj);
     }
 
-    Graph copy() const noexcept {
+    Graph copy() const {
         Graph other(size());
         other.m_adj = m_adj;
         return other;
     }
 
-    static Graph from_edges(unsigned int size, const std::vector<VertexPair> &edges) noexcept {
+    static Graph from_edges(unsigned int size, const std::vector<VertexPair> &edges) {
         Graph new_graph(size);
         for (auto uv : edges) {
             new_graph.setEdge(uv);
@@ -53,7 +53,7 @@ public:
         return new_graph;
     }
 
-    static Graph make_path_graph(unsigned int size) noexcept {
+    static Graph make_path_graph(unsigned int size) {
         Graph path(size);
         for (Vertex u = 0; u + 1 < size; ++u) {
             path.setEdge({u, u + 1});
@@ -61,7 +61,7 @@ public:
         return path;
     }
 
-    static Graph make_cycle_graph(unsigned int size) noexcept {
+    static Graph make_cycle_graph(unsigned int size) {
         Graph cycle(size);
         for (Vertex u = 0; u + 1 < size; ++u) {
             cycle.setEdge({u, u + 1});
@@ -70,7 +70,7 @@ public:
         return cycle;
     }
 
-    static Graph make_empty_graph(unsigned int size) noexcept {
+    static Graph make_empty_graph(unsigned int size) {
         return Graph{size};
     }
 
@@ -98,7 +98,7 @@ public:
      *
      * @param edge
      */
-    inline void toggleEdge(VertexPair edge) noexcept {
+    inline void toggleEdge(VertexPair edge) {
         const auto[u, v] = edge;
         assert(u < size());
         assert(v < size());
@@ -112,7 +112,7 @@ public:
      * @param u
      * @return
      */
-    [[nodiscard]] inline size_t degree(Vertex u) const noexcept {
+    [[nodiscard]] inline size_t degree(Vertex u) const {
         assert(u < size());
         return m_adj[u].count();
     };
@@ -123,7 +123,7 @@ public:
      * @param edge
      * @return
      */
-    [[nodiscard]] inline bool hasEdge(VertexPair edge) const noexcept {
+    [[nodiscard]] inline bool hasEdge(VertexPair edge) const {
         assert(edge.u < size());
         assert(edge.v < size());
         return m_adj[edge.u][edge.v];
@@ -134,7 +134,7 @@ public:
      *
      * @param edge
      */
-    void inline setEdge(VertexPair edge) noexcept {
+    void inline setEdge(VertexPair edge) {
         const auto[u, v] = edge;
         assert(u < size());
         assert(v < size());
@@ -147,7 +147,7 @@ public:
      *
      * @param edge
      */
-    void clearEdge(VertexPair edge) noexcept {
+    void clearEdge(VertexPair edge) {
         const auto[u, v] = edge;
         assert(u < size());
         assert(v < size());
@@ -167,7 +167,7 @@ public:
             using reference = Vertex;
             using iterator_category = std::random_access_iterator_tag;
 
-            constexpr Iterator() noexcept {};
+            constexpr Iterator() noexcept = default;
 
             constexpr explicit Iterator(Vertex start) noexcept: m_u(start) {}
 
@@ -392,7 +392,7 @@ public:
             using reference = const VertexPair &;
             using iterator_category = std::random_access_iterator_tag;
 
-            constexpr Iterator() noexcept {};
+            constexpr Iterator() noexcept = default;
 
             constexpr Iterator(VertexPair start, Vertex size) noexcept: m_uv(start), m_size(size) {}
 
@@ -500,6 +500,7 @@ public:
                 return m_uv >= other.m_uv;
             }
 
+        private:
             /**
              * Reference: https://stackoverflow.com/a/27088560
              *
@@ -586,7 +587,7 @@ public:
             using reference = VertexPair;
             using iterator_category = std::forward_iterator_tag;
 
-            constexpr Iterator() noexcept {};
+            constexpr Iterator() noexcept = default;
 
             struct end_tag {
             };
@@ -729,7 +730,7 @@ public:
      *
      * @return
      */
-    [[nodiscard]] AdjRow full_adjacency_row() const noexcept {
+    [[nodiscard]] AdjRow full_adjacency_row() const {
         AdjRow row(size());
         row.set();
         return row;
