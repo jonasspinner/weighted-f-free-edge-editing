@@ -498,10 +498,12 @@ namespace dynamic_bitset {
             const auto num_blocks = blocks.size();
             const auto num_bits = m_bitset->size();
 
-            if (m_pos >= num_bits - 1)
-                return *this;
-
             ++m_pos;
+
+            if (m_pos >= num_bits) {
+                m_pos = num_bits;
+                return *this;
+            }
 
             auto block_idx = Bitset::block_index(m_pos);
             const auto idx = Bitset::bit_index(m_pos);
