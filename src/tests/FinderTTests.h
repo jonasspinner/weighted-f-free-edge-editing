@@ -4,7 +4,7 @@
 
 
 #include "test_utils.h"
-#include "../finder/CenterC4P4.h"
+#include "../legacy/finder/CenterC4P4.h"
 
 
 bool is_p4(const Graph &graph, const Subgraph &subgraph) {
