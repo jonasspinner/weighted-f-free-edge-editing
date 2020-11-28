@@ -123,6 +123,7 @@ public:
             default:
                 throw std::runtime_error("Invalid recursion type");
         }
+        m_is_initialized = false;
         return m_found_solution;
     }
 
