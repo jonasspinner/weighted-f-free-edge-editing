@@ -24,16 +24,16 @@ public:
      * @param size The number of vertices. Vertices are indexed by 0..size-1.
      * @param initial An initial value. Default constructed if not given.
      */
-    explicit VertexPairMap(Vertex size, T initial = T()) noexcept:
+    explicit VertexPairMap(Vertex size, const T &initial = T()) noexcept:
             m_size(size),
-            m_values(idx({m_size - 2, m_size - 1}) + 1 /*last valid index plus 1 is the size*/, initial) {}
+            m_values(number_of_elements(m_size), initial) {}
 
-    [[nodiscard]] constexpr const_reference operator[](VertexPair uv) const noexcept {
+    [[nodiscard]] constexpr const_reference operator[](VertexPair uv) const {
         assert(uv.u < m_size && uv.v < m_size);
         return m_values[idx(uv)];
     }
 
-    [[nodiscard]] constexpr reference operator[](VertexPair uv) noexcept {
+    [[nodiscard]] constexpr reference operator[](VertexPair uv) {
         assert(uv.u < m_size && uv.v < m_size);
         return m_values[idx(uv)];
     }
@@ -53,7 +53,6 @@ public:
         }
         return os;
     }
-
 
     friend YAML::Emitter &operator<<(YAML::Emitter &out, const VertexPairMap &map) {
         using namespace YAML;
@@ -84,10 +83,20 @@ private:
      * @param uv
      * @return
      */
-    static constexpr std::size_t idx(VertexPair uv) noexcept {
+    [[nodiscard]] static constexpr std::size_t idx(VertexPair uv) noexcept {
         auto u = static_cast<std::size_t>(uv.u);
         auto v = static_cast<std::size_t>(uv.v);
         return v * (v - 1) / 2 + u;
+    }
+
+    [[nodiscard]] static constexpr std::size_t number_of_elements(Vertex number_of_vertices) noexcept {
+        if (number_of_vertices < 2) {
+            return 0;
+        } else {
+            auto u = number_of_vertices - 2;
+            auto v = number_of_vertices - 1;
+            return idx({u, v}) + 1;
+        }
     }
 };
 
@@ -96,7 +105,7 @@ template<>
 class VertexPairMap<bool> {
     using Values = boost::dynamic_bitset<>;
 
-    unsigned int m_size;
+    Vertex m_size;
     Values m_values;
 
 public:
@@ -106,17 +115,17 @@ public:
 
     explicit VertexPairMap(Vertex size, bool initial = false) noexcept:
             m_size(size),
-            m_values(idx({m_size - 2, m_size - 1}) + 1) {
+            m_values(number_of_elements(m_size)) {
         if (initial)
             m_values.set();
     }
 
-    [[nodiscard]] const_reference operator[](VertexPair uv) const noexcept {
+    [[nodiscard]] const_reference operator[](VertexPair uv) const {
         assert(uv.u < m_size && uv.v < m_size);
         return m_values[idx(uv)];
     }
 
-    [[nodiscard]] reference operator[](VertexPair uv) noexcept {
+    [[nodiscard]] reference operator[](VertexPair uv) {
         assert(uv.u < m_size && uv.v < m_size);
         return m_values[idx(uv)];
     }
@@ -164,18 +173,29 @@ public:
         m_values.reset();
     }
 
+private:
     /**
- * Returns the index for the given pair of vertices.
- *
- * For u, v \in 0..n-1 returns indices from 0 to n * (n - 1) / 2 - 1. The formula assumes that u < v.
- *
- * @param uv
- * @return
- */
-    static constexpr std::size_t idx(VertexPair uv) noexcept {
+     * Returns the index for the given pair of vertices.
+     *
+     * For u, v \in 0..n-1 returns indices from 0 to n * (n - 1) / 2 - 1. The formula assumes that u < v.
+     *
+     * @param uv
+     * @return
+     */
+    [[nodiscard]] static constexpr std::size_t idx(VertexPair uv) noexcept {
         auto u = static_cast<std::size_t>(uv.u);
         auto v = static_cast<std::size_t>(uv.v);
         return v * (v - 1) / 2 + u;
+    }
+
+    [[nodiscard]] static constexpr std::size_t number_of_elements(Vertex number_of_vertices) noexcept {
+        if (number_of_vertices < 2) {
+            return 0;
+        } else {
+            auto u = number_of_vertices - 2;
+            auto v = number_of_vertices - 1;
+            return idx({u, v}) + 1;
+        }
     }
 };
 
