@@ -48,7 +48,7 @@ public:
     static Graph from_edges(unsigned int size, const std::vector<VertexPair> &edges) {
         Graph new_graph(size);
         for (auto uv : edges) {
-            new_graph.setEdge(uv);
+            new_graph.set_edge(uv);
         }
         return new_graph;
     }
@@ -56,7 +56,7 @@ public:
     static Graph make_path_graph(unsigned int size) {
         Graph path(size);
         for (Vertex u = 0; u + 1 < size; ++u) {
-            path.setEdge({u, u + 1});
+            path.set_edge({u, u + 1});
         }
         return path;
     }
@@ -64,9 +64,9 @@ public:
     static Graph make_cycle_graph(unsigned int size) {
         Graph cycle(size);
         for (Vertex u = 0; u + 1 < size; ++u) {
-            cycle.setEdge({u, u + 1});
+            cycle.set_edge({u, u + 1});
         }
-        cycle.setEdge({0, size - 1});
+        cycle.set_edge({0, size - 1});
         return cycle;
     }
 
@@ -87,7 +87,7 @@ public:
     /**
      * Clears all edges.
      */
-    void clearEdges() noexcept {
+    void clear_edges() noexcept {
         for (auto &row: m_adj) {
             row.reset();
         }
@@ -98,7 +98,7 @@ public:
      *
      * @param edge
      */
-    inline void toggleEdge(VertexPair edge) {
+    inline void toggle_edge(VertexPair edge) {
         const auto[u, v] = edge;
         assert(u < size());
         assert(v < size());
@@ -123,7 +123,7 @@ public:
      * @param edge
      * @return
      */
-    [[nodiscard]] inline bool hasEdge(VertexPair edge) const {
+    [[nodiscard]] inline bool has_edge(VertexPair edge) const {
         assert(edge.u < size());
         assert(edge.v < size());
         return m_adj[edge.u][edge.v];
@@ -134,7 +134,7 @@ public:
      *
      * @param edge
      */
-    void inline setEdge(VertexPair edge) {
+    void inline set_edge(VertexPair edge) {
         const auto[u, v] = edge;
         assert(u < size());
         assert(v < size());
@@ -147,7 +147,7 @@ public:
      *
      * @param edge
      */
-    void clearEdge(VertexPair edge) {
+    void reset_edge(VertexPair edge) {
         const auto[u, v] = edge;
         assert(u < size());
         assert(v < size());
@@ -567,7 +567,7 @@ public:
      *
      * @return
      */
-    [[nodiscard]] constexpr auto vertexPairs() const noexcept {
+    [[nodiscard]] constexpr auto vertex_pairs() const noexcept {
         return VertexPairs{size()};
     }
 

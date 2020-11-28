@@ -13,7 +13,7 @@ Graph random_graph(unsigned size, int n_edges, std::mt19937 &gen) {
     Graph G(size);
     for (int m = 0; m < n_edges; ++m) {
         auto uv = random_vertex_pair(size, gen);
-        G.setEdge(uv);
+        G.set_edge(uv);
     }
     return G;
 }

@@ -141,14 +141,14 @@ namespace lower_bound {
 
         Graph instance_graph(n);
 
-        for (VertexPair uv : graph.vertexPairs()) {
+        for (VertexPair uv : graph.vertex_pairs()) {
             if (marked[uv])
                 continue;
 
             const auto &clique = cliques[uv];
             for (size_t i = 0; i < clique.size(); ++i) {
                 for (size_t j = i + 1; j < clique.size(); ++j) {
-                    instance_graph.setEdge({static_cast<Vertex>(clique[i]), static_cast<Vertex>(clique[j])});
+                    instance_graph.set_edge({static_cast<Vertex>(clique[i]), static_cast<Vertex>(clique[j])});
                 }
             }
         }

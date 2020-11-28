@@ -144,8 +144,8 @@ public:
 
     static bool is_valid_C4(const Graph &graph, const Graph &forbidden_graph, const Vertices &vertices) {
         const auto[a, b, c, d] = vertices;
-        const auto e = [&](VertexPair uv) { return graph.hasEdge(uv); };
-        const auto f = [&](VertexPair uv) { return forbidden_graph.hasEdge(uv); };
+        const auto e = [&](VertexPair uv) { return graph.has_edge(uv); };
+        const auto f = [&](VertexPair uv) { return forbidden_graph.has_edge(uv); };
         bool valid = true;
         valid &=  e({a, b}) && !e({a, c}) &&  e({a, d}) &&  e({b, c}) && !e({b, d}) &&  e({c, d});
         valid &= !f({a, b}) && !f({a, c}) &&               !f({b, c}) && !f({b, d}) && !f({c, d});
@@ -154,8 +154,8 @@ public:
 
     static bool is_valid_P4(const Graph &graph, const Graph &forbidden_graph, const Vertices &vertices) {
         const auto[a, b, c, d] = vertices;
-        const auto e = [&](VertexPair uv) { return graph.hasEdge(uv); };
-        const auto f = [&](VertexPair uv) { return forbidden_graph.hasEdge(uv); };
+        const auto e = [&](VertexPair uv) { return graph.has_edge(uv); };
+        const auto f = [&](VertexPair uv) { return forbidden_graph.has_edge(uv); };
         bool valid = true;
         valid &=  e({a, b}) && !e({a, c}) && !e({a, d}) &&  e({b, c}) && !e({b, d}) &&  e({c, d});
         valid &= !f({a, b}) && !f({a, c}) &&               !f({b, c}) && !f({b, d}) && !f({c, d});
@@ -228,7 +228,7 @@ public:
             init(B, v, u, graph);
             for (auto a : Graph::iterate(A)) {
                 for (auto b : Graph::iterate(B)) {
-                    if (graph.hasEdge({a, b})) {
+                    if (graph.has_edge({a, b})) {
                         if (callback(Subgraph::C4({a, u, v, b})) == IterationControl::Break)
                             return IterationExit::Break;
                     } else {
@@ -247,7 +247,7 @@ public:
                       "Callback must have IterationControl(const Subgraph &) signature.");
 
         for (auto uv : graph.edges()) {
-            if (forbidden_graph.hasEdge(uv))
+            if (forbidden_graph.has_edge(uv))
                 continue;
             const auto[u, v] = uv;
             init(A, u, v, graph, forbidden_graph);
@@ -255,7 +255,7 @@ public:
             for (auto a : Graph::iterate(A)) {
                 for (auto b : Graph::iterate(B)) {
                     // ab is allowed to be forbidden
-                    if (graph.hasEdge({a, b})) {
+                    if (graph.has_edge({a, b})) {
                         assert(Subgraph::is_valid_C4(graph, forbidden_graph, {a, u, v, b}));
                         if (callback(Subgraph::C4({a, u, v, b})) == IterationControl::Break)
                             return IterationExit::Break;
@@ -283,23 +283,23 @@ public:
             }
         };
 #ifndef NDEBUG
-        const auto e = [&](VertexPair pair) { return graph.hasEdge(pair); };
-        const auto f = [&](VertexPair pair) { return forbidden_graph.hasEdge(pair); };
+        const auto e = [&](VertexPair pair) { return graph.has_edge(pair); };
+        const auto f = [&](VertexPair pair) { return forbidden_graph.has_edge(pair); };
 #endif
 
-        if (graph.hasEdge(uv) && !forbidden_graph.hasEdge(uv)) {
+        if (graph.has_edge(uv) && !forbidden_graph.has_edge(uv)) {
 
             init(A, u, v, graph, forbidden_graph);
             init(B, v, u, graph, forbidden_graph);
 
             for (auto a : Graph::iterate(A)) {
                 for (auto b : Graph::iterate(B)) {
-                    if (graph.hasEdge({a, b})) {
+                    if (graph.has_edge({a, b})) {
                         assert(Subgraph::is_valid_C4(graph, forbidden_graph, {a, u, v, b}));
                         if (callback(Subgraph::C4({a, u, v, b})) == IterationControl::Break)
                             return IterationExit::Break;
 
-                        if (!forbidden_graph.hasEdge({a, b})) {
+                        if (!forbidden_graph.has_edge({a, b})) {
                             Subgraph::Vertices vertices{u, a, b, v};
                             ensure_direction(vertices);
                             assert(Subgraph::is_valid_C4(graph, forbidden_graph, vertices));
@@ -317,7 +317,7 @@ public:
                 for (auto c : Graph::iterate(C)) {
                     Subgraph::Vertices vertices{c, a, u, v};
                     ensure_direction(vertices);
-                    if (graph.hasEdge({c, v})) {
+                    if (graph.has_edge({c, v})) {
                         assert(Subgraph::is_valid_C4(graph, forbidden_graph, vertices));
                         if (callback(Subgraph::C4(vertices)) == IterationControl::Break)
                             return IterationExit::Break;
@@ -341,7 +341,7 @@ public:
                 for (auto c : Graph::iterate(C)) {
                     Subgraph::Vertices vertices{u, v, b, c};
                     ensure_direction(vertices);
-                    if (graph.hasEdge({c, u})) {
+                    if (graph.has_edge({c, u})) {
                         assert(Subgraph::is_valid_C4(graph, forbidden_graph, vertices));
                         if (callback(Subgraph::C4(vertices)) == IterationControl::Break)
                             return IterationExit::Break;
@@ -359,7 +359,7 @@ public:
                     }
                 }
             }
-        } else if (!graph.hasEdge(uv) && !forbidden_graph.hasEdge(uv)) {
+        } else if (!graph.has_edge(uv) && !forbidden_graph.has_edge(uv)) {
             // a-u-b-v-c
 
             B = graph.adj(u);
@@ -378,11 +378,11 @@ public:
 
             for (auto b : Graph::iterate(B)) {
                 for (auto a : Graph::iterate(A)) {
-                    if (a == b || graph.hasEdge({a, b}) || forbidden_graph.hasEdge({a, b}))
+                    if (a == b || graph.has_edge({a, b}) || forbidden_graph.has_edge({a, b}))
                         continue;
                     Subgraph::Vertices vertices{a, u, b, v};
                     ensure_direction(vertices);
-                    if (graph.hasEdge({a, v})) {
+                    if (graph.has_edge({a, v})) {
                         assert(Subgraph::is_valid_C4(graph, forbidden_graph, vertices));
                         if (callback(Subgraph::C4(vertices)) == IterationControl::Break)
                             return IterationExit::Break;
@@ -393,11 +393,11 @@ public:
                     }
                 }
                 for (auto c : Graph::iterate(C)) {
-                    if (c == b || graph.hasEdge({b, c}) || forbidden_graph.hasEdge({b, c}))
+                    if (c == b || graph.has_edge({b, c}) || forbidden_graph.has_edge({b, c}))
                         continue;
                     Subgraph::Vertices vertices{u, b, v, c};
                     ensure_direction(vertices);
-                    if (graph.hasEdge({u, c})) {
+                    if (graph.has_edge({u, c})) {
                         assert(Subgraph::is_valid_C4(graph, forbidden_graph, vertices));
                         if (callback(Subgraph::C4(vertices)) == IterationControl::Break)
                             return IterationExit::Break;
@@ -416,9 +416,9 @@ public:
             C -= forbidden_graph.adj(u);
             for (auto a : Graph::iterate(A)) {
                 for (auto c : Graph::iterate(C)) {
-                    if (forbidden_graph.hasEdge({a, c}))
+                    if (forbidden_graph.has_edge({a, c}))
                         continue;
-                    if (graph.hasEdge({a, c})) {
+                    if (graph.has_edge({a, c})) {
                         Subgraph::Vertices vertices{u, a, c, v};
                         ensure_direction(vertices);
                         if (callback(Subgraph::P4(vertices)) == IterationControl::Break)
@@ -426,16 +426,16 @@ public:
                     }
                 }
             }
-        } else if (forbidden_graph.hasEdge(uv)) {
+        } else if (forbidden_graph.has_edge(uv)) {
             init(A, u, v, graph, forbidden_graph);
             init(B, v, u, graph, forbidden_graph);
 
             for (auto a : Graph::iterate(A)) {
                 for (auto b : Graph::iterate(B)) {
-                    if (graph.hasEdge({a, b}) && !forbidden_graph.hasEdge({a, b})) {
+                    if (graph.has_edge({a, b}) && !forbidden_graph.has_edge({a, b})) {
                         Subgraph::Vertices vertices{u, a, b, v};
                         ensure_direction(vertices);
-                        if (graph.hasEdge(uv)) {
+                        if (graph.has_edge(uv)) {
                             assert(Subgraph::is_valid_C4(graph, forbidden_graph, vertices));
                             if (callback(Subgraph::C4(vertices)) == IterationControl::Break)
                                 return IterationExit::Break;

@@ -19,32 +19,32 @@ private:
 
     const EditState *m_edit_state;
 
-    VertexPairMap<size_t> subgraph_count_per_vertex_pair;
-    size_t subgraph_count_per_vertex_pair_sum;
-    size_t subgraph_count;
-    std::vector<size_t> before_mark_subgraph_count;
+    VertexPairMap<size_t> m_subgraph_count_per_vertex_pair;
+    size_t m_subgraph_count_per_vertex_pair_sum;
+    size_t m_subgraph_count;
+    std::vector<size_t> m_before_mark_subgraph_count;
 
     // TODO: Remove dependency on empty graph, i.e. build find_near_unique variant without forbidden graph.
     Graph m_empty_graph;
 
 public:
     SubgraphStats(const EditState *edit_state)
-            : m_edit_state(std::move(edit_state)), subgraph_count_per_vertex_pair(m_edit_state->graph().size()),
-              subgraph_count_per_vertex_pair_sum(0), subgraph_count(0),
+            : m_edit_state(std::move(edit_state)), m_subgraph_count_per_vertex_pair(m_edit_state->graph().size()),
+              m_subgraph_count_per_vertex_pair_sum(0), m_subgraph_count(0),
               m_empty_graph(m_edit_state->graph().size()) {}
 
-    [[nodiscard]] constexpr size_t subgraphCount() const {
-        return subgraph_count;
+    [[nodiscard]] constexpr size_t subgraph_count() const {
+        return m_subgraph_count;
     }
 
-    [[nodiscard]] constexpr size_t subgraphCount(VertexPair uv) const {
-        return subgraph_count_per_vertex_pair[uv];
+    [[nodiscard]] constexpr size_t subgraph_count(VertexPair uv) const {
+        return m_subgraph_count_per_vertex_pair[uv];
     }
 
     void initialize(Cost /*k*/) override {
-        subgraph_count_per_vertex_pair = VertexPairMap<size_t>(m_edit_state->graph().size());
-        subgraph_count_per_vertex_pair_sum = 0;
-        subgraph_count = 0;
+        m_subgraph_count_per_vertex_pair = VertexPairMap<size_t>(m_edit_state->graph().size());
+        m_subgraph_count_per_vertex_pair_sum = 0;
+        m_subgraph_count = 0;
 
         m_finder.find(m_edit_state->graph(), [&](Subgraph subgraph) {
             register_subgraph(subgraph);
@@ -61,7 +61,7 @@ public:
             remove_subgraph(subgraph);
             return subgraph_iterators::IterationControl::Continue;
         });
-        assert(subgraph_count_per_vertex_pair[uv] == 0);
+        assert(m_subgraph_count_per_vertex_pair[uv] == 0);
     }
 
     void register_near_subgraphs(VertexPair uv) {
@@ -70,7 +70,7 @@ public:
             return subgraph_iterators::IterationControl::Continue;
         });
         verify();
-        assert(subgraph_count_per_vertex_pair[uv] == 0);
+        assert(m_subgraph_count_per_vertex_pair[uv] == 0);
     }
 
     void before_edit(VertexPair uv) override {
@@ -90,36 +90,36 @@ public:
     }
 
     void after_mark(VertexPair uv) override {
-        subgraph_count_per_vertex_pair_sum -= subgraph_count_per_vertex_pair[uv];
-        before_mark_subgraph_count.push_back(subgraph_count_per_vertex_pair[uv]);
-        subgraph_count_per_vertex_pair[uv] = 0;
+        m_subgraph_count_per_vertex_pair_sum -= m_subgraph_count_per_vertex_pair[uv];
+        m_before_mark_subgraph_count.push_back(m_subgraph_count_per_vertex_pair[uv]);
+        m_subgraph_count_per_vertex_pair[uv] = 0;
         verify();
     }
 
     void after_unmark(VertexPair uv) override {
-        subgraph_count_per_vertex_pair[uv] = before_mark_subgraph_count.back();
-        subgraph_count_per_vertex_pair_sum += before_mark_subgraph_count.back();
-        before_mark_subgraph_count.pop_back();
+        m_subgraph_count_per_vertex_pair[uv] = m_before_mark_subgraph_count.back();
+        m_subgraph_count_per_vertex_pair_sum += m_before_mark_subgraph_count.back();
+        m_before_mark_subgraph_count.pop_back();
         verify();
     }
 
 private:
     void register_subgraph(const Subgraph &subgraph) {
-        subgraph_count++;
+        m_subgraph_count++;
         for (VertexPair uv : subgraph.non_converting_edits()) {
             if (!m_edit_state->is_marked(uv)) {
-                subgraph_count_per_vertex_pair[uv]++;
-                subgraph_count_per_vertex_pair_sum++;
+                m_subgraph_count_per_vertex_pair[uv]++;
+                m_subgraph_count_per_vertex_pair_sum++;
             }
         }
     }
 
     void remove_subgraph(const Subgraph &subgraph) {
-        subgraph_count--;
+        m_subgraph_count--;
         for (VertexPair uv : subgraph.non_converting_edits()) {
             if (!m_edit_state->is_marked(uv)) {
-                subgraph_count_per_vertex_pair[uv]--;
-                subgraph_count_per_vertex_pair_sum--;
+                m_subgraph_count_per_vertex_pair[uv]--;
+                m_subgraph_count_per_vertex_pair_sum--;
             }
         }
     }
@@ -140,10 +140,10 @@ private:
             return subgraph_iterators::IterationControl::Continue;
         });
 
-        assert(debug_sg_count == subgraph_count);
+        assert(debug_sg_count == m_subgraph_count);
 
-        for (VertexPair uv : m_edit_state->graph().vertexPairs()) {
-            assert(debug_sg_per_vertex_pair[uv] == subgraph_count_per_vertex_pair[uv]);
+        for (VertexPair uv : m_edit_state->graph().vertex_pairs()) {
+            assert(debug_sg_per_vertex_pair[uv] == m_subgraph_count_per_vertex_pair[uv]);
             assert(!m_edit_state->is_marked(uv) || debug_sg_per_vertex_pair[uv] == 0);
         }
 #endif

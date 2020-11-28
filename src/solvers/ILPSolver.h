@@ -43,10 +43,10 @@ private:
                 std::vector<VertexPair> edits;
 
                 // List edits of current solution. Apply them to graph.
-                for (VertexPair uv : m_graph.vertexPairs())
+                for (VertexPair uv : m_graph.vertex_pairs())
                     if (getSolution(m_vars[uv]) > 0.5) {
                         edits.push_back(uv);
-                        m_graph.toggleEdge(uv);
+                        m_graph.toggle_edge(uv);
                         m_edited[uv] = true;
                     } else {
                         m_edited[uv] = false;
@@ -95,7 +95,7 @@ private:
 
                 // Undo edits.
                 for (VertexPair uv : edits)
-                    m_graph.toggleEdge(uv);
+                    m_graph.toggle_edge(uv);
 
             }
         }
@@ -143,13 +143,13 @@ public:
 
             // Add model variables: x_uv == 1  <=>  uv is edited
             VertexPairMap<GRBVar> vars(graph.size());
-            for (VertexPair uv : graph.vertexPairs())
+            for (VertexPair uv : graph.vertex_pairs())
                 vars[uv] = model.addVar(0.0, 1.0, 0, GRB_BINARY);
 
 
             // Set objective. When uv is edited the objective is increased by costs[uv]
             GRBLinExpr obj;
-            for (VertexPair uv : graph.vertexPairs())
+            for (VertexPair uv : graph.vertex_pairs())
                 obj += costs[uv] * vars[uv];
 
             model.setObjective(obj, GRB_MINIMIZE);
@@ -170,7 +170,7 @@ public:
 
             // Read solution
             std::vector<VertexPair> edits;
-            for (VertexPair uv : graph.vertexPairs())
+            for (VertexPair uv : graph.vertex_pairs())
                 if (is_set(vars, uv))
                     edits.push_back(uv);
 

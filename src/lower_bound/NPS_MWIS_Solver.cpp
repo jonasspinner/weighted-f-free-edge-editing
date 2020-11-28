@@ -86,14 +86,14 @@ namespace lower_bound {
         // ils_mwis::Graph stores a vector of neighbors for each neighbor and does not handle multiple insertions.
         Graph instance_graph(n);
 
-        for (VertexPair uv : m_edit_state->graph().vertexPairs()) {
+        for (VertexPair uv : m_edit_state->graph().vertex_pairs()) {
             if (m_edit_state->is_marked(uv))
                 continue;
 
             const auto &clique = cliques[uv];
             for (size_t i = 0; i < clique.size(); ++i) {
                 for (size_t j = i + 1; j < clique.size(); ++j) {
-                    instance_graph.setEdge({clique[i], clique[j]});
+                    instance_graph.set_edge({clique[i], clique[j]});
                 }
             }
         }

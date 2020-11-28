@@ -31,8 +31,8 @@ namespace selector {
 
             size_t max_subgraph_count = 0;
             std::vector<VertexPair> pairs;
-            for (VertexPair uv : graph.vertexPairs()) {
-                size_t subgraph_count = m_subgraph_stats->subgraphCount(uv);
+            for (VertexPair uv : graph.vertex_pairs()) {
+                size_t subgraph_count = m_subgraph_stats->subgraph_count(uv);
                 if (subgraph_count > max_subgraph_count) {
                     max_subgraph_count = subgraph_count;
                     pairs = {uv};
@@ -48,7 +48,7 @@ namespace selector {
 
                     for (VertexPair xy : subgraph.vertex_pairs())
                         if (!m_edit_state->is_marked(xy))
-                            current_pairs.emplace_back(m_subgraph_stats->subgraphCount(xy), xy);
+                            current_pairs.emplace_back(m_subgraph_stats->subgraph_count(xy), xy);
 
                     std::sort(current_pairs.begin(), current_pairs.end(), std::greater<>());
 
@@ -68,15 +68,15 @@ namespace selector {
                     return subgraph_iterators::IterationControl::Continue;
                 });
 
-                m_used.setEdge(uv);
+                m_used.set_edge(uv);
             }
 
             for (VertexPair uv : pairs)
-                m_used.clearEdge(uv);
+                m_used.reset_edge(uv);
 
 
             Problem problem;
-            problem.solved = (m_subgraph_stats->subgraphCount() == 0);
+            problem.solved = (m_subgraph_stats->subgraph_count() == 0);
 
 #ifndef NDEBUG
             if (problem.solved) {

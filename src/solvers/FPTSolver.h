@@ -54,7 +54,7 @@ public:
             case Options::FPTSearchStrategy::IncrementByMinCost:
             {
                 Cost delta = std::numeric_limits<Cost>::max();
-                for (VertexPair uv : instance.graph.vertexPairs()) {
+                for (VertexPair uv : instance.graph.vertex_pairs()) {
                     if (0 < instance.costs[uv] && instance.costs[uv] < delta) {
                         delta = instance.costs[uv];
                     }

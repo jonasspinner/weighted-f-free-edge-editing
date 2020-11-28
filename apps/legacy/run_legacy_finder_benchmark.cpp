@@ -180,7 +180,7 @@ std::pair<int, std::vector<double>> find_all_near_subgraphs_benchmark(FinderI &f
         count = 0;
         auto start = std::chrono::system_clock::now();
 
-        for (VertexPair uv : graph.vertexPairs()) {
+        for (VertexPair uv : graph.vertex_pairs()) {
             finder.find_near(uv, graph, [&](Subgraph &&) {
                 ++count;
                 return false;
@@ -203,7 +203,7 @@ std::pair<int, std::vector<double>> find_one_near_subgraph_benchmark(FinderI &fi
         count = 0;
         auto start = std::chrono::system_clock::now();
 
-        for (VertexPair uv : graph.vertexPairs()) {
+        for (VertexPair uv : graph.vertex_pairs()) {
             finder.find_near(uv, graph, [&](Subgraph &&) {
                 ++count;
                 return true;

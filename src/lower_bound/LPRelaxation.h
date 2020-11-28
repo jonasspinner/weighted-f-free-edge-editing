@@ -9,6 +9,7 @@
 #include "LowerBoundI.h"
 #include "../Configuration.h"
 #include "../forbidden_subgraphs/SubgraphC4P4.h"
+#include "../editor/EditState.h"
 
 
 
@@ -78,12 +79,12 @@ namespace lower_bound {
                     m_model->set(GRB_DoubleParam_TimeLimit, m_timelimit);
 
                 GRBLinExpr objective = 0;
-                for (VertexPair uv : m_edit_state->graph().vertexPairs()) {
+                for (VertexPair uv : m_edit_state->graph().vertex_pairs()) {
                     m_variables[uv] = m_model->addVar(0.0, 1.0, 0.0, GRB_CONTINUOUS);
                     if (variable_means_edit) {
                         objective += m_variables[uv] * m_edit_state->cost(uv);
                     } else {
-                        if (m_edit_state->graph().hasEdge(uv)) {
+                        if (m_edit_state->graph().has_edge(uv)) {
                             objective += (1 - m_variables[uv]) * m_edit_state->cost(uv);
                         } else {
                             objective += m_variables[uv] * m_edit_state->cost(uv);
@@ -113,7 +114,7 @@ namespace lower_bound {
          */
         void after_mark(VertexPair uv) override {
             if (!variable_means_edit)
-                fix_pair(uv, m_edit_state->graph().hasEdge(uv));
+                fix_pair(uv, m_edit_state->graph().has_edge(uv));
         }
 
         void after_edit(VertexPair uv) override {
@@ -125,7 +126,7 @@ namespace lower_bound {
                 assert(m_edited[uv]);
                 fix_pair(uv, m_edited[uv]);
             } else {
-                fix_pair(uv, m_edit_state->graph().hasEdge(uv));
+                fix_pair(uv, m_edit_state->graph().has_edge(uv));
             }
 
             m_constraint_stack.emplace_back();
@@ -152,7 +153,7 @@ namespace lower_bound {
                 fix_pair(uv, m_edited[uv]);
             }
 
-            fix_pair(uv, m_edit_state->graph().hasEdge(uv));
+            fix_pair(uv, m_edit_state->graph().has_edge(uv));
 
             for (auto constr : m_constraint_stack.back()) {
                 m_model->remove(constr);
@@ -180,19 +181,19 @@ namespace lower_bound {
             // /*
             GRBLinExpr objective = 0;
 
-            for (VertexPair uv : m_edit_state->graph().vertexPairs()) {
+            for (VertexPair uv : m_edit_state->graph().vertex_pairs()) {
                 // TODO: overwrites changes made by after_mark and after_mark_and_edit
                 if (m_edit_state->is_marked(uv)) {
                     if (variable_means_edit)
                         fix_pair(uv, m_edited[uv]);
                     else
-                        fix_pair(uv, m_edit_state->graph().hasEdge(uv));
+                        fix_pair(uv, m_edit_state->graph().has_edge(uv));
                 } else {
                     relax_pair(uv);
                 }
 
                 if (!variable_means_edit) {
-                    if (m_edit_state->graph().hasEdge(uv)) {
+                    if (m_edit_state->graph().has_edge(uv)) {
                         objective += (1 - m_variables[uv]) * m_edit_state->cost(uv);
                     } else {
                         objective += m_variables[uv] * m_edit_state->cost(uv);
@@ -225,7 +226,7 @@ namespace lower_bound {
         }
 
         [[nodiscard]] auto variable_edited_value(VertexPair uv) const {
-            if (m_edit_state->graph().hasEdge(uv)) {
+            if (m_edit_state->graph().has_edge(uv)) {
                 return 1 - m_variables[uv].get(GRB_DoubleAttr_X);
             } else {
                 return m_variables[uv].get(GRB_DoubleAttr_X);
@@ -256,12 +257,12 @@ namespace lower_bound {
 
 #ifndef NDEBUG
             std::vector<VertexPair> edits;
-            for (VertexPair uv : m_edit_state->graph().vertexPairs())
+            for (VertexPair uv : m_edit_state->graph().vertex_pairs())
                 if (variable_means_edit) {
                     if (m_variables[uv].get(GRB_DoubleAttr_X) >= 0.99)
                         edits.push_back(uv);
                 } else {
-                    if (m_edit_state->graph().hasEdge(uv) != (m_variables[uv].get(GRB_DoubleAttr_X) >= 0.99))
+                    if (m_edit_state->graph().has_edge(uv) != (m_variables[uv].get(GRB_DoubleAttr_X) >= 0.99))
                         edits.push_back(uv);
                 }
 
@@ -358,7 +359,7 @@ namespace lower_bound {
             /*
             auto x = [&](VertexPair e) {
                 if (m_edited[e]) {
-                    return m_edit_state->graph().hasEdge(e) ? 1.0 : 0.0;
+                    return m_edit_state->graph().has_edge(e) ? 1.0 : 0.0;
                 }
                 return m_variables[e].get(GRB_DoubleAttr_X);
             };
@@ -379,7 +380,7 @@ namespace lower_bound {
 
             auto x = [&](VertexPair e) -> GRBLinExpr {
                 if (fixed_var_is_constant && m_edited[e]) {
-                    return m_edit_state->graph().hasEdge(e) ? 1.0 : 0.0;
+                    return m_edit_state->graph().has_edge(e) ? 1.0 : 0.0;
                 } else {
                     return m_variables[e];
                 }
@@ -392,11 +393,11 @@ namespace lower_bound {
 #ifndef NDEBUG
             assert(subgraph.size() == 4);
             Vertex u = subgraph[0], v = subgraph[1], a = subgraph[2], b = subgraph[3];
-            assert(graph.hasEdge({u, v}));
-            assert(graph.hasEdge({v, a}));
-            assert(graph.hasEdge({a, b}));
-            assert(!graph.hasEdge({u, a}));
-            assert(!graph.hasEdge({v, b}));
+            assert(graph.has_edge({u, v}));
+            assert(graph.has_edge({v, a}));
+            assert(graph.has_edge({a, b}));
+            assert(!graph.has_edge({u, a}));
+            assert(!graph.has_edge({v, b}));
 #endif
         }
     };

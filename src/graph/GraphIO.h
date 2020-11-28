@@ -1,9 +1,5 @@
-//
-// Created by jonas on 02.07.19.
-//
-
-#ifndef CONCEPT_GRAPHIO_H
-#define CONCEPT_GRAPHIO_H
+#ifndef WEIGHTED_F_FREE_EDGE_EDITING_GRAPHIO_H
+#define WEIGHTED_F_FREE_EDGE_EDITING_GRAPHIO_H
 
 #include <string>
 #include <fstream>
@@ -73,7 +69,7 @@ public:
                     if (u <= v) {
                         if (u == v)
                             throw std::runtime_error("self loops are not allowed");
-                        G.setEdge({u - 1, v - 1});
+                        G.set_edge({u - 1, v - 1});
                     }
                 }
             }
@@ -95,8 +91,8 @@ public:
                             throw std::runtime_error("weights are not symmetric");
 
                         edit_costs[edge] = edge_cost;
-                        if (weight >= 0) G.setEdge(edge);
-                        else G.clearEdge(edge);
+                        if (weight >= 0) G.set_edge(edge);
+                        else G.reset_edge(edge);
                     }
                 }
             }
@@ -104,7 +100,7 @@ public:
             throw std::runtime_error("fmt not supported");
         }
 
-        for (VertexPair uv : G.vertexPairs())
+        for (VertexPair uv : G.vertex_pairs())
             if (edit_costs[uv] == undefined_cost)
                 throw std::runtime_error("undefined editing cost");
 
@@ -137,7 +133,7 @@ public:
         for (Vertex u : graph.vertices()) {
             for (Vertex v : graph.vertices()) {
                 if (u >= v) continue;
-                file << (v + 1) << " " << (graph.hasEdge({u, v}) ? 1 : -1) * weights[{u, v}]
+                file << (v + 1) << " " << (graph.has_edge({u, v}) ? 1 : -1) * weights[{u, v}]
                      << " ";
             }
             file << "\n";
@@ -146,4 +142,4 @@ public:
 };
 
 
-#endif //CONCEPT_GRAPHIO_H
+#endif //WEIGHTED_F_FREE_EDGE_EDITING_GRAPHIO_H

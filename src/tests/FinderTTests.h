@@ -12,12 +12,12 @@ bool is_p4(const Graph &graph, const Subgraph &subgraph) {
     assert(P.size() == 4);
 
     bool result = true;
-    result &= graph.hasEdge({P[0], P[1]});
-    result &= !graph.hasEdge({P[0], P[2]});
-    result &= !graph.hasEdge({P[0], P[3]});
-    result &= graph.hasEdge({P[1], P[2]});
-    result &= !graph.hasEdge({P[1], P[3]});
-    result &= graph.hasEdge({P[2], P[3]});
+    result &= graph.has_edge({P[0], P[1]});
+    result &= !graph.has_edge({P[0], P[2]});
+    result &= !graph.has_edge({P[0], P[3]});
+    result &= graph.has_edge({P[1], P[2]});
+    result &= !graph.has_edge({P[1], P[3]});
+    result &= graph.has_edge({P[2], P[3]});
     return result;
 }
 
@@ -26,12 +26,12 @@ bool is_c4(const Graph &graph, const Subgraph &subgraph) {
     assert(C.size() == 4);
 
     bool result = true;
-    result &= graph.hasEdge({C[0], C[1]});
-    result &= !graph.hasEdge({C[0], C[2]});
-    result &= graph.hasEdge({C[0], C[3]});
-    result &= graph.hasEdge({C[1], C[2]});
-    result &= !graph.hasEdge({C[1], C[3]});
-    result &= graph.hasEdge({C[2], C[3]});
+    result &= graph.has_edge({C[0], C[1]});
+    result &= !graph.has_edge({C[0], C[2]});
+    result &= graph.has_edge({C[0], C[3]});
+    result &= graph.has_edge({C[1], C[2]});
+    result &= !graph.has_edge({C[1], C[3]});
+    result &= graph.has_edge({C[2], C[3]});
     return result;
 }
 
@@ -118,7 +118,7 @@ public:
 
         {
             Graph forbidden(6);
-            forbidden.setEdge({1, 2});
+            forbidden.set_edge({1, 2});
             std::vector<Subgraph> expected({
                 Subgraph::C4({1, 0, 3, 2}),
                 Subgraph::P4({3, 0, 1, 5}),
@@ -266,7 +266,7 @@ public:
             VertexPairMap<std::vector<Subgraph>> expected(4);
             expected[{3, 0}] = {Subgraph::P4({0, 1, 2, 3})};
 
-            for (auto uv : P4.vertexPairs()) {
+            for (auto uv : P4.vertex_pairs()) {
                 auto forbidden = Graph::from_edges(4, {uv});
 
                 Finder finder;
@@ -284,7 +284,7 @@ public:
             expected[{2, 3}] = {Subgraph::C4({3, 0, 1, 2})};  // {{2, 1, 0, 3}}
             expected[{3, 0}] = {Subgraph::C4({0, 1, 2, 3})};  // {{3, 2, 1, 0}}
 
-            for (auto uv : C4.vertexPairs()) {
+            for (auto uv : C4.vertex_pairs()) {
                 auto forbidden = Graph::from_edges(4, {uv});
 
                 Finder finder;
@@ -327,11 +327,11 @@ public:
            Subgraph::P4({5, 0, 1, 6}), Subgraph::P4({5, 0, 1, 7}), Subgraph::P4({5, 0, 1, 8}), Subgraph::P4({5, 0, 2, 9}), Subgraph::P4({5, 0, 2, 10}), Subgraph::P4({5, 0, 2, 11}),
            Subgraph::P4({6, 1, 2, 9}), Subgraph::P4({6, 1, 2, 10}), Subgraph::P4({6, 1, 2, 11}), Subgraph::P4({7, 1, 2, 9}), Subgraph::P4({7, 1, 2, 10}), Subgraph::P4({7, 1, 2, 11}), Subgraph::P4({8, 1, 2, 9}), Subgraph::P4({8, 1, 2, 10}), Subgraph::P4({8, 1, 2, 11})};
 
-        for (auto uv : G2.vertexPairs()) {
+        for (auto uv : G2.vertex_pairs()) {
             for (Subgraph subgraph : all_subgraphs) {
                 if (subgraph.contains(uv)) {
                     auto a = subgraph[0]; auto b = subgraph[1]; auto c = subgraph[2]; auto d = subgraph[3];
-                    if (G2.hasEdge({a, d})) {
+                    if (G2.has_edge({a, d})) {
                         // C4
                         expected[uv].push_back(Subgraph::C4({a, b, c, d}));
                         expected[uv].push_back(Subgraph::C4({b, c, d, a}));
@@ -349,7 +349,7 @@ public:
             auto forbidden = Graph::from_edges(12, {});
             Finder finder;
 
-            for (auto uv : G2.vertexPairs()) {
+            for (auto uv : G2.vertex_pairs()) {
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G2, forbidden, [&](auto subgraph) {
                     actual.push_back(subgraph);
@@ -379,7 +379,7 @@ public:
             auto forbidden = Graph::make_empty_graph(4);
             std::vector<Subgraph> expected = {Subgraph::P4({0, 1, 2, 3})};
 
-            for (auto uv : G.vertexPairs()) {
+            for (auto uv : G.vertex_pairs()) {
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G, forbidden, [&](Subgraph subgraph) {
                     actual.push_back(subgraph);
@@ -396,7 +396,7 @@ public:
 
             std::vector<Subgraph> expected = {Subgraph::P4({0, 1, 2, 3})};
 
-            for (auto uv : G.vertexPairs()) {
+            for (auto uv : G.vertex_pairs()) {
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G, forbidden, [&](Subgraph subgraph) {
                     actual.push_back(subgraph);
@@ -413,7 +413,7 @@ public:
 
             std::vector<Subgraph> expected;
 
-            for (auto uv : G.vertexPairs()) {
+            for (auto uv : G.vertex_pairs()) {
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G, forbidden, [&](Subgraph subgraph) {
                     actual.push_back(subgraph);
@@ -430,7 +430,7 @@ public:
             auto forbidden = Graph::from_edges(4, {{0, 2}});
             std::vector<Subgraph> expected;
 
-            for (auto uv : G.vertexPairs()) {
+            for (auto uv : G.vertex_pairs()) {
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G, forbidden, [&](Subgraph subgraph) {
                     actual.push_back(subgraph);
@@ -450,7 +450,7 @@ public:
                 Subgraph::C4({ 1, 0, 3, 2}),
                 Subgraph::C4({3, 0, 1, 2})};
 
-            for (auto uv : G.vertexPairs()) {
+            for (auto uv : G.vertex_pairs()) {
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G, forbidden, [&](Subgraph subgraph) {
                     actual.push_back(subgraph);
@@ -468,7 +468,7 @@ public:
             auto forbidden = Graph::from_edges(4, {{0, 1}});
             std::vector<Subgraph> expected = {Subgraph::C4({1, 2, 3, 0})};
 
-            for (auto uv : G.vertexPairs()) {
+            for (auto uv : G.vertex_pairs()) {
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G, forbidden, [&](Subgraph subgraph) {
                     actual.push_back(subgraph);
@@ -483,7 +483,7 @@ public:
             auto forbidden = Graph::from_edges(4, {{0, 2}});
             std::vector<Subgraph> expected = {};
 
-            for (auto uv : G.vertexPairs()) {
+            for (auto uv : G.vertex_pairs()) {
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G, forbidden, [&](Subgraph subgraph) {
                     actual.push_back(subgraph);
@@ -548,7 +548,7 @@ public:
         for (std::size_t i = 0; i < 2 * G.size(); ++i) {
             auto u = dist(gen), v = dist(gen);
             if (u == v) continue;
-            F.setEdge({u, v});
+            F.set_edge({u, v});
         }
 
         Subgraph::Finder finder1;
@@ -565,7 +565,7 @@ public:
             finder2.find_with_duplicates(G, [&](auto vector_subgraph) {
                 std::array<Vertex, 4> v{vector_subgraph[0], vector_subgraph[1], vector_subgraph[2], vector_subgraph[3]};
                 ensure_direction(v);
-                if (G.hasEdge({v[0], v[3]})) {
+                if (G.has_edge({v[0], v[3]})) {
                     output2.push_back(Subgraph::C4(v));
                 } else {
                     output2.push_back(Subgraph::P4(v));
@@ -589,7 +589,7 @@ public:
             finder2.find_with_duplicates(G, F, [&](auto vector_subgraph) {
                 std::array<Vertex, 4> v{vector_subgraph[0], vector_subgraph[1], vector_subgraph[2], vector_subgraph[3]};
                 ensure_direction(v);
-                if (G.hasEdge({v[0], v[3]})) {
+                if (G.has_edge({v[0], v[3]})) {
                     output2.push_back(Subgraph::C4(v));
                 } else {
                     output2.push_back(Subgraph::P4(v));
@@ -613,7 +613,7 @@ public:
             finder2.find(G, [&](auto vector_subgraph) {
                 std::array<Vertex, 4> v{vector_subgraph[0], vector_subgraph[1], vector_subgraph[2], vector_subgraph[3]};
                 ensure_direction(v);
-                if (G.hasEdge({v[0], v[3]})) {
+                if (G.has_edge({v[0], v[3]})) {
                     ensure_rotation(v);
                     assert(Subgraph::is_valid_C4(G, E, v));
                     output2.push_back(Subgraph::C4(v));
@@ -632,7 +632,7 @@ public:
         {
             std::vector<std::vector<Subgraph>> output1, output2;
 
-            for (auto uv : G.vertexPairs()) {
+            for (auto uv : G.vertex_pairs()) {
                 output1.emplace_back();
                 finder1.find_near(uv, G, F, [&](auto subgraph) {
                     output1.back().push_back(subgraph);
@@ -643,7 +643,7 @@ public:
                 finder2.find_near_with_duplicates(uv, G, F, [&](auto vector_subgraph) {
                     std::array<Vertex, 4> v{vector_subgraph[0], vector_subgraph[1], vector_subgraph[2], vector_subgraph[3]};
                     ensure_direction(v);
-                    if (G.hasEdge({v[0], v[3]})) {
+                    if (G.has_edge({v[0], v[3]})) {
                         output2.back().push_back(Subgraph::C4(v));
                     } else {
                         output2.back().push_back(Subgraph::P4(v));

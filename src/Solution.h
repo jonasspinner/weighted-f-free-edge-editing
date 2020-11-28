@@ -43,7 +43,7 @@ public:
             case Options::FSG::C4P4: {
                 Cost sum{0};
                 for (VertexPair uv : edits) {
-                    graph.toggleEdge(uv);
+                    graph.toggle_edge(uv);
                     sum += instance.costs[uv];
                 }
 

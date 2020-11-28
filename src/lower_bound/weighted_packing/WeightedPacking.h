@@ -53,10 +53,10 @@ public:
               m_potential(m_edit_state->graph().size()), m_depleted_graph(m_edit_state->graph().size()) {
         assert(edit_state);
         assert(subgraph_stats);
-        for (VertexPair uv : m_edit_state->graph().vertexPairs()) {
+        for (VertexPair uv : m_edit_state->graph().vertex_pairs()) {
             m_potential[uv] = m_edit_state->cost(uv);
             if (m_potential[uv] == 0) {
-                m_depleted_graph.setEdge(uv);
+                m_depleted_graph.set_edge(uv);
             }
         }
     }
@@ -67,10 +67,10 @@ public:
               m_finder(other.m_finder) {
         assert(m_edit_state);
         assert(m_subgraph_stats);
-        for (VertexPair uv : m_edit_state->graph().vertexPairs()) {
+        for (VertexPair uv : m_edit_state->graph().vertex_pairs()) {
             m_potential[uv] = other.m_potential[uv];
             if (other.is_depleted(uv)) {
-                m_depleted_graph.setEdge(uv);
+                m_depleted_graph.set_edge(uv);
             }
         }
     }
@@ -79,11 +79,11 @@ public:
      * Reset to state after construction.
      */
     void reset() {
-        m_depleted_graph.clearEdges();
-        for (VertexPair uv : m_edit_state->graph().vertexPairs()) {
+        m_depleted_graph.clear_edges();
+        for (VertexPair uv : m_edit_state->graph().vertex_pairs()) {
             m_potential[uv] = m_edit_state->cost(uv);
             if (m_potential[uv] == 0) {
-                m_depleted_graph.setEdge(uv);
+                m_depleted_graph.set_edge(uv);
             }
         }
         m_total_cost = 0;
@@ -103,7 +103,7 @@ public:
         for (auto uv : subgraph.non_converting_edits()) {
             if (m_edit_state->is_marked(uv))
                 continue;
-            assert(!m_depleted_graph.hasEdge(uv));
+            assert(!m_depleted_graph.has_edge(uv));
 
 #ifndef NDEBUG
             if (cost > m_potential[uv])
@@ -113,7 +113,7 @@ public:
             assert(cost <= m_potential[uv]);
             m_potential[uv] -= cost;
             if (m_potential[uv] == 0) {
-                m_depleted_graph.setEdge(uv);
+                m_depleted_graph.set_edge(uv);
             }
         }
     }
@@ -133,7 +133,7 @@ public:
             if (m_edit_state->is_marked(uv))
                 continue;
             m_potential[uv] += cost;
-            m_depleted_graph.clearEdge(uv);
+            m_depleted_graph.reset_edge(uv);
             assert(m_potential[uv] <= m_edit_state->cost(uv));
         }
     }
@@ -143,7 +143,7 @@ public:
     }
 
     [[nodiscard]] bool is_depleted(VertexPair uv) const {
-        return m_depleted_graph.hasEdge(uv);
+        return m_depleted_graph.has_edge(uv);
     }
 
     [[nodiscard]] const auto &depleted_graph() const {
@@ -158,7 +158,7 @@ public:
         assert(m_edit_state->is_marked(uv));
         m_potential[uv] = m_edit_state->cost(uv);
         if (m_potential[uv] > 0)
-            m_depleted_graph.clearEdge(uv);
+            m_depleted_graph.reset_edge(uv);
     }
 
 #ifndef NDEBUG
@@ -186,8 +186,8 @@ public:
         }
 
         for (VertexPair uv : Graph::VertexPairs(m_potential.size())) {
-            valid |= (m_potential[uv] == 0) != m_depleted_graph.hasEdge(uv);
-            assert((m_potential[uv] == 0) == m_depleted_graph.hasEdge(uv));
+            valid |= (m_potential[uv] == 0) != m_depleted_graph.has_edge(uv);
+            assert((m_potential[uv] == 0) == m_depleted_graph.has_edge(uv));
         }
         return valid;
     }
@@ -211,7 +211,7 @@ public:
     get_closed_neighbors(Subgraph &&subgraph) {
         std::vector<VertexPair> pairs;
         for (auto uv : subgraph.non_converting_edits()) {
-            assert(!m_depleted_graph.hasEdge(uv));
+            assert(!m_depleted_graph.has_edge(uv));
             if (!m_edit_state->is_marked(uv))
                 pairs.push_back(uv);
         }
@@ -222,15 +222,15 @@ public:
 
         for (size_t i = 0; i < pairs.size(); ++i) {
             VertexPair uv = pairs[i];
-            assert(!m_depleted_graph.hasEdge(uv));
+            assert(!m_depleted_graph.has_edge(uv));
 
             // Because the subgraph already contributes one to the subgraph count at uv, only search for near subgraphs
             // if there is at least one more.
-            if (m_subgraph_stats->subgraphCount(uv) > 1) {
+            if (m_subgraph_stats->subgraph_count(uv) > 1) {
                 m_finder.find_near(uv, m_edit_state->graph(), m_depleted_graph, [&](const Subgraph &neighbor) {
 #ifndef NDEBUG
                     for (auto xy : neighbor.non_converting_edits()) {
-                        assert(!m_depleted_graph.hasEdge(xy));
+                        assert(!m_depleted_graph.has_edge(xy));
                     }
 #endif
                     candidates.push_back(neighbor);
@@ -240,13 +240,13 @@ public:
             border[i + 1] = candidates.size();
 
             // Prevent subgraphs including uv to be counted twice.
-            m_depleted_graph.setEdge(uv);
+            m_depleted_graph.set_edge(uv);
         }
 
         // Reset bound_graph.
         for (VertexPair uv : pairs) {
-            assert(m_depleted_graph.hasEdge(uv));
-            m_depleted_graph.clearEdge(uv);
+            assert(m_depleted_graph.has_edge(uv));
+            m_depleted_graph.reset_edge(uv);
         }
 
         return {std::move(pairs), std::move(candidates), std::move(border)};
@@ -256,12 +256,12 @@ public:
     get_open_neighbors(const Subgraph &subgraph, Cost remove_cost) {
         std::vector<VertexPair> pairs;
         for (auto uv : subgraph.non_converting_edits()) {
-            assert(!m_depleted_graph.hasEdge(uv));
+            assert(!m_depleted_graph.has_edge(uv));
             if (!m_edit_state->is_marked(uv) && m_potential[uv] ==
                                  remove_cost) { // uv is unmarked and was depleted before x was removed with this cost.
                 // Because the subgraph already contributes one to the subgraph count at uv, only search for near subgraphs
                 // if there is at least one more.
-                if (m_subgraph_stats->subgraphCount(uv) > 1) {
+                if (m_subgraph_stats->subgraph_count(uv) > 1) {
                     pairs.push_back(uv);
                 }
             }
@@ -278,12 +278,12 @@ public:
 
         for (size_t i = 0; i < pairs.size(); ++i) {
             VertexPair uv = pairs[i];
-            assert(!m_depleted_graph.hasEdge(uv));
+            assert(!m_depleted_graph.has_edge(uv));
 
             m_finder.find_near(uv, m_edit_state->graph(), m_depleted_graph, [&](const Subgraph &neighbor) {
 #ifndef NDEBUG
                 for (auto xy : neighbor.non_converting_edits()) {
-                    assert(!m_depleted_graph.hasEdge(xy));
+                    assert(!m_depleted_graph.has_edge(xy));
                 }
 #endif
                 if (neighbor != subgraph)
@@ -294,13 +294,13 @@ public:
             border[i + 1] = candidates.size();
 
             // Prevent subgraphs including uv to be counted twice.
-            m_depleted_graph.setEdge(uv);
+            m_depleted_graph.set_edge(uv);
         }
 
         // Reset bound_graph.
         for (VertexPair uv : pairs) {
-            assert(m_depleted_graph.hasEdge(uv));
-            m_depleted_graph.clearEdge(uv);
+            assert(m_depleted_graph.has_edge(uv));
+            m_depleted_graph.reset_edge(uv);
         }
 
         return {std::move(pairs), std::move(candidates), std::move(border)};
@@ -309,12 +309,12 @@ public:
     std::vector<Subgraph> get_incident_subgraphs(const std::vector<VertexPair> &pairs) {
         std::vector<Subgraph> subgraphs;
         for (auto uv : pairs) {
-            assert(!m_depleted_graph.hasEdge(uv));
+            assert(!m_depleted_graph.has_edge(uv));
 
             m_finder.find_near(uv, m_edit_state->graph(), m_depleted_graph, [&](const Subgraph &neighbor) {
 #ifndef NDEBUG
                 for (auto xy : neighbor.non_converting_edits()) {
-                    assert(!m_depleted_graph.hasEdge(xy));
+                    assert(!m_depleted_graph.has_edge(xy));
                 }
 #endif
                 subgraphs.push_back(neighbor);
@@ -322,13 +322,13 @@ public:
             });
 
             // Prevent subgraphs including uv to be counted twice.
-            m_depleted_graph.setEdge(uv);
+            m_depleted_graph.set_edge(uv);
         }
 
         // Reset bound_graph.
         for (VertexPair uv : pairs) {
-            assert(m_depleted_graph.hasEdge(uv));
-            m_depleted_graph.clearEdge(uv);
+            assert(m_depleted_graph.has_edge(uv));
+            m_depleted_graph.reset_edge(uv);
         }
 
         return subgraphs;
@@ -354,7 +354,7 @@ public:
         size_t num_pairs = 0, num_neighbors_ub = 0;
         for (auto uv : subgraph.non_converting_edits()) {
             if (!m_edit_state->is_marked(uv)) {
-                size_t uv_count = m_subgraph_stats->subgraphCount(uv) - 1; // Exclude the subgraph itself.
+                size_t uv_count = m_subgraph_stats->subgraph_count(uv) - 1; // Exclude the subgraph itself.
                 num_neighbors_ub += uv_count;
                 if (uv_count > 0) ++num_pairs;
             }

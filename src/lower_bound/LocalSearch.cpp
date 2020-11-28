@@ -50,11 +50,11 @@ namespace lower_bound {
         m_states.push_back(std::make_unique<State>());
         State &state = *m_states.back();
 
-        m_bound_graph.clearEdges();
+        m_bound_graph.clear_edges();
 
         for (auto uv : m_edit_state->cost_map().keys()) {
             if (m_edit_state->cost(uv) == 0) {
-                m_bound_graph.setEdge(uv);
+                m_bound_graph.set_edge(uv);
             }
         }
 
@@ -96,7 +96,7 @@ namespace lower_bound {
         bool valid = true;
         for (VertexPair xy : Graph::VertexPairs(marked.size())) {
             if (marked[xy]) {
-                if (bound_graph.hasEdge(xy)) {
+                if (bound_graph.has_edge(xy)) {
                     valid = false;
                     std::cerr << xy << " is marked and in bound_graph\n";
                 }
@@ -111,7 +111,7 @@ namespace lower_bound {
 
                 if (bound_graph.hasEdge(xy) != has_subgraph) {
                     valid = false;
-                    if (bound_graph.hasEdge(xy))
+                    if (bound_graph.has_edge(xy))
                         std::cerr << xy << " is in bound_graph but has no subgraph in bound\n";
                     else
                         std::cerr << xy << " is not in bound_graph but has subgraph in bound\n";
@@ -122,7 +122,7 @@ namespace lower_bound {
         for (const auto &[cost, subgraph] : state.bound())
             for (auto xy : subgraph.non_converting_edits()) {
                 if (!marked[xy])
-                    if (!bound_graph.hasEdge(xy)) {
+                    if (!bound_graph.has_edge(xy)) {
                         valid = false;
                         std::cerr << xy << " is unmarked vertex pair in bound but not in bound_graph\n";
                     }
@@ -204,15 +204,15 @@ namespace lower_bound {
 
 
         for (auto xy : removed_subgraph.non_converting_edits()) {
-            bound_graph.clearEdge(xy);
+            bound_graph.reset_edge(xy);
         }
-        bound_graph.setEdge(uv);
+        bound_graph.set_edge(uv);
 
         bool unsolvable = false;
         for (auto xy : removed_subgraph.non_converting_edits()) {
             if (xy == uv)
                 continue;
-            assert(!bound_graph.hasEdge(xy));
+            assert(!bound_graph.has_edge(xy));
 
             auto exit_state = finder.find_near(xy, graph, bound_graph, [&](const Subgraph &subgraph) {
                 Cost min_cost = subgraph.calculate_min_cost(costs, marked);
@@ -227,14 +227,14 @@ namespace lower_bound {
                 break;
             }
 
-            bound_graph.setEdge(xy);
+            bound_graph.set_edge(xy);
         }
 
         if (unsolvable)
             return;
 
         for (auto xy  : removed_subgraph.non_converting_edits()) {
-            bound_graph.clearEdge(xy);
+            bound_graph.reset_edge(xy);
         }
 
 #ifndef NDEBUG  // TODO: Adapt to conversionless edit optimization.
@@ -337,11 +337,11 @@ namespace lower_bound {
     void LocalSearch<SetOfForbiddenSubgraphs>::initialize_bound_graph(const State &state,
                                                                       const VertexPairMap<bool> &marked,
                                                                       Graph &bound_graph) {
-        bound_graph.clearEdges();
+        bound_graph.clear_edges();
         for (const auto &[cost, subgraph] : state.bound())
             for (auto uv : subgraph.non_converting_edits()) {
                 if (!marked[uv])
-                    bound_graph.setEdge(uv);
+                    bound_graph.set_edge(uv);
             }
     }
 
@@ -540,23 +540,23 @@ namespace lower_bound {
         {
             auto edits = subgraph.non_converting_edits();
             bool touches = std::any_of(edits.begin(), edits.end(), [&](auto uv) {
-                return m_bound_graph.hasEdge(uv);
+                return m_bound_graph.has_edge(uv);
             });
             assert(!touches);
         }
 #endif
 
         for (VertexPair uv : pairs) {
-            assert(!m_bound_graph.hasEdge(uv));
+            assert(!m_bound_graph.has_edge(uv));
 
-            if (m_subgraph_stats->subgraphCount(uv) > 1) {
+            if (m_subgraph_stats->subgraph_count(uv) > 1) {
 
                 m_finder.find_near(uv, m_edit_state->graph(), m_bound_graph, [&](const Subgraph &neighbor) {
 #ifndef NDEBUG
                     {
                         auto edits = neighbor.non_converting_edits();
                         bool touches = std::any_of(edits.begin(), edits.end(), [&](auto xy) {
-                            return m_edit_state->graph().hasEdge(xy);
+                            return m_edit_state->graph().has_edge(xy);
                         });
                         assert(!touches);
                     }
@@ -573,11 +573,11 @@ namespace lower_bound {
             }
 
             // prevent subgraphs including uv to be counted twice
-            m_bound_graph.setEdge(uv);
+            m_bound_graph.set_edge(uv);
         }
 
         for (VertexPair uv : pairs)
-            m_bound_graph.clearEdge(uv);
+            m_bound_graph.reset_edge(uv);
 
         if (max_cost > subgraph_cost && verbosity > 1)
             std::cout << "found (1, 1) swap " << std::setw(4) << max_cost - subgraph_cost << ", " << subgraph_cost
@@ -645,7 +645,7 @@ namespace lower_bound {
         {
             auto edits = subgraph.non_converting_edits();
             bool touches = std::any_of(edits.begin(), edits.end(), [&](auto uv) {
-                return !m_edit_state->is_marked(uv) && m_bound_graph.hasEdge(uv);
+                return !m_edit_state->is_marked(uv) && m_bound_graph.has_edge(uv);
             });
             assert(!touches);
         }
@@ -676,7 +676,7 @@ namespace lower_bound {
 
                 // for each candidate pair (a, b)
                 for (size_t pair_j = pair_i + 1; pair_j < pairs.size(); ++pair_j) {
-                    if (m_bound_graph.hasEdge(pairs[pair_j])) continue;
+                    if (m_bound_graph.has_edge(pairs[pair_j])) continue;
                     for (size_t b_i = border[pair_j]; b_i < border[pair_j + 1]; ++b_i) {
                         const auto &b = candidates[b_i];
 
@@ -782,7 +782,7 @@ namespace lower_bound {
 
 
         for (size_t pair_i = 0; pair_i < pairs.size(); ++pair_i) {
-            if (m_bound_graph.hasEdge(pairs[pair_i]))
+            if (m_bound_graph.has_edge(pairs[pair_i]))
                 continue;
             for (size_t a_i = border[pair_i]; a_i < border[pair_i + 1]; ++a_i) {
                 if (candidates[a_i].size() == 0)
@@ -984,8 +984,8 @@ namespace lower_bound {
                                                                  const VertexPairMap<bool> &marked, Graph &graph) {
         for (auto uv : subgraph.non_converting_edits()) {
             if (!marked[uv]) {
-                assert(!graph.hasEdge(uv));
-                graph.setEdge(uv);
+                assert(!graph.has_edge(uv));
+                graph.set_edge(uv);
             }
         }
     }
@@ -1003,8 +1003,8 @@ namespace lower_bound {
                                                                  const VertexPairMap<bool> &marked, Graph &graph) {
         for (auto uv : subgraph.non_converting_edits()) {
             if (!marked[uv]) {
-                assert(graph.hasEdge(uv));
-                graph.clearEdge(uv);
+                assert(graph.has_edge(uv));
+                graph.reset_edge(uv);
             }
         }
     }
@@ -1023,14 +1023,14 @@ namespace lower_bound {
                                                                      const VertexPairMap<bool> &marked, Graph &graph) {
         auto edits = subgraph.non_converting_edits();
         bool touches = std::any_of(edits.begin(), edits.end(), [&](auto uv) {
-            return !marked[uv] && graph.hasEdge(uv);
+            return !marked[uv] && graph.has_edge(uv);
         });
 
 
         if (!touches) {
             for (auto uv : subgraph.non_converting_edits()) {
                 if (!marked[uv])
-                    graph.setEdge(uv);
+                    graph.set_edge(uv);
             }
             return true;
         }
@@ -1056,7 +1056,7 @@ namespace lower_bound {
         // Precondition: subgraph is removed from bound_graph.
 #ifndef NDEBUG
         for (auto uv : pairs) {
-            assert(!bound_graph.hasEdge(uv));
+            assert(!bound_graph.has_edge(uv));
         }
 #endif
 
@@ -1065,13 +1065,13 @@ namespace lower_bound {
 
         for (size_t i = 0; i < pairs.size(); ++i) {
             VertexPair uv = pairs[i];
-            assert(!bound_graph.hasEdge(uv));
+            assert(!bound_graph.has_edge(uv));
 
-            if (subgraph_stats.subgraphCount(uv) > 1) {
+            if (subgraph_stats.subgraph_count(uv) > 1) {
                 finder.find_near(uv, graph, bound_graph, [&](const Subgraph &neighbor) {
 #ifndef NDEBUG
                     for (auto xy : neighbor.non_converting_edits()) {
-                        assert(!bound_graph.hasEdge(xy));
+                        assert(!bound_graph.has_edge(xy));
                     }
 #endif
                     candidates.push_back(neighbor);
@@ -1081,13 +1081,13 @@ namespace lower_bound {
             border[i + 1] = candidates.size();
 
             // prevent subgraphs including uv to be counted twice
-            bound_graph.setEdge(uv);
+            bound_graph.set_edge(uv);
         }
 
         // reset bound_graph
         for (VertexPair uv : pairs) {
-            assert(bound_graph.hasEdge(uv));
-            bound_graph.clearEdge(uv);
+            assert(bound_graph.has_edge(uv));
+            bound_graph.reset_edge(uv);
         }
 
         return {std::move(candidates), std::move(border)};
@@ -1127,7 +1127,7 @@ namespace lower_bound {
         size_t num_pairs = 0, num_neighbors_ub = 0;
         for (auto uv : subgraph.non_converting_edits()) {
             if (!marked[uv]) {
-                size_t nn = subgraph_stats.subgraphCount(uv) - 1;
+                size_t nn = subgraph_stats.subgraph_count(uv) - 1;
                 num_neighbors_ub += nn;
                 if (nn > 0) ++num_pairs;
             }

@@ -52,7 +52,7 @@ class WeightedPackingLocalSearch final : public LowerBoundI {
             }
 
             assert(other.cost() == packing.cost());
-            for (auto uv : other.depleted_graph().vertexPairs()) {
+            for (auto uv : other.depleted_graph().vertex_pairs()) {
                 if (other.potential(uv) != packing.potential(uv)) std::cerr << uv << std::endl;
                 assert(other.potential(uv) == packing.potential(uv));
                 if (other.is_depleted(uv) != packing.is_depleted(uv)) std::cerr << uv << std::endl;
@@ -907,7 +907,7 @@ public:
         auto estimate_degree = [&](auto &s) {
             std::size_t degree_ub = 0;
             for (auto uv : s.non_converting_edits()) {
-                degree_ub += subgraph_stats.subgraphCount(uv);
+                degree_ub += subgraph_stats.subgraph_count(uv);
             }
             return degree_ub;
         };

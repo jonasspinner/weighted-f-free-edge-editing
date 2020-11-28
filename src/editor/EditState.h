@@ -49,7 +49,7 @@ public:
         assert(is_marked(uv));
         assert(!is_edited(uv));
 
-        m_graph.toggleEdge(uv);
+        m_graph.toggle_edge(uv);
         m_edits.push_back(uv);
         m_edited[uv] = true;
     }
@@ -58,7 +58,7 @@ public:
         assert(is_marked(uv));
         assert(is_edited(uv));
 
-        m_graph.toggleEdge(uv);
+        m_graph.toggle_edge(uv);
         m_edits.pop_back();
         m_edited[uv] = false;
     }

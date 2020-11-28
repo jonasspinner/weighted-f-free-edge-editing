@@ -48,7 +48,7 @@ namespace selector {
                     pairs.push_back(uv);
 
             std::sort(pairs.begin(), pairs.end(), [&](const VertexPair &uv, const VertexPair &xy) {
-                return m_subgraph_stats->subgraphCount(uv) > m_subgraph_stats->subgraphCount(xy);
+                return m_subgraph_stats->subgraph_count(uv) > m_subgraph_stats->subgraph_count(xy);
             });
 
             return {pairs, false};

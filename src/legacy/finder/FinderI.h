@@ -107,7 +107,7 @@ public:
      *      });
      *      for (auto subgraph : subgraphs) {
      *          finder.for_all_conversionless_edits(subgraph, [](auto uv) {
-     *              assert(!forbidden.hasEdge(uv));
+     *              assert(!forbidden.has_edge(uv));
      *          });
      *      }
      *
@@ -189,21 +189,21 @@ protected:
     }
 
     static inline auto valid_edge(const Graph &graph) {
-        return [&](VertexPair xy) { return graph.hasEdge(xy); };
+        return [&](VertexPair xy) { return graph.has_edge(xy); };
     }
 
     static inline auto valid_edge(const Graph &graph, const Graph &forbidden) {
         assert(graph.size() == forbidden.size());
-        return [&](VertexPair xy) { return graph.hasEdge(xy) && !forbidden.hasEdge(xy); };
+        return [&](VertexPair xy) { return graph.has_edge(xy) && !forbidden.has_edge(xy); };
     }
 
     static inline auto valid_non_edge(const Graph &graph) {
-        return [&](VertexPair xy) { return !graph.hasEdge(xy); };
+        return [&](VertexPair xy) { return !graph.has_edge(xy); };
     }
 
     static inline auto valid_non_edge(const Graph &graph, const Graph &forbidden) {
         assert(graph.size() == forbidden.size());
-        return [&](VertexPair xy) { return !graph.hasEdge(xy) && !forbidden.hasEdge(xy); };
+        return [&](VertexPair xy) { return !graph.has_edge(xy) && !forbidden.has_edge(xy); };
     }
 };
 

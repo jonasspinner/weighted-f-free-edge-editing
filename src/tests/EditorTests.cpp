@@ -78,7 +78,7 @@ void EditorTests::same_output_for_small_zero_cost_instance(const std::vector<Opt
     auto fsg = Options::FSG::C4P4;
     auto graph = Graph::make_path_graph(8);
     VertexPairMap<Cost> costs(graph.size());
-    for (auto uv : graph.vertexPairs()) {
+    for (auto uv : graph.vertex_pairs()) {
         costs[uv] = 0;
     }
     Instance orig_instance{"test-instance", std::move(graph), costs};

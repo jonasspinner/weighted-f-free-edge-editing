@@ -78,7 +78,7 @@ namespace Finder {
         // version 1
 
         auto x = [&](Vertex a, Vertex b) -> size_t {
-            return forbidden.hasEdge({a, b}) ? 1 : 0;
+            return forbidden.has_edge({a, b}) ? 1 : 0;
         };
 
         auto ensure_orientation = [](Subgraph &&subgraph) -> Subgraph {
@@ -91,7 +91,7 @@ namespace Finder {
 
         return find_near(uv, graph, [&](Subgraph &&subgraph) {
             auto a = subgraph[0], b = subgraph[1], c = subgraph[2], d = subgraph[3];
-            if (graph.hasEdge({a, d})) {
+            if (graph.has_edge({a, d})) {
                 // C4
 
                 if (x(a, c) || x(b, d))
@@ -252,7 +252,7 @@ namespace Finder {
 
                     if (!conversion_edit_covered || !forbidden.hasEdge({a, b})) {
                         assert(graph.hasEdge({b, u})); assert(!graph.hasEdge({b, v})); assert(graph.hasEdge({u, v})); assert(!graph.hasEdge({u, a})); assert(graph.hasEdge({v, a}));
-                        size_t _n_cov = 0; _n_cov += forbidden.hasEdge({u, v}); _n_cov += forbidden.hasEdge({u, a}); _n_cov += forbidden.hasEdge({u, b}); _n_cov += forbidden.hasEdge({v, a}); _n_cov += forbidden.hasEdge({v, b}); _n_cov += forbidden.hasEdge({a, b});
+                        size_t _n_cov = 0; _n_cov += forbidden.hasEdge({u, v}); _n_cov += forbidden.has_edge({u, a}); _n_cov += forbidden.hasEdge({u, b}); _n_cov += forbidden.hasEdge({v, a}); _n_cov += forbidden.hasEdge({v, b}); _n_cov += forbidden.hasEdge({a, b});
                         assert(_n_cov <= 1);
                         if (callback(Subgraph{u, v, a, b})) return true;
                     }
@@ -326,7 +326,7 @@ namespace Finder {
             for (auto[a, b] : graph.edges()) {
                 if (a == u || a == v || b == u || b == v)
                     continue;
-                if (graph.hasEdge({u, a})) {
+                if (graph.has_edge({u, a})) {
 
                 } else if (graph.hasEdge({v, a})) {
 

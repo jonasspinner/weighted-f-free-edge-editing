@@ -13,7 +13,7 @@ class IncrementByMinCost : public IncrementByConstValue {
 public:
     IncrementByMinCost(const Instance &instance, Configuration config) : IncrementByConstValue(std::move(config)) {
         Cost min_cost = std::numeric_limits<Cost>::max();
-        for (auto uv : instance.graph.vertexPairs()) {
+        for (auto uv : instance.graph.vertex_pairs()) {
             auto cost = instance.costs[uv];
             if (cost != 0 && cost < min_cost)
                 min_cost = cost;

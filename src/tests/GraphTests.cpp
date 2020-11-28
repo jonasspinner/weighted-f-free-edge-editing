@@ -35,7 +35,7 @@ void GraphTests::edges_and_for_loops_are_consistent() {
 
     for (Vertex u = 0; u < G.size(); ++u)
         for (Vertex v = u + 1; v < G.size(); ++v)
-            if (G.hasEdge({u, v}))
+            if (G.has_edge({u, v}))
                 b.emplace_back(u, v);
 
     expect("edges() and for loops produce the same output", a, b);
@@ -46,14 +46,14 @@ void GraphTests::vertexPairs_and_for_loops_are_consistent() {
 
     std::vector<VertexPair> a, b;
 
-    for (VertexPair uv : G.vertexPairs())
+    for (VertexPair uv : G.vertex_pairs())
         a.push_back(uv);
 
     for (Vertex u = 0; u < G.size(); ++u)
         for (Vertex v = u + 1; v < G.size(); ++v)
             b.emplace_back(u, v);
 
-    expect("vertexPairs() and for loops produce the same output", a, b);
+    expect("vertex_pairs() and for loops produce the same output", a, b);
 }
 
 void GraphTests::neighbors_and_for_loops_are_consistent() {
@@ -67,7 +67,7 @@ void GraphTests::neighbors_and_for_loops_are_consistent() {
 
     for (Vertex u = 0; u < G.size(); ++u)
         for (Vertex v = 0; v < G.size(); ++v)
-            if (u != v && G.hasEdge({u, v}))
+            if (u != v && G.has_edge({u, v}))
                 b[u].push_back(v);
 
     expect("neighbors() and for loops produce the same output", a, b);
@@ -82,7 +82,7 @@ void GraphTests::iterators_on_empty_Graph_work() {
     auto edges = graph.edges();
     expect("empty Graph has no edges", true, edges.begin() == edges.end());
 
-    auto vertexPairs = graph.vertexPairs();
+    auto vertexPairs = graph.vertex_pairs();
     expect("empty Graph has no vertex pairs", true, vertexPairs.begin() == vertexPairs.end());
 }
 
@@ -95,7 +95,7 @@ void GraphTests::iterators_on_singleton_Graph_work() {
     auto edges = graph.edges();
     expect("singleton Graph has no edges", true, edges.begin() == edges.end());
 
-    auto vertexPairs = graph.vertexPairs();
+    auto vertexPairs = graph.vertex_pairs();
     expect("singleton Graph has no vertex pairs", true, vertexPairs.begin() == vertexPairs.end());
 }
 

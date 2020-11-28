@@ -95,12 +95,13 @@ int main(int argc, char *argv[]) {
     Instance instance = GraphIO::read_instance(config);
     VertexPairMap<bool> marked(instance.graph.size());
 
+    auto edit_state = std::make_unique<EditState>(instance.graph.copy(), instance.costs);
 
-    lower_bound::LPRelaxation<Options::FSG::C4P4> lp_algorithm(instance, marked, config);
+    lower_bound::LPRelaxation<Options::FSG::C4P4> lp_algorithm(edit_state.get(), config.verbosity, config.timelimit);
     lp_algorithm.initialize(max_cost);
     auto relaxation_lb = lp_algorithm.calculate_lower_bound(max_cost);
 
-    lower_bound::SortedGreedy<Options::FSG::C4P4> packing_algorithm(instance, marked);
+    lower_bound::SortedGreedy<Options::FSG::C4P4> packing_algorithm(edit_state.get());
     packing_algorithm.initialize(max_cost);
     auto [packing_lb, covered_by_packing, packing, min_cost_vertex_pairs] = packing_algorithm.calculate_lower_bound_and_packing();
 
@@ -110,7 +111,7 @@ int main(int argc, char *argv[]) {
     }
 
     VertexPairMap<double> values(instance.graph.size());
-    for (VertexPair uv : instance.graph.vertexPairs()) {
+    for (VertexPair uv : instance.graph.vertex_pairs()) {
         values[uv] = lp_algorithm.variable_edited_value(uv);
     }
 

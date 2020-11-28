@@ -82,11 +82,11 @@ public:
     Graph operator[](const Graph &graph) const {
         Graph new_graph(graph.size());
         for (VertexPair uv : graph.edges())
-            new_graph.setEdge((*this)[uv]);
+            new_graph.set_edge((*this)[uv]);
 
 #ifndef NDEBUG
-        for (VertexPair uv : graph.vertexPairs())
-            assert(new_graph.hasEdge((*this)[uv]) == graph.hasEdge(uv));
+        for (VertexPair uv : graph.vertex_pairs())
+            assert(new_graph.has_edge((*this)[uv]) == graph.has_edge(uv));
 #endif
         return new_graph;
     }
