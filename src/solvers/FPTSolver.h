@@ -1,7 +1,3 @@
-//
-// Created by jonas on 19.08.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_FPTSOLVER_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_FPTSOLVER_H
 
@@ -91,7 +87,7 @@ private:
             return Result::Unsolved();
         std::vector<Solution> solutions;
 
-        Editor editor(instance.copy(), config);
+        Editor editor(instance.graph.copy(), instance.costs, config);
 
         auto k_min = editor.initial_lower_bound();
         if (k_min > k)
@@ -136,7 +132,7 @@ private:
      */
     static Result search_delta(const Instance &instance, const Configuration &config,
             std::vector<Stat> &stats, double quantile = 0.5) {
-        Editor editor(instance.copy(), config);
+        Editor editor(instance.graph.copy(), instance.costs, config);
 
         std::chrono::seconds timelimit(config.timelimit);
 
@@ -217,7 +213,7 @@ private:
             std::cerr << "delta must be at least 1" << std::endl;
             abort();
         }
-        Editor editor(instance.copy(), config);
+        Editor editor(instance.graph.copy(), instance.costs, config);
 
         std::chrono::seconds timelimit(config.timelimit);
 
@@ -286,7 +282,7 @@ private:
     static Result search_exponential(const Instance &instance, const Configuration &config, std::vector<Stat> &stats,
             size_t max_history_length = 3, double desired_calls_factor = 2, double max_step_factor = 4,
             double quantile = 0.5) {
-        Editor editor(instance.copy(), config);
+        Editor editor(instance.graph.copy(), instance.costs, config);
 
         std::chrono::seconds timelimit(config.timelimit);
 

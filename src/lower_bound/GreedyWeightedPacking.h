@@ -11,24 +11,22 @@
 
 
 namespace lower_bound {
-    template <Options::FSG SetOfForbiddenSubgraphs>
+    template<Options::FSG SetOfForbiddenSubgraphs>
     class GreedyWeightedPacking : public LowerBoundI {
     private:
         using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
         using Finder = typename Subgraph::Finder;
 
-        const Graph &m_graph;
-        const VertexPairMap<Cost> &m_costs;
-        const VertexPairMap<bool> &m_marked;
+        const EditState *m_edit_state;
+
         VertexPairMap<Cost> m_costs_remaining;
 
         std::vector<std::pair<Cost, Subgraph>> m_subgraph_heap;
 
         Finder finder;
     public:
-        GreedyWeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked) :
-                m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
-                m_costs_remaining(m_costs.size()) {}
+        explicit GreedyWeightedPacking(const EditState *edit_state) :
+                m_edit_state(edit_state), m_costs_remaining(m_edit_state->cost_map().size()) {}
 
         Cost calculate_lower_bound(Cost k) override {
             m_subgraph_heap.clear();
@@ -38,12 +36,12 @@ namespace lower_bound {
             // Initialize remaining costs with the editing costs.
             // Previously this was `m_costs_remaining = m_costs`, which led to large amounts of memory consumption.
             // TODO: Investigate memory usage.
-            for (auto uv : Graph::VertexPairs(m_costs.size()))
-                m_costs_remaining[uv] = m_costs[uv];
+            for (auto uv : Graph::VertexPairs(m_edit_state->cost_map().size()))
+                m_costs_remaining[uv] = m_edit_state->cost(uv);
 
 
-            auto exit_state = finder.find(m_graph, [&](Subgraph subgraph) {
-                Cost initial_min_cost = subgraph.calculate_min_cost(m_costs_remaining, m_marked);
+            auto exit_state = finder.find(m_edit_state->graph(), [&](Subgraph subgraph) {
+                Cost initial_min_cost = subgraph.calculate_min_cost(m_costs_remaining, m_edit_state->marked_map());
 
                 m_subgraph_heap.emplace_back(initial_min_cost, std::move(subgraph));
 
@@ -64,7 +62,7 @@ namespace lower_bound {
                 const auto &[cost, subgraph] = m_subgraph_heap.back();
 
                 // m_cost_remaining may be updated after cost has been calculated.
-                Cost current_min_cost = subgraph.calculate_min_cost(m_costs_remaining, m_marked);
+                Cost current_min_cost = subgraph.calculate_min_cost(m_costs_remaining, m_edit_state->marked_map());
 
                 if (current_min_cost == 0) {
                     // The subgraph cannot be inserted.
@@ -89,7 +87,8 @@ namespace lower_bound {
         }
     };
 
-    template class GreedyWeightedPacking<Options::FSG::C4P4>;
+    template
+    class GreedyWeightedPacking<Options::FSG::C4P4>;
 }
 
 #endif //WEIGHTED_F_FREE_EDGE_EDITING_GREEDYWEIGHTEDPACKING_H

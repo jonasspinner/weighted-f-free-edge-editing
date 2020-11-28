@@ -18,13 +18,12 @@
 #include "../selector/selector_utils.h"
 
 #include "../consumer/SubgraphStats.h"
+#include "EditState.h"
 
 
 class Editor {
 private:
-    Instance m_instance;
-    VertexPairMap<bool> m_marked;
-    VertexPairMap<bool> m_edited;
+    std::unique_ptr<EditState> m_edit_state;
 
     std::unique_ptr<LowerBoundI> m_lower_bound;
     std::unique_ptr<SelectorI> m_selector;
@@ -32,8 +31,7 @@ private:
 
     std::vector<ConsumerI *> m_consumers;
 
-    std::vector<VertexPair> edits;
-    bool m_found_solution;
+    bool m_found_solution = false;
 
     Cost m_initial_lower_bound = 0;
     bool m_is_initialized = false;
@@ -42,9 +40,9 @@ private:
 
     Configuration m_config;
 public:
-    explicit Editor(Instance instance, Configuration config) :
-            m_instance(std::move(instance)), m_marked(m_instance.graph.size()), m_edited(m_instance.graph.size()),
-            m_found_solution(false), m_config(std::move(config)) {
+    explicit Editor(Graph graph, VertexPairMap<Cost> costs, Configuration config) :
+            m_edit_state(std::make_unique<EditState>(std::move(graph), std::move(costs))),
+            m_config(std::move(config)) {
 
         switch (config.forbidden_subgraphs) {
             case Options::FSG::C4P4:
@@ -58,9 +56,9 @@ public:
 private:
     template<Options::FSG FSG>
     void make_consumers() {
-        auto stats = std::make_unique<SubgraphStats<FSG>>(m_instance, m_marked);
-        m_selector = selector::make<FSG>(m_config.selector, m_instance, m_marked, *stats);
-        m_lower_bound = lower_bound::make<FSG>(m_config.lower_bound, m_instance, m_marked, *stats, m_config);
+        auto stats = std::make_unique<SubgraphStats<FSG>>(m_edit_state.get());
+        m_selector = selector::make<FSG>(m_config.selector, m_edit_state.get(), stats.get());
+        m_lower_bound = lower_bound::make<FSG>(m_config.lower_bound, m_edit_state.get(), stats.get(), m_config);
 
         m_subgraph_stats = std::move(stats);
 
@@ -145,7 +143,8 @@ private:
                                  const std::function<bool(const std::vector<VertexPair> &)> &result_cb,
                                  const std::function<void(Cost, Cost)> &prune_cb,
                                  const std::function<bool(Cost)> &call_cb) {
-        const VertexPairMap<Cost> &costs = m_instance.costs;
+        const auto &costs = m_edit_state->cost_map();
+        const auto &edits = m_edit_state->edits();
 
         m_stats.calls(k)++;
         if (call_cb(k)) return false;
@@ -169,7 +168,7 @@ private:
         // recurse on problem pairs. keep vertex pairs marked between calls.
         bool return_value = false;
         for (VertexPair uv : problem.pairs) {
-            assert(!m_marked[uv]);
+            assert(!m_edit_state->is_marked(uv));
 
             mark_edge(uv);
 
@@ -190,7 +189,7 @@ private:
 
         // Iterating in reverse order because SubgraphStats keeps the history on a stack.
         for (auto uv = problem.pairs.rbegin(); uv != problem.pairs.rend(); ++uv)
-            if (m_marked[*uv])
+            if (m_edit_state->is_marked(*uv))
                 unmark_edge(*uv);
 
 
@@ -211,7 +210,8 @@ private:
                                     const std::function<bool(const std::vector<VertexPair> &)> &result_cb,
                                     const std::function<void(Cost, Cost)> &prune_cb,
                                     const std::function<bool(Cost)> &call_cb) {
-        const VertexPairMap<Cost> &costs = m_instance.costs;
+        const auto &costs = m_edit_state->cost_map();
+        const auto &edits = m_edit_state->edits();
 
         m_stats.calls(k)++;
         if (call_cb(k)) return false;
@@ -276,10 +276,10 @@ private:
      * @param uv
      */
     void mark_edge(VertexPair uv) {
-        assert(!m_marked[uv]);
+        assert(!m_edit_state->is_marked(uv));
         for (auto &c : m_consumers) c->before_mark(uv);
 
-        m_marked[uv] = true;
+        m_edit_state->mark_edge(uv);
 
         for (auto &c : m_consumers) c->after_mark(uv);
     }
@@ -290,15 +290,11 @@ private:
      * @param uv
      */
     void edit_edge(VertexPair uv) {
-        assert(m_marked[uv]);
-        Graph &G = m_instance.graph;
+        assert(m_edit_state->is_marked(uv));
 
         for (auto &c : m_consumers) c->before_edit(uv);
 
-        G.toggleEdge(uv);
-        edits.push_back(uv);
-
-        m_edited[uv] = true;
+        m_edit_state->edit_edge(uv);
 
         for (auto &c : m_consumers) c->after_edit(uv);
     }
@@ -309,15 +305,11 @@ private:
      * @param uv
      */
     void unedit_edge(VertexPair uv) {
-        assert(m_marked[uv]);
-        Graph &G = m_instance.graph;
+        assert(m_edit_state->is_marked(uv));
 
         for (auto &c : m_consumers) c->before_unedit(uv);
 
-        G.toggleEdge(uv);
-        edits.pop_back();
-
-        m_edited[uv] = false;
+        m_edit_state->unedit_edge(uv);
 
         for (auto &c : m_consumers) c->after_unedit(uv);
     }
@@ -328,8 +320,9 @@ private:
      * @param uv
      */
     void unmark_edge(VertexPair uv) {
-        assert(m_marked[uv]);
-        m_marked[uv] = false;
+        assert(m_edit_state->is_marked(uv));
+
+        m_edit_state->unmark_edge(uv);
 
         for (auto &c : m_consumers) c->after_unmark(uv);
     }

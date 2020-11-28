@@ -13,24 +13,23 @@ namespace selector {
         using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
         using Finder = typename Subgraph::Finder;
 
-        const Graph &m_graph;
-        const VertexPairMap<bool> &m_marked;
-        const SubgraphStats<SetOfForbiddenSubgraphs> &m_subgraph_stats;
+        const EditState *m_edit_state;
+        const SubgraphStats<SetOfForbiddenSubgraphs> *m_subgraph_stats;
 
         Finder finder;
     public:
-        MostMarkedPairs(const Graph &graph, const VertexPairMap<bool> &marked,
-                        const SubgraphStats<SetOfForbiddenSubgraphs> &subgraph_stats) :
-                m_graph(graph), m_marked(marked), m_subgraph_stats(subgraph_stats) {}
+        MostMarkedPairs(const EditState *edit_state,
+                        const SubgraphStats<SetOfForbiddenSubgraphs> *subgraph_stats) :
+                m_edit_state(edit_state), m_subgraph_stats(subgraph_stats) {}
 
         Problem select_problem(Cost /*k*/) override {
             std::optional<Subgraph> max_subgraph;
             int max_num_marked_pairs = std::numeric_limits<int>::min();
 
-            finder.find(m_graph, [&](Subgraph subgraph) {
+            finder.find(m_edit_state->graph(), [&](Subgraph subgraph) {
                 int num_marked_pairs = 0;
                 for (VertexPair uv : subgraph.vertex_pairs())
-                    if (m_marked[uv])
+                    if (m_edit_state->is_marked(uv))
                         ++num_marked_pairs;
 
                 if (num_marked_pairs > max_num_marked_pairs) {
@@ -45,11 +44,11 @@ namespace selector {
 
             std::vector<VertexPair> pairs;
             for (VertexPair uv : max_subgraph->vertex_pairs())
-                if (!m_marked[uv])
+                if (!m_edit_state->is_marked(uv))
                     pairs.push_back(uv);
 
             std::sort(pairs.begin(), pairs.end(), [&](const VertexPair &uv, const VertexPair &xy) {
-                return m_subgraph_stats.subgraphCount(uv) > m_subgraph_stats.subgraphCount(xy);
+                return m_subgraph_stats->subgraphCount(uv) > m_subgraph_stats->subgraphCount(xy);
             });
 
             return {pairs, false};

@@ -15,24 +15,24 @@ namespace selector {
         using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
         using Finder = typename Subgraph::Finder;
 
-        const Graph &m_graph;
-        const VertexPairMap<bool> &m_marked;
-        const SubgraphStats<SetOfForbiddenSubgraphs> &m_subgraph_stats;
+        const EditState *m_edit_state;
+        const SubgraphStats<SetOfForbiddenSubgraphs> *m_subgraph_stats;
         Graph m_used;
 
         Finder m_finder;
     public:
-        MostAdjacentSubgraphs(const Graph &graph, const VertexPairMap<bool> &marked,
-                              const SubgraphStats<SetOfForbiddenSubgraphs> &subgraph_stats) :
-                m_graph(graph), m_marked(marked), m_subgraph_stats(subgraph_stats),
-                m_used(m_marked.size()) {}
+        MostAdjacentSubgraphs(const EditState *edit_state,
+                              const SubgraphStats<SetOfForbiddenSubgraphs> *subgraph_stats) :
+                m_edit_state(edit_state), m_subgraph_stats(subgraph_stats),
+                m_used(m_edit_state->graph().number_of_vertices()) {}
 
         Problem select_problem(Cost /*k*/) override {
+            const auto &graph = m_edit_state->graph();
 
             size_t max_subgraph_count = 0;
             std::vector<VertexPair> pairs;
-            for (VertexPair uv : m_graph.vertexPairs()) {
-                size_t subgraph_count = m_subgraph_stats.subgraphCount(uv);
+            for (VertexPair uv : graph.vertexPairs()) {
+                size_t subgraph_count = m_subgraph_stats->subgraphCount(uv);
                 if (subgraph_count > max_subgraph_count) {
                     max_subgraph_count = subgraph_count;
                     pairs = {uv};
@@ -43,12 +43,12 @@ namespace selector {
 
             std::vector<std::pair<size_t, VertexPair>> best_pairs, current_pairs;
             for (VertexPair uv : pairs) {
-                m_finder.find_near(uv, m_graph, m_used, [&](const Subgraph &subgraph) {
+                m_finder.find_near(uv, graph, m_used, [&](const Subgraph &subgraph) {
                     current_pairs.clear();
 
                     for (VertexPair xy : subgraph.vertex_pairs())
-                        if (!m_marked[xy])
-                            current_pairs.emplace_back(m_subgraph_stats.subgraphCount(xy), xy);
+                        if (!m_edit_state->is_marked(xy))
+                            current_pairs.emplace_back(m_subgraph_stats->subgraphCount(xy), xy);
 
                     std::sort(current_pairs.begin(), current_pairs.end(), std::greater<>());
 
@@ -76,16 +76,16 @@ namespace selector {
 
 
             Problem problem;
-            problem.solved = (m_subgraph_stats.subgraphCount() == 0);
+            problem.solved = (m_subgraph_stats->subgraphCount() == 0);
 
 #ifndef NDEBUG
             if (problem.solved) {
-                assert(subgraph_iterators::IterationExit::Normal == m_finder.find(m_graph, [](Subgraph) { return subgraph_iterators::IterationControl::Break; }));
+                assert(subgraph_iterators::IterationExit::Normal == m_finder.find(graph, [](Subgraph) { return subgraph_iterators::IterationControl::Break; }));
             }
 #endif
 
             for (auto[_, uv] : best_pairs) {
-                assert(!m_marked[uv]);
+                assert(!m_edit_state->is_marked(uv));
                 problem.pairs.push_back(uv);
             }
 

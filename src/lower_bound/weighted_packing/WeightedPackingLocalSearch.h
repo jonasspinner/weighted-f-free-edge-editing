@@ -75,10 +75,8 @@ class WeightedPackingLocalSearch final : public LowerBoundI {
         }
     };
 
-    const Graph &m_graph;
-    const VertexPairMap<Cost> &m_costs;
-    const VertexPairMap<bool> &m_marked;
-    const SubgraphStats<SetOfForbiddenSubgraphs> &m_subgraph_stats;
+    const EditState *m_edit_state;
+    const SubgraphStats<SetOfForbiddenSubgraphs> *m_subgraph_stats;
 
     WeightedPacking<SetOfForbiddenSubgraphs> m_packing;
     std::vector<State> m_states;
@@ -114,11 +112,11 @@ public:
      * @param subgraph_stats
      * @param seed
      */
-    WeightedPackingLocalSearch(const Instance &instance, const VertexPairMap<bool> &marked,
-                               const SubgraphStats<SetOfForbiddenSubgraphs> &subgraph_stats,
+    WeightedPackingLocalSearch(const EditState *edit_state,
+                               const SubgraphStats<SetOfForbiddenSubgraphs> *subgraph_stats,
                                std::size_t seed = 0) :
-            m_graph(instance.graph), m_costs(instance.costs), m_marked(marked), m_subgraph_stats(subgraph_stats),
-            m_packing(instance, marked, subgraph_stats), m_gen(seed) {
+            m_edit_state(edit_state), m_subgraph_stats(subgraph_stats),
+            m_packing(m_edit_state, m_subgraph_stats), m_gen(seed) {
         m_states.emplace_back();
     }
 
@@ -175,7 +173,7 @@ public:
      */
     void after_mark(VertexPair uv) override {
 #ifndef NDEBUG
-        assert(m_marked[uv]);
+        assert(m_edit_state->is_marked(uv));
 
         if (verbosity > 0)
             std::cout << "after_mark(" << uv << ")\n";
@@ -225,13 +223,13 @@ public:
 #ifndef NDEBUG
         current_state().packing_is_same_as_initialized_by_state(m_packing);
 #endif
-        if (m_costs[uv] == 0) {
+        if (m_edit_state->cost(uv) == 0) {
             return;
         }
 
         auto &parent = parent_state();
 
-        auto [solvable, inserted] = insert_incident_subgraphs_into_packing(uv, m_finder, m_graph, m_packing);
+        auto [solvable, inserted] = insert_incident_subgraphs_into_packing(uv, m_finder, m_edit_state->graph(), m_packing);
 
         // Packing reflects parent_state() after it has been updated. It should be maximal or unsolvable.
         if (solvable) {
@@ -383,7 +381,7 @@ public:
         auto &state = current_state();
 
 #ifndef NDEBUG
-        assert(m_marked[uv]);
+        assert(m_edit_state->is_marked(uv));
         if (verbosity > 0) {
             std::cout << "after_edit(" << uv << ")\n";
             std::cout << "solvable = " << state.is_solvable() << "\n";
@@ -393,12 +391,12 @@ public:
 
         state.packing_is_same_as_initialized_by_state(m_packing);
 
-        assert(m_packing.potential(uv) == m_costs[uv]);
+        assert(m_packing.potential(uv) == m_edit_state->cost(uv));
 #endif
 
         // Remove subgraphs which are destroyed.
         // Note: This can "free" subgraphs which now can be inserted. These are at pairs which were previously depleted.
-        std::vector<VertexPair> pairs = remove_incident_subgraphs(uv, m_marked, state.subgraphs(), m_packing);
+        std::vector<VertexPair> pairs = remove_incident_subgraphs(uv, m_edit_state->marked_map(), state.subgraphs(), m_packing);
         if (!m_packing.is_depleted(uv))
             pairs.push_back(uv);
 
@@ -555,7 +553,7 @@ public:
             throw std::runtime_error("Illegal state. There must be an equal amount of push and pops from the state stack.");
 
         auto &state = current_state();
-        greedy_initialize(state, m_packing, k, m_finder, m_graph);
+        greedy_initialize(state, m_packing, k, m_finder, m_edit_state->graph());
 
 #ifndef NDEBUG
         state.packing_is_same_as_initialized_by_state(m_packing);
@@ -892,7 +890,7 @@ public:
     Subgraph find_plateau_candidate(const std::vector<Subgraph>& candidates, const Subgraph &subgraph) {
         constexpr auto plateau_search_use_min_degree = true;
         if (plateau_search_use_min_degree) {
-            return find_plateau_candidate_min_degree(candidates, subgraph, m_subgraph_stats);
+            return find_plateau_candidate_min_degree(candidates, subgraph, *m_subgraph_stats);
         } else {
             return find_plateau_candidate_random(candidates, m_gen);
         }

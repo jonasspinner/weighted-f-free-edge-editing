@@ -2,7 +2,6 @@
 
 #include "NPS_MWIS_Solver.h"
 #include "../../extern/nps_mwis/src/algorithm.h"
-#include "../../extern/nps_mwis/src/ArgPack.h"
 
 
 namespace nps_mwis {
@@ -60,17 +59,17 @@ namespace lower_bound {
      */
     template<Options::FSG SetOfForbiddenSubgraphs>
     std::optional<nps_mwis::Graph> NPS_MWIS_Solver<SetOfForbiddenSubgraphs>::build_instance() {
-        VertexPairMap<std::vector<Vertex>> cliques(m_graph.size());
+        VertexPairMap<std::vector<Vertex>> cliques(m_edit_state->graph().size());
 
         std::vector<int> weights;
 
         // The set of subgraphs which share a vertex pair form a clique in the MWIS instance.
-        auto exit_state = finder.find(m_graph, [&](Subgraph subgraph) {
+        auto exit_state = finder.find(m_edit_state->graph(), [&](Subgraph subgraph) {
             const auto index = weights.size();
             for (auto uv : subgraph.non_converting_edits()) {
                 cliques[uv].push_back(index);
             }
-            Cost cost = subgraph.calculate_min_cost(m_costs, m_marked);
+            Cost cost = subgraph.calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map());
             weights.push_back(cost);
             // If all vertex pairs are marked then the cost is invalid and the subgraph cannot be destroyed because no
             // vertex pairs can be edited.
@@ -87,8 +86,8 @@ namespace lower_bound {
         // ils_mwis::Graph stores a vector of neighbors for each neighbor and does not handle multiple insertions.
         Graph instance_graph(n);
 
-        for (VertexPair uv : m_graph.vertexPairs()) {
-            if (m_marked[uv])
+        for (VertexPair uv : m_edit_state->graph().vertexPairs()) {
+            if (m_edit_state->is_marked(uv))
                 continue;
 
             const auto &clique = cliques[uv];

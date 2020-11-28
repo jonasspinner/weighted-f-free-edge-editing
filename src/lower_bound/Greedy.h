@@ -3,28 +3,26 @@
 
 
 #include "LowerBoundI.h"
-#include "../Instance.h"
 #include "../forbidden_subgraphs/SubgraphC4P4.h"
+#include "../editor/EditState.h"
 
 
 namespace lower_bound {
-    template <Options::FSG SetOfForbiddenSubgraphs>
+    template<Options::FSG SetOfForbiddenSubgraphs>
     class Greedy : public LowerBoundI {
     private:
         using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
         using Finder = typename Subgraph::Finder;
 
-        const Graph &m_graph;
-        const VertexPairMap<Cost> &m_costs;
-        const VertexPairMap<bool> &m_marked;
+        const EditState *m_edit_state;
+
         VertexPairMap<bool> m_used_in_bound;
 
         Finder finder;
     public:
 
-        Greedy(const Instance &instance, const VertexPairMap<bool> &marked) :
-                m_graph(instance.graph), m_costs(instance.costs),
-                m_marked(marked), m_used_in_bound(m_graph.size()) {}
+        explicit Greedy(const EditState *edit_state) :
+                m_edit_state(edit_state), m_used_in_bound(m_edit_state->graph().size()) {}
 
         Cost calculate_lower_bound(Cost /*k*/) override;
     };

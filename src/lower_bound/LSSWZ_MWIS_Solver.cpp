@@ -8,7 +8,7 @@ namespace lower_bound {
     template<Options::FSG SetOfForbiddenSubgraphs>
     Cost LSSWZ_MWIS_Solver<SetOfForbiddenSubgraphs>::calculate_lower_bound(Cost /*k*/) {
 
-        auto instance = build_instance(finder, m_graph, m_marked, m_costs);
+        auto instance = build_instance(finder, m_edit_state->graph(), m_edit_state->marked_map(), m_edit_state->cost_map());
         if (!instance.has_value()) {
             if (m_verbosity > 0)
                 std::cout << "lsswz solve    n: - m: - cost: infty  # unsolvable\n";

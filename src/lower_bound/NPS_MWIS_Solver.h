@@ -6,8 +6,8 @@
 
 #include "LowerBoundI.h"
 #include "../../extern/nps_mwis/src/Graph.h"
-#include "../Instance.h"
 #include "../forbidden_subgraphs/SubgraphC4P4.h"
+#include "../editor/EditState.h"
 
 
 namespace lower_bound {
@@ -18,14 +18,13 @@ namespace lower_bound {
         using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
         using Finder = typename Subgraph::Finder;
 
-        const Graph &m_graph;
-        const VertexPairMap<Cost> &m_costs;
-        const VertexPairMap<bool> &m_marked;
+        const EditState *m_edit_state;
 
         Finder finder;
     public:
-        NPS_MWIS_Solver(const Instance &instance, const VertexPairMap<bool> &marked) :
-                m_graph(instance.graph), m_costs(instance.costs), m_marked(marked) {}
+        explicit NPS_MWIS_Solver(const EditState *edit_state) : m_edit_state(edit_state) {
+            assert(m_edit_state);
+        }
 
         Cost calculate_lower_bound(Cost k) override;
 

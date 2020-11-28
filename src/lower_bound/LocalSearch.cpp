@@ -18,10 +18,10 @@ namespace lower_bound {
         if (!state.solvable()) return state.cost();
 
 
-        state.recalculate(m_marked, m_costs);
-        initialize_bound_graph(state, m_marked, m_bound_graph);
-        assert(state_is_valid(state, m_marked, m_costs));
-        assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
+        state.recalculate(m_edit_state->marked_map(), m_edit_state->cost_map());
+        initialize_bound_graph(state, m_edit_state->marked_map(), m_bound_graph);
+        assert(state_is_valid(state, m_edit_state->marked_map(), m_edit_state->cost_map()));
+        assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph));
 
         if (state.cost() <= k)
             local_search(state, k);
@@ -52,15 +52,15 @@ namespace lower_bound {
 
         m_bound_graph.clearEdges();
 
-        for (auto uv : m_costs.keys()) {
-            if (m_costs[uv] == 0) {
+        for (auto uv : m_edit_state->cost_map().keys()) {
+            if (m_edit_state->cost(uv) == 0) {
                 m_bound_graph.setEdge(uv);
             }
         }
 
         std::vector<std::pair<Cost, Subgraph>> subgraphs;
-        auto exit_state = m_finder.find(m_graph, m_bound_graph, [&](const auto &subgraph) {
-            Cost min_cost = subgraph.calculate_min_cost(m_costs, m_marked);
+        auto exit_state = m_finder.find(m_edit_state->graph(), m_bound_graph, [&](const auto &subgraph) {
+            Cost min_cost = subgraph.calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map());
             subgraphs.emplace_back(min_cost, subgraph);
             return subgraph_iterators::break_if(min_cost == invalid_cost);
         });
@@ -74,17 +74,17 @@ namespace lower_bound {
                   [](const auto &lhs, const auto &rhs) { return lhs.first > rhs.first; });
 
         for (auto&[cost, subgraph] : subgraphs) {
-            bool inserted = try_insert_into_graph(subgraph, m_marked, m_bound_graph);
+            bool inserted = try_insert_into_graph(subgraph, m_edit_state->marked_map(), m_bound_graph);
 
             if (inserted) {
-                assert(cost == subgraph.calculate_min_cost(m_costs, m_marked));
+                assert(cost == subgraph.calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map()));
                 assert(cost != invalid_cost);
                 state.insert({cost, subgraph});
             }
         }
 
-        assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
-        assert(bound_is_maximal(m_finder, m_graph, m_bound_graph));
+        assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph));
+        assert(bound_is_maximal(m_finder, m_edit_state->graph(), m_bound_graph));
     }
 
     template<Options::FSG SetOfForbiddenSubgraphs>
@@ -361,7 +361,7 @@ namespace lower_bound {
 
         // Either only remove the subgraph at uv (I) or remove it and fill the "hole" with subgraphs not containing uv (II).
         // remove_near_subgraphs_from_bound(state, uv); // I
-        update_near_subgraphs(state, uv, m_finder, m_marked, m_costs, m_graph, m_bound_graph); // II
+        update_near_subgraphs(state, uv, m_finder, m_edit_state->marked_map(), m_edit_state->cost_map(), m_edit_state->graph(), m_bound_graph); // II
 
 #ifndef NDEBUG  // TODO: Adapt to conversionless edit optimization.
         //        for (const auto &[cost, subgraph] : state.bound())
@@ -380,8 +380,8 @@ namespace lower_bound {
 
         if (!state.solvable()) return;
 
-        initialize_bound_graph(state, m_marked, m_bound_graph);
-        insert_near_subgraphs_into_bound(state, uv, m_finder, m_marked, m_costs, m_graph, m_bound_graph);
+        initialize_bound_graph(state, m_edit_state->marked_map(), m_bound_graph);
+        insert_near_subgraphs_into_bound(state, uv, m_finder, m_edit_state->marked_map(), m_edit_state->cost_map(), m_edit_state->graph(), m_bound_graph);
     }
 
     /**
@@ -394,8 +394,8 @@ namespace lower_bound {
 
         if (!state.solvable()) return;
 
-        initialize_bound_graph(state, m_marked, m_bound_graph);
-        insert_near_subgraphs_into_bound(state, uv, m_finder, m_marked, m_costs, m_graph, m_bound_graph);
+        initialize_bound_graph(state, m_edit_state->marked_map(), m_bound_graph);
+        insert_near_subgraphs_into_bound(state, uv, m_finder, m_edit_state->marked_map(), m_edit_state->cost_map(), m_edit_state->graph(), m_bound_graph);
     }
 
     /**
@@ -477,7 +477,7 @@ namespace lower_bound {
 #endif
             }
 
-            // assert(!state.solvable() || bound_graph_is_valid(state, m_marked, m_bound_graph));
+            // assert(!state.solvable() || bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph));
 
             rounds_no_improvement = improvement_found ? 0 : rounds_no_improvement + 1;
             // improvement_found || (rounds_no_improvement < 5 && bound_changed)
@@ -497,7 +497,7 @@ namespace lower_bound {
 
 #ifndef NDEBUG
         if (state.cost() <= k) {
-            assert(bound_is_maximal(m_finder, m_graph, m_bound_graph));
+            assert(bound_is_maximal(m_finder, m_edit_state->graph(), m_bound_graph));
         }
 #endif
     }
@@ -519,22 +519,22 @@ namespace lower_bound {
         bool found_improvement = false;
 
         const auto &[subgraph_cost, subgraph] = state.bound(index);
-        assert(subgraph_cost == subgraph.calculate_min_cost(m_costs, m_marked));
+        assert(subgraph_cost == subgraph.calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map()));
 
 
         const auto[num_pairs_with_neighbors, num_neighbors_upper_bound] =
-            count_neighbors(m_subgraph_stats, m_marked, subgraph);
+            count_neighbors(*m_subgraph_stats, m_edit_state->marked_map(), subgraph);
         if (num_pairs_with_neighbors < 1 || num_neighbors_upper_bound < 1)
             return false; // No improvement possible.
 
-        remove_from_graph(subgraph, m_marked, m_bound_graph);
+        remove_from_graph(subgraph, m_edit_state->marked_map(), m_bound_graph);
 
 
         Cost max_cost = subgraph_cost;
         Subgraph max_subgraph(subgraph);
 
 
-        const auto pairs = get_pairs(subgraph, m_marked);
+        const auto pairs = get_pairs(subgraph, m_edit_state->marked_map());
 
 #ifndef NDEBUG
         {
@@ -549,19 +549,19 @@ namespace lower_bound {
         for (VertexPair uv : pairs) {
             assert(!m_bound_graph.hasEdge(uv));
 
-            if (m_subgraph_stats.subgraphCount(uv) > 1) {
+            if (m_subgraph_stats->subgraphCount(uv) > 1) {
 
-                m_finder.find_near(uv, m_graph, m_bound_graph, [&](const Subgraph &neighbor) {
+                m_finder.find_near(uv, m_edit_state->graph(), m_bound_graph, [&](const Subgraph &neighbor) {
 #ifndef NDEBUG
                     {
                         auto edits = neighbor.non_converting_edits();
                         bool touches = std::any_of(edits.begin(), edits.end(), [&](auto xy) {
-                            return m_graph.hasEdge(xy);
+                            return m_edit_state->graph().hasEdge(xy);
                         });
                         assert(!touches);
                     }
 #endif
-                    Cost n_cost = neighbor.calculate_min_cost(m_costs, m_marked);
+                    Cost n_cost = neighbor.calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map());
                     if (n_cost > max_cost) {
                         found_improvement = true;
                         max_cost = n_cost;
@@ -583,8 +583,8 @@ namespace lower_bound {
             std::cout << "found (1, 1) swap " << std::setw(4) << max_cost - subgraph_cost << ", " << subgraph_cost
                       << " => " << max_cost << ", " << subgraph << " => " << max_subgraph << "\n";
 
-        insert_into_graph(max_subgraph, m_marked, m_bound_graph);
-        assert(max_cost == max_subgraph.calculate_min_cost(m_costs, m_marked));
+        insert_into_graph(max_subgraph, m_edit_state->marked_map(), m_bound_graph);
+        assert(max_cost == max_subgraph.calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map()));
         state.replace(index, {max_cost, max_subgraph});
 
         if (max_cost == invalid_cost) {
@@ -593,7 +593,7 @@ namespace lower_bound {
         }
 
         if (state.solvable())
-            assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
+            assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph));
 
         return found_improvement;
     }
@@ -625,27 +625,27 @@ namespace lower_bound {
         bool found_improvement = false;
 
         const auto &[subgraph_cost, subgraph] = state.bound(index);
-        assert(subgraph_cost == subgraph.calculate_min_cost(m_costs, m_marked));
+        assert(subgraph_cost == subgraph.calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map()));
         assert(subgraph_cost != invalid_cost);
 
         // If the subgraph has no neighbors on at least one vertex pair it can be skipped.
         const auto[num_pairs_with_neighbors, num_neighbors_upper_bound] =
-            count_neighbors(m_subgraph_stats, m_marked, subgraph);
+            count_neighbors(*m_subgraph_stats, m_edit_state->marked_map(), subgraph);
         if (num_pairs_with_neighbors < 1 || num_neighbors_upper_bound < 1)
             return false; // No improvement possible.
 
         // Remove the subgraph from m_bound_graph. Either the subgraph or other subgraphs will be reinserted.
-        remove_from_graph(subgraph, m_marked, m_bound_graph);
+        remove_from_graph(subgraph, m_edit_state->marked_map(), m_bound_graph);
 
         // Candidates are subgraphs which are only adjacent to subgraph but no other subgraph in the lower bound.
-        const auto pairs = get_pairs(subgraph, m_marked);
-        auto[candidates, border] = get_candidates(m_finder, pairs, m_graph, m_bound_graph, m_subgraph_stats);
+        const auto pairs = get_pairs(subgraph, m_edit_state->marked_map());
+        auto[candidates, border] = get_candidates(m_finder, pairs, m_edit_state->graph(), m_bound_graph, *m_subgraph_stats);
 
 #ifndef NDEBUG
         {
             auto edits = subgraph.non_converting_edits();
             bool touches = std::any_of(edits.begin(), edits.end(), [&](auto uv) {
-                return !m_marked[uv] && m_bound_graph.hasEdge(uv);
+                return !m_edit_state->is_marked(uv) && m_bound_graph.hasEdge(uv);
             });
             assert(!touches);
         }
@@ -653,7 +653,7 @@ namespace lower_bound {
 
         std::vector<Cost> candidate_costs(candidates.size());
         for (size_t i = 0; i < candidates.size(); ++i)
-            candidate_costs[i] = candidates[i].calculate_min_cost(m_costs, m_marked);
+            candidate_costs[i] = candidates[i].calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map());
 
 
         // The information about the best solution.
@@ -669,7 +669,7 @@ namespace lower_bound {
             for (size_t a_i = border[pair_i]; a_i < border[pair_i + 1]; ++a_i) {
                 const auto &a = candidates[a_i];
 
-                insert_into_graph(a, m_marked, m_bound_graph);
+                insert_into_graph(a, m_edit_state->marked_map(), m_bound_graph);
 
                 Cost max_cost_b = invalid_max_cost;
                 size_t max_b_i = invalid_index;
@@ -680,7 +680,7 @@ namespace lower_bound {
                     for (size_t b_i = border[pair_j]; b_i < border[pair_j + 1]; ++b_i) {
                         const auto &b = candidates[b_i];
 
-                        bool inserted = try_insert_into_graph(b, m_marked, m_bound_graph);
+                        bool inserted = try_insert_into_graph(b, m_edit_state->marked_map(), m_bound_graph);
 
                         if (inserted) {
                             Cost cost_b = candidate_costs[b_i];
@@ -688,7 +688,7 @@ namespace lower_bound {
                                 max_cost_b = cost_b;
                                 max_b_i = b_i;
                             }
-                            remove_from_graph(b, m_marked, m_bound_graph);
+                            remove_from_graph(b, m_edit_state->marked_map(), m_bound_graph);
                         }
                     }
                 }
@@ -710,7 +710,7 @@ namespace lower_bound {
                         max_subgraphs = {a_i, max_b_i};
                     }
                 }
-                remove_from_graph(a, m_marked, m_bound_graph);
+                remove_from_graph(a, m_edit_state->marked_map(), m_bound_graph);
             }
         }
 
@@ -725,15 +725,15 @@ namespace lower_bound {
                           << ", " << subgraph << " => ...\n";
 
             // better candidates found
-            insert_into_graph(candidates[a_i], m_marked, m_bound_graph);
-            assert(candidate_costs[a_i] == candidates[a_i].calculate_min_cost(m_costs, m_marked));
+            insert_into_graph(candidates[a_i], m_edit_state->marked_map(), m_bound_graph);
+            assert(candidate_costs[a_i] == candidates[a_i].calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map()));
             state.replace(index, {candidate_costs[a_i], candidates[a_i]});
 
             if (max_subgraphs.size() == 2) {
                 size_t b_i = max_subgraphs[1];
 
-                insert_into_graph(candidates[b_i], m_marked, m_bound_graph);
-                assert(candidate_costs[b_i] == candidates[b_i].calculate_min_cost(m_costs, m_marked));
+                insert_into_graph(candidates[b_i], m_edit_state->marked_map(), m_bound_graph);
+                assert(candidate_costs[b_i] == candidates[b_i].calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map()));
                 state.insert({candidate_costs[b_i], candidates[b_i]});
             }
 
@@ -754,7 +754,7 @@ namespace lower_bound {
 
                     for (auto i : plateau_candidates) {
                         auto[num_pairs, num_covered_ub] =
-                            count_neighbors(m_subgraph_stats, m_marked, candidates[i]);
+                            count_neighbors(*m_subgraph_stats, m_edit_state->marked_map(), candidates[i]);
                         if (num_covered_ub < min_num_subgraphs_covered) {
                             new_plateau_candidates = {i};
                             min_num_subgraphs_covered = num_covered_ub;
@@ -772,11 +772,11 @@ namespace lower_bound {
                     std::cout << "made (1, 1) swap for plateau search " << std::setw(4) << 0 << ", " << subgraph
                               << " => " << candidates[a_i] << "\n";
 
-                insert_into_graph(candidates[a_i], m_marked, m_bound_graph);
-                assert(candidate_costs[a_i] == candidates[a_i].calculate_min_cost(m_costs, m_marked));
+                insert_into_graph(candidates[a_i], m_edit_state->marked_map(), m_bound_graph);
+                assert(candidate_costs[a_i] == candidates[a_i].calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map()));
                 state.replace(index, {candidate_costs[a_i], candidates[a_i]});
             } else {
-                insert_into_graph(subgraph, m_marked, m_bound_graph);
+                insert_into_graph(subgraph, m_edit_state->marked_map(), m_bound_graph);
             }
         }
 
@@ -788,9 +788,9 @@ namespace lower_bound {
                 if (candidates[a_i].size() == 0)
                     continue;
 
-                auto inserted = try_insert_into_graph(candidates[a_i], m_marked, m_bound_graph);
+                auto inserted = try_insert_into_graph(candidates[a_i], m_edit_state->marked_map(), m_bound_graph);
                 if (inserted) {
-                    assert(candidate_costs[a_i] == candidates[a_i].calculate_min_cost(m_costs, m_marked));
+                    assert(candidate_costs[a_i] == candidates[a_i].calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map()));
                     state.insert({candidate_costs[a_i], candidates[a_i]});
                 }
             }
@@ -798,8 +798,8 @@ namespace lower_bound {
 
 
         if (state.solvable()) {
-            assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
-            assert(bound_is_maximal(m_finder, m_graph, m_bound_graph));
+            assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph));
+            assert(bound_is_maximal(m_finder, m_edit_state->graph(), m_bound_graph));
         }
 
         return found_improvement;
@@ -831,7 +831,7 @@ namespace lower_bound {
         // Assign i at all unmarked vertex pairs.
         auto index_assign = [&](const Subgraph &subgraph, size_t i) {
             for (auto uv : subgraph.non_converting_edits()) {
-                if (!m_marked[uv])
+                if (!m_edit_state->is_marked(uv))
                     subgraph_index[uv] = i;
             }
         };
@@ -858,15 +858,15 @@ namespace lower_bound {
                 assert(state.bound(subgraph_index[xy]).subgraph.contains(xy));
         for (size_t i = 0; i < state.bound().size(); ++i) {
             for (auto xy : state.bound(i).subgraph.non_converting_edits()) {
-                if (!m_marked[xy])
+                if (!m_edit_state->is_marked(xy))
                     assert(subgraph_index[xy] == i);
             }
         }
 #endif
 
-        m_finder.find(m_graph, [&](const Subgraph &subgraph) {
+        m_finder.find(m_edit_state->graph(), [&](const Subgraph &subgraph) {
 
-            auto subgraph_cost = subgraph.calculate_min_cost(m_costs, m_marked);
+            auto subgraph_cost = subgraph.calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map());
 
             if (subgraph_cost == invalid_cost) {
                 found_improvement = true;
@@ -905,13 +905,13 @@ namespace lower_bound {
 
                         // Remove neighbor from subgraph_index, m_bound_graph and the bound.
                         index_assign(neighbor, invalid_index);
-                        remove_from_graph(neighbor, m_marked, m_bound_graph);
+                        remove_from_graph(neighbor, m_edit_state->marked_map(), m_bound_graph);
                         state.remove(i);
                     }
                 }
 
 #ifndef NDEBUG
-                if (!bound_graph_is_valid(state, m_marked, m_bound_graph)) {
+                if (!bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph)) {
                     for (auto uv : subgraph.non_converting_edits()) {
                         auto i = subgraph_index[uv];
                         if (i != invalid_index) {
@@ -926,8 +926,8 @@ namespace lower_bound {
 
                 // Insert the subgraph into subgraph_index, m_bound_graph and the bound.
                 index_assign(subgraph, state.bound().size());
-                insert_into_graph(subgraph, m_marked, m_bound_graph);
-                assert(subgraph_cost == subgraph.calculate_min_cost(m_costs, m_marked));
+                insert_into_graph(subgraph, m_edit_state->marked_map(), m_bound_graph);
+                assert(subgraph_cost == subgraph.calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map()));
                 state.insert({subgraph_cost, subgraph});
 
 #ifndef NDEBUG
@@ -936,37 +936,37 @@ namespace lower_bound {
                         assert(state.bound(subgraph_index[xy]).subgraph.contains(xy));
                 for (size_t j = 0; j < state.bound().size(); ++j) {
                     for (auto xy : state.bound(j).subgraph.non_converting_edits()) {
-                        if (!m_marked[xy])
+                        if (!m_edit_state->is_marked(xy))
                             assert(subgraph_index[xy] == j);
                     }
                 }
 #endif
 
-                // assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
+                // assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph));
             }
             return subgraph_iterators::break_if(state.cost() > k || !state.solvable());
         });
 
         if (state.cost() <= k && state.solvable()) {
             std::vector<std::pair<Cost, Subgraph>> remaining_subgraphs;
-            m_finder.find(m_graph, m_bound_graph, [&](const Subgraph &subgraph) {
-                auto cost = subgraph.calculate_min_cost(m_costs, m_marked);
+            m_finder.find(m_edit_state->graph(), m_bound_graph, [&](const Subgraph &subgraph) {
+                auto cost = subgraph.calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map());
                 remaining_subgraphs.emplace_back(cost, subgraph);
                 return subgraph_iterators::IterationControl::Continue;
             });
 
             for (auto &&[cost, subgraph] : remaining_subgraphs) {
-                bool inserted = try_insert_into_graph(subgraph, m_marked, m_bound_graph);
+                bool inserted = try_insert_into_graph(subgraph, m_edit_state->marked_map(), m_bound_graph);
                 if (inserted) {
-                    assert(cost == subgraph.calculate_min_cost(m_costs, m_marked));
+                    assert(cost == subgraph.calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map()));
                     state.insert({cost, subgraph});
                 }
             }
         }
 
         if (state.cost() <= k && state.solvable()) {
-            assert(bound_graph_is_valid(state, m_marked, m_bound_graph));
-            assert(bound_is_maximal(m_finder, m_graph, m_bound_graph));
+            assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph));
+            assert(bound_is_maximal(m_finder, m_edit_state->graph(), m_bound_graph));
         }
 
         return found_improvement;

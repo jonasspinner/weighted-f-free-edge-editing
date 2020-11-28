@@ -29,16 +29,14 @@ class WeightedPacking {
      *
      * The weighted packing is maximal iff no forbidden subgraph can be inserted. This is exactly the case when all
      * forbidden subgraphs in the graph have at least one vertex pair which does not lead to a conversion and is
-     * depleted. In the context of finders this is when find_with_duplicates finds no forbidden subgraph in m_graph
+     * depleted. In the context of finders this is when find_with_duplicates finds no forbidden subgraph in m_edit_state->graph()
      * with the vertex pairs of m_depleted_graph marked as forbidden.
      */
     using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
     using Finder = typename Subgraph::Finder;
 
-    const Graph &m_graph;
-    const VertexPairMap<Cost> &m_costs;
-    const VertexPairMap<bool> &m_marked;
-    const SubgraphStats<SetOfForbiddenSubgraphs> &m_subgraph_stats;
+    const EditState *m_edit_state;
+    const SubgraphStats<SetOfForbiddenSubgraphs> *m_subgraph_stats;
 
     // Data which WeightedPacking is responsible for.
     VertexPairMap<Cost> m_potential;
@@ -50,12 +48,13 @@ class WeightedPacking {
     int verbosity = 0;
 
 public:
-    WeightedPacking(const Instance &instance, const VertexPairMap<bool> &marked,
-                    const SubgraphStats<SetOfForbiddenSubgraphs> &subgraph_stats)
-            : m_graph(instance.graph), m_costs(instance.costs), m_marked(marked), m_subgraph_stats(subgraph_stats),
-              m_potential(m_graph.size()), m_depleted_graph(m_graph.size()) {
-        for (VertexPair uv : m_graph.vertexPairs()) {
-            m_potential[uv] = m_costs[uv];
+    WeightedPacking(const EditState *edit_state, const SubgraphStats<SetOfForbiddenSubgraphs> *subgraph_stats)
+            : m_edit_state(edit_state), m_subgraph_stats(subgraph_stats),
+              m_potential(m_edit_state->graph().size()), m_depleted_graph(m_edit_state->graph().size()) {
+        assert(edit_state);
+        assert(subgraph_stats);
+        for (VertexPair uv : m_edit_state->graph().vertexPairs()) {
+            m_potential[uv] = m_edit_state->cost(uv);
             if (m_potential[uv] == 0) {
                 m_depleted_graph.setEdge(uv);
             }
@@ -63,10 +62,12 @@ public:
     }
 
     WeightedPacking(const WeightedPacking &other)
-            : m_graph(other.m_graph), m_costs(other.m_costs), m_marked(other.m_marked),
-              m_subgraph_stats(other.m_subgraph_stats), m_potential(m_graph.size()),
-              m_depleted_graph(m_graph.size()), m_finder(other.m_finder) {
-        for (VertexPair uv : m_graph.vertexPairs()) {
+            : m_edit_state(other.m_edit_state), m_subgraph_stats(other.m_subgraph_stats),
+              m_potential(other.m_potential.size()), m_depleted_graph(other.m_depleted_graph.size()),
+              m_finder(other.m_finder) {
+        assert(m_edit_state);
+        assert(m_subgraph_stats);
+        for (VertexPair uv : m_edit_state->graph().vertexPairs()) {
             m_potential[uv] = other.m_potential[uv];
             if (other.is_depleted(uv)) {
                 m_depleted_graph.setEdge(uv);
@@ -79,8 +80,8 @@ public:
      */
     void reset() {
         m_depleted_graph.clearEdges();
-        for (VertexPair uv : m_graph.vertexPairs()) {
-            m_potential[uv] = m_costs[uv];
+        for (VertexPair uv : m_edit_state->graph().vertexPairs()) {
+            m_potential[uv] = m_edit_state->cost(uv);
             if (m_potential[uv] == 0) {
                 m_depleted_graph.setEdge(uv);
             }
@@ -100,13 +101,13 @@ public:
         m_total_cost += cost;
 
         for (auto uv : subgraph.non_converting_edits()) {
-            if (m_marked[uv])
+            if (m_edit_state->is_marked(uv))
                 continue;
             assert(!m_depleted_graph.hasEdge(uv));
 
 #ifndef NDEBUG
             if (cost > m_potential[uv])
-                std::cerr << "(" << uv << " " << m_marked[uv] << " " << m_costs[uv] << " " << m_potential[uv] << ") "
+                std::cerr << "(" << uv << " " << m_edit_state->is_marked(uv) << " " << m_edit_state->cost(uv) << " " << m_potential[uv] << ") "
                           << std::endl;
 #endif
             assert(cost <= m_potential[uv]);
@@ -129,11 +130,11 @@ public:
         m_total_cost -= cost;
 
         for (auto uv : subgraph.non_converting_edits()) {
-            if (m_marked[uv])
+            if (m_edit_state->is_marked(uv))
                 continue;
             m_potential[uv] += cost;
             m_depleted_graph.clearEdge(uv);
-            assert(m_potential[uv] <= m_costs[uv]);
+            assert(m_potential[uv] <= m_edit_state->cost(uv));
         }
     }
 
@@ -154,8 +155,8 @@ public:
     }
 
     void restore_potential(VertexPair uv) {
-        assert(m_marked[uv]);
-        m_potential[uv] = m_costs[uv];
+        assert(m_edit_state->is_marked(uv));
+        m_potential[uv] = m_edit_state->cost(uv);
         if (m_potential[uv] > 0)
             m_depleted_graph.clearEdge(uv);
     }
@@ -164,7 +165,7 @@ public:
 
     [[nodiscard]] bool is_maximal() {
         bool maximal = true;
-        m_finder.find(m_graph, m_depleted_graph, [&](const Subgraph &subgraph) {
+        m_finder.find(m_edit_state->graph(), m_depleted_graph, [&](const Subgraph &subgraph) {
             auto cost = calculate_min_cost(subgraph);
             std::cerr << subgraph << " " << cost << " ";
             maximal = false;
@@ -180,8 +181,8 @@ public:
         for (VertexPair uv : Graph::VertexPairs(m_potential.size())) {
             valid |= 0 > m_potential[uv];
             assert(0 <= m_potential[uv]);
-            valid |= m_potential[uv] > m_costs[uv];
-            assert(m_potential[uv] <= m_costs[uv]);
+            valid |= m_potential[uv] > m_edit_state->cost(uv);
+            assert(m_potential[uv] <= m_edit_state->cost(uv));
         }
 
         for (VertexPair uv : Graph::VertexPairs(m_potential.size())) {
@@ -211,7 +212,7 @@ public:
         std::vector<VertexPair> pairs;
         for (auto uv : subgraph.non_converting_edits()) {
             assert(!m_depleted_graph.hasEdge(uv));
-            if (!m_marked[uv])
+            if (!m_edit_state->is_marked(uv))
                 pairs.push_back(uv);
         }
 
@@ -225,8 +226,8 @@ public:
 
             // Because the subgraph already contributes one to the subgraph count at uv, only search for near subgraphs
             // if there is at least one more.
-            if (m_subgraph_stats.subgraphCount(uv) > 1) {
-                m_finder.find_near(uv, m_graph, m_depleted_graph, [&](const Subgraph &neighbor) {
+            if (m_subgraph_stats->subgraphCount(uv) > 1) {
+                m_finder.find_near(uv, m_edit_state->graph(), m_depleted_graph, [&](const Subgraph &neighbor) {
 #ifndef NDEBUG
                     for (auto xy : neighbor.non_converting_edits()) {
                         assert(!m_depleted_graph.hasEdge(xy));
@@ -256,11 +257,11 @@ public:
         std::vector<VertexPair> pairs;
         for (auto uv : subgraph.non_converting_edits()) {
             assert(!m_depleted_graph.hasEdge(uv));
-            if (!m_marked[uv] && m_potential[uv] ==
+            if (!m_edit_state->is_marked(uv) && m_potential[uv] ==
                                  remove_cost) { // uv is unmarked and was depleted before x was removed with this cost.
                 // Because the subgraph already contributes one to the subgraph count at uv, only search for near subgraphs
                 // if there is at least one more.
-                if (m_subgraph_stats.subgraphCount(uv) > 1) {
+                if (m_subgraph_stats->subgraphCount(uv) > 1) {
                     pairs.push_back(uv);
                 }
             }
@@ -279,7 +280,7 @@ public:
             VertexPair uv = pairs[i];
             assert(!m_depleted_graph.hasEdge(uv));
 
-            m_finder.find_near(uv, m_graph, m_depleted_graph, [&](const Subgraph &neighbor) {
+            m_finder.find_near(uv, m_edit_state->graph(), m_depleted_graph, [&](const Subgraph &neighbor) {
 #ifndef NDEBUG
                 for (auto xy : neighbor.non_converting_edits()) {
                     assert(!m_depleted_graph.hasEdge(xy));
@@ -310,7 +311,7 @@ public:
         for (auto uv : pairs) {
             assert(!m_depleted_graph.hasEdge(uv));
 
-            m_finder.find_near(uv, m_graph, m_depleted_graph, [&](const Subgraph &neighbor) {
+            m_finder.find_near(uv, m_edit_state->graph(), m_depleted_graph, [&](const Subgraph &neighbor) {
 #ifndef NDEBUG
                 for (auto xy : neighbor.non_converting_edits()) {
                     assert(!m_depleted_graph.hasEdge(xy));
@@ -339,7 +340,7 @@ public:
      * @return
      */
     [[nodiscard]] Cost calculate_min_cost(const Subgraph &subgraph) const {
-        return subgraph.calculate_min_cost(m_potential, m_marked);
+        return subgraph.calculate_min_cost(m_potential, m_edit_state->marked_map());
     }
 
     /**
@@ -352,8 +353,8 @@ public:
     std::tuple<size_t, size_t> get_neighbor_count_estimate(const Subgraph &subgraph) {
         size_t num_pairs = 0, num_neighbors_ub = 0;
         for (auto uv : subgraph.non_converting_edits()) {
-            if (!m_marked[uv]) {
-                size_t uv_count = m_subgraph_stats.subgraphCount(uv) - 1; // Exclude the subgraph itself.
+            if (!m_edit_state->is_marked(uv)) {
+                size_t uv_count = m_subgraph_stats->subgraphCount(uv) - 1; // Exclude the subgraph itself.
                 num_neighbors_ub += uv_count;
                 if (uv_count > 0) ++num_pairs;
             }

@@ -2,10 +2,9 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_SORTEDGREEDY_H
 
 
-#include "../graph/Graph.h"
-#include "../Instance.h"
 #include "LowerBoundI.h"
 #include "../forbidden_subgraphs/SubgraphC4P4.h"
+#include "../editor/EditState.h"
 
 
 namespace lower_bound {
@@ -15,16 +14,16 @@ namespace lower_bound {
         using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
         using Finder = typename Subgraph::Finder;
 
-        const Graph &m_graph;
-        const VertexPairMap<Cost> &m_costs;
-        const VertexPairMap<bool> &m_marked;
+        const EditState *m_edit_state;
+
         VertexPairMap<bool> m_used_in_bound;
         Finder m_finder;
     public:
 
-        SortedGreedy(const Instance &instance, const VertexPairMap<bool> &marked) :
-                m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
-                m_used_in_bound(m_graph.size()) {}
+        explicit SortedGreedy(const EditState *edit_state) :
+                m_edit_state(edit_state), m_used_in_bound(m_edit_state->graph().size()) {
+            assert(m_edit_state);
+        }
 
         Cost calculate_lower_bound(Cost k) override;
 

@@ -26,8 +26,8 @@ namespace lower_bound {
         // The cost for a single forbidden subgraph is the minimum edit cost for an editable vertex pair.
         std::vector<std::pair<Cost, Subgraph>> subgraphs;
 
-        m_finder.find(m_graph, [&](Subgraph subgraph) {
-            Cost min_cost = subgraph.calculate_min_cost(m_costs, m_marked);
+        m_finder.find(m_edit_state->graph(), [&](Subgraph subgraph) {
+            Cost min_cost = subgraph.calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map());
             subgraphs.emplace_back(min_cost, std::move(subgraph));
             max_min_cost = std::max(max_min_cost, min_cost);
             return subgraph_iterators::break_if(max_min_cost > k);
@@ -53,7 +53,7 @@ namespace lower_bound {
             // Check if the subgraph is adjacent to one already used in the bound.
             bool touches_bound = false;
             for (auto uv : subgraph.non_converting_edits()) {
-                if (!m_marked[uv] && m_used_in_bound[uv]) {
+                if (!m_edit_state->is_marked(uv) && m_used_in_bound[uv]) {
                     touches_bound = true;
                     break;
                 }
@@ -62,7 +62,7 @@ namespace lower_bound {
             if (!touches_bound) {
                 bound_size += cost;
                 for (auto uv : subgraph.non_converting_edits()) {
-                    if (!m_marked[uv])
+                    if (!m_edit_state->is_marked(uv))
                         m_used_in_bound[uv] = true;
                 }
             }
@@ -79,8 +79,8 @@ namespace lower_bound {
         // The cost for a single forbidden subgraph is the minimum edit cost for an editable vertex pair.
         std::vector<std::pair<Cost, Subgraph>> subgraphs;
 
-        m_finder.find(m_graph, [&](Subgraph subgraph) {
-            Cost min_cost = subgraph.calculate_min_cost(m_costs, m_marked);
+        m_finder.find(m_edit_state->graph(), [&](Subgraph subgraph) {
+            Cost min_cost = subgraph.calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map());
             subgraphs.emplace_back(min_cost, std::move(subgraph));
             return subgraph_iterators::IterationControl::Continue;
         });
@@ -90,7 +90,7 @@ namespace lower_bound {
                   [](const auto &lhs, const auto &rhs) { return lhs.first > rhs.first; });
 
         Cost packing_cost = 0;
-        VertexPairMap<bool> covered_by_packing(m_graph.size());
+        VertexPairMap<bool> covered_by_packing(m_edit_state->graph().size());
         std::vector<Subgraph> packing;
         std::vector<VertexPair> min_cost_vertex_pairs;
 
@@ -101,7 +101,7 @@ namespace lower_bound {
             // Check if the subgraph is adjacent to one already used in the bound.
             bool touches_bound = false;
             for (VertexPair uv : subgraph.vertex_pairs())
-                if (!m_marked[uv] && covered_by_packing[uv]) {
+                if (!m_edit_state->is_marked(uv) && covered_by_packing[uv]) {
                     touches_bound = true;
                     break;
                 }
@@ -110,10 +110,10 @@ namespace lower_bound {
                 VertexPair xy{static_cast<Vertex>(-2), static_cast<Vertex>(-1)};
                 Cost min_cost = invalid_cost;
                 for (VertexPair uv : subgraph.vertex_pairs()) {
-                    if (!m_marked[uv]) {
+                    if (!m_edit_state->is_marked(uv)) {
                         covered_by_packing[uv] = true;
-                        if (m_costs[uv] < min_cost) {
-                            min_cost = m_costs[uv];
+                        if (m_edit_state->cost(uv) < min_cost) {
+                            min_cost = m_edit_state->cost(uv);
                             xy = uv;
                         }
                     }

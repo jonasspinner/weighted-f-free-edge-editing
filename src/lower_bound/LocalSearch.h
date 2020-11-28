@@ -135,10 +135,8 @@ namespace lower_bound {
             }
         };
 
-        const Graph &m_graph;
-        const VertexPairMap<Cost> &m_costs;
-        const VertexPairMap<bool> &m_marked;
-        const SubgraphStats<SetOfForbiddenSubgraphs> &m_subgraph_stats;
+        const EditState *m_edit_state;
+        const SubgraphStats<SetOfForbiddenSubgraphs> *m_subgraph_stats;
 
         Graph m_bound_graph;
         std::vector<std::unique_ptr<State>> m_states;
@@ -154,11 +152,9 @@ namespace lower_bound {
 
         Finder m_finder;
     public:
-        explicit LocalSearch(const Instance &instance, const VertexPairMap<bool> &marked,
-                             const SubgraphStats<SetOfForbiddenSubgraphs> &subgraph_stats,
+        explicit LocalSearch(const EditState *edit_state, const SubgraphStats<SetOfForbiddenSubgraphs> *subgraph_stats,
                              int seed = 0, float alpha = 0.7f, size_t max_rounds_no_improvements = 5) :
-                m_graph(instance.graph), m_costs(instance.costs), m_marked(marked),
-                m_subgraph_stats(subgraph_stats), m_bound_graph(instance.graph.size()),
+                m_edit_state(edit_state), m_subgraph_stats(subgraph_stats), m_bound_graph(m_edit_state->graph().size()),
                 m_gen(static_cast<unsigned long>(seed)), m_alpha(alpha),
                 m_max_rounds_no_improvement(max_rounds_no_improvements) {
             // TODO: Currently the LocalSearch implementation has bugs which lead to incorrect bounds.
@@ -186,7 +182,7 @@ namespace lower_bound {
             m_states.pop_back();
 
             // TODO: Check
-            initialize_bound_graph(current_state(), m_marked, m_bound_graph);
+            initialize_bound_graph(current_state(), m_edit_state->marked_map(), m_bound_graph);
         }
 
         State &current_state() {

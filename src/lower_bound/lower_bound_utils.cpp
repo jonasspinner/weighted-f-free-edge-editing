@@ -36,41 +36,41 @@ namespace lower_bound {
      * @return
      */
     template<Options::FSG FSG>
-    std::unique_ptr<LowerBoundI> make(Options::LB lower_bound, const Instance &instance,
-                                      const VertexPairMap<bool> &marked, const SubgraphStats<FSG> &subgraph_stats,
+    std::unique_ptr<LowerBoundI> make(Options::LB lower_bound, const EditState *edit_state,
+                                      const SubgraphStats<FSG> *subgraph_stats,
                                       Configuration config) {
         using Options::LB;
         switch (lower_bound) {
             case LB::Trivial:
                 return std::make_unique<Trivial>();
             case LB::LocalSearch:
-                return std::make_unique<LocalSearch<FSG>>(instance, marked, subgraph_stats, config.seed);
+                return std::make_unique<LocalSearch<FSG>>(edit_state, subgraph_stats, config.seed);
             case LB::Greedy:
-                return std::make_unique<Greedy<FSG>>(instance, marked);
+                return std::make_unique<Greedy<FSG>>(edit_state);
             case LB::SortedGreedy:
-                return std::make_unique<SortedGreedy<FSG>>(instance, marked);
+                return std::make_unique<SortedGreedy<FSG>>(edit_state);
             case LB::LPRelaxation:
 #ifdef GUROBI_FOUND
-                return std::make_unique<LPRelaxation<FSG>>(instance, marked, config.verbosity, config.timelimit);
+                return std::make_unique<LPRelaxation<FSG>>(edit_state, config.verbosity, config.timelimit);
 #else
                 throw std::runtime_error("gurobi has to be installed to use LB::LinearProgram.");
 #endif
             case LB::NPS_MWIS_Solver:
 #ifdef NPS_MWIS_FOUND
-                return std::make_unique<NPS_MWIS_Solver<FSG>>(instance, marked);
+                return std::make_unique<NPS_MWIS_Solver<FSG>>(edit_state);
 #else
                 throw std::runtime_error("nps_mwis has to be installed to use LB::NPS_MWIS_Solver.");
 #endif
             case LB::LSSWZ_MWIS_Solver:
 #ifdef LSSWZ_MWIS_FOUND
-                return std::make_unique<LSSWZ_MWIS_Solver<FSG>>(instance, marked, config.verbosity);
+                return std::make_unique<LSSWZ_MWIS_Solver<FSG>>(edit_state, config.verbosity);
 #else
                 throw std::runtime_error("lsswz_mwis has to be installed to use LB::LSSWZ_MWIS_Solver.");
 #endif
             case LB::GreedyWeightedPacking:
-                return std::make_unique<GreedyWeightedPacking<FSG>>(instance, marked);
+                return std::make_unique<GreedyWeightedPacking<FSG>>(edit_state);
             case LB::WeightedPackingLocalSearch:
-                return std::make_unique<WeightedPackingLocalSearch<FSG>>(instance, marked, subgraph_stats);
+                return std::make_unique<WeightedPackingLocalSearch<FSG>>(edit_state, subgraph_stats);
             default:
                 throw std::runtime_error("Lower bound not found.");
         }
@@ -78,8 +78,7 @@ namespace lower_bound {
 
 
     template
-    std::unique_ptr<LowerBoundI> make<Options::FSG::C4P4>(Options::LB lower_bound, const Instance &instance,
-                                                          const VertexPairMap<bool> &marked,
-                                                          const SubgraphStats<Options::FSG::C4P4> &subgraph_stats,
+    std::unique_ptr<LowerBoundI> make<Options::FSG::C4P4>(Options::LB lower_bound, const EditState *edit_state,
+                                                          const SubgraphStats<Options::FSG::C4P4> *subgraph_stats,
                                                           Configuration config);
 }

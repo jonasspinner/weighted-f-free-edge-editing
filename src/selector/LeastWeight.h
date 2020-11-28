@@ -13,23 +13,21 @@ namespace selector {
         using Subgraph = SubgraphT<SetOfForbiddenSubgraphs>;
         using Finder = typename Subgraph::Finder;
 
-        const Graph &m_graph;
-        const VertexPairMap<Cost> &m_costs;
-        const VertexPairMap<bool> &m_marked;
+        const EditState *m_edit_state;
 
         Finder finder;
     public:
-        LeastWeight(const Graph &graph, const VertexPairMap<Cost> &costs,
-                    const VertexPairMap<bool> &marked) :
-                m_graph(graph), m_costs(costs), m_marked(marked) {}
+        explicit LeastWeight(const EditState *edit_state) : m_edit_state(edit_state) {
+            assert(m_edit_state);
+        }
 
         Problem select_problem(Cost /*k*/) override {
             std::optional<Subgraph> min_subgraph;
             Cost min_subgraph_cost = invalid_cost;
             bool unsolveable = false;
 
-            finder.find(m_graph, [&](Subgraph subgraph) {
-                Cost subgraph_cost = subgraph.calculate_min_cost(m_costs, m_marked);
+            finder.find(m_edit_state->graph(), [&](Subgraph subgraph) {
+                Cost subgraph_cost = subgraph.calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map());
 
                 if (subgraph_cost == invalid_cost) {
                     // if at least one forbidden subgraph has only marked vertex pairs, the problem is not solvable.
@@ -49,11 +47,11 @@ namespace selector {
 
             std::vector<VertexPair> pairs;
             for (VertexPair uv : min_subgraph->vertex_pairs())
-                if (!m_marked[uv])
+                if (!m_edit_state->is_marked(uv))
                     pairs.push_back(uv);
 
             std::sort(pairs.begin(), pairs.end(),
-                      [&](VertexPair uv, VertexPair xy) { return m_costs[uv] < m_costs[xy]; });
+                      [&](VertexPair uv, VertexPair xy) { return m_edit_state->cost(uv) < m_edit_state->cost(xy); });
 
             return {pairs, false};
         }

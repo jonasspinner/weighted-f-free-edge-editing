@@ -37,7 +37,7 @@ void EditorTests::configurations_have_same_output(Options::FSG fsg, const std::v
                 config.seed = seed;
                 std::vector<Solution> solutions;
 
-                Editor editor(instance.copy(), config);
+                Editor editor(instance.graph.copy(), instance.costs, config);
 
                 editor.edit(12 * multiplier, [&](const std::vector<VertexPair> &edits) {
                     solutions.emplace_back(orig_instance, P_r[edits]);
@@ -95,7 +95,7 @@ void EditorTests::same_output_for_small_zero_cost_instance(const std::vector<Opt
                 auto config = Configuration(fsg, 1, Options::SolverType::FPT, selector, lb);
                 std::vector<Solution> solutions;
 
-                Editor editor(instance.copy(), config);
+                Editor editor(instance.graph.copy(), instance.costs, config);
 
                 editor.edit(0, [&](const std::vector<VertexPair> &edits) {
                     solutions.emplace_back(orig_instance, P_r[edits]);
@@ -150,7 +150,7 @@ void EditorTests::output_is_independent_of_seed(const std::vector<int> &seeds,
 
         auto config = Configuration(Options::FSG::C4P4, -1, Options::SolverType::FPT, selector, lb);
 
-        Editor editor(instance.copy(), config);
+        Editor editor(instance.graph.copy(), instance.costs, config);
         editor.edit(1100, [&](const std::vector<VertexPair> &edits) {
             solutions.emplace_back(orig_instance, P_r[edits]);
         }, [](Cost, Cost) {});

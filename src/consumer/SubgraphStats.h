@@ -6,6 +6,7 @@
 #include "../graph/VertexPairMap.h"
 #include "../Instance.h"
 #include "../forbidden_subgraphs/SubgraphC4P4.h"
+#include "../editor/EditState.h"
 
 
 template <Options::FSG SetOfForbiddenSubgraphs>
@@ -16,22 +17,21 @@ private:
 
     Finder m_finder;
 
+    const EditState *m_edit_state;
+
     VertexPairMap<size_t> subgraph_count_per_vertex_pair;
     size_t subgraph_count_per_vertex_pair_sum;
     size_t subgraph_count;
     std::vector<size_t> before_mark_subgraph_count;
 
-    const Graph &m_graph;
-    const VertexPairMap<bool> &m_marked;
-
     // TODO: Remove dependency on empty graph, i.e. build find_near_unique variant without forbidden graph.
     Graph m_empty_graph;
 
 public:
-    SubgraphStats(const Instance &instance, const VertexPairMap<bool> &marked)
-            : subgraph_count_per_vertex_pair(instance.graph.size()),
-              subgraph_count_per_vertex_pair_sum(0), subgraph_count(0), m_graph(instance.graph), m_marked(marked),
-              m_empty_graph(m_graph.size()) {}
+    SubgraphStats(const EditState *edit_state)
+            : m_edit_state(std::move(edit_state)), subgraph_count_per_vertex_pair(m_edit_state->graph().size()),
+              subgraph_count_per_vertex_pair_sum(0), subgraph_count(0),
+              m_empty_graph(m_edit_state->graph().size()) {}
 
     [[nodiscard]] constexpr size_t subgraphCount() const {
         return subgraph_count;
@@ -42,11 +42,11 @@ public:
     }
 
     void initialize(Cost /*k*/) override {
-        subgraph_count_per_vertex_pair = VertexPairMap<size_t>(m_graph.size());
+        subgraph_count_per_vertex_pair = VertexPairMap<size_t>(m_edit_state->graph().size());
         subgraph_count_per_vertex_pair_sum = 0;
         subgraph_count = 0;
 
-        m_finder.find(m_graph, [&](Subgraph subgraph) {
+        m_finder.find(m_edit_state->graph(), [&](Subgraph subgraph) {
             register_subgraph(subgraph);
             return subgraph_iterators::IterationControl::Continue;
         });
@@ -55,9 +55,9 @@ public:
     }
 
     void remove_near_subgraphs(VertexPair uv) {
-        assert(m_marked[uv]);
+        assert(m_edit_state->is_marked(uv));
         verify();
-        m_finder.find_near(uv, m_graph, m_empty_graph, [&](Subgraph subgraph) {
+        m_finder.find_near(uv, m_edit_state->graph(), m_empty_graph, [&](Subgraph subgraph) {
             remove_subgraph(subgraph);
             return subgraph_iterators::IterationControl::Continue;
         });
@@ -65,7 +65,7 @@ public:
     }
 
     void register_near_subgraphs(VertexPair uv) {
-        m_finder.find_near(uv, m_graph, m_empty_graph, [&](Subgraph subgraph) {
+        m_finder.find_near(uv, m_edit_state->graph(), m_empty_graph, [&](Subgraph subgraph) {
             register_subgraph(subgraph);
             return subgraph_iterators::IterationControl::Continue;
         });
@@ -107,7 +107,7 @@ private:
     void register_subgraph(const Subgraph &subgraph) {
         subgraph_count++;
         for (VertexPair uv : subgraph.non_converting_edits()) {
-            if (!m_marked[uv]) {
+            if (!m_edit_state->is_marked(uv)) {
                 subgraph_count_per_vertex_pair[uv]++;
                 subgraph_count_per_vertex_pair_sum++;
             }
@@ -117,7 +117,7 @@ private:
     void remove_subgraph(const Subgraph &subgraph) {
         subgraph_count--;
         for (VertexPair uv : subgraph.non_converting_edits()) {
-            if (!m_marked[uv]) {
+            if (!m_edit_state->is_marked(uv)) {
                 subgraph_count_per_vertex_pair[uv]--;
                 subgraph_count_per_vertex_pair_sum--;
             }
@@ -126,14 +126,14 @@ private:
 
     void verify() {
 #ifndef NDEBUG
-        VertexPairMap<size_t> debug_sg_per_vertex_pair(m_graph.size());
+        VertexPairMap<size_t> debug_sg_per_vertex_pair(m_edit_state->graph().size());
         size_t debug_sg_count = 0;
 
-        m_finder.find(m_graph, [&](Subgraph subgraph) {
+        m_finder.find(m_edit_state->graph(), [&](Subgraph subgraph) {
             debug_sg_count++;
 
             for (VertexPair uv : subgraph.non_converting_edits()) {
-                if (!m_marked[uv]) {
+                if (!m_edit_state->is_marked(uv)) {
                     debug_sg_per_vertex_pair[uv]++;
                 }
             }
@@ -142,9 +142,9 @@ private:
 
         assert(debug_sg_count == subgraph_count);
 
-        for (VertexPair uv : m_graph.vertexPairs()) {
+        for (VertexPair uv : m_edit_state->graph().vertexPairs()) {
             assert(debug_sg_per_vertex_pair[uv] == subgraph_count_per_vertex_pair[uv]);
-            assert(!m_marked[uv] || debug_sg_per_vertex_pair[uv] == 0);
+            assert(!m_edit_state->is_marked(uv) || debug_sg_per_vertex_pair[uv] == 0);
         }
 #endif
     }

@@ -21,19 +21,19 @@ namespace lower_bound {
         Cost bound_size = 0;
         m_used_in_bound.clear();
 
-        finder.find_unique(m_graph, [&](Subgraph subgraph) {
+        finder.find_unique(m_edit_state->graph(), [&](Subgraph subgraph) {
 
             // Check if the subgraph is adjacent to one already used in the bound.
             bool touches_bound = false;
             for (auto uv : subgraph.non_converting_edits()) {
-                if (!m_marked[uv] && m_used_in_bound[uv]) {
+                if (!m_edit_state->is_marked(uv) && m_used_in_bound[uv]) {
                     touches_bound = true;
                     break;
                 }
             }
 
             if (!touches_bound) {
-                Cost cost = subgraph.calculate_min_cost(m_costs, m_marked);
+                Cost cost = subgraph.calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map());
                 if (cost == invalid_cost) {
                     bound_size = invalid_cost;
                     return subgraph_iterators::IterationControl::Break;
@@ -41,7 +41,7 @@ namespace lower_bound {
                 bound_size += cost;
 
                 for (auto uv : subgraph.non_converting_edits()) {
-                    if (!m_marked[uv])
+                    if (!m_edit_state->is_marked(uv))
                         m_used_in_bound[uv] = true;
                 }
             }
