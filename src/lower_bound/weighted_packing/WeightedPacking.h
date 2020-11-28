@@ -40,9 +40,11 @@ class WeightedPacking {
     const VertexPairMap<bool> &m_marked;
     const SubgraphStats<SetOfForbiddenSubgraphs> &m_subgraph_stats;
 
+    // Data which WeightedPacking is responsible for.
     VertexPairMap<Cost> m_potential;
     Graph m_depleted_graph;
     Cost m_total_cost = 0;
+
     Finder m_finder;
 
     int verbosity = 0;
@@ -75,7 +77,7 @@ public:
     /**
      * Reset to state after construction.
      */
-    void clear() {
+    void reset() {
         m_depleted_graph.clearEdges();
         for (VertexPair uv : m_graph.vertexPairs()) {
             m_potential[uv] = m_costs[uv];
