@@ -157,7 +157,8 @@ namespace lower_bound {
                 m_edit_state(edit_state), m_subgraph_stats(subgraph_stats), m_bound_graph(m_edit_state->graph().size()),
                 m_gen(static_cast<unsigned long>(seed)), m_alpha(alpha),
                 m_max_rounds_no_improvement(max_rounds_no_improvements) {
-            // TODO: Currently the LocalSearch implementation has bugs which lead to incorrect bounds.
+            assert(edit_state);
+            assert(subgraph_stats);
         }
 
         Cost calculate_lower_bound(Cost k) override;
@@ -203,7 +204,7 @@ namespace lower_bound {
 
     private:
         static bool bound_graph_is_valid(State &state, const VertexPairMap<bool> &marked,
-                                         const Graph &bound_graph);
+                                         const Graph &bound_graph, const VertexPairMap<Cost> &costs);
 
         static bool state_is_valid(State &state, const VertexPairMap<bool> &marked,
                                    const VertexPairMap<Cost> &costs);

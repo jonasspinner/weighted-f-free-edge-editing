@@ -21,7 +21,7 @@ namespace lower_bound {
         state.recalculate(m_edit_state->marked_map(), m_edit_state->cost_map());
         initialize_bound_graph(state, m_edit_state->marked_map(), m_bound_graph);
         assert(state_is_valid(state, m_edit_state->marked_map(), m_edit_state->cost_map()));
-        assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph));
+        assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph, m_edit_state->cost_map()));
 
         if (state.cost() <= k)
             local_search(state, k);
@@ -83,13 +83,13 @@ namespace lower_bound {
             }
         }
 
-        assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph));
+        assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph, m_edit_state->cost_map()));
         assert(bound_is_maximal(m_finder, m_edit_state->graph(), m_bound_graph));
     }
 
     template<Options::FSG SetOfForbiddenSubgraphs>
     bool LocalSearch<SetOfForbiddenSubgraphs>::bound_graph_is_valid(State &state, const VertexPairMap<bool> &marked,
-                                                                    const Graph &bound_graph) {
+            const Graph &bound_graph, const VertexPairMap<Cost> &costs) {
         if (!state.solvable())
             return true;
 
@@ -101,22 +101,25 @@ namespace lower_bound {
                     std::cerr << xy << " is marked and in bound_graph\n";
                 }
             } else {
-                /*
                 bool has_subgraph = false;
-                for (const auto &[cost, subgraph] : state.bound())
-                    if (subgraph.contains(xy)) {
+                for (const auto &[cost, subgraph] : state.bound()) {
+                    auto edits = subgraph.non_converting_edits();
+                    auto contains_pair = std::any_of(edits.begin(), edits.end(), [&](auto e) {
+                        return e == xy;
+                    });
+                    if (contains_pair) {
                         has_subgraph = true;
                         break;
                     }
+                }
 
-                if (bound_graph.hasEdge(xy) != has_subgraph) {
+                if (bound_graph.has_edge(xy) != has_subgraph && costs[xy] > 0) {
                     valid = false;
                     if (bound_graph.has_edge(xy))
                         std::cerr << xy << " is in bound_graph but has no subgraph in bound\n";
                     else
                         std::cerr << xy << " is not in bound_graph but has subgraph in bound\n";
                 }
-                */
             }
         }
         for (const auto &[cost, subgraph] : state.bound())
@@ -188,7 +191,11 @@ namespace lower_bound {
         std::optional<Subgraph> removed_subgraph_opt;
         for (size_t i = 0; i < state.bound().size(); ++i) {
             const auto &[cost, subgraph] = state.bound(i);
-            if (subgraph.contains(uv)) {
+            auto edits = subgraph.non_converting_edits();
+            auto contains_pair = std::any_of(edits.begin(), edits.end(), [&](auto e) {
+                return e == uv;
+            });
+            if (contains_pair) {
                 removed_subgraph_opt = subgraph;
                 state.remove(i);
                 break;
@@ -237,9 +244,14 @@ namespace lower_bound {
             bound_graph.reset_edge(xy);
         }
 
-#ifndef NDEBUG  // TODO: Adapt to conversionless edit optimization.
-        //        for (const auto &[cost, subgraph] : subgraphs)
-        //            assert(!subgraph.contains(uv));
+#ifndef NDEBUG
+        for (const auto &[cost, subgraph] : subgraphs) {
+            auto edits = subgraph.non_converting_edits();
+            auto contains_pair = std::any_of(edits.begin(), edits.end(), [&](auto e) {
+                return e == uv;
+            });
+            assert(!contains_pair);
+        }
 #endif
 
         std::sort(subgraphs.begin(), subgraphs.end(),
@@ -247,9 +259,14 @@ namespace lower_bound {
 
         insert_subgraphs_into_bound(std::move(subgraphs), marked, state, bound_graph);
 
-#ifndef NDEBUG  // TODO: Adapt to conversionless edit optimization.
-        //        for (const auto &[cost, subgraph] : state.bound())
-        //            assert(!subgraph.contains(uv)); // Throws in test
+#ifndef NDEBUG
+        for (const auto &[cost, subgraph] : state.bound()) {
+            auto edits = subgraph.non_converting_edits();
+            auto contains_pair = std::any_of(edits.begin(), edits.end(), [&](auto e) {
+                return e == uv;
+            });
+            assert(!contains_pair);
+        }
 #endif
     }
 
@@ -363,9 +380,14 @@ namespace lower_bound {
         // remove_near_subgraphs_from_bound(state, uv); // I
         update_near_subgraphs(state, uv, m_finder, m_edit_state->marked_map(), m_edit_state->cost_map(), m_edit_state->graph(), m_bound_graph); // II
 
-#ifndef NDEBUG  // TODO: Adapt to conversionless edit optimization.
-        //        for (const auto &[cost, subgraph] : state.bound())
-        //            assert(!subgraph.contains(uv));
+#ifndef NDEBUG
+        for (const auto &[cost, subgraph] : state.bound()) {
+            auto edits = subgraph.non_converting_edits();
+            auto contains_pair = std::any_of(edits.begin(), edits.end(), [&](auto e) {
+                return e == uv;
+            });
+            assert(!contains_pair);
+        }
 #endif
     }
 
@@ -593,7 +615,7 @@ namespace lower_bound {
         }
 
         if (state.solvable())
-            assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph));
+            assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph, m_edit_state->cost_map()));
 
         return found_improvement;
     }
@@ -798,7 +820,7 @@ namespace lower_bound {
 
 
         if (state.solvable()) {
-            assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph));
+            assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph, m_edit_state->cost_map()));
             assert(bound_is_maximal(m_finder, m_edit_state->graph(), m_bound_graph));
         }
 
@@ -854,8 +876,13 @@ namespace lower_bound {
 
 #ifndef NDEBUG
         for (VertexPair xy : Graph::VertexPairs(subgraph_index.size()))
-            if (subgraph_index[xy] != invalid_index)
-                assert(state.bound(subgraph_index[xy]).subgraph.contains(xy));
+            if (subgraph_index[xy] != invalid_index) {
+                auto edits = state.bound(subgraph_index[xy]).subgraph.non_converting_edits();
+                auto contains_pair = std::any_of(edits.begin(), edits.end(), [&](auto e) {
+                    return e == xy;
+                });
+                assert(contains_pair);
+            }
         for (size_t i = 0; i < state.bound().size(); ++i) {
             for (auto xy : state.bound(i).subgraph.non_converting_edits()) {
                 if (!m_edit_state->is_marked(xy))
@@ -911,7 +938,7 @@ namespace lower_bound {
                 }
 
 #ifndef NDEBUG
-                if (!bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph)) {
+                if (!bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph, m_edit_state->cost_map())) {
                     for (auto uv : subgraph.non_converting_edits()) {
                         auto i = subgraph_index[uv];
                         if (i != invalid_index) {
@@ -932,8 +959,13 @@ namespace lower_bound {
 
 #ifndef NDEBUG
                 for (VertexPair xy : Graph::VertexPairs(subgraph_index.size()))
-                    if (subgraph_index[xy] != invalid_index)
-                        assert(state.bound(subgraph_index[xy]).subgraph.contains(xy));
+                    if (subgraph_index[xy] != invalid_index) {
+                        auto edits = state.bound(subgraph_index[xy]).subgraph.non_converting_edits();
+                        auto contains_pair = std::any_of(edits.begin(), edits.end(), [&](auto e) {
+                            return e == xy;
+                        });
+                        assert(contains_pair);
+                    }
                 for (size_t j = 0; j < state.bound().size(); ++j) {
                     for (auto xy : state.bound(j).subgraph.non_converting_edits()) {
                         if (!m_edit_state->is_marked(xy))
@@ -965,7 +997,7 @@ namespace lower_bound {
         }
 
         if (state.cost() <= k && state.solvable()) {
-            assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph));
+            assert(bound_graph_is_valid(state, m_edit_state->marked_map(), m_bound_graph, m_edit_state->cost_map()));
             assert(bound_is_maximal(m_finder, m_edit_state->graph(), m_bound_graph));
         }
 
