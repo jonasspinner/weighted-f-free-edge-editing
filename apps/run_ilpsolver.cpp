@@ -17,8 +17,7 @@ void write_output_file(const std::string &path, const Configuration &config, con
     Emitter out;
     out << BeginDoc << BeginMap;
     out << Key << "config" << Value << BeginMap;
-    out << Key << "single_constraints" << Value << config.single_constraints;
-    out << Key << "sparse_constraints" << Value << config.sparse_constraints;
+    out << Key << "constraints" << Value << config.constraints;
     out << Key << "num_threads" << Value << config.num_threads;
     out << Key << "timelimit" << Value << config.timelimit;
     out << EndMap;
@@ -68,7 +67,7 @@ int main(int argc, char *argv[]) {
     Configuration config(Options::FSG::C4P4, multiplier, Options::SolverType::ILP, Options::Selector::MostMarkedPairs,
                          Options::LB::LocalSearch);
     config.input_path = input;
-    config.sparse_constraints = true;
+    config.constraints = Options::ILPConstraintGeneration::AtMostOnePerVertexPair;
 
     auto options = config.options({Options::SolverType::ILP});
 

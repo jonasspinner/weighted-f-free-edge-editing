@@ -1,13 +1,9 @@
-//
-// Created by jonas on 24.09.19.
-//
-
 #include "options.h"
 
 
 namespace Options {
 
-    std::istream& operator>>(std::istream& in, Selector& selector) {
+    std::istream &operator>>(std::istream &in, Selector &selector) {
         std::string token;
         in >> token;
         if (token == "FirstFound")
@@ -52,7 +48,7 @@ namespace Options {
 
 namespace Options {
 
-    std::istream& operator>>(std::istream& in, FSG& fsg) {
+    std::istream &operator>>(std::istream &in, FSG &fsg) {
         std::string token;
         in >> token;
         if (token == "P3")
@@ -114,7 +110,7 @@ namespace Options {
 
 namespace Options {
 
-    std::istream& operator>>(std::istream& in, LB& lower_bound) {
+    std::istream &operator>>(std::istream &in, LB &lower_bound) {
         std::string token;
         in >> token;
         if (token == "Trivial")
@@ -239,6 +235,40 @@ namespace Options {
     YAML::Emitter &operator<<(YAML::Emitter &out, FPTSearchStrategy strategy) {
         std::ostringstream ss;
         ss << strategy;
+        return out << ss.str();
+    }
+
+    std::istream &operator>>(std::istream &in, ILPConstraintGeneration &constraints) {
+        std::string token;
+        in >> token;
+        if (token == "All")
+            constraints = ILPConstraintGeneration::All;
+        else if (token == "One")
+            constraints = ILPConstraintGeneration::One;
+        else if (token == "AtMostOnePerVertexPair")
+            constraints = ILPConstraintGeneration::AtMostOnePerVertexPair;
+        else
+            in.setstate(std::ios_base::failbit);
+        return in;
+    }
+
+    std::ostream &operator<<(std::ostream &os, ILPConstraintGeneration constraints) {
+        switch (constraints) {
+            case ILPConstraintGeneration::All:
+                return os << "All";
+            case ILPConstraintGeneration::One:
+                return os << "One";
+            case ILPConstraintGeneration::AtMostOnePerVertexPair:
+                return os << "AtMostOnePerVertexPair";
+            default:
+                os.setstate(std::ios_base::failbit);
+                return os;
+        }
+    }
+
+    YAML::Emitter &operator<<(YAML::Emitter &out, ILPConstraintGeneration constraints) {
+        std::ostringstream ss;
+        ss << constraints;
         return out << ss.str();
     }
 }

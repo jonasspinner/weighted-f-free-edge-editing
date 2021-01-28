@@ -1,8 +1,3 @@
-//
-// Created by jonas on 17.07.19.
-//
-
-
 #include "Configuration.h"
 #include "options.h"
 
@@ -50,7 +45,8 @@ Configuration::options(const std::set<Options::SolverType> &types) {
                 ("lower-bound", po::value<Options::LB>(&lower_bound)->default_value(lower_bound))
                 ("all", po::value<bool>(&find_all_solutions)->default_value(find_all_solutions))
                 ("pre-mark", po::value<bool>(&pre_mark_vertex_pairs)->default_value(pre_mark_vertex_pairs))
-                ("search-strategy", po::value<Options::FPTSearchStrategy>(&search_strategy)->default_value(search_strategy));
+                ("search-strategy",
+                 po::value<Options::FPTSearchStrategy>(&search_strategy)->default_value(search_strategy));
 
         cmdline_options.add(fpt_options);
     }
@@ -58,8 +54,7 @@ Configuration::options(const std::set<Options::SolverType> &types) {
     if (types.count(Options::SolverType::ILP)) {
         po::options_description ilp_options("ILP algorithm options");
         ilp_options.add_options()
-                ("sparse-constraints", po::value<bool>(&sparse_constraints)->default_value(sparse_constraints), "only add O(n^2) constraints at once")
-                ("single-constraints", po::value<bool>(&single_constraints)->default_value(single_constraints), "only add 1 constraints at once")
+                ("constraints", po::value<Options::ILPConstraintGeneration>(&constraints)->default_value(constraints), "if and how constraint generation is restricted")
                 ("num-threads", po::value<int>(&num_threads)->default_value(num_threads));
 
         cmdline_options.add(ilp_options);
@@ -74,7 +69,7 @@ YAML::Emitter &operator<<(YAML::Emitter &out, const Configuration &config) {
     out << Key << "output" << Value << config.output_path;
     out << Key << "seed" << Value << config.seed;
     out << Key << "solver" << Value << config.solver_type;
-    out << Key << "timelimit"<< Value << config.timelimit;
+    out << Key << "timelimit" << Value << config.timelimit;
 
     out << Key << "input" << Value << config.input_path;
     out << Key << "permutation" << Value << config.permutation;
@@ -89,8 +84,7 @@ YAML::Emitter &operator<<(YAML::Emitter &out, const Configuration &config) {
         out << Key << "pre_mark_vertex_pairs" << Value << config.pre_mark_vertex_pairs;
         out << Key << "search_strategy" << Value << config.search_strategy;
     } else if (config.solver_type == Options::SolverType::ILP) {
-        out << Key << "sparse_constraints" << Value << config.sparse_constraints;
-        out << Key << "single_constraints" << Value << config.single_constraints;
+        out << Key << "constraints" << Value << config.constraints;
         out << Key << "num_threads" << Value << config.num_threads;
     }
     out << EndMap;

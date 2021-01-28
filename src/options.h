@@ -1,7 +1,3 @@
-//
-// Created by jonas on 24.09.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_OPTIONS_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_OPTIONS_H
 
@@ -65,6 +61,16 @@ namespace Options {
     std::ostream &operator<<(std::ostream &os, FPTSearchStrategy strategy);
 
     YAML::Emitter &operator<<(YAML::Emitter &out, FPTSearchStrategy strategy);
+
+    enum class ILPConstraintGeneration {
+        All, One, AtMostOnePerVertexPair
+    };
+
+    std::istream &operator>>(std::istream &in, ILPConstraintGeneration &constraints);
+
+    std::ostream &operator<<(std::ostream &os, ILPConstraintGeneration constraints);
+
+    YAML::Emitter &operator<<(YAML::Emitter &out, ILPConstraintGeneration constraints);
 }
 
 

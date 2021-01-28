@@ -42,8 +42,7 @@ public:
 
 
     // ILP parameters
-    bool sparse_constraints = false;
-    bool single_constraints = false;
+    Options::ILPConstraintGeneration constraints = Options::ILPConstraintGeneration::All;
     int num_threads = 4;
 
 
