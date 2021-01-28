@@ -73,20 +73,20 @@ private:
                             ++num_added;
                             addSubgraphConstraint(subgraph);
                         }
-                        return false;
+                        return subgraph_iterators::IterationControl::Continue;
                     });
                 } else if (m_config.single_constraints) {
                      m_finder.find(m_graph, [&](const Subgraph& subgraph) {
                          addSubgraphConstraint(subgraph);
                          ++num_added;
-                         return true;
+                         return subgraph_iterators::IterationControl::Break;
                      });
                  } else {
                     // Find forbidden subgraphs in current solution and add additional constraints.
                     m_finder.find(m_graph, [&](const Subgraph &subgraph) {
                         addSubgraphConstraint(subgraph);
                         ++num_added;
-                        return false;
+                        return subgraph_iterators::IterationControl::Continue;
                     });
                 }
 
@@ -202,7 +202,7 @@ private:
             model.addConstr(expr >= 1);
 
             ++num_added;
-            return false;
+            return subgraph_iterators::IterationControl::Continue;
         });
 
         return num_added;
