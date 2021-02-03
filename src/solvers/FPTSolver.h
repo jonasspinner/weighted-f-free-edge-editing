@@ -14,6 +14,7 @@ public:
         Cost k;
         int calls;
         double time;
+
         Stat(Cost k_, int calls_, double time_) : k(k_), calls(calls_), time(time_) {}
     };
 
@@ -51,8 +52,7 @@ public:
                 return search_delta(instance, m_config, m_stats);
             case Options::FPTSearchStrategy::Exponential:
                 return search_exponential(instance, m_config, m_stats);
-            case Options::FPTSearchStrategy::IncrementByMinCost:
-            {
+            case Options::FPTSearchStrategy::IncrementByMinCost: {
                 Cost delta = std::numeric_limits<Cost>::max();
                 for (VertexPair uv : instance.graph.vertex_pairs()) {
                     if (0 < instance.costs[uv] && instance.costs[uv] < delta) {
@@ -131,7 +131,7 @@ private:
      * @return
      */
     static Result search_delta(const Instance &instance, const Configuration &config,
-            std::vector<Stat> &stats, double quantile = 0.5) {
+                               std::vector<Stat> &stats, double quantile = 0.5) {
         Editor editor(instance.graph.copy(), instance.costs, config);
 
         std::chrono::seconds timelimit(config.timelimit);
@@ -266,59 +266,73 @@ private:
 
     /**
      * This search strategy makes the assumption that the number of calls grows exponentially with the parameter k.
-     * We want to increment the paramter k in such a way that each step the number of calls doubles. If we can achieve
+     * We want to increment the parameter k in such a way that each step the number of calls doubles. If we can achieve
      * that, then the overall amount of work (=number of calls) is dominated by the last step.
      *
      *  We try to estimate the relationship between k and the number of calls and fit a log linear model with the
      *  information of the last calls (max_history_length).
      *
      *  In early steps with not enough information the result of the model is very unstable. We fix that by clamping the
-     *  size of the step between search_delta estimate (quantile) and a multiple of the last step size (max_step_factor).
+     *  size of the step between the minimum delta and a multiple of the last step size (max_step_factor).
      *
      * @param instance
      * @param config
      * @return
      */
     static Result search_exponential(const Instance &instance, const Configuration &config, std::vector<Stat> &stats,
-            size_t max_history_length = 3, double desired_calls_factor = 2, double max_step_factor = 4,
-            double quantile = 0.5) {
+                                     size_t max_history_length = 3, double desired_calls_factor = 2,
+                                     double max_step_factor = 4) {
         Editor editor(instance.graph.copy(), instance.costs, config);
 
         std::chrono::seconds timelimit(config.timelimit);
 
-        Cost k_init = editor.initial_lower_bound();
-        Cost delta = 0;
-        Cost min_remaining_cost = 0; // When a solutions is found, prune branches early when they are already worse than the found solution.
-        bool solved;
+        Cost init_cost = editor.initial_lower_bound();
+        Cost delta_cost = 0;
+        bool solved = false;
+
         std::vector<Solution> solutions;
         std::deque<Cost> ks;
         std::deque<size_t> num_calls;
 
         do {
-            Cost k = k_init + delta;
+            // Start with initial lower bound and increase by some delta cost.
+            Cost k = init_cost + delta_cost;
 
-            Cost min_delta = std::numeric_limits<Cost>::max();
-            std::vector<Cost> deltas;
+            Cost min_delta_cost = std::numeric_limits<Cost>::max();
+
             ks.push_back(k);
             num_calls.push_back(0);
+            // Keep `k` and `num_calls` at a maximum of `max_history_length` elements.
+            if (ks.size() > max_history_length) {
+                ks.pop_front();
+                num_calls.pop_front();
+            }
+
+            // When a solutions is found, prune branches early when they are already worse than the found solution.
+            Cost max_remaining_cost = 0;
 
             auto result_cb = [&](const std::vector<VertexPair> &edits) {
                 solutions.emplace_back(instance, edits);
-                min_remaining_cost = k - solutions.back().cost;
+                // This value is monotonically increasing. A solution with the largest `max_remaining_cost` has the
+                // smallest cost.
+                max_remaining_cost = k - solutions.back().cost;
             };
 
-            auto prune_cb = [&](Cost pruned_k, Cost lb) {
-                min_delta = std::min(min_delta, lb - pruned_k);
-                deltas.push_back(lb - pruned_k);
+            auto prune_cb = [&](Cost remaining_cost_at_pruning, Cost needed_cost_lb) {
+                // If the initial parameter value would have been increased by `needed_cost_lb` -
+                // `remaining_cost_at_pruning`, then at this point the `remaining_cost_at_pruning` would be exactly
+                // as large as the lower bound `needed_cost_lb` and the branch would not have been pruned.
+                min_delta_cost = std::min(min_delta_cost, needed_cost_lb - remaining_cost_at_pruning);
             };
 
-            auto call_cb = [&](Cost current_k) {
+            auto call_cb = [&](Cost current_remaining_cost) -> bool {
                 ++num_calls.back();
-                if (current_k < min_remaining_cost) {
-                    deltas.push_back(min_remaining_cost - current_k);
-                    return true;
+                // Check if there is already a solution, which has a larger remaining cost. If that's the case it has a
+                // smaller cost than could ever be achieved through this branch of the search tree.
+                if (current_remaining_cost < max_remaining_cost) {
+                    return true;  // Prune the search tree for this branch.
                 }
-                return false;
+                return false;  // Keep going
             };
 
             auto start = std::chrono::steady_clock::now();
@@ -330,41 +344,27 @@ private:
             auto end = std::chrono::steady_clock::now();
             auto duration = end - start;
 
-            stats.emplace_back(k, editor.stats().allCalls(), std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count());
+            stats.emplace_back(k, editor.stats().allCalls(),
+                               std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count());
 
             if (std::chrono::seconds(0) <= timelimit && duration > timelimit)
                 return Result::Unsolved();
 
-            if (solved)
-                break;
+            Cost prev_delta = delta_cost;
 
+            Cost next_delta_lb = std::max(1, prev_delta + std::max(min_delta_cost, 1));
+            Cost next_delta_ub = std::max<Cost>(next_delta_lb, std::floor(max_step_factor * delta_cost));
+            Cost next_delta_model = find_next_k(ks, num_calls, desired_calls_factor) - init_cost;
 
-            if (ks.size() > max_history_length) {
-                ks.pop_front();
-                num_calls.pop_front();
-            }
-
-
-            assert(!deltas.empty());
-            size_t index = std::clamp<size_t>(quantile * deltas.size(), 0, deltas.size() - 1);
-            assert(index < deltas.size());
-            std::nth_element(deltas.begin(), deltas.begin() + static_cast<long>(index), deltas.end(), std::less<>());
-            Cost quantile_delta = std::max(deltas[index], 1);
-            assert(quantile_delta > 0);
-
-            Cost prev_delta = delta;
-            Cost lo = std::max(1, prev_delta + quantile_delta);
-            Cost hi = std::max<Cost>(lo, std::floor(max_step_factor * delta));
-            Cost next_delta = find_next_k(ks, num_calls, desired_calls_factor) - k_init;
-            delta = std::clamp(next_delta, lo, hi);
+            delta_cost = std::clamp(next_delta_model, next_delta_lb, next_delta_ub);
 
             if (config.verbosity) {
                 std::cout << "edit(" << std::setw(10) << k << "):";
-                std::cout << " lo = " << std::setw(6) << lo;
-                std::cout << " next_delta = " << std::setw(6) << next_delta;
-                std::cout << " hi = " << std::setw(6) << hi;
-                std::cout << " delta = " << std::setw(6) << delta;
-                std::cout << " num_calls = " << num_calls.back() << "\n";
+                std::cout << " \tnext_delta_lb = " << std::setw(6) << next_delta_lb;
+                std::cout << " \tnext_delta_model = " << std::setw(6) << next_delta_model;
+                std::cout << " \tnext_delta_ub = " << std::setw(6) << next_delta_ub;
+                std::cout << " \tdelta = " << std::setw(6) << delta_cost;
+                std::cout << " \tnum_calls = " << num_calls.back() << "\n";
             }
 
         } while (!solved);
@@ -373,6 +373,11 @@ private:
     }
 
     /**
+     * Given some parameter values `ks` and their corresponding number of calls the fpt algorithm needs for them, return
+     * a parameter value which increases the number of calls by a `factor` from the latest number of calls.
+     *
+     * This model makes the assumption that there is a exponential relationship between the parameter value and the
+     * number of calls.
      *
      * @param ks
      * @param calls
@@ -380,6 +385,8 @@ private:
      * @return
      */
     static Cost find_next_k(const std::deque<Cost> &ks, const std::deque<size_t> &calls, double factor) {
+        assert(ks.size() == calls.size());
+
         std::vector<double> xs;
         for (auto k : ks)
             xs.push_back(k);
