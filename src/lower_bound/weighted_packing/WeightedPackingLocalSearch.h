@@ -651,12 +651,6 @@ public:
                 !changed_in_round ||
                 num_rounds_no_improvement > max_rounds_no_improvement ||
                 m_packing.cost() > k) {
-//                std::cout << iter + 1 << " ";
-//                std::cout << !changed_in_round << " ";
-//                std::cout << num_rounds_no_improvement;
-//                if (m_packing.cost() > k)
-//                    std::cout << " bound";
-//                std::cout << "\n";
                 break;
             }
         }
@@ -867,8 +861,12 @@ public:
                 return {false, false};
         }
 
-        for (auto &c : candidates) {
-            try_insert(c);
+        for (size_t pair_i = 0; pair_i < pairs.size(); ++pair_i) {
+            if (!m_packing.is_depleted(pairs[pair_i])) {
+                for (size_t c_i = border[pair_i]; c_i < border[pair_i + 1]; ++c_i) {
+                    try_insert(candidates[c_i]);
+                }
+            }
         }
 
         try_insert(x);
