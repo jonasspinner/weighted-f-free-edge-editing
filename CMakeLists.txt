@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.13)
 project(Weighted_F-free_Edge_Editing)
 
 include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/extern/robin-hood-hashing/src/include")
+include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/extern/spdlog/include")
 
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
