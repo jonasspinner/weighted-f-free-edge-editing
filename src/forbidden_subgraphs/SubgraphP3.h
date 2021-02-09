@@ -8,7 +8,9 @@
 #include "Subgraph.h"
 
 
-class CenterP3Finder;
+namespace subgraph_iterators {
+    class CenterP3Finder;
+}
 
 template<>
 class SubgraphT<Options::FSG::P3> {
@@ -21,8 +23,7 @@ public:
     friend struct std::hash<SubgraphT<Options::FSG::P3>>;
     friend class CenterP3Finder;
 
-    using Subgraph = SubgraphT<Options::FSG::P3>;
-    using Finder = CenterP3Finder;
+    using Finder = subgraph_iterators::CenterP3Finder;
 
     static constexpr SubgraphT P3(const Vertices &vertices) noexcept {
         return SubgraphT{vertices};
@@ -37,14 +38,13 @@ public:
     }
 
     class VertexPairIt {
-        std::array<VertexPair, 3> m_pairs;
+        std::array<VertexPair, 3> m_pairs{};
     public:
-        constexpr VertexPairIt(const Vertices &v) noexcept: m_pairs({{v[0], v[1]}, {v[0], v[2]}, {v[1], v[2]}}) {}
+        constexpr VertexPairIt(const Vertices &v) noexcept: m_pairs{VertexPair{v[0], v[1]}, {v[0], v[2]}, {v[1], v[2]}} {}
         [[nodiscard]] constexpr auto begin() const noexcept {
             return m_pairs.begin();
         }
         [[nodiscard]] constexpr auto end() const noexcept {
-            auto end = m_vertices.end();
             return m_pairs.end();
         }
     };
@@ -62,15 +62,15 @@ public:
         return std::min({x({a, b}), x({a, c}), x({b, c})});
     }
 
-    [[nodiscard]] constexpr bool operator==(const Subgraph &other) const noexcept {
+    [[nodiscard]] bool operator==(const SubgraphT &other) const noexcept {
         return m_vertices == other.m_vertices;
     }
 
-    [[nodiscard]] constexpr bool operator!=(const Subgraph &other) const noexcept {
+    [[nodiscard]] bool operator!=(const SubgraphT &other) const noexcept {
         return !(*this == other);
     }
 
-    [[nodiscard]] bool operator<(const Subgraph &other) const noexcept {
+    [[nodiscard]] bool operator<(const SubgraphT &other) const noexcept {
         return m_vertices < other.m_vertices;
     }
 
@@ -82,7 +82,7 @@ public:
         return contains(uv.u) && contains(uv.v);
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const Subgraph &subgraph) {
+    friend std::ostream &operator<<(std::ostream &os, const SubgraphT &subgraph) {
         os << "P3{";
         for (Vertex u : subgraph.vertices())
             os << " " << u;
@@ -90,7 +90,7 @@ public:
         return os;
     }
 
-    friend YAML::Emitter &operator<<(YAML::Emitter &out, const Subgraph &subgraph) {
+    friend YAML::Emitter &operator<<(YAML::Emitter &out, const SubgraphT &subgraph) {
         using namespace YAML;
         out << YAML::Flow << YAML::BeginSeq;
         for (Vertex u : subgraph.vertices())
@@ -110,22 +110,22 @@ public:
 
     static bool is_valid_P3(const Graph& graph, const Vertices &vertices) noexcept {
         auto [a, b, c] = vertices;
-        auto e = [&](VertexPair uv) { return graph.hasEdge(uv); };
+        auto e = [&](VertexPair uv) { return graph.has_edge(uv); };
         return e({a, b}) && !e({a, c}) &&  e({b, c});
     }
 
     static bool is_valid_P3(const Graph& graph, const Graph &forbidden_graph, const Vertices &vertices) noexcept {
         auto [a, b, c] = vertices;
-        auto e = [&](VertexPair uv) { return graph.hasEdge(uv); };
-        auto f = [&](VertexPair uv) { return forbidden_graph.hasEdge(uv); };
-        return  e({a, b}) && !e({a, c}) &&  e({b, c});
+        auto e = [&](VertexPair uv) { return graph.has_edge(uv); };
+        auto f = [&](VertexPair uv) { return forbidden_graph.has_edge(uv); };
+        return  e({a, b}) && !e({a, c}) &&  e({b, c})
             && !f({a, b}) && !f({a, c}) && !f({b, c});
     }
 };
 
 template <>
-struct std::hash<SubgraphT<Options::FSG::C4P4>> {
-    size_t operator()(const SubgraphT<Options::FSG::C4P4> &subgraph) const noexcept {
+struct std::hash<SubgraphT<Options::FSG::P3>> {
+    size_t operator()(const SubgraphT<Options::FSG::P3> &subgraph) const noexcept {
         // hash_bytes has `void const* ptr` as first parameter type.
         const auto ptr = static_cast<void const*>(subgraph.m_vertices.data());
         const auto len = subgraph.m_vertices.size() * sizeof(Vertex); // length of m_vertices in bytes.
@@ -133,21 +133,22 @@ struct std::hash<SubgraphT<Options::FSG::C4P4>> {
     }
 };
 
+namespace subgraph_iterators {
 
 class CenterP3Finder {
     /**
      * Only allocates if temporary adjacency array rows are too small for the current graph.
      *
      * The invariants for all subgraphs {a, b, c} are
-     *  + P3: a < c and
+     *  + P3: a < c
      */
     Graph::AdjRow A;
     Graph::AdjRow B;
-    Graph::AdjRow V;
+    Graph::AdjRow C;
 
     static inline void init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph& graph) {
-        row = graph.m_adj[neighbor];
-        row -= graph.m_adj[non_neighbor];
+        row = graph.adj(neighbor);
+        row -= graph.adj(non_neighbor);
         row[non_neighbor] = false;
     }
 
@@ -156,50 +157,78 @@ class CenterP3Finder {
      * Assumes that uv is an edge and not forbidden.
      */
     static inline void init(Graph::AdjRow &row, Vertex neighbor, Vertex non_neighbor, const Graph& graph, const Graph &forbidden_graph) {
-        row = graph.m_adj[neighbor];
-        row -= graph.m_adj[non_neighbor];
-        row -= forbidden_graph.m_adj[neighbor];
-        row -= forbidden_graph.m_adj[non_neighbor];
+        row = graph.adj(neighbor);
+        row -= graph.adj(non_neighbor);
+        row -= forbidden_graph.adj(neighbor);
+        row -= forbidden_graph.adj(non_neighbor);
         row[non_neighbor] = false;
     }
 public:
     using Subgraph = SubgraphT<Options::FSG::P3>;
 
     template<class Callback>
-    bool find(const Graph &graph, Callback callback) {
-        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>, "Callback must have bool(Subgraph) signature.");
+    IterationExit find(const Graph &graph, Callback callback) {
+        static_assert(std::is_invocable_r_v<IterationControl, Callback, const Subgraph &>,
+                "Callback must have IterationControl(const Subgraph &) signature.");
 
-        Graph::AdjRow V;
-        V.resize(graph.size());
+        /** P_3: <a, b, c> **/
+        for (auto a : graph.vertices()) {
+            for (auto b : graph.neighbors(a)) {
 
-        /** P_3: <u, a, v> **/
-        for (Vertex u : graph.vertices()) {
-            // V = {v | uv \notin E, u < v}
-            V.set();
-            V.reset(0, u);
-            V -= graph.m_adj[u];
+                // TODO: Optimize C to set the range 0..a to zero so that a < c for all c.
+                init(C, b, a, graph);
 
-            for (Vertex v : Graph::iterate(V)) {
-                assert(u < v);
-                assert(!graph.hasEdge({u, v}));
+                for (auto c : Graph::iterate(C)) {
+                    assert(a != b); assert(a != c); assert(b != c);
+                    assert(Subgraph::is_valid_P3(graph, {a, b, c}));
 
-                A = graph.m_adj[u];
-                A &= graph.m_adj[v];
-                for (Vertex a : Graph::iterate(A)) {
-                    assert(u != a); assert(u != v); assert(a != v);
-
-                    assert(Subgraph::is_valid_P3(graph, {u, a, v}));
-                    if (callback(Subgraph::P3({u, a, v})))
-                        return true;
+                    if (a < c) {
+                        if (callback(Subgraph::P3({a, b, c})) == IterationControl::Break)
+                            return IterationExit::Break;
+                    }
                 }
             }
         }
-        return false;
+        return IterationExit::Normal;
     }
 
     template<class Callback>
-    bool find_near(VertexPair uv, const Graph &graph, const Graph &forbidden_graph, Callback callback) {
-        static_assert(std::is_invocable_r_v<bool, Callback, const Subgraph>, "Callback must have bool(Subgraph) signature.");
+    IterationExit find(const Graph &graph, const Graph &forbidden_graph, Callback callback) {
+        static_assert(std::is_invocable_r_v<IterationControl, Callback, const Subgraph &>,
+                      "Callback must have IterationControl(const Subgraph &) signature.");
+
+        /** P_3: <a, b, c> **/
+        for (auto a : graph.vertices()) {
+            for (auto b : graph.neighbors(a)) {
+                if (forbidden_graph.has_edge({a, b}))
+                    continue;
+
+                // TODO: Optimize C to set the range 0..a to zero so that a < c for all c.
+                init(C, b, a, graph, forbidden_graph);
+
+                for (auto c : Graph::iterate(C)) {
+                    assert(a != b); assert(a != c); assert(b != c);
+                    assert(Subgraph::is_valid_P3(graph, {a, b, c}));
+
+                    if (a < c) {
+                        if (callback(Subgraph::P3({a, b, c})) == IterationControl::Break)
+                            return IterationExit::Break;
+                    }
+                }
+            }
+        }
+        return IterationExit::Normal;
+    }
+
+    template<class Callback>
+    IterationExit find_unique(const Graph &graph, Callback callback) {
+        return find(graph, callback);
+    }
+
+    template<class Callback>
+    IterationExit find_near(VertexPair uv, const Graph &graph, const Graph &forbidden_graph, Callback callback) {
+        static_assert(std::is_invocable_r_v<IterationControl, Callback, const Subgraph &>,
+                "Callback must have IterationControl(const Subgraph &) signature.");
         auto [u, v] = uv;
 
         auto ensure_direction = [](auto &subgraph) {
@@ -208,17 +237,17 @@ public:
             }
         };
 
-        if (forbidden_graph.hasEdge(uv))
-            return false;
+        if (forbidden_graph.has_edge(uv))
+            return IterationExit::Normal;
 
-        if (graph.hasEdge(uv)) {
+        if (graph.has_edge(uv)) {
             init(A, u, v, graph, forbidden_graph);
             for (auto a : Graph::iterate(A)) {
                 std::array<Vertex, 3> vertices{a, u, v};
                 ensure_direction(vertices);
                 assert(Subgraph::is_valid_P3(graph, vertices));
-                if (callback(Subgraph::P3(vertices)))
-                    return true;
+                if (callback(Subgraph::P3(vertices)) == IterationControl::Break)
+                    return IterationExit::Break;
             }
 
             init(B, v, u, graph, forbidden_graph);
@@ -226,24 +255,26 @@ public:
                 std::array<Vertex, 3> vertices{u, v, b};
                 ensure_direction(vertices);
                 assert(Subgraph::is_valid_P3(graph, vertices));
-                if (callback(Subgraph::P3(vertices)))
-                    return true;
+                if (callback(Subgraph::P3(vertices)) == IterationControl::Break)
+                    return IterationExit::Break;
             }
         } else {
-            A = graph.m_adj[u];
-            A &= graph.m_adj[v];
-            A -= forbidden_graph.m_adj[u];
-            A -= forbidden_graph.m_adj[v];
+            A = graph.adj(u);
+            A &= graph.adj(v);
+            A -= forbidden_graph.adj(u);
+            A -= forbidden_graph.adj(v);
 
             for (auto a : Graph::iterate(A)) {
                 assert(Subgraph::is_valid_P3(graph, {u, a, v}));
-                if (callback(Subgraph::P3({u, a, v})))
-                    return true;
+                if (callback(Subgraph::P3({u, a, v})) == IterationControl::Break)
+                    return IterationExit::Break;
             }
         }
-        return false;
+        return IterationExit::Normal;
     }
 };
+
+}
 
 
 #endif //WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPHP3_H
