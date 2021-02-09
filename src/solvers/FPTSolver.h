@@ -4,6 +4,8 @@
 
 #include <deque>
 
+#include "spdlog/spdlog.h"
+
 #include "Solver.h"
 #include "../Configuration.h"
 #include "../editor/Editor.h"
@@ -193,14 +195,9 @@ private:
             Cost quantile_delta = std::max(deltas[index], 1);
             assert(quantile_delta > 0);
 
-            if (config.verbosity) {
-                std::cout << "edit(" << std::setw(10) << k << "):";
-                std::cout << " min_delta = " << std::setw(11) << min_delta;
-                std::cout << " deltas size = " << std::setw(10) << deltas.size();
-                std::cout << " quantile_delta = " << std::setw(10) << quantile_delta;
-                std::cout << " num_calls = " << num_calls;
-                std::cout << "\n";
-            }
+            spdlog::info(
+                    "preventing pruning with quantile delta search strategy: k = {:>6}, num_calls = {:>6}, num_deltas = {:>6}, quantile = {:>6}, min_delta = {:>6}, quantile_delta = {:>6}",
+                    k, num_calls, deltas.size(), quantile, min_delta, quantile_delta);
 
             k += quantile_delta;
         } while (!solved);
@@ -210,8 +207,7 @@ private:
 
     static Result search_incremental(const Instance &instance, const Configuration &config, std::vector<Stat> &stats, Cost delta) {
         if (delta < 1) {
-            std::cerr << "delta must be at least 1" << std::endl;
-            abort();
+            throw std::runtime_error("delta must be at least 1");
         }
         Editor editor(instance.graph.copy(), instance.costs, config);
 
@@ -251,11 +247,9 @@ private:
                 return Result::Unsolved();
 
 
-            if (config.verbosity) {
-                std::cout << "edit(" << std::setw(10) << k << "):";
-                std::cout << " delta = " << std::setw(6) << delta;
-                std::cout << " num_calls = " << num_calls << "\n";
-            }
+            spdlog::info(
+                    "incremental search strategy: k = {:>6}, delta = {:>6}, num_calls = {:>6}",
+                    k, delta, num_calls);
 
 
             k += delta;
@@ -358,15 +352,11 @@ private:
 
             delta_cost = std::clamp(next_delta_model, next_delta_lb, next_delta_ub);
 
-            if (config.verbosity) {
-                std::cout << "edit(" << std::setw(10) << k << "):";
-                std::cout << " \tnext_delta_lb = " << std::setw(6) << next_delta_lb;
-                std::cout << " \tnext_delta_model = " << std::setw(6) << next_delta_model;
-                std::cout << " \tnext_delta_ub = " << std::setw(6) << next_delta_ub;
-                std::cout << " \tdelta = " << std::setw(6) << delta_cost;
-                std::cout << " \tnum_calls = " << num_calls.back() << "\n";
-            }
-
+            spdlog::info(
+                    "exponential search strategy: k = {:>6}, delta = {:>6}, num_calls = {:>6}, lb = {:>6}, model = {:>6}, ub = {:>6}, next_delta = {:>6}, next_k = {:>6}",
+                    k, k - init_cost, num_calls.back(),
+                    next_delta_lb, next_delta_model > std::numeric_limits<Cost>::max() / 2 ? -1 : next_delta_model,
+                    next_delta_ub, delta_cost, init_cost + delta_cost);
         } while (!solved);
 
         return Result::Solved(solutions);
