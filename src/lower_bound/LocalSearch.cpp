@@ -807,9 +807,6 @@ namespace lower_bound {
             if (m_bound_graph.has_edge(pairs[pair_i]))
                 continue;
             for (size_t a_i = border[pair_i]; a_i < border[pair_i + 1]; ++a_i) {
-                if (candidates[a_i].size() == 0)
-                    continue;
-
                 auto inserted = try_insert_into_graph(candidates[a_i], m_edit_state->marked_map(), m_bound_graph);
                 if (inserted) {
                     assert(candidate_costs[a_i] == candidates[a_i].calculate_min_cost(m_edit_state->cost_map(), m_edit_state->marked_map()));
