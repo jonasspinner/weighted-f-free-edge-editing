@@ -466,25 +466,19 @@ namespace dynamic_bitset {
 
         constexpr IndexIterator() noexcept = default;
 
-        [[maybe_unused]] constexpr explicit IndexIterator(const Bitset &bitset) noexcept:
-                m_bitset(std::addressof(bitset)) {
-            const auto &blocks = m_bitset->m_blocks;
-            const auto num_blocks = blocks.size();
-            const auto num_bits = m_bitset->size();
-
-            size_type block_idx = 0;
-            while (block_idx < num_blocks && (blocks[block_idx] == Block(0)))
-                ++block_idx;
-
-            m_pos = block_idx >= num_blocks
-                    ? num_bits
-                    : block_idx * Bitset::bits_per_block + static_cast<size_type>(detail::ctz(blocks[block_idx]));
-            assert(m_pos <= num_bits);
-        };
-
-        constexpr IndexIterator(const Bitset &bitset, size_type pos):
+        /**
+         * Construct a iterator over the set positions of a bitset.
+         *
+         * @param bitset
+         * @param pos The starting position. If this position is not set, the iterator is advanced to the next
+         *            position which is set.
+         */
+        constexpr explicit IndexIterator(const Bitset &bitset, size_type pos = 0):
                 m_bitset(std::addressof(bitset)), m_pos(pos) {
             assert(m_pos <= m_bitset->size());
+            if (m_pos < m_bitset->size() && !m_bitset->test(m_pos)) {
+                ++*this;
+            }
         };
 
         [[nodiscard]] constexpr value_type operator*() const noexcept {
