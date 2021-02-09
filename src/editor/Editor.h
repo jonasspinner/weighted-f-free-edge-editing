@@ -39,6 +39,7 @@ private:
     Statistics m_stats;
 
     Configuration m_config;
+    std::size_t m_num_calls_to_edit{0};
 public:
     explicit Editor(Graph graph, VertexPairMap<Cost> costs, Configuration config) :
             m_edit_state(std::make_unique<EditState>(std::move(graph), std::move(costs))),
@@ -67,7 +68,14 @@ private:
         m_consumers.push_back(m_selector.get());
     }
 
+    static bool allows_multiple_calls_to_edit(Options::FPTSearchStrategy strategy) {
+        return strategy != Options::FPTSearchStrategy::Fixed;
+    }
+
     void initalize_consumers(Cost k) {
+        if (allows_multiple_calls_to_edit(m_config.search_strategy)) {
+            k = std::numeric_limits<Cost>::max();
+        }
         for (auto &c : m_consumers) {
             c->initialize(k);
         }
@@ -85,6 +93,21 @@ public:
         return m_initial_lower_bound;
     }
 
+private:
+    enum class CallbackControl : bool {
+        Continue = 0,
+        Break = 1,
+    };
+
+    constexpr CallbackControl break_if(bool condition) noexcept {
+        if (condition) {
+            return CallbackControl::Break;
+        } else {
+            return CallbackControl::Continue;
+        }
+    }
+public:
+
     /**
      * Initializes statistics and consumers. Calls recursive editing function.
      *
@@ -98,9 +121,21 @@ public:
               const std::function<void(const std::vector<VertexPair> &)> &result_cb,
               const std::function<void(Cost, Cost)> &prune_cb = [](Cost, Cost) {},
               const std::function<bool(Cost)> &call_cb = [](Cost) { return false; }) {
-        auto result_cb2 = [&](const std::vector<VertexPair> &e) {
+
+        ++m_num_calls_to_edit;
+        if (!allows_multiple_calls_to_edit(m_config.search_strategy) && m_num_calls_to_edit >= 2) {
+            throw std::runtime_error("This configuration only allows one call to edit(...)");
+        }
+
+        bool stop_after_first_solution = !m_config.find_all_solutions;
+
+        auto result_cb_wrapper = [&](const std::vector<VertexPair> &e) {
             result_cb(e);
-            return !m_config.find_all_solutions;
+            return break_if(stop_after_first_solution);
+        };
+
+        auto call_cb_wrapper = [&](Cost cost) {
+            return break_if(call_cb(cost));
         };
 
         // init stats
@@ -111,17 +146,33 @@ public:
             initalize_consumers(k);
         }
 
+        // If we expect multiple calls to edit(...), we have to save the initial state.
+        if (allows_multiple_calls_to_edit(m_config.search_strategy)) {
+            for (auto c : m_consumers) {
+                c->push_state(k);
+            }
+        }
+
+
         switch (m_selector->recursion_type()) {
             case SelectorI::RecursionType::Subgraph:
-                edit_recursive_subgraph(k, result_cb2, prune_cb, call_cb);
+                edit_recursive_subgraph(k, result_cb_wrapper, prune_cb, call_cb_wrapper);
                 break;
             case SelectorI::RecursionType::VertexPair:
-                edit_recursive_vertex_pair(k, result_cb2, prune_cb, call_cb);
+                edit_recursive_vertex_pair(k, result_cb_wrapper, prune_cb, call_cb_wrapper);
                 break;
             default:
                 throw std::runtime_error("Invalid recursion type");
         }
-        m_is_initialized = false;
+
+
+        // Restore the initial state
+        if (allows_multiple_calls_to_edit(m_config.search_strategy)) {
+            for (auto c : m_consumers) {
+                c->pop_state();
+            }
+        }
+
         return m_found_solution;
     }
 
@@ -138,16 +189,23 @@ private:
      * @param prune_cb A callback which is called when a branch is pruned ((Cost, Cost) -> void).
      * @return Whether the execution was stopped early
      */
-    //template<typename ResultCallback, typename PrunedCallback>
+    template<typename ResultCallback, typename PrunedCallback, typename CallCallback>
     bool edit_recursive_subgraph(Cost k,
-                                 const std::function<bool(const std::vector<VertexPair> &)> &result_cb,
-                                 const std::function<void(Cost, Cost)> &prune_cb,
-                                 const std::function<bool(Cost)> &call_cb) {
+                                 const ResultCallback &result_cb,
+                                 const PrunedCallback &prune_cb,
+                                 const CallCallback &call_cb) {
+        static_assert(std::is_invocable_r_v<CallbackControl, ResultCallback, const std::vector<VertexPair> &>,
+                      "ResultCallback must have CallbackControl(const std::vector<VertexPair> &) signature.");
+        static_assert(std::is_invocable_r_v<void, PrunedCallback, Cost, Cost>,
+                      "PrunedCallback must have void(Cost, Cost) signature.");
+        static_assert(std::is_invocable_r_v<CallbackControl, CallCallback, Cost>,
+                      "CallCallback must have CallbackControl(Cost) signature.");
+
         const auto &costs = m_edit_state->cost_map();
         const auto &edits = m_edit_state->edits();
 
         m_stats.calls(k)++;
-        if (call_cb(k)) return false;
+        if (call_cb(k) == CallbackControl::Break) return false;
 
         auto lb = m_lower_bound->calculate_lower_bound(k);
         if (k < lb) {
@@ -162,7 +220,7 @@ private:
         if (problem.solved) {
             // solved
             m_found_solution = true;
-            return result_cb(edits); // output graph
+            return result_cb(edits) == CallbackControl::Break; // output graph
         }
 
         // recurse on problem pairs. keep vertex pairs marked between calls.
@@ -205,16 +263,23 @@ private:
      * @param prune_cb A callback which is called when a branch is pruned ((Cost, Cost) -> void).
      * @return Whether the execution was stopped early
      */
-    //template<typename ResultCallback, typename PrunedCallback>
+    template<typename ResultCallback, typename PrunedCallback, typename CallCallback>
     bool edit_recursive_vertex_pair(Cost k,
-                                    const std::function<bool(const std::vector<VertexPair> &)> &result_cb,
-                                    const std::function<void(Cost, Cost)> &prune_cb,
-                                    const std::function<bool(Cost)> &call_cb) {
+                                    const ResultCallback &result_cb,
+                                    const PrunedCallback &prune_cb,
+                                    const CallCallback &call_cb) {
+        static_assert(std::is_invocable_r_v<CallbackControl, ResultCallback, const std::vector<VertexPair> &>,
+                      "ResultCallback must have CallbackControl(const std::vector<VertexPair> &) signature.");
+        static_assert(std::is_invocable_r_v<void, PrunedCallback, Cost, Cost>,
+                      "PrunedCallback must have void(Cost, Cost) signature.");
+        static_assert(std::is_invocable_r_v<CallbackControl, CallCallback, Cost>,
+                      "CallCallback must have CallbackControl(Cost) signature.");
+
         const auto &costs = m_edit_state->cost_map();
         const auto &edits = m_edit_state->edits();
 
         m_stats.calls(k)++;
-        if (call_cb(k)) return false;
+        if (call_cb(k) == CallbackControl::Break) return false;
 
         auto lb = m_lower_bound->calculate_lower_bound(k);
         if (k < lb) {
@@ -229,7 +294,7 @@ private:
         if (problem.solved) {
             // solved
             m_found_solution = true;
-            return result_cb(edits); // output graph
+            return result_cb(edits) == CallbackControl::Break; // output graph
         }
 
 
