@@ -251,6 +251,15 @@ namespace dynamic_bitset {
             m_num_bits = 0;
         }
 
+        void resize(size_type new_num_bits) {
+            assert(new_num_bits == m_num_bits - 1);
+            const auto new_num_blocks = calc_num_blocks(new_num_bits);
+            m_blocks.resize(new_num_blocks);
+            m_num_bits = new_num_bits;
+            zero_unused_bits();
+            assert(check_invariants());
+        }
+
         DynamicBitset &operator&=(const DynamicBitset &rhs) {
             assert(size() == rhs.size());
             for (size_type i = 0; i < num_blocks(); ++i)

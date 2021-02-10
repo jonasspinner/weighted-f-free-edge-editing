@@ -692,6 +692,69 @@ public:
         return Edges{m_adj};
     }
 
+
+    /**
+     * Merge two adjacent vertices.
+     *
+     * The vertex with the lower index becomes the merged vertex. The vertex with the maximum index in the graph gets
+     * assigned the index of the second vertex. The maximum index is then decreased by one.
+     *
+     * @param edge
+     */
+    void contract_edge(VertexPair edge) {
+        assert(has_edge(edge));
+        const auto [u, old_v] = edge;
+        const auto last_vertex = size() - 1;
+
+        reset_edge(edge);
+
+        if (old_v != last_vertex) {
+            m_adj[old_v].swap(m_adj[last_vertex]);
+
+            // If the last vertex was adjacent to v, make it adjacent to u instead.
+            if (m_adj[old_v].test(old_v)) {
+                m_adj[old_v].reset(old_v);
+                m_adj[old_v].set(u);
+            }
+
+            for (auto x : iterate(m_adj[last_vertex])) {
+                if (x != last_vertex)
+                    m_adj[x].reset(old_v);
+            }
+
+            for (auto x : iterate(m_adj[old_v])) {
+                assert(x != old_v);
+                m_adj[x].set(old_v);
+            }
+
+            for (Vertex x = 0; x < last_vertex; ++x) {
+                assert(m_adj[x][old_v] == m_adj[old_v][x]);
+            }
+        }
+
+        // v is now at position last_vertex
+
+        // Merge rows/columns for u and v
+        m_adj[u] |= m_adj[last_vertex];
+        m_adj[u].reset(u);
+        m_adj[last_vertex].reset(last_vertex);
+        for (auto x : iterate(m_adj[last_vertex])) {
+            assert(x != last_vertex);
+            m_adj[x].set(u);
+        }
+
+        // Remove the last row and column
+        const auto new_size = size() - 1;
+        for (auto &row : m_adj) {
+            row.resize(new_size);
+        }
+        m_adj.pop_back();
+        m_size--;
+
+        assert(m_adj.size() == size());
+    }
+
+
     friend std::ostream &operator<<(std::ostream &os, const Graph &graph) {
         for (Vertex u = 0; u < graph.size(); ++u) {
             for (Vertex v = 0; v < graph.size(); ++v) {

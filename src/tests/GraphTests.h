@@ -59,6 +59,8 @@ public:
 
     static void iterators_on_singleton_Graph_work();
 
+    static void contract_edge_works();
+
     void run();
 };
 
