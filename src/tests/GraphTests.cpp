@@ -144,6 +144,6 @@ void GraphTests::run() {
     neighbors_and_for_loops_are_consistent();
     iterators_on_empty_Graph_work();
     iterators_on_singleton_Graph_work();
-    merge_vertices_works();
+    contract_edge_works();
 }
 
