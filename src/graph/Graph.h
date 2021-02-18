@@ -27,7 +27,7 @@ public:
      *
      * @param size
      */
-    explicit Graph(unsigned int size): m_size(size), m_adj(m_size, AdjRow(m_size)) {}
+    explicit Graph(unsigned int size) : m_size(size), m_adj(m_size, AdjRow(m_size)) {}
 
     Graph(const Graph &) = delete;
 
@@ -693,17 +693,34 @@ public:
     }
 
 
+    void contract_edge(VertexPair edge) {
+        assert(has_edge(edge));
+        const auto[u, v] = edge;
+
+        reset_edge(edge);
+
+        // Merge rows/columns for u and v
+        m_adj[u] |= m_adj[v];
+        for (auto x : iterate(m_adj[v])) {
+            assert(x != v);
+            m_adj[x].set(u);
+            m_adj[x].reset(v);
+        }
+        m_adj[v].reset();
+    }
+
+
     /**
-     * Merge two adjacent vertices.
+     * Merge two adjacent vertices and shrink the graph.
      *
      * The vertex with the lower index becomes the merged vertex. The vertex with the maximum index in the graph gets
      * assigned the index of the second vertex. The maximum index is then decreased by one.
      *
      * @param edge
      */
-    void contract_edge(VertexPair edge) {
+    void contract_edge_and_shrink(VertexPair edge) {
         assert(has_edge(edge));
-        const auto [u, old_v] = edge;
+        const auto[u, old_v] = edge;
         const auto last_vertex = size() - 1;
 
         reset_edge(edge);

@@ -106,7 +106,7 @@ void GraphTests::contract_edge_works() {
         graph.contract_edge({1, 4});
 
         std::vector<VertexPair> edges(graph.edges().begin(), graph.edges().end());
-        std::vector<VertexPair> expected_edges{{0, 1}, {1, 2}, {1, 3}, {1, 4}, {2, 4}};
+        std::vector<VertexPair> expected_edges{{0, 1}, {1, 2}, {1, 3}, {1, 5}, {2, 5}};
 
         expect("contract_edge() works with a small graph", expected_edges, edges);
     }
@@ -117,7 +117,7 @@ void GraphTests::contract_edge_works() {
         graph.contract_edge({0, 1});
 
         std::vector<VertexPair> edges(graph.edges().begin(), graph.edges().end());
-        std::vector<VertexPair> expected_edges{{0, 1}, {0, 2}, {1, 2}};
+        std::vector<VertexPair> expected_edges{{0, 2}, {0, 3}, {2, 3}};
 
         expect("contract_edge() works with a complete graph", expected_edges, edges);
     }
@@ -134,6 +134,41 @@ void GraphTests::contract_edge_works() {
     }
 }
 
+void GraphTests::contract_edge_and_shrink_works() {
+    {
+        auto graph = Graph::from_edges(6, {{0, 1}, {1, 2}, {1, 4}, {2, 5}, {3, 4}, {4, 5}});
+
+        graph.contract_edge_and_shrink({1, 4});
+
+        std::vector<VertexPair> edges(graph.edges().begin(), graph.edges().end());
+        std::vector<VertexPair> expected_edges{{0, 1}, {1, 2}, {1, 3}, {1, 4}, {2, 4}};
+
+        expect("contract_edge_and_shrink() works with a small graph", true, expected_edges == edges && graph.size() == 5);
+    }
+
+    {
+        auto graph = Graph::from_edges(4, {{0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {2, 3}});
+
+        graph.contract_edge_and_shrink({0, 1});
+
+        std::vector<VertexPair> edges(graph.edges().begin(), graph.edges().end());
+        std::vector<VertexPair> expected_edges{{0, 1}, {0, 2}, {1, 2}};
+
+        expect("contract_edge_and_shrink() works with a complete graph", true, expected_edges == edges && graph.size() == 3);
+    }
+
+    {
+        auto graph = Graph::from_edges(4, {{0, 1}});
+
+        graph.contract_edge_and_shrink({0, 1});
+
+        std::vector<VertexPair> edges(graph.edges().begin(), graph.edges().end());
+        std::vector<VertexPair> expected_edges{};
+
+        expect("contract_edge_and_shrink() works with a single edge graph", true, expected_edges == edges && graph.size() == 3);
+    }
+}
+
 void GraphTests::run() {
     std::cout << "\nGraphTests"
                  "\n----------" << std::endl;
@@ -145,5 +180,6 @@ void GraphTests::run() {
     iterators_on_empty_Graph_work();
     iterators_on_singleton_Graph_work();
     contract_edge_works();
+    contract_edge_and_shrink_works();
 }
 

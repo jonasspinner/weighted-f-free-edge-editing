@@ -1,7 +1,3 @@
-//
-// Created by jonas on 08.08.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_GRAPHTESTS_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_GRAPHTESTS_H
 
@@ -60,6 +56,8 @@ public:
     static void iterators_on_singleton_Graph_work();
 
     static void contract_edge_works();
+
+    static void contract_edge_and_shrink_works();
 
     void run();
 };
