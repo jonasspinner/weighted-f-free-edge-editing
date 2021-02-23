@@ -7,7 +7,7 @@
 #include "../definitions.h"
 #include "LowerBoundI.h"
 #include "../Instance.h"
-#include "../forbidden_subgraphs/SubgraphC4P4.h"
+#include "../forbidden_subgraphs/subgraphs.h"
 
 
 namespace lower_bound {

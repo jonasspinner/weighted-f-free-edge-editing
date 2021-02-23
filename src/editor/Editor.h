@@ -49,6 +49,9 @@ public:
             case Options::FSG::C4P4:
                 make_consumers<Options::FSG::C4P4>();
                 break;
+            case Options::FSG::P3:
+                make_consumers<Options::FSG::P3>();
+                break;
             default:
                 throw std::runtime_error("Cannot initialize consumers for given set of forbidden subgraphs.");
         }

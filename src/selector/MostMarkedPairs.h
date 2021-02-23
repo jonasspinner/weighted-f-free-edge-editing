@@ -2,7 +2,7 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_MOSTMARKEDPAIRS_H
 
 
-#include "../forbidden_subgraphs/SubgraphC4P4.h"
+#include "../forbidden_subgraphs/subgraphs.h"
 
 
 namespace selector {

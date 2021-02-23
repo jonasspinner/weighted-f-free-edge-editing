@@ -1164,7 +1164,7 @@ namespace lower_bound {
         return {num_pairs, num_neighbors_ub};
     }
 
-    template
-    class LocalSearch<Options::FSG::C4P4>;
+    template class LocalSearch<Options::FSG::C4P4>;
+    template class LocalSearch<Options::FSG::P3>;
 
 }

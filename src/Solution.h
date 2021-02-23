@@ -5,7 +5,7 @@
 #include "graph/VertexPairMap.h"
 #include "graph/Graph.h"
 #include "Configuration.h"
-#include "forbidden_subgraphs/SubgraphC4P4.h"
+#include "forbidden_subgraphs/subgraphs.h"
 
 
 class Solution {

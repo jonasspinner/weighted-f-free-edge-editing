@@ -4,7 +4,7 @@
 
 #include "SelectorI.h"
 #include "../consumer/SubgraphStats.h"
-#include "../forbidden_subgraphs/SubgraphC4P4.h"
+#include "../forbidden_subgraphs/subgraphs.h"
 
 
 namespace selector {

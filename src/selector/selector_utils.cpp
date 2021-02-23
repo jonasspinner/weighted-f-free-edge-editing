@@ -39,4 +39,7 @@ namespace selector {
     template
     std::unique_ptr<SelectorI> make<Options::FSG::C4P4>(Options::Selector selector, const EditState *edit_state,
                                                         const SubgraphStats<Options::FSG::C4P4> *subgraph_stats);
+    template
+    std::unique_ptr<SelectorI> make<Options::FSG::P3>(Options::Selector selector, const EditState *edit_state,
+                                                      const SubgraphStats<Options::FSG::P3> *subgraph_stats);
 }

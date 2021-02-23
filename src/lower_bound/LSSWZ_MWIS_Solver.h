@@ -5,7 +5,7 @@
 #include "LowerBoundI.h"
 #include "../options.h"
 #include "../Configuration.h"
-#include "../forbidden_subgraphs/SubgraphC4P4.h"
+#include "../forbidden_subgraphs/subgraphs.h"
 #include "../editor/EditState.h"
 
 

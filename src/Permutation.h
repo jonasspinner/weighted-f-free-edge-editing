@@ -1,14 +1,9 @@
-//
-// Created by jonas on 18.08.19.
-//
-
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_PERMUTATION_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_PERMUTATION_H
 
 
 #include "graph/Graph.h"
-#include "forbidden_subgraphs/Subgraph.h"
-#include "forbidden_subgraphs/SubgraphC4P4.h"
+#include "forbidden_subgraphs/subgraphs.h"
 #include "Instance.h"
 
 class Permutation {

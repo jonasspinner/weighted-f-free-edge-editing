@@ -129,4 +129,5 @@ namespace lower_bound {
     }
 
     template class SortedGreedy<Options::FSG::C4P4>;
+    template class SortedGreedy<Options::FSG::P3>;
 }

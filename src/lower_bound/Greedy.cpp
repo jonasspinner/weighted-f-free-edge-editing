@@ -52,4 +52,5 @@ namespace lower_bound {
     }
 
     template class Greedy<Options::FSG::C4P4>;
+    template class Greedy<Options::FSG::P3>;
 }

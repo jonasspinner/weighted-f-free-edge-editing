@@ -51,9 +51,13 @@ namespace lower_bound {
                 return std::make_unique<SortedGreedy<FSG>>(edit_state);
             case LB::LPRelaxation:
 #ifdef GUROBI_FOUND
+            if constexpr (FSG == Options::FSG::C4P4) {
                 return std::make_unique<LPRelaxation<FSG>>(edit_state, config.verbosity, config.timelimit);
+            } else {
+                throw std::runtime_error("LB::LPRelaxation only supports FSG::C4P4.");
+            }
 #else
-                throw std::runtime_error("gurobi has to be installed to use LB::LinearProgram.");
+                throw std::runtime_error("gurobi has to be installed to use LB::LPRelaxation.");
 #endif
             case LB::NPS_MWIS_Solver:
 #ifdef NPS_MWIS_FOUND
@@ -80,5 +84,9 @@ namespace lower_bound {
     template
     std::unique_ptr<LowerBoundI> make<Options::FSG::C4P4>(Options::LB lower_bound, const EditState *edit_state,
                                                           const SubgraphStats<Options::FSG::C4P4> *subgraph_stats,
+                                                          Configuration config);
+    template
+    std::unique_ptr<LowerBoundI> make<Options::FSG::P3>(Options::LB lower_bound, const EditState *edit_state,
+                                                          const SubgraphStats<Options::FSG::P3> *subgraph_stats,
                                                           Configuration config);
 }

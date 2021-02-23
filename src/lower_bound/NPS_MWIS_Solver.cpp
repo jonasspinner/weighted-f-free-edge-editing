@@ -117,4 +117,5 @@ namespace lower_bound {
     }
 
     template class NPS_MWIS_Solver<Options::FSG::C4P4>;
+    template class NPS_MWIS_Solver<Options::FSG::P3>;
 }
