@@ -87,13 +87,15 @@ Jonas Spinner. Weighted F-free Edge Editing. Bachelor thesis, Karlsruhe, 2019.
 
 ```bibtex
 @thesis{Spinner2019,
-    title = {{Weighted} {F}-free {Edge} {Editing}},
-    language = {en},
-    school = {Karlsruhe Institute of Technology},
-    author = {Spinner, Jonas},
-    date = {2019-11-29},
-    type={Bachelor thesis},
-    url={https://i11www.iti.kit.edu/_media/teaching/theses/ba-spinner-19.pdf}
+    author       = {Spinner, Jonas},
+    year         = {2019},
+    title        = {Weighted F-free Edge Editing},
+    doi          = {10.5445/IR/1000135117},
+    publisher    = {{Karlsruhe Institute of Technology (KIT)}},
+    pagetotal    = {53},
+    type         = {Bachelor thesis},
+    school       = {Karlsruhe Institute of Technology (KIT)},
+    language     = {english}
 }
 ```
 
