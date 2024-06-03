@@ -37,7 +37,7 @@ It is used for computing a subgraph packing to get lower bounds for the FPT algo
 executing `extern/nps_mwis/get.sh`.
 
 `lsswz_mwis` is also a MWIS solver used for lower bounds. It is from [[LSSWZ18]](https://arxiv.org/abs/1810.10834) and
-the code is note publicly available.
+the code is not publicly available.
 
 ### Datasets
 
