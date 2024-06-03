@@ -168,7 +168,7 @@ struct std::hash<SubgraphT<Options::FSG::C4P4>> {
     inline size_t operator()(const SubgraphT<Options::FSG::C4P4> &subgraph) const noexcept {
         // hash_bytes has `void const* ptr` as first parameter type.
         const auto ptr = static_cast<void const *>(subgraph.m_vertices.data());
-        constexpr auto len = subgraph.m_vertices.size() * sizeof(Vertex); // length of m_vertices in bytes.
+        const auto len = subgraph.m_vertices.size() * sizeof(Vertex); // length of m_vertices in bytes.
         return robin_hood::hash_bytes(ptr, len);
     }
 };
