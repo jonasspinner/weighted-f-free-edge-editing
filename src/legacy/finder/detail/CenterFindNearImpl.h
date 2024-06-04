@@ -330,19 +330,22 @@ namespace detail {
             auto [u, v] = uv;
 
             if (valid_edge(uv)) {
-                Z = neighbors(v) & non_neighbors(u);
+                Z = neighbors(v);
+                Z &= non_neighbors(u);
                 for (Vertex z : Graph::iterate(Z)) {
                     assert(valid_edge({u, v})); assert(valid_non_edge({u, z})); assert(valid_edge({v, z}));
                     if (callback(Subgraph{u, v, z})) return true;
                 }
 
-                Z = neighbors(u) & non_neighbors(v);
+                Z = neighbors(u);
+                Z &= non_neighbors(v);
                 for (Vertex z : Graph::iterate(Z)) {
                     assert(valid_edge({z, u})); assert(valid_non_edge({z, v})); assert(valid_edge({u, v}));
                     if (callback(Subgraph{z, u, v})) return true;
                 }
             } else if (valid_non_edge(uv)) {
-                Z = neighbors(uv.u) & neighbors(uv.v);
+                Z = neighbors(uv.u);
+                Z &= neighbors(uv.v);
                 for (Vertex z : Graph::iterate(Z)) {
                     assert(valid_edge({u, z})); assert(valid_non_edge({u, v})); assert(valid_edge({z, v}));
                     if (callback(Subgraph{u, z, v})) return true;

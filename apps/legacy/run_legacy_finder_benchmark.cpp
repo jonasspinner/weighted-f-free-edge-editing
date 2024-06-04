@@ -222,7 +222,7 @@ int main(int argc, char* argv[]) {
     namespace po = boost::program_options;
 
     std::string finder_name = "CenterC4P4";
-    std::string input = "../data/bio/bio-nr-3-size-16.graph";
+    std::string input = "../data/test/bio-nr-3-size-16.graph";
     std::string output_path;
     size_t iterations = 100;
     int permutation = 0;
@@ -247,8 +247,8 @@ int main(int argc, char* argv[]) {
     }
 
 
-    // bool with_near = has_near(finder_name);
-    bool with_near = false;
+    bool with_near = has_near(finder_name);
+    // bool with_near = false;
 
     std::ofstream file;
     if (!output_path.empty()) {

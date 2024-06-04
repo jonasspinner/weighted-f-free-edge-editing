@@ -4,6 +4,7 @@
 
 
 #include "test_utils.h"
+#include "../graph/GraphIO.h"
 #include "../legacy/finder/CenterC4P4.h"
 
 
@@ -47,7 +48,7 @@ template<class F>
 auto find_unique(F &finder, const Graph& graph) {
     using Subgraph = SubgraphT<Options::FSG::C4P4>;
     std::vector<Subgraph> subgraphs;
-    finder.find_unique(graph, [&](Subgraph subgraph) { subgraphs.push_back(subgraph); return false; });
+    finder.find_unique(graph, [&](Subgraph subgraph) { subgraphs.push_back(subgraph); return subgraph_iterators::IterationControl::Continue; });
     return subgraphs;
 }
 
@@ -55,7 +56,7 @@ template<class F>
 auto find(F &finder, const Graph& graph, const Graph& forbidden) {
     using Subgraph = SubgraphT<Options::FSG::C4P4>;
     std::vector<Subgraph> subgraphs;
-    finder.find(graph, forbidden, [&](Subgraph subgraph) { subgraphs.push_back(subgraph); return false; });
+    finder.find(graph, forbidden, [&](Subgraph subgraph) { subgraphs.push_back(subgraph); return subgraph_iterators::IterationControl::Continue; });
     return subgraphs;
 }
 
@@ -63,7 +64,7 @@ template<class F>
 auto find(F &finder, const Graph& graph) {
     using Subgraph = SubgraphT<Options::FSG::C4P4>;
     std::vector<Subgraph> subgraphs;
-    finder.find(graph, [&](Subgraph subgraph) { subgraphs.push_back(subgraph); return false; });
+    finder.find(graph, [&](Subgraph subgraph) { subgraphs.push_back(subgraph); return subgraph_iterators::IterationControl::Continue; });
     return subgraphs;
 }
 
@@ -71,7 +72,7 @@ template<class F>
 auto find_unique(F &finder, const Graph& graph, const Graph& forbidden) {
     using Subgraph = SubgraphT<Options::FSG::C4P4>;
     std::vector<Subgraph> subgraphs;
-    finder.find_unique(graph, forbidden, [&](Subgraph subgraph) { subgraphs.push_back(subgraph); return false; });
+    finder.find_unique(graph, forbidden, [&](Subgraph subgraph) { subgraphs.push_back(subgraph); return subgraph_iterators::IterationControl::Continue; });
     return subgraphs;
 }
 
@@ -212,7 +213,7 @@ public:
             Finder finder;
             finder.find(G_p, [&](Subgraph subgraph) {
                 subgraphs.push_back(n(subgraph));
-                return false;
+                return subgraph_iterators::IterationControl::Continue;
             });
 
             results.emplace_back(seed, std::move(subgraphs));
@@ -353,7 +354,7 @@ public:
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G2, forbidden, [&](auto subgraph) {
                     actual.push_back(subgraph);
-                    return false;
+                    return subgraph_iterators::IterationControl::Continue;
                 });
 
                 expect("SubgraphT<Options::FSG::C4P4>::Finder find_near no forbidden " + to_string(uv), expected[uv], actual);
@@ -383,7 +384,7 @@ public:
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G, forbidden, [&](Subgraph subgraph) {
                     actual.push_back(subgraph);
-                    return false;
+                    return subgraph_iterators::IterationControl::Continue;
                 });
                 expect("SubgraphT<Options::FSG::C4P4>::Finder find_near P4 no forbidden " + to_string(uv), expected, actual);
             }
@@ -400,7 +401,7 @@ public:
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G, forbidden, [&](Subgraph subgraph) {
                     actual.push_back(subgraph);
-                    return false;
+                    return subgraph_iterators::IterationControl::Continue;
                 });
                 expect("SubgraphT<Options::FSG::C4P4>::Finder find_near P4 conversion non-edge forbidden " + to_string(uv), expected, actual);
             }
@@ -417,7 +418,7 @@ public:
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G, forbidden, [&](Subgraph subgraph) {
                     actual.push_back(subgraph);
-                    return false;
+                    return subgraph_iterators::IterationControl::Continue;
                 });
 
                 expect("SubgraphT<Options::FSG::C4P4>::Finder find_near P4 one edge forbidden " + to_string(uv), expected, actual);
@@ -434,7 +435,7 @@ public:
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G, forbidden, [&](Subgraph subgraph) {
                     actual.push_back(subgraph);
-                    return false;
+                    return subgraph_iterators::IterationControl::Continue;
                 });
                 expect("SubgraphT<Options::FSG::C4P4>::Finder find_near P4 one non-edge forbidden " + to_string(uv), expected, actual);
             }
@@ -454,7 +455,7 @@ public:
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G, forbidden, [&](Subgraph subgraph) {
                     actual.push_back(subgraph);
-                    return false;
+                    return subgraph_iterators::IterationControl::Continue;
                 });
                 std::sort(expected.begin(), expected.end());
                 std::sort(actual.begin(), actual.end());
@@ -472,7 +473,7 @@ public:
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G, forbidden, [&](Subgraph subgraph) {
                     actual.push_back(subgraph);
-                    return false;
+                    return subgraph_iterators::IterationControl::Continue;
                 });
                 expect("SubgraphT<Options::FSG::C4P4>::Finder find_near C4 one edge forbidden " + to_string(uv), expected, actual);
             }
@@ -487,7 +488,7 @@ public:
                 std::vector<Subgraph> actual;
                 finder.find_near(uv, G, forbidden, [&](Subgraph subgraph) {
                     actual.push_back(subgraph);
-                    return false;
+                    return subgraph_iterators::IterationControl::Continue;
                 });
                 expect("SubgraphT<Options::FSG::C4P4>::Finder find_near C4 one non-edge forbidden " + to_string(uv), expected, actual);
             }
@@ -538,7 +539,7 @@ public:
             }
         };
 
-        auto instance = GraphIO::read_instance("../data/bio/bio-nr-4-size-39.graph");
+        auto instance = GraphIO::read_instance("../data/test/bio-nr-4-size-39.graph");
         auto &G = instance.graph;
 
         auto E = Graph::make_empty_graph(G.size());
@@ -552,14 +553,15 @@ public:
         }
 
         Subgraph::Finder finder1;
-        ::Finder::CenterC4P4 finder2;
+        std::unique_ptr<FinderI> finder2_ptr = std::make_unique<::Finder::CenterC4P4>();
+        auto &finder2 = *finder2_ptr;
 
         {
             std::vector<Subgraph> output1, output2;
 
             finder1.find(G, [&](auto subgraph) {
                 output1.push_back(subgraph);
-                return false;
+                return subgraph_iterators::IterationControl::Continue;
             });
 
             finder2.find_with_duplicates(G, [&](auto vector_subgraph) {
@@ -583,7 +585,7 @@ public:
 
             finder1.find(G, F,[&](auto subgraph) {
                 output1.push_back(subgraph);
-                return false;
+                return subgraph_iterators::IterationControl::Continue;
             });
 
             finder2.find_with_duplicates(G, F, [&](auto vector_subgraph) {
@@ -607,7 +609,7 @@ public:
 
             finder1.find_unique(G, [&](auto subgraph) {
                 output1.push_back(subgraph);
-                return false;
+                return subgraph_iterators::IterationControl::Continue;
             });
 
             finder2.find(G, [&](auto vector_subgraph) {
@@ -636,7 +638,7 @@ public:
                 output1.emplace_back();
                 finder1.find_near(uv, G, F, [&](auto subgraph) {
                     output1.back().push_back(subgraph);
-                    return false;
+                    return subgraph_iterators::IterationControl::Continue;
                 });
 
                 output2.emplace_back();

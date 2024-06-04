@@ -52,20 +52,19 @@ int main(int argc, char *argv[]) {
 
     // std::vector<Options::LB> lower_bounds = {LB::Greedy, LB::No, LB::LocalSearch, LB::LinearProgram};
     std::vector<std::string> inputs = {
-            "../data/bio/bio-nr-3-size-16.graph",
-            "../data/bio/bio-nr-4-size-39.graph",
-            "../data/bio/bio-nr-11-size-22.graph",
+            "../data/test/bio-nr-3-size-16.graph",
+            "../data/test/bio-nr-4-size-39.graph",
             "../data/misc/karate.graph"
     };
 
     constexpr auto max_k = std::numeric_limits<Cost>::max();
 
     Configuration config(Options::FSG::C4P4, 100, Options::SolverType::FPT, Options::Selector::FirstFound, LB::Trivial);
-    config.input_path = inputs[0];
+    config.input_path = inputs[1];
     config.lower_bound = LB::SortedGreedy;
     config.permutation = 0;
     config.timelimit = -1;
-    size_t iterations = 2;
+    size_t iterations = 10;
 
 
     po::options_description desc("Allowed options");
@@ -109,9 +108,10 @@ int main(int argc, char *argv[]) {
         throw std::runtime_error("Only C4P4 are currently supported.");
     }
 
-    SubgraphStats<FSG> subgraph_stats(instance, marked);
+    auto edit_state = std::make_unique<EditState>(instance.graph.copy(), instance.costs);
+    SubgraphStats<FSG> subgraph_stats(edit_state.get());
     subgraph_stats.initialize(max_k);
-    auto lb = lower_bound::make<FSG>(config.lower_bound, instance, marked, subgraph_stats, config);
+    auto lb = lower_bound::make<FSG>(config.lower_bound, edit_state.get(), &subgraph_stats, config);
 
 
     std::vector<double> initialization_times, result_times, complete_times;

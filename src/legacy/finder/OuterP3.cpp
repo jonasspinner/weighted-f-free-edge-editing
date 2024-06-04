@@ -73,7 +73,8 @@ namespace Finder {
             for (Vertex y : Graph::iterate(Y)) {
                 if (y >= x) continue;
 
-                Z = neighbors(y) & neighbors(x);
+                Z = neighbors(y);
+                Z &= neighbors(x);
                 for (Vertex z : Graph::iterate(Z)) {
                     assert(y != z); assert(y != x); assert(z != x);
 

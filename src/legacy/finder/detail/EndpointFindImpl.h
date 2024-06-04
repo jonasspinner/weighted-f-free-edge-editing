@@ -82,7 +82,8 @@ namespace detail {
             for (Vertex u : graph.vertices()) {
                 V = neighbors(u);
                 for (Vertex v : Graph::iterate(V)) {
-                    W = neighbors(v) & non_neighbors(u);
+                    W = neighbors(v);
+                    W &= non_neighbors(u);
                     for (Vertex w : Graph::iterate(W))
                         if (u < w) {
                             assert(valid_edge({u, v})); assert(valid_edge({v, w})); assert(valid_non_edge({w, u}));
@@ -105,7 +106,8 @@ namespace detail {
             for (Vertex u : graph.vertices()) {
                 V = neighbors(u);
                 for (Vertex v : Graph::iterate(V)) {
-                    W = neighbors(v) & non_neighbors(u);
+                    W = neighbors(v);
+                    W &= non_neighbors(u);
                     for (Vertex w : Graph::iterate(W))
                         if (callback(Subgraph{u, v, w}, std::min({u, v, w})))
                             return true;

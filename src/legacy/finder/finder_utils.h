@@ -6,7 +6,7 @@
 #define WEIGHTED_F_FREE_EDGE_EDITING_FINDER_UTILS_H
 
 
-#include "../options.h"
+#include "../../options.h"
 #include "FinderI.h"
 
 

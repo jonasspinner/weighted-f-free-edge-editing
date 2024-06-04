@@ -380,8 +380,10 @@ namespace Finder {
             V = neighbors(u);
             for (Vertex v : Graph::iterate(V)) {
 
-                A = neighbors(u) & non_neighbors(v);
-                B = neighbors(v) & non_neighbors(u);
+                A = neighbors(u);
+                A &= non_neighbors(v);
+                B = neighbors(v);
+                B &= non_neighbors(u);
 
                 for (Vertex a : Graph::iterate(A)) {
                     for (Vertex b : Graph::iterate(B)) {
@@ -417,8 +419,10 @@ namespace Finder {
 
         if (valid_non_edge(uv)) {
             // case P_4 u, v are at positions 1 and 4 in the path
-            A = neighbors(u) & non_neighbors(v);
-            B = neighbors(v) & non_neighbors(u);
+            A = neighbors(u);
+            A &= non_neighbors(v);
+            B = neighbors(v);
+            B &= non_neighbors(u);
 
             for (Vertex a : Graph::iterate(A)) {
                 for (Vertex b : Graph::iterate(B)) {
@@ -439,9 +443,11 @@ namespace Finder {
             }
 
             // case P_4, C_4 u, v are at positions 1 and 3 in the path
-            A = neighbors(u) & neighbors(v);
+            A = neighbors(u);
+            A &= neighbors(v);
             for (Vertex a : Graph::iterate(A)) {
-                B = neighbors(v) & non_neighbors(a);
+                B = neighbors(v);
+                B &= non_neighbors(a);
                 for (Vertex b : Graph::iterate(B)) {
 
                     // assert that {u, a, v, b} is either a C_4 or P_4
@@ -461,9 +467,11 @@ namespace Finder {
             }
 
             // case P_4, C_4 u, v are at positions 2 and 4 in the path
-            B = neighbors(u) & neighbors(v);
+            B = neighbors(u);
+            B &= neighbors(v);
             for (Vertex b : Graph::iterate(B)) {
-                A = neighbors(u) & non_neighbors(b);
+                A = neighbors(u);
+                A &= non_neighbors(b);
                 for (Vertex a : Graph::iterate(A)) {
 
                     // assert that {a, u, b, b} is either a C_4 or P_4
@@ -484,8 +492,10 @@ namespace Finder {
 
         } else if (valid_edge(uv)) {
             // case C_4 u, v are at positions 1 and 4 in the path
-            A = neighbors(u) & non_neighbors(v);
-            B = neighbors(v) & non_neighbors(u);
+            A = neighbors(u);
+            A &= non_neighbors(v);
+            B = neighbors(v);
+            B &= non_neighbors(u);
 
             for (Vertex a : Graph::iterate(A)) {
                 for (Vertex b : Graph::iterate(B)) {
@@ -506,8 +516,10 @@ namespace Finder {
             }
 
             // case C_4, P_4 u, v are at positions 2 and 3 in the path
-            A = neighbors(u) & non_neighbors(v);
-            B = neighbors(v) & non_neighbors(u);
+            A = neighbors(u);
+            A &= non_neighbors(v);
+            B = neighbors(v);
+            B &= non_neighbors(u);
 
             for (Vertex a : Graph::iterate(A)) {
                 for (Vertex b : Graph::iterate(B)) {
@@ -529,10 +541,12 @@ namespace Finder {
             }
 
             // case C_4, P_4 u, v are at positions 1 and 2 in the path
-            A = neighbors(v) & non_neighbors(u);
+            A = neighbors(v);
+            A &= non_neighbors(u);
 
             for (Vertex a : Graph::iterate(A)) {
-                B = neighbors(a) & non_neighbors(v);
+                B = neighbors(a);
+                B &= non_neighbors(v);
                 B[u] = false;
 
                 for (Vertex b : Graph::iterate(B)) {
@@ -554,10 +568,12 @@ namespace Finder {
             }
 
             // case C_4, P_4 u, v are at positions 3 and 4 in the path
-            A = neighbors(u) & non_neighbors(v);
+            A = neighbors(u);
+            A &= non_neighbors(v);
 
             for (Vertex a : Graph::iterate(A)) {
-                B = neighbors(a) & non_neighbors(u);
+                B = neighbors(a);
+                B &= non_neighbors(u);
                 B[v] = false;
 
                 for (Vertex b : Graph::iterate(B)) {
@@ -598,8 +614,10 @@ namespace Finder {
                 continue;
             auto[u, v] = uv;
 
-            A = neighbors(u) & non_neighbors(v);
-            B = neighbors(v) & non_neighbors(u);
+            A = neighbors(u);
+            A &= non_neighbors(v);
+            B = neighbors(v);
+            B &= non_neighbors(u);
 
             for (auto a : Graph::iterate(A)) {
                 for (auto b : Graph::iterate(B)) {

@@ -1,6 +1,7 @@
 #ifndef WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPHC4P4_H
 #define WEIGHTED_F_FREE_EDGE_EDITING_SUBGRAPHC4P4_H
 
+#include <limits>
 #include "robin_hood.h"
 
 #include "Subgraph.h"

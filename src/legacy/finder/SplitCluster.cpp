@@ -4,7 +4,6 @@
 
 
 #include "SplitCluster.h"
-#include "../Configuration.h"
 
 
 namespace Finder {
@@ -78,11 +77,14 @@ namespace Finder {
             for (Vertex v : Graph::iterate(V)) {
 
                 // C4 / C5 / P5 / Bowtie / Necktie
-                W = neighbors(v) & non_neighbors(u);
+                W = neighbors(v);
+                W &= non_neighbors(u);
                 for (Vertex w : Graph::iterate(W)) {
 
                     // C4
-                    X = neighbors(u) & neighbors(w) & non_neighbors(v);
+                    X = neighbors(u);
+                    X &= neighbors(w);
+                    X &= non_neighbors(v);
                     for (Vertex x : Graph::iterate(X)) {
                         assert(valid_edge({u, v})); assert(valid_non_edge({u, w})); assert(valid_edge({u, x})); assert(valid_edge({v, w})); assert(valid_non_edge({v, x})); assert(valid_edge({w, x}));
 
@@ -90,8 +92,12 @@ namespace Finder {
                     }
 
                     // C5 / P5
-                    X = neighbors(w) & non_neighbors(u) & non_neighbors(v);
-                    Y = neighbors(u) & non_neighbors(v) & non_neighbors(w);
+                    X = neighbors(w);
+                    X &= non_neighbors(u);
+                    X &= non_neighbors(v);
+                    Y = neighbors(u);
+                    Y &= non_neighbors(v);
+                    Y &= non_neighbors(w);
                     for (Vertex y : Graph::iterate(Y)) {
                         for (Vertex x : Graph::iterate(X)) {
                             if (valid_edge({x, y})) {
@@ -110,9 +116,14 @@ namespace Finder {
                     }
 
                     // Necktie
-                    X = neighbors(w) & neighbors(v) & non_neighbors(u);
+                    X = neighbors(w);
+                    X &= neighbors(v);
+                    X &= non_neighbors(u);
                     for (Vertex x : Graph::iterate(X)) {
-                        Y = neighbors(u) & non_neighbors(v) & non_neighbors(w) & non_neighbors(x);
+                        Y = neighbors(u);
+                        Y &= non_neighbors(v);
+                        Y &= non_neighbors(w);
+                        Y &= non_neighbors(x);
                         for (Vertex y : Graph::iterate(Y)) {
 
                             assert(valid_edge({y, u})); assert(valid_non_edge({y, v})); assert(valid_non_edge({y, w})); assert(valid_non_edge({y, x}));
@@ -122,9 +133,14 @@ namespace Finder {
                         }
                     }
 
-                    X = neighbors(w) & non_neighbors(v) & non_neighbors(u);
+                    X = neighbors(w);
+                    X &= non_neighbors(v);
+                    X &= non_neighbors(u);
                     for (Vertex x : Graph::iterate(X)) {
-                        Y = neighbors(u) & neighbors(v) & non_neighbors(w) & non_neighbors(x);
+                        Y = neighbors(u);
+                        Y &= neighbors(v);
+                        Y &= non_neighbors(w);
+                        Y &= non_neighbors(x);
                         for (Vertex y : Graph::iterate(Y)) {
 
                             assert(valid_edge({y, u})); assert(valid_edge({y, v})); assert(valid_non_edge({y, w})); assert(valid_non_edge({y, x}));
@@ -135,8 +151,12 @@ namespace Finder {
                     }
 
                     // Bowtie
-                    X = neighbors(w) & neighbors(v) & non_neighbors(u);
-                    Y = neighbors(u) & neighbors(v) & non_neighbors(w);
+                    X = neighbors(w);
+                    X &=neighbors(v);
+                    X &=non_neighbors(u);
+                    Y = neighbors(u);
+                    Y &= neighbors(v);
+                    Y &= non_neighbors(w);
                     for (Vertex x : Graph::iterate(X)) {
                         for (Vertex y : Graph::iterate(Y)) {
                             if (!valid_non_edge({x, y})) continue;

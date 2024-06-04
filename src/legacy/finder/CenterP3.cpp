@@ -4,7 +4,6 @@
 
 
 #include "CenterP3.h"
-#include "../Configuration.h"
 
 
 namespace Finder {
@@ -95,14 +94,16 @@ namespace Finder {
         auto [u, v] = uv;
 
         if (valid_edge(uv)) {
-            W = neighbors(u) & non_neighbors(v);
+            W = neighbors(u);
+            W &= non_neighbors(v);
 
             for (Vertex w : Graph::iterate(W)) {
                 assert(valid_edge({w, u})); assert(valid_non_edge({w, v})); assert(valid_edge({u, v}));
                 if (callback(Subgraph{w, u, v})) return true;
             }
 
-            W = neighbors(v) & non_neighbors(u);
+            W = neighbors(v);
+            W &= non_neighbors(u);
 
             for (Vertex w : Graph::iterate(W)) {
                 assert(valid_edge({u, v})); assert(valid_non_edge({u, w})); assert(valid_edge({v, w}));
@@ -111,7 +112,8 @@ namespace Finder {
 
         } else if (valid_non_edge(uv)) {
 
-            W = neighbors(u) & neighbors(v);
+            W = neighbors(u);
+            W &= neighbors(v);
             for (Vertex w : Graph::iterate(W)) {
                 assert(valid_edge({u, w})); assert(valid_non_edge({u, v})); assert(valid_edge({w, v}));
                 if (callback(Subgraph{u, w, v})) return true;

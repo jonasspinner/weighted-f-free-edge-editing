@@ -12,7 +12,7 @@ std::vector<SubgraphT<FSG>> get_all_forbidden_subgraphs(const Graph &graph) {
     std::vector<Subgraph> result;
     finder.find(graph, [&](const Subgraph &subgraph) {
         result.push_back(subgraph);
-        return false;
+        return subgraph_iterators::IterationControl::Continue;
     });
     return result;
 }

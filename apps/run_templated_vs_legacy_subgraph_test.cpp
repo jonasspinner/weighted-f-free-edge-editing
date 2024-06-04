@@ -17,7 +17,7 @@ public:
     void fill() {
         m_finder.find(m_graph, [&](Subgraph subgraph) {
             m_vector.push_back(subgraph);
-            return false;
+            return subgraph_iterators::IterationControl::Continue;
         });
 
         for (const auto &x : m_vector) {
@@ -56,43 +56,43 @@ int main() {
     std::cout << "---\n";
     finder.find(c4, [](auto subgraph) {
         std::cout << subgraph << "\n";
-        return false;
+        return subgraph_iterators::IterationControl::Continue;
     });
     std::cout << "---\n";
     finder.find_unique(c4, [](auto subgraph) {
         std::cout << subgraph << "\n";
-        return false;
+        return subgraph_iterators::IterationControl::Continue;
     });
     std::cout << "---\n";
     finder.find(c6, [](auto subgraph) {
         std::cout << subgraph << "\n";
-        return false;
+        return subgraph_iterators::IterationControl::Continue;
     });
     std::cout << "---\n";
     finder.find(c6, f1, [](auto subgraph) {
         std::cout << subgraph << "\n";
-        return false;
+        return subgraph_iterators::IterationControl::Continue;
     });
     std::cout << "---\n";
     finder.find(c6, f2, [](auto subgraph) {
         std::cout << subgraph << "\n";
-        return false;
+        return subgraph_iterators::IterationControl::Continue;
     });
     std::cout << "---\n";
     finder.find_near({0, 1}, c6, f2, [&](auto subgraph) {
         std::cout << subgraph << "\n";
-        return false;
+        return subgraph_iterators::IterationControl::Continue;
     });
 
     std::cout << "---\n";
-    auto instance = GraphIO::read_instance("../data/bio/bio-nr-4-size-39.graph");
+    auto instance = GraphIO::read_instance("../data/test/bio-nr-4-size-39.graph");
     auto &G = instance.graph;
 
     std::size_t n{0};
     for (std::size_t i = 0; i < 100; ++i) {
         finder.find(G, [&](auto) {
             ++n;
-            return false;
+            return subgraph_iterators::IterationControl::Continue;
         });
     }
     std::cout << n << "\n";

@@ -103,7 +103,7 @@ set(SRC_FILES ${SELECTOR_SRC_FILES} ${LOWER_BOUND_SRC_FILES} ${SEARCH_STRATEGY_S
 
 
 add_executable(fpt apps/run_fptsolver.cpp ${SRC_FILES})
-add_executable(tests apps/tests/run_tests.cpp ${SRC_FILES} ${TEST_SRC_FILES})
+add_executable(tests apps/tests/run_tests.cpp ${SRC_FILES} ${TEST_SRC_FILES} ${LEGACY_FINDER_SRC_FILES})
 add_executable(legacy_finder_benchmark apps/legacy/run_legacy_finder_benchmark.cpp ${SRC_FILES} ${LEGACY_FINDER_SRC_FILES} )
 add_executable(lower_bound_benchmark apps/benchmarks/run_lower_bound_benchmark.cpp ${SRC_FILES})
 add_executable(fpt_experiment apps/run_fpt_experiment.cpp ${SRC_FILES})

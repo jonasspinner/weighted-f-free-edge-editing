@@ -14,6 +14,7 @@ int main(int argc, char* argv[]) {
     using namespace std::chrono;
 
     const std::vector<std::string> paths {
+            "../data/test/bio-nr-3-size-16.graph",
             "../data/bio/bio-nr-3-size-16.graph",
             "../data/bio/bio-nr-4-size-39.graph",
             "../data/bio/bio-nr-11-size-22.graph",
@@ -23,7 +24,7 @@ int main(int argc, char* argv[]) {
             "../data/misc/dolphins.graph",
             "../data/misc/grass_web.graph"};
 
-    std::string input = paths[1];
+    std::string input = paths[0];
     double multiplier = 100;
     Cost k_max = 10780;
     int num_steps = 10;
@@ -68,7 +69,7 @@ int main(int argc, char* argv[]) {
     // std::cout << config << "\n";
 
     auto instance = GraphIO::read_instance(config);
-    Editor editor(instance.copy(), config);
+    Editor editor(instance.graph.copy(), instance.costs, config);
 
     Cost k_init = editor.initial_lower_bound();
     //for (int i = 0; i < num_steps_warming_up; ++i)
